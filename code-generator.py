@@ -27,7 +27,7 @@ initializer = autogen.UserProxyAgent(
     },
 )
 
-coder = autogen.AssistantAgent(
+code_generator = autogen.AssistantAgent(
     name="Code_Generator",
     description="""
     Code generator to meet the requirement.
@@ -35,7 +35,7 @@ coder = autogen.AssistantAgent(
     llm_config=gpt4_config,
     system_message="""
     You are the Coder. Given a topic, \
-    write the code to meet the requirement. \
+    write the code to meet the topic. \
     You write the code to solve tasks. \
     Wrap the code in a code block that specifies the script type. \
     The user can't modify your code. \
@@ -56,7 +56,7 @@ coder = autogen.AssistantAgent(
     """,
 )
 
-executor = autogen.UserProxyAgent(
+code_executor = autogen.UserProxyAgent(
     name="Code_Executor",
     description="""
     Code executor to execute the code written by the Coder and \
@@ -75,7 +75,7 @@ executor = autogen.UserProxyAgent(
 )
 
 # General Code Reviewer
-scientist = autogen.AssistantAgent(
+code_reviewer = autogen.AssistantAgent(
     name="Code_Reviewer",
     description="""
     Code reviewer to review the code written by the Coder and \
@@ -100,25 +100,26 @@ def state_transition(last_speaker, groupchat):
     messages = groupchat.messages
 
     if last_speaker is initializer:
-        # init -> retrieve
-        return coder
-    elif last_speaker is coder:
-        # retrieve: action 1 -> action 2
-        return executor
-    elif last_speaker is executor:
+        # initializer -> code_generator
+        return code_generator
+    elif last_speaker is code_generator:
+        # code_generator -> code_executor
+        return code_executor
+    elif last_speaker is code_executor:
+        # TODO: How to check if the code is made by others than python?
         if messages[-1]["content"] == "exitcode: 1":
-            # retrieve --(execution failed)--> retrieve
-            return coder
+            # code_generator -> code_generator
+            return code_generator
         else:
-            # retrieve --(execution success)--> research
-            return scientist
-    elif last_speaker == "Scientist":
-        # research -> end
+            # code_executor -> code_reviewer
+            return code_reviewer
+    elif last_speaker is code_reviewer:
+        # code_reviewer -> end
         return None
 
 
 groupchat = autogen.GroupChat(
-    agents=[initializer, coder, executor, scientist],
+    agents=[initializer, code_generator, code_executor, code_reviewer],
     messages=[],
     max_round=20,
     speaker_selection_method=state_transition,
@@ -127,6 +128,13 @@ manager = autogen.GroupChatManager(groupchat=groupchat, llm_config=gpt4_config)
 
 initializer.initiate_chat(
     manager,
-    # message="Topic: LLM applications papers from last week. Requirement: 5 - 10 papers from different domains.",
-    message="Topic: AI agent builder SaaS landing page.",
+    message="""
+    Topic: Generate a landing page for a SaaS product that builds AI agents. \
+    Requirement:  \
+    - The landing page is made by HTML, CSS, and JavaScript. \
+    - The landing page should be a single page. \
+    - The landing page should be responsive. \
+    - The landing page should be mobile friendly. \
+    - The landing page should be desktop friendly.
+    """,
 )
