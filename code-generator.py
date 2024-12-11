@@ -28,31 +28,71 @@ initializer = autogen.UserProxyAgent(
 )
 
 coder = autogen.AssistantAgent(
-    name="Retrieve_Action_1",
+    name="Code_Generator",
+    description="""
+    Code generator to meet the requirement.
+    """,
     llm_config=gpt4_config,
-#     system_message="""You are the Coder. Given a topic, write code to retrieve related papers from the arXiv API, print their title, authors, abstract, and link.
-# You write python/shell code to solve tasks. Wrap the code in a code block that specifies the script type. The user can't modify your code. So do not suggest incomplete code which requires others to modify. Don't use a code block if it's not intended to be executed by the executor.
-    system_message="""You are the Coder. Given a topic, write code to generate a SaaS landing page in HTML.
-You write html code to solve tasks. Wrap the code in a code block that specifies the script type. The user can't modify your code. So do not suggest incomplete code which requires others to modify. Don't use a code block if it's not intended to be executed by the executor.
-Don't include multiple code blocks in one response. Do not ask others to copy and paste the result. Check the execution result returned by the executor.
-If the result indicates there is an error, fix the error and output the code again. Suggest the full code instead of partial code or code changes. If the error can't be fixed or if the task is not solved even after the code is executed successfully, analyze the problem, revisit your assumption, collect additional info you need, and think of a different approach to try.
-""",
+    system_message="""
+    You are the Coder. Given a topic, \
+    write the code to meet the requirement. \
+    You write the code to solve tasks. \
+    Wrap the code in a code block that specifies the script type. \
+    The user can't modify your code. \
+    So do not suggest incomplete code which requires others to modify. \
+    Don't use a code block \
+    if it's not intended to be executed by the executor. \
+    Don't include multiple code blocks in one response. \
+    Do not ask others to copy and paste the result. \
+    Check the execution result returned by the executor. \
+    If the result indicates there is an error, \
+    fix the error and output the code again. \
+    Suggest the full code instead of partial code or code changes. \
+    If the error can't be fixed or if the task is not solved \
+    even after the code is executed successfully, \
+    analyze the problem, revisit your assumption, \
+    collect additional info you need, and \
+    think of a different approach to try.
+    """,
 )
+
 executor = autogen.UserProxyAgent(
-    name="Retrieve_Action_2",
-    system_message="Executor. Execute the code written by the Coder and report the result.",
+    name="Code_Executor",
+    description="""
+    Code executor to execute the code written by the Coder and \
+    report the result.
+    """,
+    system_message="""
+    Execute the code written by the Coder and \
+    report the result.
+    """,
     human_input_mode="NEVER",
     code_execution_config={
         "last_n_messages": 3,
         "work_dir": "paper",
         "use_docker": False,
-    },  # Please set use_docker=True if docker is available to run the generated code. Using docker is safer than running the generated code directly.
+    },
 )
+
+# General Code Reviewer
 scientist = autogen.AssistantAgent(
-    name="Research_Action_1",
+    name="Code_Reviewer",
+    description="""
+    Code reviewer to review the code written by the Coder and \
+    make sure it's correct.
+    """,
     llm_config=gpt4_config,
-    # system_message="""You are the Scientist. Please categorize papers after seeing their abstracts printed and create a markdown table with Domain, Title, Authors, Summary and Link""",
-    system_message="""You are the web page admin. Please review the html code written by the Coder and make sure it's correct. If it's not correct, fix it and output the code again. Suggest the full code instead of partial code or code changes. If the error can't be fixed or if the task is not solved even after the code is executed successfully, analyze the problem, revisit your assumption, collect additional info you need, and think of a different approach to try.""",
+    system_message="""
+    You are the code reviewer. \
+    Please review the code written by the Coder and make sure it's correct. \
+    If it's not correct, fix it and output the code again. \
+    Suggest the full code instead of partial code or code changes. \
+    If the error can't be fixed or if the task is not solved \
+    even after the code is executed successfully, \
+    analyze the problem, revisit your assumption, \
+    collect additional info you need, and \
+    think of a different approach to try.
+    """,
 )
 
 
