@@ -1,6 +1,7 @@
 import autogen
 import os
 from dotenv import load_dotenv
+import json
 
 # Put your api key in the environment variable OPENAI_API_KEY
 load_dotenv()
@@ -54,6 +55,7 @@ code_generator = autogen.AssistantAgent(
     collect additional info you need, and
     think of a different approach to try.
     """,
+    max_consecutive_auto_reply=10,
 )
 
 code_executor = autogen.UserProxyAgent(
@@ -69,9 +71,10 @@ code_executor = autogen.UserProxyAgent(
     human_input_mode="NEVER",
     code_execution_config={
         "last_n_messages": 3,
-        "work_dir": "paper",
+        "work_dir": "outputs",
         "use_docker": False,
     },
+    max_consecutive_auto_reply=10,
 )
 
 # General Code Reviewer
@@ -93,6 +96,7 @@ code_reviewer = autogen.AssistantAgent(
     collect additional info you need, and
     think of a different approach to try.
     """,
+    max_consecutive_auto_reply=10,
 )
 
 
@@ -100,21 +104,17 @@ def state_transition(last_speaker, groupchat):
     messages = groupchat.messages
 
     if last_speaker is initializer:
-        # initializer -> code_generator
         return code_generator
     elif last_speaker is code_generator:
-        # code_generator -> code_executor
         return code_executor
     elif last_speaker is code_executor:
-        # TODO: How to check if the code is made by others than python?
+        print(json.dumps(messages, indent=2, ensure_ascii=False))
+
         if messages[-1]["content"] == "exitcode: 1":
-            # code_generator -> code_generator
             return code_generator
         else:
-            # code_executor -> code_reviewer
             return code_reviewer
     elif last_speaker is code_reviewer:
-        # code_reviewer -> end
         return None
 
 
@@ -130,7 +130,8 @@ initializer.initiate_chat(
     manager,
     message="""
     Topic: Generate a landing page for a SaaS product that builds AI agents
-    and save each page as a separate HTML file.
+    and save each page as an one HTML file in the outputs directory.
+    If the outputs directory doesn't exist, create it.
 
     Requirement:
     - The landing page is made by HTML, CSS, and JavaScript.
@@ -139,4 +140,5 @@ initializer.initiate_chat(
     - The landing page should be mobile friendly.
     - The landing page should be desktop friendly.
     """,
+    max_turns=20,
 )
