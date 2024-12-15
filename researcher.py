@@ -15,17 +15,17 @@ from dotenv import load_dotenv
 load_dotenv()
 
 llm_config = {
-    "cache_seed": 42,
-    "temperature": 0,
-    "timeout": 120,
+    # "cache_seed": 42,
+    # "temperature": 0,
+    # "timeout": 120,
     "config_list": [
+        # {
+        #     "model": "gemma2-9b-it",
+        #     "api_key": os.getenv("GROQ_API_KEY"),
+        #     "api_type": "groq",
+        # },
         {
-            "model": "gemma2-9b-it",
-            "api_key": os.getenv("GROQ_API_KEY"),
-            "api_type": "groq",
-        },
-        {
-            "model": "gpt-4o-mini",
+            "model": "gpt-3.5-turbo",
             "temperature": 0,
             "api_key": os.getenv("OPENAI_API_KEY"),
             "api_type": "openai",
@@ -56,15 +56,15 @@ llm_config["config_list"] = autogen.filter_config(
 
 tavily_search_agent_caller = ConversableAgent(
     name="Tavily_Search_Agent_Caller",
-#     system_message=f"""Today's date is {datetime.now().strftime('%d/%m/%Y')}.\n
-# You are an expert researcher tasked with gathering information for a weekly report on recent developments in portfolio companies.\n
-# Your current objective is to gather documents about any significant events that occurred in the past week for the following company: {state['company']}.\n
-# The user has provided the following company keywords: {state['company_keywords']} to help you find documents relevant to the correct company.\n     
-# **Instructions:**\n
-# - Use the 'tavily_search' tool to search for relevant documents
-# - Focus on gathering documents by making appropriate tool calls
-# - If you believe you have gathered enough information, state 'I have gathered enough information and am ready to proceed.'
-# """
+    #     system_message=f"""Today's date is {datetime.now().strftime('%d/%m/%Y')}.\n
+    # You are an expert researcher tasked with gathering information for a weekly report on recent developments in portfolio companies.\n
+    # Your current objective is to gather documents about any significant events that occurred in the past week for the following company: {state['company']}.\n
+    # The user has provided the following company keywords: {state['company_keywords']} to help you find documents relevant to the correct company.\n
+    # **Instructions:**\n
+    # - Use the 'tavily_search' tool to search for relevant documents
+    # - Focus on gathering documents by making appropriate tool calls
+    # - If you believe you have gathered enough information, state 'I have gathered enough information and am ready to proceed.'
+    # """
     system_message="""Today is date is 15/12/2024.\n
 You are an expert researcher tasked with gathering information for a weekly report on recent developments in portfolio companies.\n
 Your current objective is to gather documents about any significant events that occurred in the past week for the following company: samsung.\n
@@ -139,7 +139,7 @@ class TavilyQuery(BaseModel):
             "Choose 'news' ONLY when the company you searching is publicly traded "
             "and is likely to be featured on popular news"
         ),
-    ]
+    ] = "general"
     days: Annotated[
         int,
         Field(
@@ -147,7 +147,7 @@ class TavilyQuery(BaseModel):
             ge=1,
             le=30,
         ),
-    ]
+    ] = 7
     # raw_content: bool = Field(description="include raw content
     # from found sources, use it ONLY if you need more information
     # besides the summary content provided")
@@ -157,13 +157,23 @@ class TavilyQuery(BaseModel):
         "Useful when trying to gather information from trusted and "
         "relevant domains"
     )
+    max_results: Annotated[
+        int, Field(description="Maximum number of results to return", ge=1, le=10)
+    ] = 5
+    search_depth: Annotated[
+        str,
+        Field(
+            description="Search depth: 'basic' or 'advanced'",
+            choices=["basic", "advanced"],
+        ),
+    ] = "basic"
 
 
 # Define the args_schema for the tavily_search tool
 # using a multi-query approach, enabling more precise queries for Tavily.
-class TavilySearchInput(BaseModel):
-    sub_queries: List[TavilyQuery] = Field(
-        description="set of sub-queries that can be answered in isolation")
+# class TavilySearchInput(BaseModel):
+#     sub_queries: List[TavilyQuery] = Field(
+#         description="set of sub-queries that can be answered in isolation")
 
 
 class TavilyExtractInput(BaseModel):
@@ -173,8 +183,11 @@ class TavilyExtractInput(BaseModel):
 
 
 async def tavily_search(
-    sub_queries: Annotated[List[TavilyQuery], "List of TavilyQuery objects"]
-) -> List[dict]:
+    # sub_queries: Annotated[List[TavilyQuery],
+    #                        "set of sub-queries that can be answered in isolation"]
+    sub_queries: Annotated[TavilyQuery, "Input for Tavily search"]
+# ) -> List[dict]:
+) -> dict:
     print(f"sub_queries: {sub_queries}")
 
     """
@@ -186,18 +199,26 @@ async def tavily_search(
     async def perform_search(itm):
         try:
             # Convert dict to TavilyQuery object
-            query_obj = TavilyQuery.model_validate(itm)
-            print(f"query_obj: {query_obj}")
+            # query_obj = TavilyQuery.model_validate(itm)
+            # print(f"query_obj: {query_obj}")
 
             # Now use query_obj instead of itm
-            query_with_date = f"{query_obj.query} {
+            query_with_date = f"{itm.query} {
                 datetime.now().strftime('%m-%Y')}"
+            topic = itm.topic
+            days = itm.days
+            domains = itm.domains
+            print(f"query_with_date: {query_with_date}")
+            print(f"topic: {topic}")
+            print(f"days: {days}")
+            print(f"domains: {domains}")
             tavily_client = AsyncTavilyClient(
                 api_key=os.getenv("TAVILY_API_KEY"))
             response = await tavily_client.search(
                 query=query_with_date,
-                topic=query_obj.topic,
-                days=query_obj.days,
+                topic=topic,
+                days=days,
+                domains=domains,
                 max_results=10,
             )
             return response['results']
@@ -206,16 +227,19 @@ async def tavily_search(
             return []
 
     # Run all the search tasks in parallel
-    search_tasks = [perform_search(itm) for itm in sub_queries]
+    # search_tasks = [perform_search(itm) for itm in sub_queries]
+    search_tasks = await perform_search(sub_queries)
     print(f"search_tasks: {search_tasks}")
-    search_responses = await asyncio.gather(*search_tasks)
+    # search_responses = await asyncio.gather(*search_tasks)
+    # print(f"search_responses: {search_responses}")
 
     # Combine the results from all the responses
-    search_results = []
-    for response in search_responses:
-        search_results.extend(response)
+    # search_results = []
+    # for response in search_responses:
+    #     search_results.extend(response)
 
-    return search_results
+    # return search_results
+    return search_tasks
 
 
 register_function(
@@ -248,5 +272,5 @@ def test_tavily_search():
 
 
 if __name__ == "__main__":
-    print(tavily_search_agent_caller.llm_config["tools"])
+    # print(tavily_search_agent_caller.llm_config["tools"])
     test_tavily_search()

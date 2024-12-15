@@ -1,4 +1,5 @@
 import os
+import json
 import agentops
 from pprint import pprint, PrettyPrinter
 from typing import Annotated
@@ -8,11 +9,11 @@ from autogen import register_function, ConversableAgent, filter_config
 import autogen
 from dotenv import load_dotenv
 
-agentops.init(api_key=os.getenv("AGENTOPS_API_KEY"))
-agentops.start_session(tags=["autogen-tool-example"])
+load_dotenv()
+# agentops.init(api_key=os.getenv("AGENTOPS_API_KEY"))
+# agentops.start_session(tags=["autogen-tool-example"])
 
 # Load environment variables
-load_dotenv()
 
 # Configure the language model
 llm_config = {
@@ -97,7 +98,7 @@ def tavily_search(
 # Create an assistant agent that can use the Tavily search tool
 assistant = ConversableAgent(
     name="Assistant",
-    system_message="You are a helpful AI assistant with access to internet search capabilities.",
+    system_message="You are a helpful AI assistant with access to internet search capabilities. You have access to the internet and can search the web. Reply TERMINATE when the task is done. You can use the tavily_search tool to search the web. You use input parameters of tavily_search function to describe the query.",
     llm_config=llm_config,
 )
 
@@ -106,45 +107,35 @@ user_proxy = ConversableAgent(
     name="User", human_input_mode="NEVER", llm_config=False)
 
 # Register the Tavily search function with both agents
-register_function(
+autogen.agentchat.register_function(
     tavily_search,
     caller=assistant,
     executor=user_proxy,
-    name="tavily_search",
+    # name="tavily_search",
     description="A tool to search the internet using the Tavily API",
 )
 
 
-def main():
-    while True:
-        user_input = input("User: ")
-
-        if user_input.lower() in ["exit", "quit", "bye"]:
-            print("Chatbot: Goodbye! Have a great day!")
-            break
-
-        # Initiate a chat between the user proxy and the assistant
-        chat_result = user_proxy.initiate_chat(
-            assistant,
-            message=user_input,
-            max_turns=2,
-        )
-
-        # Extract the assistant's reply from the chat history
-        reply = next(
-            (
-                msg["content"]
-                for msg in chat_result.chat_history
-                if msg.get("name") == "Assistant"
-            ),
-            "I apologize, but I couldn't generate a response.",
-        )
-
-        print(f"Chatbot: {reply}")
-
-
 if __name__ == "__main__":
-    # pp = PrettyPrinter(indent=2, width=80)
-    # pp.pprint(assistant.llm_config["tools"])
-    main()
-    agentops.end_session("Success")
+    print("Tools:")
+    print(json.dumps(assistant.llm_config["tools"], indent=2))
+
+    assert user_proxy.function_map["tavily_search"]._origin == tavily_search
+
+    # user_input = "What is the news about the stock market?"
+    user_input = "Which companies are in the S&P 500?"
+
+    # Initiate a chat between the user proxy and the assistant
+    chat_result = user_proxy.initiate_chat(
+        assistant,
+        message=user_input,
+        max_turns=2,
+    )
+
+    # print("Chat Result:")
+    # print(json.dumps(chat_result, indent=2))
+    for msg in chat_result.chat_history:
+        print(f"msg: {msg}")
+    # print(f"chat_result: {chat_result}")
+
+    # agentops.end_session("Success")
