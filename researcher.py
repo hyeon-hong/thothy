@@ -84,6 +84,16 @@ tavily_search_agent_executor = ConversableAgent(
     llm_config=False,
 )
 
+analysis_agent = ConversableAgent(
+    name="Analysis_Agent",
+    system_message="""You are an expert researcher specializing in analyzing portfolio companies.\n
+Your current task is to review a list of documents and select the most relevant URLs related to recent developments for the following company: samsung.\n
+Be aware that some documents may refer to other companies with similar or identical names, potentially leading to conflicting information.\n
+Your objective is to choose the documents that pertain to the correct company and provide the most consistent and synchronized information, using the following keywords provided by the user to help identify the correct company as a guide: electronics, semiconductors.\n""",
+    human_input_mode="NEVER",
+    llm_config=False,
+)
+
 
 # class TavilySearchInput(BaseModel):
 #     query: Annotated[str, Field(description="The search query string")]
@@ -186,7 +196,7 @@ async def tavily_search(
     # sub_queries: Annotated[List[TavilyQuery],
     #                        "set of sub-queries that can be answered in isolation"]
     sub_queries: Annotated[TavilyQuery, "Input for Tavily search"]
-# ) -> List[dict]:
+    # ) -> List[dict]:
 ) -> dict:
     print(f"sub_queries: {sub_queries}")
 
@@ -229,7 +239,7 @@ async def tavily_search(
     # Run all the search tasks in parallel
     # search_tasks = [perform_search(itm) for itm in sub_queries]
     search_tasks = await perform_search(sub_queries)
-    print(f"search_tasks: {search_tasks}")
+    # print(f"search_tasks: {search_tasks}")
     # search_responses = await asyncio.gather(*search_tasks)
     # print(f"search_responses: {search_responses}")
 
@@ -239,6 +249,7 @@ async def tavily_search(
     #     search_results.extend(response)
 
     # return search_results
+    print_json(data=search_tasks, indent=2)
     return search_tasks
 
 
@@ -259,16 +270,16 @@ def test_tavily_search():
         max_turns=2,
     )
 
-    try:
-        # If it's JSON, use print_json
-        if isinstance(chat_result, str):
-            print_json(chat_result)
-        else:
-            # If it's a Python object, convert to JSON first
-            print_json(json.dumps(chat_result))
-    except Exception as e:
-        # Fallback to rich's print for non-JSON content
-        print(chat_result)
+    # try:
+    #     # If it's JSON, use print_json
+    #     if isinstance(chat_result, str):
+    #         print_json(chat_result)
+    #     else:
+    #         # If it's a Python object, convert to JSON first
+    #         print_json(json.dumps(chat_result))
+    # except Exception as e:
+    #     # Fallback to rich's print for non-JSON content
+    #     print(chat_result)
 
 
 if __name__ == "__main__":
