@@ -1,3 +1,11 @@
+# Lock file
+**/package-lock.json
+**/yarn.lock
+**/poetry.lock
+
+# Node modules
+node_modules/
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
