@@ -1,6 +1,7 @@
 # Lock file
 **/package-lock.json
 **/yarn.lock
+**/poetry.lock
 
 # Node modules
 node_modules/
