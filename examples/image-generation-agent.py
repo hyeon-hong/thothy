@@ -23,6 +23,8 @@ from dotenv import load_dotenv
 
 from autogen_core import CancellationToken
 from typing_extensions import Annotated
+import requests
+import tweepy
 
 
 async def get_stock_price(ticker: str,
@@ -31,9 +33,89 @@ async def get_stock_price(ticker: str,
     return random.uniform(10, 200)
 
 
+async def post_image_to_x(prompt: str) -> str:
+    # Load environment variables
+    load_dotenv()
+
+    # Twitter API credentials from environment variables
+    client = tweepy.Client(
+        consumer_key=os.getenv("TWITTER_API_KEY"),
+        consumer_secret=os.getenv("TWITTER_API_SECRET"),
+        access_token=os.getenv("TWITTER_ACCESS_TOKEN"),
+        access_token_secret=os.getenv("TWITTER_ACCESS_TOKEN_SECRET")
+    )
+
+    # Initialize API v1.1 for media upload
+    auth = tweepy.OAuth1UserHandler(
+        os.getenv("TWITTER_API_KEY"),
+        os.getenv("TWITTER_API_SECRET"),
+        os.getenv("TWITTER_ACCESS_TOKEN"),
+        os.getenv("TWITTER_ACCESS_TOKEN_SECRET")
+    )
+    api = tweepy.API(auth)
+
+    try:
+        # Generate the image first
+        image_data = await generate_image(prompt)
+
+        # Create a temporary file to store the image
+        from datetime import datetime
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        filename = f"generated_image_{timestamp}.png"
+
+        with open(filename, 'wb') as f:
+            f.write(image_data)
+
+        # Upload media
+        media = api.media_upload(filename=filename)
+
+        # Create tweet with media
+        tweet_text = f"AI Generated Image 🎨\nPrompt: {prompt}"
+        response = client.create_tweet(
+            text=tweet_text,
+            media_ids=[media.media_id]
+        )
+
+        # Clean up - remove the temporary file
+        os.remove(filename)
+
+        return f"Successfully posted image to X/Twitter with tweet ID: {response.data['id']}"
+
+    except Exception as e:
+        return f"Error posting to X/Twitter: {str(e)}"
+
+
+async def generate_image(prompt: str) -> bytes:
+    # API endpoint
+    url = "https://api.thothy.ai/thothy-image-create"
+
+    # Prepare the form data
+    files = {
+        "positive_prompt": (None, prompt),
+        "negative_prompt": (None, "no low quality, no watermark, no text")
+    }
+
+    try:
+        # Make the POST request
+        response = requests.post(url, files=files)
+
+        # Check if request was successful
+        if response.status_code == 200:
+            return response.content
+        else:
+            raise Exception(f"Error generating image: HTTP {
+                            response.status_code}")
+
+    except Exception as e:
+        raise Exception(f"Error generating image: {str(e)}")
+
+
 # Create a function tool.
 stock_price_tool = FunctionTool(
     get_stock_price, description="Get the stock price.")
+
+image_generation_tool = FunctionTool(
+    generate_image, description="Generate an image.")
 
 
 @dataclass
@@ -74,13 +156,15 @@ class ToolUseAgent(RoutedAgent):
 async def run_tool():
     # Run the tool.
     cancellation_token = CancellationToken()
-    result = await stock_price_tool.run_json({"ticker": "AAPL", "date": "2021/01/01"}, cancellation_token)
+    # result = await stock_price_tool.run_json({"ticker": "AAPL", "date": "2021/01/01"}, cancellation_token)
+    await image_generation_tool.run_json(
+        {"prompt": "Draw a beautiful image of a cat"}, cancellation_token)
 
     # Print the result.
-    print(stock_price_tool.return_value_as_string(result))
+    # print(stock_price_tool.return_value_as_string(result))
 
 
-async def main():
+async def main(prompt: str):
     # Load environment variables from .env file
     load_dotenv()
 
@@ -88,9 +172,14 @@ async def main():
     runtime = SingleThreadedAgentRuntime()
 
     # Create the tools
-    tools: List[Tool] = [FunctionTool(
-        get_stock_price, description="Get the stock price."
-    )]
+    tools: List[Tool] = [
+        FunctionTool(
+            get_stock_price, description="Get the stock price."
+        ),
+        FunctionTool(
+            generate_image, description="Generate an image."
+        )
+    ]
 
     # Register the agents
     await ToolAgent.register(runtime, "tool_executor_agent",
@@ -117,7 +206,7 @@ async def main():
         # Send a direct message to the tool agent
         tool_use_agent = AgentId("tool_use_agent", "default")
         response = await runtime.send_message(
-            Message("What is the stock price of NVDA on 2024/06/01?"),
+            Message(prompt),
             tool_use_agent
         )
         print(response.content)
@@ -127,5 +216,5 @@ async def main():
         await runtime.stop()
 
 if __name__ == "__main__":
-    # asyncio.run(run_tool())
-    asyncio.run(main())
+    asyncio.run(run_tool())
+    # asyncio.run(main("Generate a beautiful image of a cat"))
