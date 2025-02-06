@@ -24,7 +24,6 @@ from dotenv import load_dotenv
 from autogen_core import CancellationToken
 from typing_extensions import Annotated
 import requests
-import tweepy
 
 
 async def get_stock_price(ticker: str,
@@ -33,56 +32,39 @@ async def get_stock_price(ticker: str,
     return random.uniform(10, 200)
 
 
-async def post_image_to_x(prompt: str) -> str:
+async def post_image_to_fictures(prompt: str) -> str:
     # Load environment variables
     load_dotenv()
 
-    # Twitter API credentials from environment variables
-    client = tweepy.Client(
-        consumer_key=os.getenv("TWITTER_API_KEY"),
-        consumer_secret=os.getenv("TWITTER_API_SECRET"),
-        access_token=os.getenv("TWITTER_ACCESS_TOKEN"),
-        access_token_secret=os.getenv("TWITTER_ACCESS_TOKEN_SECRET")
-    )
-
-    # Initialize API v1.1 for media upload
-    auth = tweepy.OAuth1UserHandler(
-        os.getenv("TWITTER_API_KEY"),
-        os.getenv("TWITTER_API_SECRET"),
-        os.getenv("TWITTER_ACCESS_TOKEN"),
-        os.getenv("TWITTER_ACCESS_TOKEN_SECRET")
-    )
-    api = tweepy.API(auth)
+    # Fictures API endpoints
+    post_url = "http://localhost:3000/api/post-image-to-fictures"
 
     try:
         # Generate the image first
         image_data = await generate_image(prompt)
 
-        # Create a temporary file to store the image
-        from datetime import datetime
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        filename = f"generated_image_{timestamp}.png"
+        # Prepare the request data for posting to Fictures
+        post_data = {
+            "ficturesApiKey": os.getenv("FICTURES_API_KEY"),
+            "prompt": prompt,
+            "negativePrompt": "no low quality, no watermark, no text",
+        }
 
-        with open(filename, 'wb') as f:
-            f.write(image_data)
+        # Make the POST request to post image to Fictures
+        files = {
+            "image": ("image.png", image_data, "image/png")
+        }
+        post_response = requests.post(
+            post_url, data=post_data, files=files)
 
-        # Upload media
-        media = api.media_upload(filename=filename)
-
-        # Create tweet with media
-        tweet_text = f"AI Generated Image 🎨\nPrompt: {prompt}"
-        response = client.create_tweet(
-            text=tweet_text,
-            media_ids=[media.media_id]
-        )
-
-        # Clean up - remove the temporary file
-        os.remove(filename)
-
-        return f"Successfully posted image to X/Twitter with tweet ID: {response.data['id']}"
+        # Check if request was successful
+        if post_response.status_code == 200:
+            return "Successfully posted image to Fictures"
+        else:
+            return f"Error: HTTP {post_response.status_code}"
 
     except Exception as e:
-        return f"Error posting to X/Twitter: {str(e)}"
+        return f"Error: {str(e)}"
 
 
 async def generate_image(prompt: str) -> bytes:
@@ -101,7 +83,15 @@ async def generate_image(prompt: str) -> bytes:
 
         # Check if request was successful
         if response.status_code == 200:
-            return response.content
+            # Save the image to a file
+            image_data = response.content
+            # filename = f"outputs/generated_image_{
+            #     random.randint(1000, 9999)}.png"
+            # with open(filename, "wb") as f:
+            #     f.write(image_data)
+            # print(f"Image saved as: {filename}")
+
+            return image_data
         else:
             raise Exception(f"Error generating image: HTTP {
                             response.status_code}")
@@ -114,8 +104,8 @@ async def generate_image(prompt: str) -> bytes:
 stock_price_tool = FunctionTool(
     get_stock_price, description="Get the stock price.")
 
-image_generation_tool = FunctionTool(
-    generate_image, description="Generate an image.")
+post_image_tool = FunctionTool(
+    post_image_to_fictures, description="Draw and post an image to fictures.")
 
 
 @dataclass
@@ -157,9 +147,8 @@ async def run_tool():
     # Run the tool.
     cancellation_token = CancellationToken()
     # result = await stock_price_tool.run_json({"ticker": "AAPL", "date": "2021/01/01"}, cancellation_token)
-    await image_generation_tool.run_json(
+    await post_image_tool.run_json(
         {"prompt": "Draw a beautiful image of a cat"}, cancellation_token)
-
     # Print the result.
     # print(stock_price_tool.return_value_as_string(result))
 
@@ -173,12 +162,8 @@ async def main(prompt: str):
 
     # Create the tools
     tools: List[Tool] = [
-        FunctionTool(
-            get_stock_price, description="Get the stock price."
-        ),
-        FunctionTool(
-            generate_image, description="Generate an image."
-        )
+        stock_price_tool,
+        post_image_tool
     ]
 
     # Register the agents
@@ -216,5 +201,5 @@ async def main(prompt: str):
         await runtime.stop()
 
 if __name__ == "__main__":
-    asyncio.run(run_tool())
-    # asyncio.run(main("Generate a beautiful image of a cat"))
+    # asyncio.run(run_tool())
+    asyncio.run(main("Generate a beautiful image of a dog"))
