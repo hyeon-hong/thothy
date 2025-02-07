@@ -1,11 +1,10 @@
 import { Container, Grid, Typography } from "@mui/material";
-import AgentCard from "./AgentCard";
+import AgentCardWithRemove from "./AgentCardWithRemove";
 import { useState, useEffect } from "react";
 import { useUser } from '../contexts/UserContext';
 
 export default function MyAgents() {
     const { user } = useUser();
-    const [selectedAgentId, setSelectedAgentId] = useState(null);
     const [myAgents, setMyAgents] = useState([]);
 
     useEffect(() => {
@@ -26,9 +25,8 @@ export default function MyAgents() {
         fetchMyAgents();
     }, [user?.id]);
 
-    const handleAgentSelect = (agentId) => {
-        setSelectedAgentId(agentId);
-        console.log(`Selected agent: ${agentId}`);
+    const handleAgentRemove = (agentId) => {
+        setMyAgents(prevAgents => prevAgents.filter(agent => agent.id !== agentId));
     };
 
     return (
@@ -44,9 +42,9 @@ export default function MyAgents() {
             <Grid container spacing={4}>
                 {myAgents.map((agent) => (
                     <Grid item key={agent.id} xs={12} sm={6} md={4}>
-                        <AgentCard
+                        <AgentCardWithRemove
                             agent={agent}
-                            onSelect={handleAgentSelect}
+                            onRemove={handleAgentRemove}
                             userId={user?.id}
                         />
                     </Grid>
