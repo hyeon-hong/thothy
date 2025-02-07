@@ -10,10 +10,11 @@ import {
 import { useState } from "react";
 import { useGoogleLogin, googleLogout } from "@react-oauth/google";
 import { jwtDecode } from "jwt-decode";
+import { useUser } from '../contexts/UserContext';
 import { createOrUpdateUser } from '../lib/db';
 
 export default function Header({ onViewChange, currentView }) {
-    const [user, setUser] = useState(null);
+    const { user, setUser } = useUser();
     const [anchorEl, setAnchorEl] = useState(null);
 
     const login = useGoogleLogin({

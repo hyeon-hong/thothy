@@ -5,8 +5,10 @@ import AgentCard from '../components/AgentCard';
 import Header from '../components/Header';
 import MyAgents from '../components/MyAgents';
 import { useState, useEffect } from 'react';
+import { useUser } from '../contexts/UserContext';
 
-export default function Home({ user }) {
+export default function Home() {
+  const { user } = useUser();
   const [selectedAgentId, setSelectedAgentId] = useState(null);
   const [currentView, setCurrentView] = useState("home"); // "home" or "myAgents"
   const [agents, setAgents] = useState([]);

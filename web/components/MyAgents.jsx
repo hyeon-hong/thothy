@@ -1,27 +1,30 @@
 import { Container, Grid, Typography } from "@mui/material";
 import AgentCard from "./AgentCard";
-import { useState } from "react";
-
-// Temporary mock data - replace with actual API call later
-const mockMyAgents = [
-    {
-        id: "1",
-        name: "My Custom Assistant",
-        description:
-            "Personalized AI assistant configured for my specific needs.",
-        imageUrl: "/images/assistant.png",
-    },
-    {
-        id: "2",
-        name: "My Code Helper",
-        description:
-            "Customized programming assistant with my preferred settings.",
-        imageUrl: "/images/code.png",
-    },
-];
+import { useState, useEffect } from "react";
+import { useUser } from '../contexts/UserContext';
 
 export default function MyAgents() {
+    const { user } = useUser();
     const [selectedAgentId, setSelectedAgentId] = useState(null);
+    const [myAgents, setMyAgents] = useState([]);
+
+    useEffect(() => {
+        const fetchMyAgents = async () => {
+            if (!user?.id) return;
+
+            try {
+                const response = await fetch(`/api/agent?userId=${user.id}`);
+                const data = await response.json();
+                // data contains UserAgent objects with agent details
+                const agents = data.map(ua => ua.agent);
+                setMyAgents(agents);
+            } catch (error) {
+                console.error('Error fetching my agents:', error);
+            }
+        };
+
+        fetchMyAgents();
+    }, [user?.id]);
 
     const handleAgentSelect = (agentId) => {
         setSelectedAgentId(agentId);
@@ -39,11 +42,12 @@ export default function MyAgents() {
                 My Agents
             </Typography>
             <Grid container spacing={4}>
-                {mockMyAgents.map((agent) => (
+                {myAgents.map((agent) => (
                     <Grid item key={agent.id} xs={12} sm={6} md={4}>
                         <AgentCard
                             agent={agent}
                             onSelect={handleAgentSelect}
+                            userId={user?.id}
                         />
                     </Grid>
                 ))}
