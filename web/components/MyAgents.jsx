@@ -30,16 +30,21 @@ export default function MyAgents() {
     };
 
     return (
-        <Container maxWidth="lg" sx={{ py: 4 }}>
+        <Container maxWidth="lg" sx={{ py: 8 }}>
             <Typography
                 variant="h3"
                 component="h1"
                 gutterBottom
                 align="center"
+                sx={{
+                    mb: 6,
+                    fontWeight: 700,
+                    letterSpacing: '-0.02em',
+                }}
             >
                 My Agents
             </Typography>
-            <Grid container spacing={4}>
+            <Grid container spacing={4} sx={{ mt: 2 }}>
                 {myAgents.map((agent) => (
                     <Grid item key={agent.id} xs={12} sm={6} md={4}>
                         <AgentCardWithRemove

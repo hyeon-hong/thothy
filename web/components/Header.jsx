@@ -12,6 +12,34 @@ import { useGoogleLogin, googleLogout } from "@react-oauth/google";
 import { jwtDecode } from "jwt-decode";
 import { useUser } from '../contexts/UserContext';
 import { createOrUpdateUser } from '../lib/db';
+import { styled } from '@mui/material/styles';
+
+const StyledToolbar = styled(Toolbar)({
+    padding: '1rem 2rem',
+});
+
+const UserButton = styled(Button)({
+    backgroundColor: '#f5f5f5',
+    color: '#000',
+    '&:hover': {
+        backgroundColor: '#e0e0e0',
+    },
+    borderRadius: 28,
+    padding: '8px 20px',
+    textTransform: 'none',
+    boxShadow: 'none',
+});
+
+const LoginButton = styled(Button)({
+    backgroundColor: '#000',
+    color: '#fff',
+    '&:hover': {
+        backgroundColor: '#333',
+    },
+    borderRadius: 28,
+    padding: '8px 24px',
+    textTransform: 'none',
+});
 
 export default function Header({ onViewChange, currentView }) {
     const { user, setUser, isLoading } = useUser();
@@ -81,46 +109,49 @@ export default function Header({ onViewChange, currentView }) {
     };
 
     return (
-        <AppBar position="static">
-            <Toolbar>
+        <AppBar position="static" elevation={0} sx={{ backgroundColor: '#fff', borderBottom: '1px solid #eaeaea' }}>
+            <StyledToolbar>
                 <Typography
                     variant="h6"
                     component="div"
-                    sx={{ flexGrow: 1, cursor: "pointer" }}
+                    sx={{ 
+                        flexGrow: 1, 
+                        cursor: "pointer",
+                        color: '#000',
+                        fontWeight: 700,
+                        fontSize: '1.5rem',
+                    }}
                     onClick={() => onViewChange("home")}
                 >
                     Agent Hub
                 </Typography>
                 <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
                     {!user ? (
-                        <Box
-                            sx={{
-                                display: "flex",
-                                gap: 2,
-                                alignItems: "center",
-                            }}
-                        >
-                            <Button
-                                variant="contained"
-                                color="secondary"
+                        <Box sx={{ display: "flex", gap: 2, alignItems: "center" }}>
+                            <LoginButton
                                 onClick={() => login()}
                             >
                                 Sign in with Google
-                            </Button>
+                            </LoginButton>
                         </Box>
                     ) : (
                         <>
-                            <Button
-                                color="inherit"
+                            <UserButton
                                 onClick={handleClick}
-                                sx={{ textTransform: "none" }}
                             >
                                 {user.name}
-                            </Button>
+                            </UserButton>
                             <Menu
                                 anchorEl={anchorEl}
                                 open={Boolean(anchorEl)}
                                 onClose={handleClose}
+                                PaperProps={{
+                                    sx: {
+                                        mt: 1,
+                                        borderRadius: 2,
+                                        boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
+                                    }
+                                }}
                             >
                                 <MenuItem disabled>{user.email}</MenuItem>
                                 <MenuItem onClick={handleMyAgents}>
@@ -133,7 +164,7 @@ export default function Header({ onViewChange, currentView }) {
                         </>
                     )}
                 </Box>
-            </Toolbar>
+            </StyledToolbar>
         </AppBar>
     );
 }
