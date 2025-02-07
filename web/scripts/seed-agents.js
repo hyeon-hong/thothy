@@ -6,17 +6,17 @@ const sampleAgents = [
   {
     name: 'General Assistant',
     description: 'A versatile AI assistant that can help with various tasks including writing, analysis, and answering questions.',
-    imageUrl: '/images/assistant.png'
+    imageUrl: '/images/general-assistant.jpg'
   },
   {
     name: 'Code Expert',
     description: 'Specialized in programming assistance, code review, and software development guidance.',
-    imageUrl: '/images/code.png'
+    imageUrl: '/images/code-expert.jpg'
   },
   {
     name: 'Data Analyst',
     description: 'Expert in data analysis, visualization, and statistical interpretation.',
-    imageUrl: '/images/data.png'
+    imageUrl: '/images/data-analyst.jpg'
   }
 ];
 
