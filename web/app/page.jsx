@@ -12,6 +12,7 @@ export default function Home() {
   const [selectedAgentId, setSelectedAgentId] = useState(null);
   const [currentView, setCurrentView] = useState("home"); // "home" or "myAgents"
   const [agents, setAgents] = useState([]);
+  const [selectedAgentIds, setSelectedAgentIds] = useState(new Set());
 
   useEffect(() => {
     const fetchAgents = async () => {
@@ -26,6 +27,24 @@ export default function Home() {
 
     fetchAgents();
   }, []);
+
+  useEffect(() => {
+    const fetchSelectedAgents = async () => {
+      if (!user?.id) {
+        setSelectedAgentIds(new Set());
+        return;
+      }
+      try {
+        const response = await fetch(`/api/agent?userId=${user.id}`);
+        const data = await response.json();
+        setSelectedAgentIds(new Set(data.map(ua => ua.agent.id)));
+      } catch (error) {
+        console.error('Error fetching selected agents:', error);
+      }
+    };
+
+    fetchSelectedAgents();
+  }, [user?.id]);
 
   const handleAgentSelect = (agentId) => {
     setSelectedAgentId(agentId);
@@ -48,6 +67,7 @@ export default function Home() {
                   agent={agent} 
                   onSelect={handleAgentSelect}
                   userId={user?.id}
+                  isSelected={selectedAgentIds.has(agent.id)}
                 />
               </Grid>
             ))}

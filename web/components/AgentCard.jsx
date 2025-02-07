@@ -1,7 +1,7 @@
 import { Card, CardContent, CardMedia, Typography, Button, Box } from '@mui/material';
 import { saveUserAgent } from '../lib/db';
 
-export default function AgentCard({ agent, onSelect, userId }) {
+export default function AgentCard({ agent, onSelect, userId, isSelected }) {
   const handleSelect = async () => {
     if (!userId) {
       alert('Please login to select an agent');
@@ -9,6 +9,9 @@ export default function AgentCard({ agent, onSelect, userId }) {
     }
 
     try {
+      if (isSelected) {
+        return; // Do nothing if already selected
+      }
       await fetch('/api/agent', {
         method: 'POST',
         headers: {
@@ -47,10 +50,12 @@ export default function AgentCard({ agent, onSelect, userId }) {
       <Box sx={{ p: 2 }}>
         <Button 
           variant="contained" 
+          color={isSelected ? "success" : "primary"}
           fullWidth 
           onClick={handleSelect}
+          disabled={isSelected}
         >
-          Select
+          {isSelected ? 'Selected' : 'Select'}
         </Button>
       </Box>
     </Card>
