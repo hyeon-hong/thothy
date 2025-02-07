@@ -1,0 +1,8 @@
+---
+description: Should use yarn for node packages
+globs: 
+---
+
+# Your rule content
+
+- Use yarn for node package management instead of npm
