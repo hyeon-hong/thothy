@@ -9,7 +9,6 @@ import { useUser } from '../contexts/UserContext';
 
 export default function Home() {
   const { user } = useUser();
-  const [selectedAgentId, setSelectedAgentId] = useState(null);
   const [currentView, setCurrentView] = useState("home"); // "home" or "myAgents"
   const [agents, setAgents] = useState([]);
   const [selectedAgentIds, setSelectedAgentIds] = useState(new Set());
@@ -44,12 +43,10 @@ export default function Home() {
     };
 
     fetchSelectedAgents();
-  }, [user?.id]);
+  }, [user?.id, currentView]);
 
   const handleAgentSelect = (agentId) => {
-    setSelectedAgentId(agentId);
-    // Add logic here to handle agent selection
-    console.log(`Selected agent: ${agentId}`);
+    setSelectedAgentIds(prev => new Set([...prev, agentId]));
   };
 
   return (

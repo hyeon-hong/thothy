@@ -14,7 +14,7 @@ import { useUser } from '../contexts/UserContext';
 import { createOrUpdateUser } from '../lib/db';
 
 export default function Header({ onViewChange, currentView }) {
-    const { user, setUser } = useUser();
+    const { user, setUser, isLoading } = useUser();
     const [anchorEl, setAnchorEl] = useState(null);
 
     const login = useGoogleLogin({
@@ -55,6 +55,10 @@ export default function Header({ onViewChange, currentView }) {
             console.log("Login Failed");
         },
     });
+
+    if (isLoading) {
+        return null; // or a loading spinner
+    }
 
     const handleClick = (event) => {
         setAnchorEl(event.currentTarget);

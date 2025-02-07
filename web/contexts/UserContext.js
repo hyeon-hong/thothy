@@ -1,16 +1,18 @@
-import { createContext, useContext, useState } from 'react';
+import { createContext, useContext, useState, useEffect } from 'react';
 
 const UserContext = createContext();
 
 export function UserProvider({ children }) {
-    const [user, setUser] = useState(() => {
-        // Try to restore user from localStorage on initial load
-        if (typeof window !== 'undefined') {
-            const savedUser = localStorage.getItem('user');
-            return savedUser ? JSON.parse(savedUser) : null;
+    const [user, setUser] = useState(null);
+    const [isLoading, setIsLoading] = useState(true);
+
+    useEffect(() => {
+        const savedUser = localStorage.getItem('user');
+        if (savedUser) {
+            setUser(JSON.parse(savedUser));
         }
-        return null;
-    });
+        setIsLoading(false);
+    }, []);
 
     const updateUser = (newUser) => {
         setUser(newUser);
@@ -22,7 +24,7 @@ export function UserProvider({ children }) {
     };
 
     return (
-        <UserContext.Provider value={{ user, setUser: updateUser }}>
+        <UserContext.Provider value={{ user, setUser: updateUser, isLoading }}>
             {children}
         </UserContext.Provider>
     );
