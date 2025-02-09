@@ -1,6 +1,8 @@
 from typing import Generator, Tuple
 import numpy as np
 from kokoro import KPipeline
+import soundfile as sf
+import os
 
 
 def generate_kokoro_audio(
@@ -22,6 +24,21 @@ def generate_kokoro_audio(
 
 
 if __name__ == '__main__':
-    generate_kokoro_audio(
+    generator = generate_kokoro_audio(
         "KOKORO TTS is a text-to-speech model developed primarily by "
         "Japanese researchers at the University of Tsukuba.")
+
+    for i, (gs, ps, audio) in enumerate(generator):
+        # i => index
+        print(i)
+        # gs => graphemes/text
+        print(gs)
+        # ps => phonemes
+        print(ps)
+
+    # Create outputs directory if it doesn't exist
+    if not os.path.exists('outputs'):
+        os.makedirs('outputs')
+
+    # save each audio file
+    sf.write(f'outputs/{i}.wav', audio, 24000)
