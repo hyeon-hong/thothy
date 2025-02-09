@@ -1,5 +1,8 @@
+import React from 'react';
 import { Card, CardContent, CardMedia, Typography, Button, Box } from '@mui/material';
 import { styled } from '@mui/material/styles';
+import { saveUserAgent } from '../lib/db';
+import { useRouter } from 'next/navigation';
 
 const HeadlineTypography = styled(Typography)({
   fontFamily: "'Roboto Mono', monospace",
@@ -27,17 +30,52 @@ const StyledButton = styled(Button)({
   fontSize: '0.875rem',
 });
 
-export default function AgentCardWithRemove({ agent, onRemove, userId }) {
-  const handleRemove = async () => {
-    try {
-      await fetch(`/api/agent?userId=${userId}&agentId=${agent.id}`, {
-        method: 'DELETE',
-      });
-      onRemove(agent.id);
-    } catch (error) {
-      console.error('Error removing agent:', error);
-      alert('Failed to remove agent. Please try again.');
+const RunButton = styled(Button)({
+  borderRadius: '8px',
+  padding: '8px 16px',
+  textTransform: 'uppercase',
+  fontWeight: 600,
+  letterSpacing: '1px',
+  fontSize: '0.875rem',
+  backgroundColor: '#bbdefb',
+  color: '#1976d2',
+  '&:hover': {
+    backgroundColor: '#90caf9',
+  },
+});
+
+export default function AgentCard({ agent, onSelect, userId, isSelected }) {
+  const router = useRouter();
+
+  const handleSelect = async () => {
+    if (!userId) {
+      alert('Please login to select an agent');
+      return;
     }
+
+    try {
+      if (isSelected) {
+        return; // Do nothing if already selected
+      }
+      await fetch('/api/agent', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId,
+          agentId: agent.id,
+        }),
+      });
+      onSelect(agent.id);
+    } catch (error) {
+      console.error('Error selecting agent:', error);
+      alert('Failed to select agent. Please try again.');
+    }
+  };
+
+  const handleRun = () => {
+    router.push(`/agent?id=${agent.id}`);
   };
 
   return (
@@ -69,15 +107,23 @@ export default function AgentCardWithRemove({ agent, onRemove, userId }) {
           {agent.description}
         </Typography>
       </CardContent>
-      <Box sx={{ p: 2 }}>
+      <Box sx={{ p: 2, display: 'flex', gap: 1, flexDirection: 'column' }}>
         <StyledButton
-          variant="contained" 
-          color="error"
-          fullWidth 
-          onClick={handleRemove}
+          variant="contained"
+          color={isSelected ? "success" : "primary"}
+          fullWidth
+          onClick={handleSelect}
+          disabled={isSelected}
         >
-          Remove
+          {isSelected ? 'Selected' : 'Select'}
         </StyledButton>
+        <RunButton
+          variant="contained"
+          fullWidth
+          onClick={handleRun}
+        >
+          Run
+        </RunButton>
       </Box>
     </StyledCard>
   );

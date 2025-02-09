@@ -1,6 +1,7 @@
+import React from 'react';
 import { Card, CardContent, CardMedia, Typography, Button, Box } from '@mui/material';
 import { styled } from '@mui/material/styles';
-import { saveUserAgent } from '../lib/db';
+import { useRouter } from 'next/navigation';
 
 const HeadlineTypography = styled(Typography)({
   fontFamily: "'Roboto Mono', monospace",
@@ -28,32 +29,37 @@ const StyledButton = styled(Button)({
   fontSize: '0.875rem',
 });
 
-export default function AgentCard({ agent, onSelect, userId, isSelected }) {
-  const handleSelect = async () => {
-    if (!userId) {
-      alert('Please login to select an agent');
-      return;
-    }
+const RunButton = styled(Button)({
+  borderRadius: '8px',
+  padding: '8px 16px',
+  textTransform: 'uppercase',
+  fontWeight: 600,
+  letterSpacing: '1px',
+  fontSize: '0.875rem',
+  backgroundColor: '#bbdefb',
+  color: '#1976d2',
+  '&:hover': {
+    backgroundColor: '#90caf9',
+  },
+});
 
+export default function AgentCardWithRemove({ agent, onRemove, userId }) {
+  const router = useRouter();
+
+  const handleRemove = async () => {
     try {
-      if (isSelected) {
-        return; // Do nothing if already selected
-      }
-      await fetch('/api/agent', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          userId,
-          agentId: agent.id,
-        }),
+      await fetch(`/api/agent?userId=${userId}&agentId=${agent.id}`, {
+        method: 'DELETE',
       });
-      onSelect(agent.id);
+      onRemove(agent.id);
     } catch (error) {
-      console.error('Error selecting agent:', error);
-      alert('Failed to select agent. Please try again.');
+      console.error('Error removing agent:', error);
+      alert('Failed to remove agent. Please try again.');
     }
+  };
+
+  const handleRun = () => {
+    router.push(`/agent?id=${agent.id}`);
   };
 
   return (
@@ -85,16 +91,22 @@ export default function AgentCard({ agent, onSelect, userId, isSelected }) {
           {agent.description}
         </Typography>
       </CardContent>
-      <Box sx={{ p: 2 }}>
+      <Box sx={{ p: 2, display: 'flex', gap: 1, flexDirection: 'column' }}>
         <StyledButton
           variant="contained"
-          color={isSelected ? "success" : "primary"}
+          color="error"
           fullWidth
-          onClick={handleSelect}
-          disabled={isSelected}
+          onClick={handleRemove}
         >
-          {isSelected ? 'Selected' : 'Select'}
+          Remove
         </StyledButton>
+        <RunButton
+          variant="contained"
+          fullWidth
+          onClick={handleRun}
+        >
+          Run
+        </RunButton>
       </Box>
     </StyledCard>
   );
