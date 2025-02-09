@@ -221,7 +221,7 @@ export default function RunAgent() {
                         sx={{ width: "100%" }}
                     >
                         <source
-                            src={`http://127.0.0.1:8001/outputs/audio_0.wav?t=${audioKey}`}
+                            src={`http://127.0.0.1:8001/outputs/combined_audio.wav?t=${audioKey}`}
                             type="audio/wav"
                         />
                         Your browser does not support the audio element.

@@ -3,6 +3,7 @@ from typing import Optional, Callable, List
 from dataclasses import dataclass
 from pathlib import Path
 import soundfile as sf
+import numpy as np
 
 from autogen_core import (
     AgentId,
@@ -71,7 +72,9 @@ def generate_kokoro_tts_audio(text: str) -> str:
     # Generate the audio
     generator = generate_kokoro_audio(text)
 
-    output_file = None
+    # List to store all audio segments
+    audio_segments = []
+
     for i, (gs, ps, audio) in enumerate(generator):
         # i => index
         print(i)
@@ -80,12 +83,19 @@ def generate_kokoro_tts_audio(text: str) -> str:
         # ps => phonemes
         print(ps)
 
-        # Save the audio file
-        output_file = outputs_dir / f"audio_{i}.wav"
-        sf.write(str(output_file), audio, 24000)
+        # Append the audio segment
+        audio_segments.append(audio)
 
-    # Return the path to the last generated audio file
-    return str(output_file) if output_file else ""
+    # Concatenate all audio segments
+    if audio_segments:
+        combined_audio = np.concatenate(audio_segments)
+
+        # Save the combined audio file
+        output_file = outputs_dir / "combined_audio.wav"
+        sf.write(str(output_file), combined_audio, 24000)
+        return str(output_file)
+
+    return ""
 
 
 kokoro_tts_tool = FunctionTool(
