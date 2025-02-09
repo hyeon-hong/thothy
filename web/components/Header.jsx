@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
     AppBar,
     Toolbar,
@@ -8,12 +8,12 @@ import {
     Menu,
     MenuItem,
 } from "@mui/material";
-import { useState } from "react";
 import { useGoogleLogin, googleLogout } from "@react-oauth/google";
 import { jwtDecode } from "jwt-decode";
 import { useUser } from '../contexts/UserContext';
 import { createOrUpdateUser } from '../lib/db';
 import { styled } from '@mui/material/styles';
+import { useRouter } from 'next/navigation';
 
 const StyledToolbar = styled(Toolbar)({
     padding: '1rem 2rem',
@@ -45,6 +45,7 @@ const LoginButton = styled(Button)({
 export default function Header({ onViewChange, currentView }) {
     const { user, setUser, isLoading } = useUser();
     const [anchorEl, setAnchorEl] = useState(null);
+    const router = useRouter();
 
     const login = useGoogleLogin({
         onSuccess: async (response) => {
@@ -101,12 +102,28 @@ export default function Header({ onViewChange, currentView }) {
         googleLogout();
         setUser(null);
         handleClose();
-        onViewChange("home"); // Switch to home view after logout
+        if (currentView === 'run') {
+            router.push('/');
+        } else {
+            onViewChange("home");
+        }
     };
 
     const handleMyAgents = () => {
         handleClose();
-        onViewChange("myAgents");
+        if (currentView === 'run') {
+            router.push('/?view=myAgents');
+        } else {
+            onViewChange("myAgents");
+        }
+    };
+
+    const handleHomeClick = () => {
+        if (currentView === 'run') {
+            router.push('/');
+        } else {
+            onViewChange("home");
+        }
     };
 
     return (
@@ -122,7 +139,7 @@ export default function Header({ onViewChange, currentView }) {
                         fontWeight: 700,
                         fontSize: '1.5rem',
                     }}
-                    onClick={() => onViewChange("home")}
+                    onClick={handleHomeClick}
                 >
                     Agent Hub
                 </Typography>
