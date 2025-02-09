@@ -8,24 +8,41 @@ import {
     Button,
     Box,
     Paper,
+    CircularProgress,
+    Alert,
+    Card,
+    CardContent,
 } from "@mui/material";
 import { styled } from "@mui/material/styles";
 import { useRouter } from "next/navigation";
 import Header from "../../../components/Header";
 
-const RunButton = styled(Button)({
-    borderRadius: "8px",
+const StyledContainer = styled(Container)(({ theme }) => ({
+    paddingTop: theme.spacing(4),
+    paddingBottom: theme.spacing(4),
+}));
+
+const StyledPaper = styled(Paper)(({ theme }) => ({
+    padding: theme.spacing(4),
+    marginTop: theme.spacing(4),
+}));
+
+const RunButton = styled(Button)(({ theme }) => ({
+    marginTop: theme.spacing(2),
+    marginBottom: theme.spacing(2),
     padding: "12px 24px",
-    textTransform: "uppercase",
-    fontWeight: 600,
-    letterSpacing: "1px",
-    fontSize: "0.875rem",
-    backgroundColor: "#bbdefb",
-    color: "#1976d2",
-    "&:hover": {
-        backgroundColor: "#90caf9",
-    },
-});
+    width: "100%",
+}));
+
+const MessageCard = styled(Card)(({ theme, messagetype }) => ({
+    marginBottom: theme.spacing(2),
+    backgroundColor:
+        messagetype === "error"
+            ? theme.palette.error.light
+            : messagetype === "completion"
+            ? theme.palette.success.light
+            : theme.palette.grey[100],
+}));
 
 export default function RunAgent({ params }) {
     const router = useRouter();
@@ -34,6 +51,7 @@ export default function RunAgent({ params }) {
     const [isLoading, setIsLoading] = useState(false);
     const [messages, setMessages] = useState([]);
     const [error, setError] = useState(null);
+    const [audioKey, setAudioKey] = useState(Date.now());
 
     useEffect(() => {
         const fetchAgent = async () => {
@@ -104,6 +122,7 @@ export default function RunAgent({ params }) {
                 // Handle completion
                 if (message.type === "completion") {
                     setIsLoading(false);
+                    setAudioKey(Date.now());
                     ws.close();
                 }
             };
@@ -122,82 +141,110 @@ export default function RunAgent({ params }) {
 
     if (!agent) {
         return (
-            <div className="container mx-auto p-4">
+            <Box>
                 <Header currentView="run" />
-                <div className="text-center">Loading...</div>
-            </div>
+                <StyledContainer maxWidth="lg">
+                    <Box display="flex" justifyContent="center" mt={4}>
+                        <CircularProgress />
+                    </Box>
+                </StyledContainer>
+            </Box>
         );
     }
 
     return (
-        <div className="container mx-auto p-4">
+        <Box>
             <Header currentView="run" />
+            <StyledContainer maxWidth="lg">
+                <StyledPaper elevation={3}>
+                    <Typography variant="h4" component="h1" gutterBottom>
+                        {agent.name}
+                    </Typography>
+                    <Typography
+                        variant="body1"
+                        color="textSecondary"
+                        paragraph
+                    >
+                        {agent.description}
+                    </Typography>
 
-            <div className="max-w-2xl mx-auto">
-                <h1 className="text-2xl font-bold mb-4">{agent.name}</h1>
-                <p className="mb-4 text-gray-600">{agent.description}</p>
-
-                <div className="mb-4">
-                    <textarea
-                        className="w-full p-2 border rounded"
-                        rows="4"
+                    <TextField
+                        fullWidth
+                        multiline
+                        rows={4}
+                        variant="outlined"
                         value={prompt}
                         onChange={(e) => setPrompt(e.target.value)}
                         placeholder="Enter your text here..."
                         disabled={isLoading}
+                        sx={{ mb: 2 }}
                     />
-                </div>
 
-                <button
-                    className={`w-full p-2 rounded text-white ${
-                        isLoading
-                            ? "bg-gray-400 cursor-not-allowed"
-                            : "bg-blue-500 hover:bg-blue-600"
-                    }`}
-                    onClick={handleRun}
-                    disabled={isLoading}
-                >
-                    {isLoading ? "Processing..." : "Run Agent"}
-                </button>
+                    <RunButton
+                        variant="contained"
+                        color="primary"
+                        onClick={handleRun}
+                        disabled={isLoading}
+                    >
+                        {isLoading ? (
+                            <Box display="flex" alignItems="center" gap={1}>
+                                <CircularProgress size={20} color="inherit" />
+                                <span>Processing...</span>
+                            </Box>
+                        ) : (
+                            "Run Agent"
+                        )}
+                    </RunButton>
 
-                {error && (
-                    <div className="mt-4 p-3 bg-red-100 text-red-700 rounded">
-                        {error}
-                    </div>
-                )}
+                    {error && (
+                        <Alert severity="error" sx={{ mt: 2 }}>
+                            {error}
+                        </Alert>
+                    )}
 
-                <div className="mt-4 space-y-2">
-                    {messages.map((message, index) => (
-                        <div
-                            key={index}
-                            className={`p-3 rounded ${
-                                message.type === "error"
-                                    ? "bg-red-100 text-red-700"
-                                    : message.type === "completion"
-                                    ? "bg-green-100 text-green-700"
-                                    : "bg-gray-100"
-                            }`}
-                        >
-                            {message.content}
-                        </div>
-                    ))}
-                </div>
+                    <Box mt={4}>
+                        {messages.map((message, index) => (
+                            <MessageCard
+                                key={index}
+                                messagetype={message.type}
+                                variant="outlined"
+                            >
+                                <CardContent>
+                                    <Typography
+                                        color={
+                                            message.type === "error"
+                                                ? "error"
+                                                : "textPrimary"
+                                        }
+                                    >
+                                        {message.content}
+                                    </Typography>
+                                </CardContent>
+                            </MessageCard>
+                        ))}
+                    </Box>
 
-                {messages.some((m) => m.type === "completion") && (
-                    <div className="mt-4">
-                        <h2 className="text-xl font-semibold mb-2">
-                            Generated Audio
-                        </h2>
-                        <audio controls className="w-full">
-                            <source
-                                src={`http://127.0.0.1:8001/outputs/audio_0.wav`}
-                                type="audio/wav"
-                            />
-                            Your browser does not support the audio element.
-                        </audio>
-                    </div>
-                )}
-            </div>
-        </div>
+                    {messages.some((m) => m.type === "completion") && (
+                        <Box mt={4}>
+                            <Typography variant="h6" gutterBottom>
+                                Generated Audio
+                            </Typography>
+                            <Box
+                                component="audio"
+                                controls
+                                key={audioKey}
+                                sx={{ width: "100%" }}
+                            >
+                                <source
+                                    src={`http://127.0.0.1:8001/outputs/audio_0.wav?t=${audioKey}`}
+                                    type="audio/wav"
+                                />
+                                Your browser does not support the audio element.
+                            </Box>
+                        </Box>
+                    )}
+                </StyledPaper>
+            </StyledContainer>
+        </Box>
     );
 }
