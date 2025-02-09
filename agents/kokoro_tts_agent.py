@@ -1,52 +1,28 @@
-import asyncio
-from autogen_ext.models.openai import OpenAIChatCompletionClient
-from autogen_core.tools import FunctionTool, Tool, ToolSchema
-from autogen_core.tool_agent import ToolAgent, tool_agent_caller_loop
-from autogen_core.models import (
-    ChatCompletionClient,
-    LLMMessage,
-    SystemMessage,
-    UserMessage,
-)
+import os
+from typing import Optional, Callable, List
+from dataclasses import dataclass
+from pathlib import Path
+import soundfile as sf
+
 from autogen_core import (
     AgentId,
     MessageContext,
     RoutedAgent,
     SingleThreadedAgentRuntime,
     message_handler,
+    CancellationToken,
 )
-from typing import List
-from dataclasses import dataclass
-import os
-
-from autogen_core import CancellationToken
-import soundfile as sf
+from autogen_core.models import (
+    ChatCompletionClient,
+    LLMMessage,
+    SystemMessage,
+    UserMessage,
+)
+from autogen_core.tools import FunctionTool, Tool, ToolSchema
+from autogen_core.tool_agent import ToolAgent, tool_agent_caller_loop
+from autogen_ext.models.openai import OpenAIChatCompletionClient
 
 from tools.audio.tts import generate_kokoro_audio
-
-
-def generate_kokoro_tts_audio(text: str) -> str:
-    # Generate the audio
-    generator = generate_kokoro_audio(text)
-
-    for i, (gs, ps, audio) in enumerate(generator):
-        # i => index
-        print(i)
-        # gs => graphemes/text
-        print(gs)
-        # ps => phonemes
-        print(ps)
-
-    # Create outputs directory if it doesn't exist
-    if not os.path.exists('outputs'):
-        os.makedirs('outputs')
-
-    # save each audio file
-    sf.write(f'outputs/{i}.wav', audio, 24000)
-
-
-kokoro_tts_tool = FunctionTool(
-    generate_kokoro_tts_audio, description="Generate a text-to-speech audio.")
 
 
 @dataclass
@@ -86,25 +62,63 @@ class ToolUseAgent(RoutedAgent):
         return Message(content=messages[-1].content)
 
 
-async def run_tool():
-    # Run the tool.
-    cancellation_token = CancellationToken()
-    await kokoro_tts_tool.run_json(
-        {"text": "Hello, world!"}, cancellation_token)
+def generate_kokoro_tts_audio(text: str) -> str:
+    """Generate audio using Kokoro TTS."""
+    # Create outputs directory if it doesn't exist
+    outputs_dir = Path("outputs")
+    outputs_dir.mkdir(exist_ok=True)
+
+    # Generate the audio
+    generator = generate_kokoro_audio(text)
+
+    output_file = None
+    for i, (gs, ps, audio) in enumerate(generator):
+        # i => index
+        print(i)
+        # gs => graphemes/text
+        print(gs)
+        # ps => phonemes
+        print(ps)
+
+        # Save the audio file
+        output_file = outputs_dir / f"audio_{i}.wav"
+        sf.write(str(output_file), audio, 24000)
+
+    # Return the path to the last generated audio file
+    return str(output_file) if output_file else ""
 
 
-async def main(prompt: str):
+kokoro_tts_tool = FunctionTool(
+    generate_kokoro_tts_audio,
+    description="Generate a text-to-speech audio."
+)
+
+
+async def main(
+    prompt: str,
+    message_callback: Optional[Callable[[str], None]] = None
+) -> str:
+    """Run the Kokoro TTS agent with the given prompt.
+
+    Args:
+        prompt: The text to convert to speech
+        message_callback: Optional callback for progress messages
+
+    Returns:
+        The response content from the agent
+    """
     # Create a runtime
     runtime = SingleThreadedAgentRuntime()
 
     # Create the tools
-    tools: List[Tool] = [
-        kokoro_tts_tool
-    ]
+    tools: List[Tool] = [kokoro_tts_tool]
 
     # Register the agents
-    await ToolAgent.register(runtime, "kokoro_tts_agent",
-                             lambda: ToolAgent("kokoro tts agent", tools))
+    await ToolAgent.register(
+        runtime,
+        "kokoro_tts_agent",
+        lambda: ToolAgent("kokoro tts agent", tools)
+    )
 
     await ToolUseAgent.register(
         runtime,
@@ -112,7 +126,6 @@ async def main(prompt: str):
         lambda: ToolUseAgent(
             OpenAIChatCompletionClient(
                 model="gpt-4o-mini",
-                # Get API key from environment
                 api_key=os.getenv("OPENAI_API_KEY")
             ),
             [tool.schema for tool in tools],
@@ -130,14 +143,13 @@ async def main(prompt: str):
             Message(prompt),
             tool_use_agent
         )
-        print(response.content)
+
+        # Call the callback if provided
+        if message_callback:
+            message_callback(response.content)
+
+        return response.content
 
     finally:
         # Ensure runtime is stopped even if an error occurs
         await runtime.stop()
-
-if __name__ == "__main__":
-    # asyncio.run(run_tool())
-    asyncio.run(
-        main("Generate a text-to-speech audio for the following text: "
-             "Hello, world! This is a test of the text-to-speech agent."))
