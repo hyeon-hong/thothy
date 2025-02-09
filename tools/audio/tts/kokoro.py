@@ -3,12 +3,20 @@ import soundfile as sf
 import os
 
 
-def generate_kokoro_audio(text: str, voice: str = 'af_heart', speed: float = 1.0):
+def generate_kokoro_audio(
+    text: str,
+    voice: str = 'af_heart',
+    speed: float = 1.0
+) -> None:
+    """Generate audio using Kokoro TTS.
+
+    Args:
+        text: Text to synthesize
+        voice: Voice ID to use
+        speed: Speaking speed multiplier
+    """
     pipeline = KPipeline(lang_code='a')
-    generator = pipeline(
-        text, voice=voice,
-        speed=speed
-    )
+    generator = pipeline(text, voice=voice, speed=speed)
 
     for i, (gs, ps, audio) in enumerate(generator):
         # i => index
@@ -28,4 +36,5 @@ def generate_kokoro_audio(text: str, voice: str = 'af_heart', speed: float = 1.0
 
 if __name__ == '__main__':
     generate_kokoro_audio(
-        "KOKORO TTS is a text-to-speech model developed primarily by Japanese researchers at the University of Tsukuba.")
+        "KOKORO TTS is a text-to-speech model developed primarily by "
+        "Japanese researchers at the University of Tsukuba.")
