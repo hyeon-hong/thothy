@@ -75,7 +75,7 @@ export default function AgentCard({ agent, onSelect, userId, isSelected }) {
   };
 
   const handleRun = () => {
-    router.push(`/run/${agent.id}`);
+    router.push(`/agent?id=${agent.id}`);
   };
 
   return (
