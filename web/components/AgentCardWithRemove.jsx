@@ -1,5 +1,7 @@
+import React from 'react';
 import { Card, CardContent, CardMedia, Typography, Button, Box } from '@mui/material';
 import { styled } from '@mui/material/styles';
+import { useRouter } from 'next/navigation';
 
 const HeadlineTypography = styled(Typography)({
   fontFamily: "'Roboto Mono', monospace",
@@ -27,7 +29,23 @@ const StyledButton = styled(Button)({
   fontSize: '0.875rem',
 });
 
+const RunButton = styled(Button)({
+  borderRadius: '8px',
+  padding: '8px 16px',
+  textTransform: 'uppercase',
+  fontWeight: 600,
+  letterSpacing: '1px',
+  fontSize: '0.875rem',
+  backgroundColor: '#bbdefb',
+  color: '#1976d2',
+  '&:hover': {
+    backgroundColor: '#90caf9',
+  },
+});
+
 export default function AgentCardWithRemove({ agent, onRemove, userId }) {
+  const router = useRouter();
+
   const handleRemove = async () => {
     try {
       await fetch(`/api/agent?userId=${userId}&agentId=${agent.id}`, {
@@ -38,6 +56,10 @@ export default function AgentCardWithRemove({ agent, onRemove, userId }) {
       console.error('Error removing agent:', error);
       alert('Failed to remove agent. Please try again.');
     }
+  };
+
+  const handleRun = () => {
+    router.push(`/run/${agent.id}`);
   };
 
   return (
@@ -69,15 +91,22 @@ export default function AgentCardWithRemove({ agent, onRemove, userId }) {
           {agent.description}
         </Typography>
       </CardContent>
-      <Box sx={{ p: 2 }}>
+      <Box sx={{ p: 2, display: 'flex', gap: 1, flexDirection: 'column' }}>
         <StyledButton
-          variant="contained" 
+          variant="contained"
           color="error"
-          fullWidth 
+          fullWidth
           onClick={handleRemove}
         >
           Remove
         </StyledButton>
+        <RunButton
+          variant="contained"
+          fullWidth
+          onClick={handleRun}
+        >
+          Run
+        </RunButton>
       </Box>
     </StyledCard>
   );

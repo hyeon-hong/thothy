@@ -1,5 +1,6 @@
 'use client';
 
+import React from 'react';
 import { Container, Grid, Typography } from '@mui/material';
 import AgentCard from '../components/AgentCard';
 import Header from '../components/Header';
