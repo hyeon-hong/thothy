@@ -9,6 +9,7 @@ from agents.magnetic_one_agent import main
 
 pytestmark = pytest.mark.asyncio
 
+# TODO: Fix bugs later
 
 async def test_magnetic_one_agent():
     # Mock environment variables

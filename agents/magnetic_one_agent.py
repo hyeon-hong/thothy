@@ -39,11 +39,11 @@ async def main(
     runtime = SingleThreadedAgentRuntime()
 
     # Configure the code executor
-    code_executor = DockerCommandLineCodeExecutor(
-        image=docker_image or "python:3.9",
-        working_dir=working_dir or "/workspace",
-        env=env_vars or {},
-    )
+    # code_executor = DockerCommandLineCodeExecutor(
+    #     image=docker_image or "python:3.9",
+    #     working_dir=working_dir or "/workspace",
+    #     env=env_vars or {},
+    # )
 
     # Create and register the agent
     agent = MagenticOne(
@@ -51,7 +51,8 @@ async def main(
             model="gpt-4o-mini",
             api_key=os.getenv("OPENAI_API_KEY")
         ),
-        code_executor=code_executor
+        # Not yet implemented in autogen-ext[magentic_one]
+        # code_executor=code_executor
     )
     runtime.register_agent(AgentId("magnetic_one_agent", "default"), agent)
 
