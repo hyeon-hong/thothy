@@ -9,6 +9,7 @@ from autogen_core import CancellationToken
 from autogen_agentchat.teams import MagenticOneGroupChat
 from autogen_agentchat.base import ChatAgent
 from autogen_agentchat.agents import CodeExecutorAgent, UserProxyAgent
+from autogen_agentchat.ui import Console
 from typing import Awaitable, Callable, List, Optional, Union
 import warnings
 import os
@@ -84,8 +85,7 @@ class TempMagenticOne(MagenticOneGroupChat):
 async def main(
     prompt: str,
     docker_image: Optional[str] = None,
-    working_dir: Optional[str] = None,
-    env_vars: Optional[Dict[str, str]] = None,
+    work_dir: Optional[str] = None,
     message_callback: Optional[Callable[[str], None]] = None
 ) -> str:
     """Run the Magnetic One agent with the given prompt.
@@ -100,14 +100,10 @@ async def main(
     Returns:
         The response content from the agent
     """
-    # Create a runtime
-    runtime = SingleThreadedAgentRuntime()
-
     # Configure the code executor
     code_executor = DockerCommandLineCodeExecutor(
         image=docker_image or "python:3.9",
-        work_dir=working_dir or "/workspace",
-        env=env_vars or {},
+        work_dir=work_dir or "/tmp",
     )
 
     # Create and register the agent
@@ -118,24 +114,8 @@ async def main(
         ),
         code_executor=code_executor
     )
-    runtime.register_agent(AgentId("magnetic_one_agent", "default"), agent)
+    await Console(agent.run_stream(task=prompt))
 
-    try:
-        # Start processing messages
-        runtime.start()
-
-        # Send message to the agent
-        magnetic_agent = AgentId("magnetic_one_agent", "default")
-        response = await runtime.send_message(
-            Message(prompt),
-            magnetic_agent
-        )
-
-        # Call the callback if provided
-        if message_callback:
-            message_callback(response.content)
-
-        return response.content
-
-    finally:
-        await runtime.stop()
+    # result = agent.run_stream(task=prompt)
+    # print(result)
+    # return result
