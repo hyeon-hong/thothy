@@ -45,18 +45,15 @@ async def main(
         env=env_vars or {},
     )
 
-    # Register the MagenticOne agent
-    await MagenticOne.register(
-        runtime,
-        "magnetic_one_agent",
-        lambda: MagenticOne(
-            model_client=OpenAIChatCompletionClient(
-                model="gpt-4o-mini",
-                api_key=os.getenv("OPENAI_API_KEY")
-            ),
-            code_executor=code_executor
+    # Create and register the agent
+    agent = MagenticOne(
+        client=OpenAIChatCompletionClient(
+            model="gpt-4o-mini",
+            api_key=os.getenv("OPENAI_API_KEY")
         ),
+        code_executor=code_executor
     )
+    runtime.register_agent(AgentId("magnetic_one_agent", "default"), agent)
 
     try:
         # Start processing messages
