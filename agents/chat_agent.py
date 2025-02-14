@@ -2,6 +2,7 @@ from typing import Annotated
 
 from langchain_anthropic import ChatAnthropic
 from typing_extensions import TypedDict
+from dotenv import load_dotenv
 
 from langgraph.graph import StateGraph
 from langgraph.graph.message import add_messages
@@ -11,12 +12,17 @@ import getpass
 import os
 
 
+# Load environment variables from .env file
+load_dotenv()
+
+
 def _set_env(var: str):
     if not os.environ.get(var):
         os.environ[var] = getpass.getpass(f"{var}: ")
 
 
 _set_env("ANTHROPIC_API_KEY")
+_set_env("TAVILY_API_KEY")
 
 
 class State(TypedDict):
