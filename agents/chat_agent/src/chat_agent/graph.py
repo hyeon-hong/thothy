@@ -101,7 +101,7 @@ builder.add_conditional_edges("call_model", route_message, ["store_memory", END]
 # to let it first store memories, then generate a response
 builder.add_edge("store_memory", "call_model")
 graph = builder.compile()
-graph.name = "MemoryAgent"
+graph.name = "ChatAgent"
 
 
 __all__ = ["graph"]
