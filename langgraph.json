@@ -1,0 +1,18 @@
+{
+  "python_version": "3.12",
+  "env": ".env",
+  "dependencies": [
+    "./agents/chat_agent/src/chat_agent",
+    "./agents/research_agent/src/research_agent"
+  ],
+  "graphs": {
+    "chat_agent": "./agents/chat_agent/src/chat_agent/graph.py:graph",
+    "research_agent": "./agents/research_agent/src/research_agent/graph.py:graph"
+  },
+  "store": {
+    "index": {
+      "dims": 1536,
+      "embed": "openai:text-embedding-3-small"
+    }
+  }
+}
