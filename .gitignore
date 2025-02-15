@@ -1,3 +1,6 @@
+# LangGraph
+.langgraph_api/
+
 # Lock file
 **/package-lock.json
 **/yarn.lock
