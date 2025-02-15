@@ -7,7 +7,7 @@ authors = [
 ]
 readme = "README.md"
 license = { text = "Apache-2.0" }
-requires-python = ">=3.11"
+requires-python = ">=3.12"
 dependencies = [
     "langgraph>=0.2.34,<0.3.0",
     # Optional (for selecting different models)
