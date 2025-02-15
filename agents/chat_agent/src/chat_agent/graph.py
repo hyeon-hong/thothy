@@ -1,11 +1,9 @@
 """Simple chat agent using LangGraph."""
 
-import os
 import uuid
-from dotenv import load_dotenv
 
+from langchain.chat_models import init_chat_model
 from langchain_core.runnables import RunnableConfig
-from langchain_openai import ChatOpenAI
 from langchain_openai import OpenAIEmbeddings
 
 from langgraph.checkpoint.memory import MemorySaver
@@ -14,8 +12,9 @@ from langgraph.store.memory import InMemoryStore
 from langgraph.store.base import BaseStore
 
 
-load_dotenv()
-llm = ChatOpenAI(model="gpt-4o-mini", api_key=os.getenv("OPENAI_API_KEY"))
+llm = init_chat_model("gpt-4o-mini", model_provider="openai", temperature=0)
+
+
 in_memory_store = InMemoryStore(
     index={
         "embed": OpenAIEmbeddings(model="text-embedding-3-small"),
