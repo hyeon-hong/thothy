@@ -17,6 +17,7 @@ dependencies = [
     "langchain-core>=0.3.9",
     "python-dotenv>=1.0.1",
     "langgraph-sdk>=0.1.32",
+    "python-dotenv>=1.0.1",
 ]
 
 [project.optional-dependencies]
