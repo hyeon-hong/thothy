@@ -1,0 +1,7 @@
+from chat_agent.graph import graph
+
+
+config = {"configurable": {"thread_id": "1", "user_id": "1"}}
+input_message = {"role": "user", "content": "Hi! Remember: my name is Bob"}
+for chunk in graph.stream({"messages": [input_message]}, config, stream_mode="values"):
+    chunk["messages"][-1].pretty_print()
