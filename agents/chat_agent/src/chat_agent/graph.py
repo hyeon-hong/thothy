@@ -1,13 +1,20 @@
 """Simple chat agent using LangGraph."""
 
+import os
+from dotenv import load_dotenv
 from langchain_openai import ChatOpenAI
+from langchain_core.runnables import RunnableConfig
 from langgraph.graph import MessagesState, StateGraph, START, END
 
-llm = ChatOpenAI(model="gpt-4o-mini")
+load_dotenv()
+llm = ChatOpenAI(model="gpt-4o-mini", api_key=os.getenv("OPENAI_API_KEY"))
 
 
-def chatbot(state: MessagesState) -> dict:
+def chatbot(state: MessagesState, config: RunnableConfig) -> dict:
     """Chat node that processes messages and generates responses."""
+    user_id = config["configurable"]["user_id"]
+    print(f"user_id: {user_id}")
+
     # Invoke LLM with current messages and return response
     return {"messages": [llm.invoke(state["messages"])]}
 
