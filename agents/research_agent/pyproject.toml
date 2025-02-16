@@ -1,0 +1,50 @@
+[project]
+name = "research_agent"
+version = "0.0.1"
+description = "An agent that populates and enriches custom schemas"
+authors = [
+    { name = "Thothy", email = "ai.thothy@gmail.com" },
+]
+readme = "README.md"
+license = { text = "Apache-2.0" }
+requires-python = ">=3.12"
+dependencies = [
+    "langgraph>=0.2.34,<0.3.0",
+    "langchain-openai>=0.2.1",
+    "langchain-anthropic>=0.2.1",
+    "langchain>=0.3.9",
+    "langchain-core>=0.3.9",
+    "langchain-community>=0.2.13",
+]
+
+[project.optional-dependencies]
+dev = ["mypy>=1.11.1", "ruff>=0.6.1", "pytest-asyncio"]
+
+[build-system]
+requires = ["setuptools>=73.0.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = ["research_agent"]
+[tool.setuptools.package-dir]
+"research_agent" = "src/research_agent"
+"langgraph.templates.thothy.research_agent" = "src/research_agent"
+
+
+[tool.setuptools.package-data]
+"*" = ["py.typed"]
+
+[tool.ruff]
+lint.select = [
+    "E",    # pycodestyle
+    "F",    # pyflakes
+    "I",    # isort
+    "D",    # pydocstyle
+    "D401", # First line should be in imperative mood
+    "T201",
+    "UP",
+]
+include = ["*.py", "*.pyi", "*.ipynb"]
+lint.ignore = ["UP006", "UP007", "UP035", "D417", "E501"]
+[tool.ruff.lint.pydocstyle]
+convention = "google"
