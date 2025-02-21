@@ -134,13 +134,16 @@ async def extract_semantic_memories(
     state: schemas.SingleExtractorState, config: RunnableConfig
 ) -> dict:
     """Extract embeddable "events"."""
+    print("extract_semantic_memories")
+
     configurable = utils.ensure_configurable(config["configurable"])
     llm = init_chat_model(model=configurable["model"])
     memory_config = configurable["schemas"][state["function_name"]]
+    print(f"memory_config: {memory_config}")
     messages = utils.prepare_messages(
         state["messages"], memory_config.get("system_prompt") or ""
     )
-
+    print(f"messages: {messages}")
     extractor = create_extractor(
         llm,
         tools=[memory_config["function"]]
@@ -155,12 +158,16 @@ async def insert_memories(
     state: schemas.SingleExtractorState, config: RunnableConfig
 ) -> dict:
     """Insert the user's state to the database."""
+    print("insert_memories")
     configurable = utils.ensure_configurable(config["configurable"])
     embeddings = utils.get_embeddings()
     serialized = [r.model_dump_json() for r in state["responses"]]
+    print(f"serialized: {serialized}")
     # You could alternatively do multi-vector lookup based on the schema.
+    print(f"serialized: {serialized}")
     vectors = await embeddings.aembed_documents(serialized)
-    current_time = datetime.now(tz=timezone.utc)
+    current_time = datetime.now(tz=timezone.utc).__str__()
+    print(f"current_time: {current_time}")
     paths = [
         constants.INSERT_PATH.format(
             user_id=configurable["user_id"],
@@ -169,6 +176,7 @@ async def insert_memories(
         )
         for _ in range(len(vectors))
     ]
+    print(f"paths: {paths}")
     documents = [
         {
             "id": path,
@@ -186,6 +194,7 @@ async def insert_memories(
         vectors=documents,
         namespace=settings.SETTINGS.pinecone_namespace,
     )
+    print("upserted")
     return {"user_state": {}}
 
 
@@ -204,6 +213,8 @@ def should_insert(
     state: schemas.SingleExtractorState, config: RunnableConfig
 ) -> Literal["insert_memories", "__end__"]:
     """Whether there are things extracted to commit to the DB."""
+    print("should_insert")
+    print(f"state['responses']: {state['responses']}")
     return "insert_memories" if state["responses"] else END
 
 
@@ -233,6 +244,7 @@ async def schedule(state: schemas.State, config: RunnableConfig) -> dict:
         return {"messages": state["messages"]}
     configurable = utils.ensure_configurable(config["configurable"])
     if configurable["delay"]:
+        print(f"delay: {configurable['delay']}")
         await asyncio.sleep(configurable["delay"])
     return {"messages": []}
 
@@ -259,6 +271,7 @@ def scatter_schemas(
     sends = []
     for k, v in configuration["schemas"].items():
         update_mode = v["update_mode"]
+        print(f"update_mode: {update_mode}")
         match update_mode:
             case "patch":
                 target = "handle_patch_memory"

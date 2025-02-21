@@ -5,7 +5,7 @@ from typing import Any, Dict, List, Optional
 from langchain_core.messages import AnyMessage
 from pydantic import BaseModel
 from langgraph.graph import add_messages
-from typing import Annotated, Literal, TypedDict
+from typing_extensions import Annotated, Literal, TypedDict
 
 
 class FunctionSchema(TypedDict):
