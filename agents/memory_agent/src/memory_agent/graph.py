@@ -14,15 +14,12 @@ from langgraph.graph import END, START, StateGraph
 from trustcall import create_extractor
 from typing_extensions import Literal
 
-from memory_agent import _constants as constants
-from memory_agent import _schemas as schemas
-from memory_agent import _settings as settings
-from memory_agent import _utils as utils
+from memory_agent import constants
+from memory_agent import schemas
+from memory_agent import settings
+from memory_agent import utils
 
-logger = logging.getLogger("memory")
-# Handle patch memory, where we update a single document in the database.
-# If the document doesn't exist, the LLM will generate a new one.
-# Otherwise, it will generate JSON patches to update the existing document.
+logger = logging.getLogger("memory_agent")
 
 
 async def fetch_patched_state(
@@ -33,10 +30,12 @@ async def fetch_patched_state(
     This is a placeholder function. You should replace this with a function
     that fetches the user's state from the database.
     """
+
     configurable = utils.ensure_configurable(config["configurable"])
     path = constants.PATCH_PATH.format(
         user_id=configurable["user_id"], function_name=state["function_name"]
     )
+
     # TODO: does pinecone have an async api in their SDK...?
     response = utils.get_index().fetch(
         ids=[path], namespace=settings.SETTINGS.pinecone_namespace
@@ -52,10 +51,12 @@ async def extract_patch_memories(
     state: schemas.SingleExtractorState, config: RunnableConfig
 ) -> dict:
     """Extract the user's state from the conversation."""
+
     configurable = utils.ensure_configurable(config["configurable"])
     schemas = configurable["schemas"]
     memory_config = schemas[state["function_name"]]
     llm = init_chat_model(model=configurable["model"])
+
     messages = utils.prepare_messages(
         state["messages"], memory_config.get("system_prompt") or ""
     )
@@ -67,9 +68,12 @@ async def extract_patch_memories(
     inputs = {
         "messages": messages,
     }
+
     if existing := state["user_state"]:
         inputs["existing"] = {memory_config["function"]["name"]: existing}
+
     result = await extractor.ainvoke(inputs, config)
+
     return {"responses": result["responses"]}
 
 
@@ -84,6 +88,7 @@ async def upsert_patched_state(
     serialized = state["responses"][0].model_dump_json()
     embeddings = utils.get_embeddings()
     vector = await embeddings.aembed_query(serialized)
+
     utils.get_index().upsert(
         vectors=[
             {
@@ -136,9 +141,12 @@ async def extract_semantic_memories(
         state["messages"], memory_config.get("system_prompt") or ""
     )
 
-    extractor = create_extractor(llm, tools=[memory_config["function"]])
-    # We don't have an "existing" value here since we are continuously inserting
-    # new memories.
+    extractor = create_extractor(
+        llm,
+        tools=[memory_config["function"]]
+    )
+    # We don't have an "existing" value here since we are continuously
+    # inserting new memories.
     result = await extractor.ainvoke({"messages": messages})
     return {"responses": result["responses"]}
 
@@ -185,7 +193,8 @@ semantic_builder = StateGraph(
     schemas.SingleExtractorState, schemas.GraphConfig)
 # Lots of quality improvements can be made here, such as:
 # - Fetch similar memories and prompt model to combine or extrapolate
-# - Adding advanced indexing by the memory schema (like importance, relevance, etc.)
+# - Adding advanced indexing by the memory schema (like importance,
+#   relevance, etc.)
 semantic_builder.add_node(extract_semantic_memories)
 semantic_builder.add_node(insert_memories)
 semantic_builder.add_edge(START, "extract_semantic_memories")
@@ -203,8 +212,8 @@ semantic_builder.add_conditional_edges(
 semantic_graph = semantic_builder.compile()
 
 
-# This graph is public facing. It receives conversations and distibutes them to the
-# memory types as needed.
+# This graph is public facing. It receives conversations and distributes
+# them to the memory types as needed.
 
 
 async def schedule(state: schemas.State, config: RunnableConfig) -> dict:
@@ -238,7 +247,10 @@ builder.add_node("handle_semantic_memory", semantic_graph)
 builder.add_edge(START, "schedule")
 
 
-def scatter_schemas(state: schemas.State, config: RunnableConfig) -> list[Send]:
+def scatter_schemas(
+    state: schemas.State,
+    config: RunnableConfig
+) -> list[Send]:
     """Route the schemas for the memory assistant.
 
     These will be executed in parallel.

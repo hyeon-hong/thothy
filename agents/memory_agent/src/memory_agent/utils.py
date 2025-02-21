@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from functools import lru_cache
+import os
 from typing import Sequence
 
 import langsmith
@@ -10,11 +11,11 @@ from langchain_core.messages import (
     SystemMessage,
     merge_message_runs,
 )
-from langchain_fireworks import FireworksEmbeddings
+from langchain_openai import OpenAIEmbeddings
 from pinecone import Pinecone
 
-from memory_agent import _schemas as schemas
-from memory_agent import _settings as settings
+from memory_agent import schemas as schemas
+from memory_agent import settings as settings
 
 _DEFAULT_DELAY = 60  # seconds
 
@@ -46,7 +47,8 @@ def ensure_configurable(config: dict) -> schemas.GraphConfig:
         **schemas.GraphConfig(
             delay=config.get("delay", _DEFAULT_DELAY),
             model=config.get("model", settings.SETTINGS.model),
-            schemas={k: ensure_memory_config(v) for k, v in function_schemas.items()},
+            schemas={k: ensure_memory_config(v)
+                     for k, v in function_schemas.items()},
             thread_id=config["thread_id"],
             user_id=config["user_id"],
         ),
@@ -75,7 +77,10 @@ def prepare_messages(
 
 @lru_cache
 def get_embeddings():
-    return FireworksEmbeddings(model="nomic-ai/nomic-embed-text-v1.5")
+    return OpenAIEmbeddings(
+        model="text-embedding-3-small",
+        api_key=os.getenv("OPENAI_API_KEY"),
+    )
 
 
 __all__ = ["ensure_configurable", "prepare_messages"]

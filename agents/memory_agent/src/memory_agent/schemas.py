@@ -3,9 +3,9 @@ from __future__ import annotations
 from typing import Any, Dict, List, Optional
 
 from langchain_core.messages import AnyMessage
-from langchain_core.pydantic_v1 import BaseModel
+from pydantic import BaseModel
 from langgraph.graph import add_messages
-from typing_extensions import Annotated, Literal, TypedDict
+from typing import Annotated, Literal, TypedDict
 
 
 class FunctionSchema(TypedDict):
