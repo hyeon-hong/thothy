@@ -14,15 +14,24 @@ from langchain_core.messages import (
 from langchain_openai import OpenAIEmbeddings
 from pinecone import Pinecone
 
-from memory_agent import schemas as schemas
-from memory_agent import settings as settings
+from memory_agent import schemas
+from memory_agent import settings
 
-_DEFAULT_DELAY = 60  # seconds
+# seconds
+_DEFAULT_DELAY = 60
 
 
 def get_index():
     pc = Pinecone(api_key=settings.SETTINGS.pinecone_api_key)
     return pc.Index(settings.SETTINGS.pinecone_index_name)
+
+
+@lru_cache
+def get_embeddings():
+    return OpenAIEmbeddings(
+        model="text-embedding-3-small",
+        api_key=os.getenv("OPENAI_API_KEY"),
+    )
 
 
 @langsmith.traceable
@@ -73,14 +82,6 @@ def prepare_messages(
         " What memories ought to be retained or updated?</memory-system>",
     )
     return merge_message_runs([sys] + list(messages) + [m])
-
-
-@lru_cache
-def get_embeddings():
-    return OpenAIEmbeddings(
-        model="text-embedding-3-small",
-        api_key=os.getenv("OPENAI_API_KEY"),
-    )
 
 
 __all__ = ["ensure_configurable", "prepare_messages"]
