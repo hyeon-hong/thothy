@@ -1,32 +1,43 @@
-[tool.poetry]
+[project]
 name = "memory_agent"
 version = "0.0.1"
-description = "A memory agent" 
-authors = ["Thothy <ai.thothy@gmail.com>"]
-license = "Apache-2.0"
+description = "A long-term memory processor and example chatbot it works with."
+authors = [
+    { name = "Thothy", email = "ai.thothy@gmail.com" },
+]
+license = { text = "Apache 2.0" }
 requires-python = ">=3.12"
+dependencies = [
+    "langgraph>=0.2.53,<0.3.0",
+    "langgraph-checkpoint>=2.0.8",
+    # Optional (for selecting different models)
+    "langchain-openai>=0.2.1",
+    "langchain-anthropic>=0.2.1",
+    "langchain>=0.3.8",
+    "python-dotenv>=1.0.1",
+    "langgraph-sdk>=0.1.40",
+    "trustcall>=0.0.21",
+]
 
-[tool.poetry.dependencies]
-python = ">=3.12,<3.13"
-langgraph = "^0.2.34"
-langchain-fireworks = "^0.2.7"
-# Feel free to swap out for postgres or your favorite database.
-langchain-pinecone = "^0.2.3"
-jsonpatch = "^1.33"
-dydantic = "^0.0.8"
-pytest-asyncio = "^0.23.7"
-trustcall = "^0.0.37"
-langchain = "^0.3.9"
-langchain-openai = "^0.3.6"
-langchain-anthropic = "^0.3.7"
-pydantic-settings = "^2.3.4"
-langgraph-sdk = "^0.1.53"
+[project.optional-dependencies]
+dev = ["mypy>=1.11.1", "ruff>=0.6.1", "pytest-asyncio"]
 
-[tool.poetry.group.dev.dependencies]
-ruff = "^0.4.10"
-mypy = "^1.10.0"
-pytest = "^8.2.2"
-langgraph-cli = "^0.1.43"
+[build-system]
+requires = ["setuptools>=73.0.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = ["memory_graph", "chatbot"]
+[tool.setuptools.package-dir]
+"memory_graph" = "src/memory_graph"
+"langgraph.templates.memory_graph" = "src/memory_graph"
+"chatbot" = "src/chatbot"
+"langgraph.templates.chatbot" = "src/chatbot"
+
+
+
+[tool.setuptools.package-data]
+"*" = ["py.typed"]
 
 [tool.ruff]
 lint.select = [
@@ -35,22 +46,17 @@ lint.select = [
     "I",    # isort
     "D",    # pydocstyle
     "D401", # First line should be in imperative mood
+    "T201",
+    "UP",
 ]
-
-[tool.ruff.format]
-docstring-code-format = true
-docstring-code-line-length = 80
-
+lint.ignore = ["UP006", "UP007", "UP035", "D417", "E501"]
+include = ["*.py", "*.pyi", "*.ipynb"]
 [tool.ruff.lint.per-file-ignores]
-"tests/*" = ["D", "E501"]
-
+"tests/*" = ["D", "UP"]
+"ntbk/*" = ["D", "UP", "T201"]
 [tool.ruff.lint.pydocstyle]
 convention = "google"
 
-[build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
-
-[tool.pytest.ini_options]
-asyncio_mode = "auto"
+[tool.mypy]
+ignore_errors = true
 
