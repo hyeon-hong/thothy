@@ -12,6 +12,41 @@ These instructions will help you set up the project locally and get it running o
 -   Python 3.8+
 -   npm or yarn
 
+### Directory Structure
+
+```bash
+thothy/
+├── agents/
+├── backend/
+├── frontend/
+```
+
+#### agents/
+
+This directory contains the AI agents. Each agent has its own directory with the following structure:
+
+```bash
+memory_chat_agent/
+├── src/
+│   ├── chatbot_graph/
+│   ├── memory_graph/
+│   └── ...
+├── pyproject.toml
+├── langgraph.json
+└── ...
+```
+
+The pyproject and langgraph configuration file is located just under agent directory. And the source code is located in `src` directory.
+If you have one more graphs, you can add more directories under `src` directory. The graph directory name has "\_graph" suffix.
+
+#### backend/
+
+This directory contains the backend server. It is built with Python and FastAPI.
+
+```bash
+cd backend
+```
+
 ### Installation
 
 1. Clone the repository
