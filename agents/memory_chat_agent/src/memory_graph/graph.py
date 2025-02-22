@@ -4,12 +4,17 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import os
 import uuid
 from dataclasses import asdict
 
+from dotenv import load_dotenv
 from langchain_core.runnables import RunnableConfig
+from langchain.embeddings import init_embeddings
 from langgraph.graph import StateGraph
 from langgraph.store.base import BaseStore
+from langgraph.store.memory import InMemoryStore
+from langgraph.store.postgres import AsyncPostgresStore
 from langgraph.types import Send
 from trustcall import create_extractor
 
@@ -18,11 +23,24 @@ from memory_graph.state import ProcessorState, State
 
 logger = logging.getLogger("memory")
 
+load_dotenv()
+
 
 async def handle_patch_memory(
     state: ProcessorState, config: RunnableConfig, *, store: BaseStore
 ) -> dict:
     """Extract the user's state from the conversation and update the memory."""
+
+    store = AsyncPostgresStore.from_conn_string(
+        os.getenv("POSTGRES_URL"),
+        index={
+            "dims": 1536,
+            "embed": init_embeddings("openai:text-embedding-3-small"),
+            "fields": ["text"]
+        }
+    )
+    await store.setup()
+
     # Get the overall configuration
     configurable = configuration.Configuration.from_runnable_config(config)
 
@@ -63,9 +81,11 @@ async def handle_patch_memory(
 
     # Pass messages and existing patch to the extractor
     inputs = {"messages": prepared_messages, "existing": existing}
+
     # Update the patch memory
     result = await extractor.ainvoke(inputs, config)
     extracted = result["responses"][0].model_dump(mode="json")
+
     # Save to storage
     await store.aput(namespace, state.function_name, extracted)
 
@@ -74,6 +94,7 @@ async def handle_insertion_memory(
     state: ProcessorState, config: RunnableConfig, *, store: BaseStore
 ) -> dict[str, list]:
     """Handle insertion memory events."""
+
     # Get the overall configuration
     configurable = configuration.Configuration.from_runnable_config(config)
 
@@ -142,19 +163,13 @@ async def handle_insertion_memory(
     )
 
 
-# Create the graph and all nodes
-builder = StateGraph(State, config_schema=configuration.Configuration)
-builder.add_node(handle_patch_memory, input=ProcessorState)
-builder.add_node(handle_insertion_memory, input=ProcessorState)
-
-
 def scatter_schemas(state: State, config: RunnableConfig) -> list[Send]:
     """Iterate over all memory types in the configuration.
-
-    It will route each memory type from configuration to the corresponding memory update node.
-
+    It will route each memory type from configuration
+    to the corresponding memory update node.
     The memory update nodes will be executed in parallel.
     """
+
     # Get the configuration
     configurable = configuration.Configuration.from_runnable_config(config)
     sends = []
@@ -186,6 +201,13 @@ def scatter_schemas(state: State, config: RunnableConfig) -> list[Send]:
     return sends
 
 
+# Create the graph and all nodes
+builder = StateGraph(State, config_schema=configuration.Configuration)
+
+# Add the nodes to the graph
+builder.add_node(handle_patch_memory, input=ProcessorState)
+builder.add_node(handle_insertion_memory, input=ProcessorState)
+
 # Add conditional edges to the graph
 builder.add_conditional_edges(
     "__start__", scatter_schemas, [
@@ -193,7 +215,7 @@ builder.add_conditional_edges(
 )
 
 # Compile the graph
-graph = builder.compile()
+graph = builder.compile(checkpointer=InMemoryStore())
 
 # Export the graph
 __all__ = ["graph"]
