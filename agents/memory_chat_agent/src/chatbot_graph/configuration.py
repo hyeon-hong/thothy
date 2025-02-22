@@ -6,7 +6,7 @@ from typing import Any, Optional
 
 from langchain_core.runnables import RunnableConfig
 
-from chatbot.prompts import SYSTEM_PROMPT
+from chatbot_graph.prompts import SYSTEM_PROMPT
 
 
 @dataclass(kw_only=True)

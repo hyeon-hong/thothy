@@ -31,7 +31,8 @@ async def handle_patch_memory(
 
     # Fetch existing memories from the store for this (patch) memory schema
     existing_item = await store.aget(namespace, state.function_name)
-    existing = {state.function_name: existing_item.value} if existing_item else None
+    existing = {
+        state.function_name: existing_item.value} if existing_item else None
 
     # Get the configuration for this memory schema (identified by function_name)
     memory_config = next(
@@ -80,7 +81,8 @@ async def handle_insertion_memory(
     namespace = (configurable.user_id, "events", state.function_name)
 
     # Fetch existing memories from the store (5 most recent ones) for the this (insert) memory schema
-    query = "\n".join(str(message.content) for message in state.messages)[-3000:]
+    query = "\n".join(str(message.content)
+                      for message in state.messages)[-3000:]
     existing_items = await store.asearch(namespace, query=query, limit=5)
 
     # Get the configuration for this memory schema (identified by function_name)
@@ -186,9 +188,12 @@ def scatter_schemas(state: State, config: RunnableConfig) -> list[Send]:
 
 # Add conditional edges to the graph
 builder.add_conditional_edges(
-    "__start__", scatter_schemas, ["handle_patch_memory", "handle_insertion_memory"]
+    "__start__", scatter_schemas, [
+        "handle_patch_memory", "handle_insertion_memory"]
 )
 
 # Compile the graph
 graph = builder.compile()
+
+# Export the graph
 __all__ = ["graph"]

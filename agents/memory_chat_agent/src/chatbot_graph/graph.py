@@ -10,8 +10,8 @@ from langgraph.store.base import BaseStore
 from langgraph_sdk import get_client
 from typing_extensions import Annotated
 
-from chatbot.configuration import ChatConfigurable
-from chatbot.utils import format_memories, init_model
+from chatbot_graph.configuration import ChatConfigurable
+from chatbot_graph.utils import format_memories, init_model
 
 
 @dataclass
@@ -87,3 +87,6 @@ builder.add_edge("__start__", "bot")
 builder.add_edge("bot", "schedule_memories")
 
 graph = builder.compile()
+
+# Export the graph
+__all__ = ["graph"]
