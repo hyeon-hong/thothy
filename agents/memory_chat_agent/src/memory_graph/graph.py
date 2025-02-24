@@ -4,12 +4,17 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import os
 import uuid
 from dataclasses import asdict
 
+from dotenv import load_dotenv
 from langchain_core.runnables import RunnableConfig
+from langchain.embeddings import init_embeddings
 from langgraph.graph import StateGraph
 from langgraph.store.base import BaseStore
+from langgraph.store.memory import InMemoryStore
+from langgraph.store.postgres import AsyncPostgresStore
 from langgraph.types import Send
 from trustcall import create_extractor
 
@@ -18,11 +23,14 @@ from memory_graph.state import ProcessorState, State
 
 logger = logging.getLogger("memory")
 
+load_dotenv()
+
 
 async def handle_patch_memory(
     state: ProcessorState, config: RunnableConfig, *, store: BaseStore
 ) -> dict:
     """Extract the user's state from the conversation and update the memory."""
+
     # Get the overall configuration
     configurable = configuration.Configuration.from_runnable_config(config)
 
@@ -30,8 +38,25 @@ async def handle_patch_memory(
     namespace = (configurable.user_id, "user_states")
 
     # Fetch existing memories from the store for this (patch) memory schema
-    existing_item = await store.aget(namespace, state.function_name)
-    existing = {state.function_name: existing_item.value} if existing_item else None
+    existing_item = None
+    postgres_url = os.getenv("POSTGRES_URL")
+    print(f"postgres_url: {postgres_url}")
+    async with AsyncPostgresStore.from_conn_string(
+        postgres_url,
+        # index={
+        #     "dims": 1536,
+        #     "embed": init_embeddings("openai:text-embedding-3-small"),
+        #     # "fields": ["text"]
+        # }
+    ) as supabase_store:
+        print(f"supabase_store: {supabase_store}")
+        print(f"namespace: {namespace}")
+        print(f"state.function_name: {state.function_name}")
+        existing_item = await supabase_store.aget(namespace, state.function_name)
+        print(f"existing_item: {existing_item}")
+
+    existing = {
+        state.function_name: existing_item.value} if existing_item else None
 
     # Get the configuration for this memory schema (identified by function_name)
     memory_config = next(
@@ -62,9 +87,12 @@ async def handle_patch_memory(
 
     # Pass messages and existing patch to the extractor
     inputs = {"messages": prepared_messages, "existing": existing}
+
     # Update the patch memory
     result = await extractor.ainvoke(inputs, config)
     extracted = result["responses"][0].model_dump(mode="json")
+    print(f"extracted: {extracted}")
+
     # Save to storage
     await store.aput(namespace, state.function_name, extracted)
 
@@ -73,6 +101,7 @@ async def handle_insertion_memory(
     state: ProcessorState, config: RunnableConfig, *, store: BaseStore
 ) -> dict[str, list]:
     """Handle insertion memory events."""
+
     # Get the overall configuration
     configurable = configuration.Configuration.from_runnable_config(config)
 
@@ -80,7 +109,8 @@ async def handle_insertion_memory(
     namespace = (configurable.user_id, "events", state.function_name)
 
     # Fetch existing memories from the store (5 most recent ones) for the this (insert) memory schema
-    query = "\n".join(str(message.content) for message in state.messages)[-3000:]
+    query = "\n".join(str(message.content)
+                      for message in state.messages)[-3000:]
     existing_items = await store.asearch(namespace, query=query, limit=5)
 
     # Get the configuration for this memory schema (identified by function_name)
@@ -140,19 +170,13 @@ async def handle_insertion_memory(
     )
 
 
-# Create the graph and all nodes
-builder = StateGraph(State, config_schema=configuration.Configuration)
-builder.add_node(handle_patch_memory, input=ProcessorState)
-builder.add_node(handle_insertion_memory, input=ProcessorState)
-
-
 def scatter_schemas(state: State, config: RunnableConfig) -> list[Send]:
     """Iterate over all memory types in the configuration.
-
-    It will route each memory type from configuration to the corresponding memory update node.
-
+    It will route each memory type from configuration
+    to the corresponding memory update node.
     The memory update nodes will be executed in parallel.
     """
+
     # Get the configuration
     configurable = configuration.Configuration.from_runnable_config(config)
     sends = []
@@ -184,11 +208,21 @@ def scatter_schemas(state: State, config: RunnableConfig) -> list[Send]:
     return sends
 
 
+# Create the graph and all nodes
+builder = StateGraph(State, config_schema=configuration.Configuration)
+
+# Add the nodes to the graph
+builder.add_node(handle_patch_memory, input=ProcessorState)
+builder.add_node(handle_insertion_memory, input=ProcessorState)
+
 # Add conditional edges to the graph
 builder.add_conditional_edges(
-    "__start__", scatter_schemas, ["handle_patch_memory", "handle_insertion_memory"]
+    "__start__", scatter_schemas, [
+        "handle_patch_memory", "handle_insertion_memory"]
 )
 
 # Compile the graph
-graph = builder.compile()
+graph = builder.compile(checkpointer=InMemoryStore())
+
+# Export the graph
 __all__ = ["graph"]

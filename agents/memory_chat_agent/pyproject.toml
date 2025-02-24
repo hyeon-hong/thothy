@@ -27,12 +27,12 @@ requires = ["setuptools>=73.0.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools]
-packages = ["memory_graph", "chatbot"]
+packages = ["memory_graph", "chatbot_graph"]
 [tool.setuptools.package-dir]
 "memory_graph" = "src/memory_graph"
 "langgraph.templates.memory_graph" = "src/memory_graph"
-"chatbot" = "src/chatbot"
-"langgraph.templates.chatbot" = "src/chatbot"
+"chatbot_graph" = "src/chatbot_graph"
+"langgraph.templates.chatbot_graph" = "src/chatbot_graph"
 
 
 

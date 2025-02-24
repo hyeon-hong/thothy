@@ -6,7 +6,7 @@ from typing import Any, Optional
 
 from langchain_core.runnables import RunnableConfig
 
-from chatbot.prompts import SYSTEM_PROMPT
+from chatbot_graph.prompts import SYSTEM_PROMPT
 
 
 @dataclass(kw_only=True)
@@ -15,11 +15,12 @@ class ChatConfigurable:
 
     user_id: str = "default-user"
     mem_assistant_id: str = (
-        "memory_graph"  # update to the UUID if you configure a custom assistant
+        "memory_graph"
     )
     model: str = "anthropic/claude-3-5-sonnet-20240620"
-    delay_seconds: int = 10  # For debouncing memory creation
+    delay_seconds: int = 1
     system_prompt: str = SYSTEM_PROMPT
+
     memory_types: Optional[list[dict]] = None
     """The memory_types for the memory assistant."""
 
@@ -28,12 +29,15 @@ class ChatConfigurable:
         cls, config: Optional[RunnableConfig] = None
     ) -> "ChatConfigurable":
         """Load configuration."""
+
         configurable = (
             config["configurable"] if config and "configurable" in config else {}
         )
+
         values: dict[str, Any] = {
             f.name: os.environ.get(f.name.upper(), configurable.get(f.name))
             for f in fields(cls)
             if f.init
         }
+
         return cls(**{k: v for k, v in values.items() if v})

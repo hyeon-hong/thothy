@@ -10,8 +10,8 @@ from langgraph.store.base import BaseStore
 from langgraph_sdk import get_client
 from typing_extensions import Annotated
 
-from chatbot.configuration import ChatConfigurable
-from chatbot.utils import format_memories, init_model
+from chatbot_graph.configuration import ChatConfigurable
+from chatbot_graph.utils import format_memories, init_model
 
 
 @dataclass
@@ -25,8 +25,11 @@ async def bot(
     state: ChatState, config: RunnableConfig, store: BaseStore
 ) -> dict[str, list[Messages]]:
     """Prompt the bot to resopnd to the user, incorporating memories (if provided)."""
+
     configurable = ChatConfigurable.from_runnable_config(config)
+
     namespace = (configurable.user_id,)
+
     # This lists ALL user memories in the provided namespace (up to the `limit`)
     # you can also filter by content.
     query = "\n".join(str(message.content) for message in state.messages)
@@ -79,11 +82,19 @@ async def schedule_memories(state: ChatState, config: RunnableConfig) -> None:
     )
 
 
+# Create the graph and all nodes
 builder = StateGraph(ChatState, config_schema=ChatConfigurable)
+
+# Add the nodes to the graph
 builder.add_node(bot)
 builder.add_node(schedule_memories)
 
+# Add edges to the graph
 builder.add_edge("__start__", "bot")
 builder.add_edge("bot", "schedule_memories")
 
+# Compile the graph
 graph = builder.compile()
+
+# Export the graph
+__all__ = ["graph"]
