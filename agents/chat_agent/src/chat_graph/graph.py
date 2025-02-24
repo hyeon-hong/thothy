@@ -25,14 +25,19 @@ in_memory_store = InMemoryStore(
 
 def chatbot(state: MessagesState, config: RunnableConfig, *, store: BaseStore) -> dict:
     """Chat node that processes messages and generates responses."""
+
+    # Get user_id from config
     user_id = config["configurable"]["user_id"]
     # print(f"user_id: {user_id}")
     namespace = ("memories", user_id)
+
+    # Search
     memories = store.search(namespace, query=str(
         state["messages"][-1].content))
     info = "\n".join([d.value["data"] for d in memories])
     system_msg = f"You are a helpful assistant talking to the user. User info: {info}"
 
+    # TODO: Change to use LangMem
     # Store new memories if the user asks the model to remember
     last_message = state["messages"][-1]
     if "remember" in last_message.content.lower():
@@ -45,24 +50,20 @@ def chatbot(state: MessagesState, config: RunnableConfig, *, store: BaseStore) -
     return {"messages": response}
 
 
-def build_chat_graph():
-    """Build and return the chat graph."""
-    # Initialize graph builder with state schema
-    graph_builder = StateGraph(MessagesState)
+"""Build and return the chat graph."""
 
-    # Add chatbot node
-    graph_builder.add_node("chatbot", chatbot)
+# Initialize graph builder with state schema
+workflow = StateGraph(MessagesState)
 
-    # Add edges - start at chatbot and can end after chatbot
-    graph_builder.add_edge(START, "chatbot")
-    graph_builder.add_edge("chatbot", END)
+# Add chatbot node
+workflow.add_node("chatbot", chatbot)
 
-    # Compile graph
-    return graph_builder.compile(checkpointer=MemorySaver(), store=in_memory_store)
+# Add edges - start at chatbot and can end after chatbot
+workflow.add_edge(START, "chatbot")
+workflow.add_edge("chatbot", END)
 
-
-# Create the graph
-graph = build_chat_graph()
+# Compile graph
+graph = workflow.compile(checkpointer=MemorySaver(), store=in_memory_store)
 graph.name = "chat_agent"
 
 __all__ = ["graph"]
