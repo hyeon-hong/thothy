@@ -31,16 +31,6 @@ async def handle_patch_memory(
 ) -> dict:
     """Extract the user's state from the conversation and update the memory."""
 
-    store = AsyncPostgresStore.from_conn_string(
-        os.getenv("POSTGRES_URL"),
-        index={
-            "dims": 1536,
-            "embed": init_embeddings("openai:text-embedding-3-small"),
-            "fields": ["text"]
-        }
-    )
-    await store.setup()
-
     # Get the overall configuration
     configurable = configuration.Configuration.from_runnable_config(config)
 
@@ -48,7 +38,23 @@ async def handle_patch_memory(
     namespace = (configurable.user_id, "user_states")
 
     # Fetch existing memories from the store for this (patch) memory schema
-    existing_item = await store.aget(namespace, state.function_name)
+    existing_item = None
+    postgres_url = os.getenv("POSTGRES_URL")
+    print(f"postgres_url: {postgres_url}")
+    async with AsyncPostgresStore.from_conn_string(
+        postgres_url,
+        # index={
+        #     "dims": 1536,
+        #     "embed": init_embeddings("openai:text-embedding-3-small"),
+        #     # "fields": ["text"]
+        # }
+    ) as supabase_store:
+        print(f"supabase_store: {supabase_store}")
+        print(f"namespace: {namespace}")
+        print(f"state.function_name: {state.function_name}")
+        existing_item = await supabase_store.aget(namespace, state.function_name)
+        print(f"existing_item: {existing_item}")
+
     existing = {
         state.function_name: existing_item.value} if existing_item else None
 
@@ -85,6 +91,7 @@ async def handle_patch_memory(
     # Update the patch memory
     result = await extractor.ainvoke(inputs, config)
     extracted = result["responses"][0].model_dump(mode="json")
+    print(f"extracted: {extracted}")
 
     # Save to storage
     await store.aput(namespace, state.function_name, extracted)
