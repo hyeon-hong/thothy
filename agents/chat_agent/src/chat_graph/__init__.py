@@ -1,4 +1,4 @@
-"""Enrichment for a pre-defined schema."""
+"""Chat agent."""
 
 from chat_graph.graph import graph
 

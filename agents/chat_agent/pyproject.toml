@@ -24,10 +24,10 @@ requires = ["setuptools>=73.0.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools]
-packages = ["chat_agent"]
+packages = ["chat_graph"]
 [tool.setuptools.package-dir]
-"chat_agent" = "src/chat_graph"
-"langgraph.thothy.chat_agent" = "src/chat_graph"
+"chat_graph" = "src/chat_graph"
+"langgraph.templates.chat_graph" = "src/chat_graph"
 
 
 [tool.setuptools.package-data]

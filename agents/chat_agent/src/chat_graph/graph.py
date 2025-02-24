@@ -4,7 +4,6 @@ from pydantic import BaseModel
 
 from langchain.chat_models import init_chat_model
 from langchain_core.runnables import RunnableConfig
-from langchain_openai import OpenAIEmbeddings
 
 from langgraph.checkpoint.memory import MemorySaver
 from langgraph.graph import MessagesState, StateGraph, START, END
@@ -12,6 +11,7 @@ from langgraph.store.memory import InMemoryStore
 from langgraph.store.base import BaseStore
 
 from langmem import ReflectionExecutor, create_memory_store_manager
+from chat_graph.configuration import ChatConfigurable
 
 
 llm = init_chat_model("gpt-4o-mini", model_provider="openai", temperature=0)
@@ -26,8 +26,15 @@ class Triple(BaseModel):
     context: str | None = None
 
 
-# namespace = ("memories", "{user_id}", "triples")
-namespace = ("memories",)
+namespace = ("memories", "{user_id}", "triples")
+
+in_memory_store = InMemoryStore(
+    index={
+        "dims": 1536,
+        "embed": "openai:text-embedding-3-small",
+    }
+)
+
 memory_manager = create_memory_store_manager(
     "anthropic:claude-3-5-sonnet-latest",
     schemas=[Triple],
@@ -40,23 +47,16 @@ memory_manager = create_memory_store_manager(
 # Wrap memory_manager to handle deferred background processing
 executor = ReflectionExecutor(memory_manager)
 
-in_memory_store = InMemoryStore(
-    index={
-        "dims": 1536,
-        "embed": "openai:text-embedding-3-small",
-    }
-)
 
-
-def chatbot(state: MessagesState, config: RunnableConfig, *, store: BaseStore) -> dict:
+def chatbot(state: MessagesState, config: ChatConfigurable, *, store: BaseStore) -> dict:
     """Chat node that processes messages and generates responses."""
 
     # Get user_id from config
-    # user_id = config["configurable"]["user_id"]
-    user_id = "123"
+    configurable = ChatConfigurable.from_runnable_config(config)
+    user_id = configurable.user_id
     print(f"Processing chat for user_id: {user_id}")
-    # namespace = ("memories", user_id, "triples")
-    namespace = ("memories",)
+    # Use the same namespace format as defined above
+    namespace = ("memories", user_id)
 
     # Search
     memories = store.search(namespace, query=str(
@@ -71,8 +71,6 @@ def chatbot(state: MessagesState, config: RunnableConfig, *, store: BaseStore) -
     to_process = {"messages": [
         {"role": "user", "content": state["messages"][-1].content}] + [response]}
     print("Submitting memory processing task...")
-    # executor.submit(to_process, after_seconds=0.5, config={
-    #                 "configurable": {"user_id": user_id}})
     executor.submit(to_process, after_seconds=0.5)
     print("Memory processing task submitted")
 
@@ -82,7 +80,7 @@ def chatbot(state: MessagesState, config: RunnableConfig, *, store: BaseStore) -
 """Build and return the chat graph."""
 
 # Initialize graph builder with state schema
-workflow = StateGraph(MessagesState)
+workflow = StateGraph(MessagesState, ChatConfigurable)
 
 # Add chatbot node
 workflow.add_node("chatbot", chatbot)
