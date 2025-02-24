@@ -54,23 +54,27 @@ def chatbot(state: MessagesState, config: ChatConfigurable, *, store: BaseStore)
     # Get user_id from config
     configurable = ChatConfigurable.from_runnable_config(config)
     user_id = configurable.user_id
-    print(f"Processing chat for user_id: {user_id}")
+    # print(f"Processing chat for user_id: {user_id}")
+
     # Use the same namespace format as defined above
     namespace = ("memories", user_id)
 
-    # Search
+    # Search for existing memories
     memories = store.search(namespace, query=str(
         state["messages"][-1].content))
     print(f"Found {len(memories)} existing memories")
     info = "\n".join([d.value.get("data", "") for d in memories if d.value])
     system_msg = f"You are a helpful assistant talking to the user. User info: {info}"
 
+    # Invoke the LLM
     response = llm.invoke(
         [{"role": "system", "content": system_msg}] + state["messages"]
     )
+
+    # Submit memory processing task
+    print("Submitting memory processing task...")
     to_process = {"messages": [
         {"role": "user", "content": state["messages"][-1].content}] + [response]}
-    print("Submitting memory processing task...")
     executor.submit(to_process, after_seconds=0.5)
     print("Memory processing task submitted")
 
