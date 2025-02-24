@@ -10,15 +10,24 @@ from langgraph.checkpoint.memory import MemorySaver
 from langgraph.graph import MessagesState, StateGraph, START, END
 from langgraph.store.memory import InMemoryStore
 from langgraph.store.base import BaseStore
+from langmem import ReflectionExecutor, create_memory_store_manager
 
 
 llm = init_chat_model("gpt-4o-mini", model_provider="openai", temperature=0)
 
+# Create memory manager to extract memories from conversations
+memory_manager = create_memory_store_manager(
+    "anthropic:claude-3-5-sonnet-latest",
+    namespace=("memories",),
+)
+
+# Wrap memory_manager to handle deferred background processing
+executor = ReflectionExecutor(memory_manager)
 
 in_memory_store = InMemoryStore(
     index={
-        "embed": OpenAIEmbeddings(model="text-embedding-3-small"),
         "dims": 1536,
+        "embed": OpenAIEmbeddings(model="text-embedding-3-small"),
     }
 )
 
@@ -37,16 +46,13 @@ def chatbot(state: MessagesState, config: RunnableConfig, *, store: BaseStore) -
     info = "\n".join([d.value["data"] for d in memories])
     system_msg = f"You are a helpful assistant talking to the user. User info: {info}"
 
-    # TODO: Change to use LangMem
-    # Store new memories if the user asks the model to remember
-    last_message = state["messages"][-1]
-    if "remember" in last_message.content.lower():
-        memory = "User name is Bob"
-        store.put(namespace, str(uuid.uuid4()), {"data": memory})
-
     response = llm.invoke(
         [{"role": "system", "content": system_msg}] + state["messages"]
     )
+    to_process = {"messages": [
+        {"role": "user", "content": state["messages"][-1].content}] + [response]}
+    executor.submit(to_process, after_seconds=0.5)
+
     return {"messages": response}
 
 
