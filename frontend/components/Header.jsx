@@ -44,6 +44,37 @@ const LoginButton = styled(Button)({
     textTransform: 'none',
 });
 
+const StyledDialogContent = styled(DialogContent)({
+    '.supabase-auth-ui_ui-container': {
+        width: '100%',
+    },
+    // Hide email/password form
+    'form': {
+        display: 'none !important',
+    },
+    // Center the divider and social login
+    '.supabase-auth-ui_ui-divider': {
+        display: 'none !important',
+    },
+    '.supabase-auth-ui_ui-button': {
+        width: '100%',
+        marginTop: '0 !important',
+    },
+    // Customize Google button
+    '.supabase-auth-ui_ui-button[data-social="google"]': {
+        backgroundColor: '#fff',
+        color: '#757575',
+        border: '1px solid #ddd',
+        borderRadius: '28px',
+        padding: '10px 24px',
+        fontSize: '1rem',
+        fontWeight: 500,
+        '&:hover': {
+            backgroundColor: '#f5f5f5',
+        },
+    },
+});
+
 export default function Header({ onViewChange, currentView }) {
     const { user, supabase } = useUser();
     const [anchorEl, setAnchorEl] = useState(null);
@@ -111,7 +142,7 @@ export default function Header({ onViewChange, currentView }) {
                         {!user ? (
                             <Box sx={{ display: "flex", gap: 2, alignItems: "center" }}>
                                 <LoginButton onClick={handleLoginClick}>
-                                    Sign in
+                                    Sign in with Google
                                 </LoginButton>
                             </Box>
                         ) : (
@@ -150,16 +181,34 @@ export default function Header({ onViewChange, currentView }) {
                 onClose={() => setAuthDialogOpen(false)}
                 maxWidth="sm"
                 fullWidth
+                PaperProps={{
+                    sx: {
+                        borderRadius: 2,
+                        maxWidth: '400px',
+                    }
+                }}
             >
-                <DialogTitle>Sign in to Agent Hub</DialogTitle>
-                <DialogContent>
+                <DialogTitle sx={{ textAlign: 'center', pb: 0 }}>Sign in to Agent Hub</DialogTitle>
+                <StyledDialogContent>
                     <Auth
                         supabaseClient={supabase}
-                        appearance={{ theme: ThemeSupa }}
+                        appearance={{
+                            theme: ThemeSupa,
+                            variables: {
+                                default: {
+                                    colors: {
+                                        brand: '#000000',
+                                        brandAccent: '#333333',
+                                    },
+                                },
+                            },
+                        }}
                         providers={['google']}
+                        view="sign_in"
+                        showLinks={false}
                         redirectTo={typeof window !== 'undefined' ? window.location.origin : undefined}
                     />
-                </DialogContent>
+                </StyledDialogContent>
             </Dialog>
         </>
     );
