@@ -1,6 +1,6 @@
 """Simple chat agent using LangGraph."""
 
-import uuid
+from pydantic import BaseModel
 
 from langchain.chat_models import init_chat_model
 from langchain_core.runnables import RunnableConfig
@@ -10,15 +10,31 @@ from langgraph.checkpoint.memory import MemorySaver
 from langgraph.graph import MessagesState, StateGraph, START, END
 from langgraph.store.memory import InMemoryStore
 from langgraph.store.base import BaseStore
+
 from langmem import ReflectionExecutor, create_memory_store_manager
 
 
 llm = init_chat_model("gpt-4o-mini", model_provider="openai", temperature=0)
 
+
 # Create memory manager to extract memories from conversations
+class Triple(BaseModel):
+    """Store all new facts, preferences, and relationships as triples."""
+    subject: str
+    predicate: str
+    object: str
+    context: str | None = None
+
+
+# namespace = ("memories", "{user_id}", "triples")
+namespace = ("memories",)
 memory_manager = create_memory_store_manager(
     "anthropic:claude-3-5-sonnet-latest",
-    namespace=("memories",),
+    schemas=[Triple],
+    enable_inserts=True,
+    enable_deletes=True,
+    instructions="Extract user preferences and any other useful information",
+    namespace=namespace,
 )
 
 # Wrap memory_manager to handle deferred background processing
@@ -27,7 +43,7 @@ executor = ReflectionExecutor(memory_manager)
 in_memory_store = InMemoryStore(
     index={
         "dims": 1536,
-        "embed": OpenAIEmbeddings(model="text-embedding-3-small"),
+        "embed": "openai:text-embedding-3-small",
     }
 )
 
@@ -36,14 +52,17 @@ def chatbot(state: MessagesState, config: RunnableConfig, *, store: BaseStore) -
     """Chat node that processes messages and generates responses."""
 
     # Get user_id from config
-    user_id = config["configurable"]["user_id"]
-    # print(f"user_id: {user_id}")
-    namespace = ("memories", user_id)
+    # user_id = config["configurable"]["user_id"]
+    user_id = "123"
+    print(f"Processing chat for user_id: {user_id}")
+    # namespace = ("memories", user_id, "triples")
+    namespace = ("memories",)
 
     # Search
     memories = store.search(namespace, query=str(
         state["messages"][-1].content))
-    info = "\n".join([d.value["data"] for d in memories])
+    print(f"Found {len(memories)} existing memories")
+    info = "\n".join([d.value.get("data", "") for d in memories if d.value])
     system_msg = f"You are a helpful assistant talking to the user. User info: {info}"
 
     response = llm.invoke(
@@ -51,7 +70,11 @@ def chatbot(state: MessagesState, config: RunnableConfig, *, store: BaseStore) -
     )
     to_process = {"messages": [
         {"role": "user", "content": state["messages"][-1].content}] + [response]}
+    print("Submitting memory processing task...")
+    # executor.submit(to_process, after_seconds=0.5, config={
+    #                 "configurable": {"user_id": user_id}})
     executor.submit(to_process, after_seconds=0.5)
+    print("Memory processing task submitted")
 
     return {"messages": response}
 
