@@ -3,7 +3,6 @@
 from pydantic import BaseModel
 
 from langchain.chat_models import init_chat_model
-from langchain_core.runnables import RunnableConfig
 
 from langgraph.checkpoint.memory import MemorySaver
 from langgraph.graph import MessagesState, StateGraph, START, END
