@@ -7,11 +7,13 @@ import {
     Button,
     Menu,
     MenuItem,
+    Dialog,
+    DialogTitle,
+    DialogContent,
 } from "@mui/material";
-import { useGoogleLogin, googleLogout } from "@react-oauth/google";
-import { jwtDecode } from "jwt-decode";
+import { Auth } from '@supabase/auth-ui-react';
+import { ThemeSupa } from '@supabase/auth-ui-shared';
 import { useUser } from '../contexts/UserContext';
-import { createOrUpdateUser } from '../lib/db';
 import { styled } from '@mui/material/styles';
 import { useRouter } from 'next/navigation';
 
@@ -42,53 +44,42 @@ const LoginButton = styled(Button)({
     textTransform: 'none',
 });
 
+const StyledDialogContent = styled(DialogContent)({
+    '.supabase-auth-ui_ui-container': {
+        width: '100%',
+    },
+    // Hide email/password form
+    'form': {
+        display: 'none !important',
+    },
+    // Center the divider and social login
+    '.supabase-auth-ui_ui-divider': {
+        display: 'none !important',
+    },
+    '.supabase-auth-ui_ui-button': {
+        width: '100%',
+        marginTop: '0 !important',
+    },
+    // Customize Google button
+    '.supabase-auth-ui_ui-button[data-social="google"]': {
+        backgroundColor: '#fff',
+        color: '#757575',
+        border: '1px solid #ddd',
+        borderRadius: '28px',
+        padding: '10px 24px',
+        fontSize: '1rem',
+        fontWeight: 500,
+        '&:hover': {
+            backgroundColor: '#f5f5f5',
+        },
+    },
+});
+
 export default function Header({ onViewChange, currentView }) {
-    const { user, setUser, isLoading } = useUser();
+    const { user, supabase } = useUser();
     const [anchorEl, setAnchorEl] = useState(null);
+    const [authDialogOpen, setAuthDialogOpen] = useState(false);
     const router = useRouter();
-
-    const login = useGoogleLogin({
-        onSuccess: async (response) => {
-            try {
-                const userInfo = await fetch(
-                    "https://www.googleapis.com/oauth2/v3/userinfo",
-                    {
-                        headers: {
-                            Authorization: `Bearer ${response.access_token}`,
-                        },
-                    }
-                ).then((res) => res.json());
-
-                const dbUser = await fetch('/api/user', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        email: userInfo.email,
-                        name: userInfo.name,
-                        picture: userInfo.picture,
-                    }),
-                }).then(res => res.json());
-
-                setUser({
-                    id: dbUser.id,
-                    email: userInfo.email,
-                    name: userInfo.name,
-                    picture: userInfo.picture,
-                });
-            } catch (error) {
-                console.log("Error fetching user info:", error);
-            }
-        },
-        onError: () => {
-            console.log("Login Failed");
-        },
-    });
-
-    if (isLoading) {
-        return null; // or a loading spinner
-    }
 
     const handleClick = (event) => {
         setAnchorEl(event.currentTarget);
@@ -98,9 +89,8 @@ export default function Header({ onViewChange, currentView }) {
         setAnchorEl(null);
     };
 
-    const handleLogout = () => {
-        googleLogout();
-        setUser(null);
+    const handleLogout = async () => {
+        await supabase.auth.signOut();
         handleClose();
         if (currentView === 'run') {
             router.push('/');
@@ -126,63 +116,100 @@ export default function Header({ onViewChange, currentView }) {
         }
     };
 
+    const handleLoginClick = () => {
+        setAuthDialogOpen(true);
+    };
+
     return (
-        <AppBar position="static" elevation={0} sx={{ backgroundColor: '#fff', borderBottom: '1px solid #eaeaea' }}>
-            <StyledToolbar>
-                <Typography
-                    variant="h6"
-                    component="div"
-                    sx={{ 
-                        flexGrow: 1, 
-                        cursor: "pointer",
-                        color: '#000',
-                        fontWeight: 700,
-                        fontSize: '1.5rem',
-                    }}
-                    onClick={handleHomeClick}
-                >
-                    Agent Hub
-                </Typography>
-                <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-                    {!user ? (
-                        <Box sx={{ display: "flex", gap: 2, alignItems: "center" }}>
-                            <LoginButton
-                                onClick={() => login()}
-                            >
-                                Sign in with Google
-                            </LoginButton>
-                        </Box>
-                    ) : (
-                        <>
-                            <UserButton
-                                onClick={handleClick}
-                            >
-                                {user.name}
-                            </UserButton>
-                            <Menu
-                                anchorEl={anchorEl}
-                                open={Boolean(anchorEl)}
-                                onClose={handleClose}
-                                PaperProps={{
-                                    sx: {
-                                        mt: 1,
-                                        borderRadius: 2,
-                                        boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
-                                    }
-                                }}
-                            >
-                                <MenuItem disabled>{user.email}</MenuItem>
-                                <MenuItem onClick={handleMyAgents}>
-                                    My Agents
-                                </MenuItem>
-                                <MenuItem onClick={handleLogout}>
-                                    Logout
-                                </MenuItem>
-                            </Menu>
-                        </>
-                    )}
-                </Box>
-            </StyledToolbar>
-        </AppBar>
+        <>
+            <AppBar position="static" elevation={0} sx={{ backgroundColor: '#fff', borderBottom: '1px solid #eaeaea' }}>
+                <StyledToolbar>
+                    <Typography
+                        variant="h6"
+                        component="div"
+                        sx={{ 
+                            flexGrow: 1, 
+                            cursor: "pointer",
+                            color: '#000',
+                            fontWeight: 700,
+                            fontSize: '1.5rem',
+                        }}
+                        onClick={handleHomeClick}
+                    >
+                        Agent Hub
+                    </Typography>
+                    <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+                        {!user ? (
+                            <Box sx={{ display: "flex", gap: 2, alignItems: "center" }}>
+                                <LoginButton onClick={handleLoginClick}>
+                                    Sign in with Google
+                                </LoginButton>
+                            </Box>
+                        ) : (
+                            <>
+                                <UserButton onClick={handleClick}>
+                                    {user.name}
+                                </UserButton>
+                                <Menu
+                                    anchorEl={anchorEl}
+                                    open={Boolean(anchorEl)}
+                                    onClose={handleClose}
+                                    PaperProps={{
+                                        sx: {
+                                            mt: 1,
+                                            borderRadius: 2,
+                                            boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
+                                        }
+                                    }}
+                                >
+                                    <MenuItem disabled>{user.email}</MenuItem>
+                                    <MenuItem onClick={handleMyAgents}>
+                                        My Agents
+                                    </MenuItem>
+                                    <MenuItem onClick={handleLogout}>
+                                        Logout
+                                    </MenuItem>
+                                </Menu>
+                            </>
+                        )}
+                    </Box>
+                </StyledToolbar>
+            </AppBar>
+
+            <Dialog 
+                open={authDialogOpen} 
+                onClose={() => setAuthDialogOpen(false)}
+                maxWidth="sm"
+                fullWidth
+                PaperProps={{
+                    sx: {
+                        borderRadius: 2,
+                        maxWidth: '400px',
+                    }
+                }}
+            >
+                <DialogTitle sx={{ textAlign: 'center', pb: 0 }}>Sign in to Agent Hub</DialogTitle>
+                <StyledDialogContent>
+                    <Auth
+                        supabaseClient={supabase}
+                        appearance={{
+                            theme: ThemeSupa,
+                            variables: {
+                                default: {
+                                    colors: {
+                                        brand: '#000000',
+                                        brandAccent: '#333333',
+                                    },
+                                },
+                            },
+                        }}
+                        providers={['google']}
+                        view="sign_in"
+                        showLinks={false}
+                        redirectTo={typeof window !== 'undefined' ? window.location.origin : undefined}
+                    />
+                </StyledDialogContent>
+            </Dialog>
+        </>
     );
 }

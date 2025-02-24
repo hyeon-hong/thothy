@@ -1,8 +1,8 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardMedia, Typography, Button, Box } from '@mui/material';
 import { styled } from '@mui/material/styles';
-import { saveUserAgent } from '../lib/db';
 import { useRouter } from 'next/navigation';
+import { useUser } from '../contexts/UserContext';
 
 const HeadlineTypography = styled(Typography)({
   fontFamily: "'Roboto Mono', monospace",
@@ -15,15 +15,15 @@ const StyledCard = styled(Card)({
   backdropFilter: 'blur(10px)',
   borderRadius: '12px',
   boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.15)',
-  transition: 'transform 0.3s ease-in-out',
+  transition: 'transform 0.3s ease-in-out, background-color 0.3s ease-in-out',
   '&:hover': {
     transform: 'translateY(-5px)',
   },
 });
 
-const StyledButton = styled(Button)({
+const SelectButton = styled(Button)({
   borderRadius: '8px',
-  padding: '12px 24px',
+  padding: '8px 16px',
   textTransform: 'uppercase',
   fontWeight: 600,
   letterSpacing: '1px',
@@ -44,11 +44,35 @@ const RunButton = styled(Button)({
   },
 });
 
-export default function AgentCard({ agent, onSelect, userId, isSelected }) {
+export default function AgentCard({ agent, onSelect, isSelected: propIsSelected, showUnselect = false }) {
   const router = useRouter();
+  const { user, supabase } = useUser();
+  const [isSelected, setIsSelected] = useState(propIsSelected);
+
+  useEffect(() => {
+    const checkIfSelected = async () => {
+      if (!user) return;
+
+      try {
+        const { data, error } = await supabase
+          .from('user_agents')
+          .select()
+          .eq('user_id', user.id)
+          .eq('agent_id', agent.id)
+          .maybeSingle();
+
+        if (error) throw error;
+        setIsSelected(!!data);
+      } catch (error) {
+        console.error('Error checking if agent is selected:', error);
+      }
+    };
+
+    checkIfSelected();
+  }, [user, agent.id, supabase]);
 
   const handleSelect = async () => {
-    if (!userId) {
+    if (!user) {
       alert('Please login to select an agent');
       return;
     }
@@ -57,29 +81,78 @@ export default function AgentCard({ agent, onSelect, userId, isSelected }) {
       if (isSelected) {
         return; // Do nothing if already selected
       }
-      await fetch('/api/agent', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          userId,
-          agentId: agent.id,
-        }),
-      });
-      onSelect(agent.id);
+
+      // Save user-agent relationship to Supabase
+      const { error } = await supabase
+        .from('user_agents')
+        .insert({
+          user_id: user.id,
+          agent_id: agent.id
+        })
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Error selecting agent:', error);
+        alert('Failed to select agent. Please try again.');
+        return;
+      }
+
+      setIsSelected(true);
+      if (onSelect) {
+        onSelect(agent.id);
+      }
     } catch (error) {
       console.error('Error selecting agent:', error);
       alert('Failed to select agent. Please try again.');
     }
   };
 
+  const handleUnselect = async () => {
+    if (!user) return;
+
+    try {
+      const { error } = await supabase
+        .from('user_agents')
+        .delete()
+        .eq('user_id', user.id)
+        .eq('agent_id', agent.id);
+
+      if (error) {
+        console.error('Error unselecting agent:', error);
+        alert('Failed to unselect agent. Please try again.');
+        return;
+      }
+
+      setIsSelected(false);
+      if (onSelect) {
+        onSelect(agent.id);
+      }
+    } catch (error) {
+      console.error('Error unselecting agent:', error);
+      alert('Failed to unselect agent. Please try again.');
+    }
+  };
+
   const handleRun = () => {
+    if (!user) {
+      alert('Please login to run this agent');
+      return;
+    }
+    
     router.push(`/agent?id=${agent.id}`);
   };
 
   return (
-    <StyledCard sx={{ maxWidth: 345, height: '100%', display: 'flex', flexDirection: 'column' }}>
+    <StyledCard 
+      sx={{ 
+        maxWidth: 345, 
+        height: '100%', 
+        display: 'flex', 
+        flexDirection: 'column',
+        backgroundColor: isSelected ? 'rgba(237, 247, 237, 0.9)' : 'rgba(255, 255, 255, 0.9)',
+      }}
+    >
       {agent.imageUrl && (
         <CardMedia
           component="img"
@@ -108,22 +181,44 @@ export default function AgentCard({ agent, onSelect, userId, isSelected }) {
         </Typography>
       </CardContent>
       <Box sx={{ p: 2, display: 'flex', gap: 1, flexDirection: 'column' }}>
-        <StyledButton
-          variant="contained"
-          color={isSelected ? "success" : "primary"}
-          fullWidth
-          onClick={handleSelect}
-          disabled={isSelected}
-        >
-          {isSelected ? 'Selected' : 'Select'}
-        </StyledButton>
-        <RunButton
-          variant="contained"
-          fullWidth
-          onClick={handleRun}
-        >
-          Run
-        </RunButton>
+        {showUnselect ? (
+          <>
+            <SelectButton
+              variant="contained"
+              color="error"
+              fullWidth
+              onClick={handleUnselect}
+            >
+              Unselect
+            </SelectButton>
+            <RunButton
+              variant="contained"
+              fullWidth
+              onClick={handleRun}
+            >
+              Run
+            </RunButton>
+          </>
+        ) : (
+          <>
+            <SelectButton
+              variant="contained"
+              color={isSelected ? "success" : "primary"}
+              fullWidth
+              onClick={handleSelect}
+              disabled={isSelected}
+            >
+              {isSelected ? 'Selected' : 'Select'}
+            </SelectButton>
+            <RunButton
+              variant="contained"
+              fullWidth
+              onClick={handleRun}
+            >
+              Run
+            </RunButton>
+          </>
+        )}
       </Box>
     </StyledCard>
   );
