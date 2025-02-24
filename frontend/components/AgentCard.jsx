@@ -54,15 +54,14 @@ export default function AgentCard({ agent, onSelect, isSelected: propIsSelected,
       if (!user) return;
 
       try {
-        const { data } = await supabase
+        const { data, error } = await supabase
           .from('user_agents')
-          .select('*')
-          .match({
-            user_id: user.id,
-            agent_id: agent.id
-          })
-          .single();
+          .select()
+          .eq('user_id', user.id)
+          .eq('agent_id', agent.id)
+          .maybeSingle();
 
+        if (error) throw error;
         setIsSelected(!!data);
       } catch (error) {
         console.error('Error checking if agent is selected:', error);
@@ -89,7 +88,9 @@ export default function AgentCard({ agent, onSelect, isSelected: propIsSelected,
         .insert({
           user_id: user.id,
           agent_id: agent.id
-        });
+        })
+        .select()
+        .single();
 
       if (error) {
         console.error('Error selecting agent:', error);
@@ -114,10 +115,8 @@ export default function AgentCard({ agent, onSelect, isSelected: propIsSelected,
       const { error } = await supabase
         .from('user_agents')
         .delete()
-        .match({
-          user_id: user.id,
-          agent_id: agent.id
-        });
+        .eq('user_id', user.id)
+        .eq('agent_id', agent.id);
 
       if (error) {
         console.error('Error unselecting agent:', error);
