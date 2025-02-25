@@ -14,6 +14,7 @@ class ChatConfigurable:
     """The configurable fields for the chatbot."""
 
     user_id: str = "default-user"
+    supabase: str = ""
     mem_assistant_id: str = (
         "memory_graph"
     )

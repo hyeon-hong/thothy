@@ -8,6 +8,7 @@ from langgraph.checkpoint.memory import MemorySaver
 from langgraph.graph import MessagesState, StateGraph, START, END
 from langgraph.store.memory import InMemoryStore
 from langgraph.store.base import BaseStore
+from langgraph.store.postgres import AsyncPostgresStore
 
 from langmem import ReflectionExecutor, create_memory_store_manager
 from chat_graph.configuration import ChatConfigurable
@@ -43,25 +44,28 @@ memory_manager = create_memory_store_manager(
     namespace=namespace,
 )
 
-# Wrap memory_manager to handle deferred background processing
-executor = ReflectionExecutor(memory_manager)
-
 
 async def chatbot(state: MessagesState, config: ChatConfigurable, *, store: BaseStore) -> dict:
     """Chat node that processes messages and generates responses."""
+    print(f"store: {store}")
+
+    # Wrap memory_manager to handle deferred background processing
+    executor = ReflectionExecutor(memory_manager, store=store)
 
     # Get user_id from config
     configurable = ChatConfigurable.from_runnable_config(config)
+    print(f"configurable: {configurable}")
     user_id = configurable.user_id
-    # print(f"Processing chat for user_id: {user_id}")
+    print(f"Processing chat for user_id: {user_id}")
 
     # Use the same namespace format as defined above
-    namespace = ("memories", user_id)
+    namespace = ("memories", user_id, "triples")
 
     # Search for existing memories
     memories = await store.asearch(namespace, query=str(
         state["messages"][-1].content))
     print(f"Found {len(memories)} existing memories")
+
     info = "\n".join([d.value.get("data", "") for d in memories if d.value])
     system_msg = f"You are a helpful assistant talking to the user. User info: {info}"
 
@@ -74,6 +78,7 @@ async def chatbot(state: MessagesState, config: ChatConfigurable, *, store: Base
     print("Submitting memory processing task...")
     to_process = {"messages": [
         {"role": "user", "content": state["messages"][-1].content}] + [response]}
+
     executor.submit(to_process, after_seconds=0.5, config=config)
     print("Memory processing task submitted")
 

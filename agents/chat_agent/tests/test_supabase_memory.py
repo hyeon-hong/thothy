@@ -3,10 +3,11 @@
 import os
 import pytest
 import asyncio
+
 from dotenv import load_dotenv
 from langchain_core.messages import HumanMessage
 from langgraph.store.postgres import AsyncPostgresStore
-from chat_graph.graph import chatbot, Triple
+from chat_graph.graph import graph, Triple
 
 # Load environment variables
 load_dotenv()
@@ -17,30 +18,8 @@ TEST_NAMESPACE = ("memories", TEST_USER_ID, "triples")
 
 
 class TestSupabaseMemory:
-    # @pytest.fixture
-    # async def supabase_store(self):
-    #     """Create a Supabase store for testing."""
-    #     # Get Supabase database URL from environment
-    #     db_url = os.getenv('SUPABASE_URL')
-    #     if not db_url:
-    #         raise ValueError(
-    #             "SUPABASE_URL environment variable is not set"
-    #         )
-
-    #     store = AsyncPostgresStore.from_conn_string(
-    #         db_url,
-    #         index={
-    #             "dims": 1536,
-    #             "embed": "openai:text-embedding-3-small",
-    #         }
-    #     )
-    #     return store
-
     @pytest.mark.asyncio
-    async def test_memory_persistence(
-        self,
-        # supabase_store: AsyncPostgresStore
-    ):
+    async def test_memory_persistence(self):
         """Test that memories are persisted in Supabase."""
         # Create test message
         test_message = HumanMessage(
@@ -53,34 +32,43 @@ class TestSupabaseMemory:
         # Create test config
         config = {
             "configurable": {
+                "thread_id": "test-thread-123",
                 "user_id": TEST_USER_ID,
-                "model": "gpt-4-turbo-preview"
+                "model": "gpt-4-turbo-preview",
             }
         }
 
+        # Collect all events from the stream
+        events = []
+        async for event in graph.astream(state, config, stream_mode="values"):
+            events.append(event)
+            event["messages"][-1].pretty_print()
+        print(f"events: {events}")
+
+        # Verify we got a response
+        assert len(events) > 0
+        last_event = events[-1]
+        assert "messages" in last_event
+
+        # Wait a bit for background memory processing
+        await asyncio.sleep(2)
+
+        # Search for stored memories
+        db_url = os.getenv('SUPABASE_URL')
+        if not db_url:
+            raise ValueError("SUPABASE_URL environment variable is not set")
+
         async with AsyncPostgresStore.from_conn_string(
-            os.getenv('SUPABASE_URL'),
+            db_url,
             index={
                 "dims": 1536,
                 "embed": "openai:text-embedding-3-small",
             }
         ) as store:
-
-            # Run chatbot with Supabase store
-            result = await chatbot(
-                state,
-                config,
-                store=store
+            memories = await store.asearch(
+                TEST_NAMESPACE,
+                query="Alice"
             )
-
-            # Verify response was generated
-            assert len(result["messages"]) > 0
-
-            # Wait a bit for background memory processing
-            await asyncio.sleep(2)
-
-            # Search for stored memories
-            memories = await store.asearch(TEST_NAMESPACE, "Alice")
 
             # Verify memories were stored
             assert len(memories) > 0
@@ -102,118 +90,148 @@ class TestSupabaseMemory:
             assert found_pizza, "Pizza preference memory not found"
 
             # Clean up test data
-            await store.adelete(TEST_NAMESPACE)
+            await store.adelete(namespace=TEST_NAMESPACE)
 
     @pytest.mark.asyncio
-    async def test_memory_retrieval(
-        self,
-        supabase_store: AsyncPostgresStore
-    ):
+    async def test_memory_retrieval(self):
         """Test that stored memories can be retrieved and used."""
-        # First store a memory
-        test_triple = Triple(
-            subject="Alice",
-            predicate="likes",
-            object="pizza",
-            context="User mentioned food preferences"
-        )
-        await supabase_store.upsert(
-            TEST_NAMESPACE,
-            "test-memory",
-            {"data": test_triple}
-        )
+        # Get database URL
+        db_url = os.getenv('SUPABASE_URL')
+        if not db_url:
+            raise ValueError("SUPABASE_URL environment variable is not set")
 
-        # Create test message asking about preferences
-        test_message = HumanMessage(
-            content="What food do I like?"
-        )
-
-        # Create test state
-        state = {"messages": [test_message]}
-
-        # Create test config
-        config = {
-            "configurable": {
-                "user_id": TEST_USER_ID,
-                "model": "gpt-4-turbo-preview"
+        async with AsyncPostgresStore.from_conn_string(
+            db_url,
+            index={
+                "dims": 1536,
+                "embed": "openai:text-embedding-3-small",
             }
-        }
+        ) as store:
+            # First store a memory
+            test_triple = Triple(
+                subject="Alice",
+                predicate="likes",
+                object="pizza",
+                context="User mentioned food preferences"
+            )
+            await store.aupsert(
+                namespace=TEST_NAMESPACE,
+                key="test-memory",
+                value={"data": test_triple}
+            )
 
-        # Run chatbot with Supabase store
-        result = await chatbot(
-            state,
-            config,
-            store=supabase_store
-        )
+            # Create test message asking about preferences
+            test_message = HumanMessage(
+                content="What food do I like?"
+            )
 
-        # Verify response mentions pizza
-        assert any(
-            "pizza" in msg.content.lower() for msg in result["messages"]
-        ), "Stored preference not retrieved"
+            # Create test state
+            state = {"messages": [test_message]}
 
-        # Clean up test data
-        await supabase_store.delete(TEST_NAMESPACE)
+            # Create test config
+            config = {
+                "configurable": {
+                    "user_id": TEST_USER_ID,
+                    "model": "gpt-4-turbo-preview"
+                }
+            }
+
+            # Run chatbot through graph
+            events = []
+            async for event in graph.astream(
+                state,
+                config,
+                stream_mode="values"
+            ):
+                events.append(event)
+
+            # Verify response mentions pizza
+            assert len(events) > 0
+            last_event = events[-1]
+            assert "messages" in last_event
+            assert any(
+                "pizza" in msg.content.lower()
+                for msg in last_event["messages"]
+            ), "Stored preference not retrieved"
+
+            # Clean up test data
+            await store.adelete(namespace=TEST_NAMESPACE)
 
     @pytest.mark.asyncio
-    async def test_memory_update(
-        self,
-        supabase_store: AsyncPostgresStore
-    ):
+    async def test_memory_update(self):
         """Test that memories can be updated."""
-        # First conversation about pizza
-        state1 = {
-            "messages": [
-                HumanMessage(content="I love pizza")
-            ]
-        }
-        config = {
-            "configurable": {
-                "user_id": TEST_USER_ID,
-                "model": "gpt-4-turbo-preview"
+        # Get database URL
+        db_url = os.getenv('SUPABASE_URL')
+        if not db_url:
+            raise ValueError("SUPABASE_URL environment variable is not set")
+
+        async with AsyncPostgresStore.from_conn_string(
+            db_url,
+            index={
+                "dims": 1536,
+                "embed": "openai:text-embedding-3-small",
             }
-        }
+        ) as store:
+            # First conversation about pizza
+            state1 = {
+                "messages": [
+                    HumanMessage(content="I love pizza")
+                ]
+            }
+            config = {
+                "configurable": {
+                    "user_id": TEST_USER_ID,
+                    "model": "gpt-4-turbo-preview"
+                }
+            }
 
-        await chatbot(
-            state1,
-            config,
-            store=supabase_store
-        )
-        await asyncio.sleep(2)  # Wait for processing
+            # Run first conversation
+            events1 = []
+            async for event in graph.astream(
+                state1,
+                config,
+                stream_mode="values"
+            ):
+                events1.append(event)
+            await asyncio.sleep(2)  # Wait for processing
 
-        # Second conversation updating preference
-        state2 = {
-            "messages": [
-                HumanMessage(content="Actually, I prefer sushi now")
-            ]
-        }
+            # Second conversation updating preference
+            state2 = {
+                "messages": [
+                    HumanMessage(content="Actually, I prefer sushi now")
+                ]
+            }
 
-        await chatbot(
-            state2,
-            config,
-            store=supabase_store
-        )
-        await asyncio.sleep(2)  # Wait for processing
+            # Run second conversation
+            events2 = []
+            async for event in graph.astream(
+                state2,
+                config,
+                stream_mode="values"
+            ):
+                events2.append(event)
+            await asyncio.sleep(2)  # Wait for processing
 
-        # Search for food preferences
-        memories = await supabase_store.search(
-            TEST_NAMESPACE,
-            "food preference"
-        )
+            # Search for food preferences
+            memories = await store.asearch(
+                namespace=TEST_NAMESPACE,
+                query="food preference"
+            )
 
-        # Verify both memories exist
-        found_pizza = False
-        found_sushi = False
+            # Verify both memories exist
+            found_pizza = False
+            found_sushi = False
 
-        for memory in memories:
-            if isinstance(memory.value.get("data"), Triple):
-                triple = memory.value["data"]
-                if "pizza" in triple.object.lower():
-                    found_pizza = True
-                if "sushi" in triple.object.lower():
-                    found_sushi = True
+            for memory in memories:
+                if isinstance(memory.value.get("data"), Triple):
+                    triple = memory.value["data"]
+                    if "pizza" in triple.object.lower():
+                        found_pizza = True
+                    if "sushi" in triple.object.lower():
+                        found_sushi = True
 
-        msg = "Both food preferences should be stored"
-        assert found_pizza and found_sushi, msg
+            msg = "Both food preferences should be stored"
+            assert found_pizza and found_sushi, msg
 
-        # Clean up test data
-        await supabase_store.delete(TEST_NAMESPACE)
+            # Clean up test data
+            await store.adelete(namespace=TEST_NAMESPACE)
