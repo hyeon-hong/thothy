@@ -47,7 +47,7 @@ memory_manager = create_memory_store_manager(
 executor = ReflectionExecutor(memory_manager)
 
 
-def chatbot(state: MessagesState, config: ChatConfigurable, *, store: BaseStore) -> dict:
+async def chatbot(state: MessagesState, config: ChatConfigurable, *, store: BaseStore) -> dict:
     """Chat node that processes messages and generates responses."""
 
     # Get user_id from config
@@ -59,7 +59,7 @@ def chatbot(state: MessagesState, config: ChatConfigurable, *, store: BaseStore)
     namespace = ("memories", user_id)
 
     # Search for existing memories
-    memories = store.search(namespace, query=str(
+    memories = await store.asearch(namespace, query=str(
         state["messages"][-1].content))
     print(f"Found {len(memories)} existing memories")
     info = "\n".join([d.value.get("data", "") for d in memories if d.value])
@@ -74,7 +74,7 @@ def chatbot(state: MessagesState, config: ChatConfigurable, *, store: BaseStore)
     print("Submitting memory processing task...")
     to_process = {"messages": [
         {"role": "user", "content": state["messages"][-1].content}] + [response]}
-    executor.submit(to_process, after_seconds=0.5)
+    executor.submit(to_process, after_seconds=0.5, config=config)
     print("Memory processing task submitted")
 
     return {"messages": response}
