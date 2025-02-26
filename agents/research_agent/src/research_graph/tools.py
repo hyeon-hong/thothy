@@ -15,9 +15,9 @@ from langchain_core.tools import InjectedToolArg
 from langgraph.prebuilt import InjectedState
 from typing_extensions import Annotated
 
-from research_agent.configuration import Configuration
-from research_agent.state import State
-from research_agent.utils import init_model
+from research_graph.configuration import Configuration
+from research_graph.state import State
+from research_graph.utils import init_model
 
 
 async def search(

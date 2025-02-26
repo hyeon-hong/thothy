@@ -12,11 +12,11 @@ from langgraph.graph import StateGraph
 from langgraph.prebuilt import ToolNode
 from pydantic import BaseModel, Field
 
-from research_agent import prompts
-from research_agent.configuration import Configuration
-from research_agent.state import InputState, OutputState, State
-from research_agent.tools import scrape_website, search
-from research_agent.utils import init_model
+from research_graph import prompts
+from research_graph.configuration import Configuration
+from research_graph.state import InputState, OutputState, State
+from research_graph.tools import scrape_website, search
+from research_graph.utils import init_model
 
 
 async def call_agent_model(
