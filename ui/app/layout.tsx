@@ -17,7 +17,7 @@ export default function RootLayout({ children }: { children: any }) {
         <CopilotKit
           agent="chat_graph"
           runtimeUrl="/api/copilotkit"
-          showDevConsole={false}
+          showDevConsole={true}
         >
           {children}
         </CopilotKit>

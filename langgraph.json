@@ -6,7 +6,7 @@
     "./agents/research_agent"
   ],
   "graphs": {
-    "chat_agent": "./agents/chat_agent/src/chat_agent/graph.py:graph",
-    "research_agent": "./agents/research_agent/src/research_agent/graph.py:graph"
+    "chat_graph": "./agents/chat_agent/src/chat_graph/graph.py:graph",
+    "research_graph": "./agents/research_agent/src/research_graph/graph.py:graph"
   }
 }
