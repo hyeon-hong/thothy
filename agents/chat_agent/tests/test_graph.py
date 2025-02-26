@@ -2,10 +2,13 @@ import asyncio
 from chat_graph.graph import graph
 
 
+# TODO: Handle langmem ReflectionExecutor
 async def test_chat_graph():
     """Test the chat graph with a simple message."""
     config = {
-        "configurable": {"user_id": "alice-test"}
+        "configurable": {
+            "thread_id": "7ed19312-84c0-43b9-8861-40716ec13307",
+            "user_id": "alice-test"}
     }
     input_message = {
         "role": "user",
