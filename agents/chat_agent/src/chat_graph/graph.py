@@ -81,7 +81,7 @@ async def chatbot(state: MessagesState, config: ChatConfigurable, *, store: Base
     namespace = ("memories", user_id, "triples")
 
     # Search for existing memories
-    memories = store.search(namespace, query=str(
+    memories = await store.asearch(namespace, query=str(
         state["messages"][-1].content))
     print(f"memories: {memories}")
     memories = []
