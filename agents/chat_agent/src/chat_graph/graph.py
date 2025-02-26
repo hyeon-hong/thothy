@@ -96,9 +96,11 @@ async def chatbot(state: MessagesState, config: ChatConfigurable, *, store: Base
 
     # Submit memory processing task
     print("Submitting memory processing task...")
+    print(f"response: {response}")
     to_process = {"messages": [
         {"role": "user", "content": state["messages"][-1].content}] + [response]}
     executor.submit(to_process, after_seconds=0.5, config=config)
+
     print("Memory processing task submitted")
 
     return {"messages": response}
@@ -118,6 +120,6 @@ workflow.add_edge("chatbot", END)
 
 # Compile graph
 graph = workflow.compile(checkpointer=MemorySaver(), store=store)
-graph.name = "chat_agent"
+graph.name = "chat_graph"
 
 __all__ = ["graph"]
