@@ -6,7 +6,7 @@ from typing import Any, Optional
 
 from langchain_core.runnables import RunnableConfig
 
-from chatbot_graph.prompts import SYSTEM_PROMPT
+from chat_graph.prompts import SYSTEM_PROMPT
 
 
 @dataclass(kw_only=True)
@@ -14,6 +14,7 @@ class ChatConfigurable:
     """The configurable fields for the chatbot."""
 
     user_id: str = "default-user"
+    supabase: str = ""
     mem_assistant_id: str = (
         "memory_graph"
     )

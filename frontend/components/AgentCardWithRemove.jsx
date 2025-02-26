@@ -48,8 +48,8 @@ export default function AgentCardWithRemove({ agent, onRemove, userId }) {
 
   const handleRemove = async () => {
     try {
-      await fetch(`/api/agent?userId=${userId}&agentId=${agent.id}`, {
-        method: 'DELETE',
+      await fetch(`/api/agents/user?userId=${userId}&agentId=${agent.id}`, {
+        method: 'DELETE'
       });
       onRemove(agent.id);
     } catch (error) {
@@ -58,8 +58,8 @@ export default function AgentCardWithRemove({ agent, onRemove, userId }) {
     }
   };
 
-  const handleRun = () => {
-    router.push(`/agent?id=${agent.id}`);
+  const handleClick = () => {
+    router.push(`/agents?id=${agent.id}`);
   };
 
   return (
@@ -103,7 +103,7 @@ export default function AgentCardWithRemove({ agent, onRemove, userId }) {
         <RunButton
           variant="contained"
           fullWidth
-          onClick={handleRun}
+          onClick={handleClick}
         >
           Run
         </RunButton>

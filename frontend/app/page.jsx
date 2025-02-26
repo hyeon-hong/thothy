@@ -35,11 +35,18 @@ export default function Home() {
         return;
       }
       try {
-        const response = await fetch(`/api/agent?userId=${user.id}`);
+        const response = await fetch(`/api/agents/user?userId=${user.id}`);
         const data = await response.json();
-        setSelectedAgentIds(new Set(data.map(ua => ua.agent.id)));
+        
+        if (Array.isArray(data)) {
+          setSelectedAgentIds(new Set(data.map(agent => agent.id)));
+        } else {
+          console.error('Unexpected data format:', data);
+          setSelectedAgentIds(new Set());
+        }
       } catch (error) {
         console.error('Error fetching selected agents:', error);
+        setSelectedAgentIds(new Set());
       }
     };
 

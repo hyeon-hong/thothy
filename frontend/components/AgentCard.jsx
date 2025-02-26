@@ -140,7 +140,7 @@ export default function AgentCard({ agent, onSelect, isSelected: propIsSelected,
       return;
     }
     
-    router.push(`/agent?id=${agent.id}`);
+    router.push(`/agents?id=${agent.id}`);
   };
 
   return (

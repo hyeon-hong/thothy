@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { saveUserAgent, getUserAgents, removeUserAgent } from '../../../lib/db';
+import { saveUserAgent, getUserAgents, removeUserAgent } from '../../../../lib/db';
 
 export async function POST(request) {
   try {
