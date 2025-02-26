@@ -1,6 +1,9 @@
 """Simple chat agent using LangGraph."""
 
+import os
+from dotenv import load_dotenv
 from pydantic import BaseModel
+from psycopg import Connection
 
 from langchain.chat_models import init_chat_model
 
@@ -8,11 +11,27 @@ from langgraph.checkpoint.memory import MemorySaver
 from langgraph.graph import MessagesState, StateGraph, START, END
 from langgraph.store.memory import InMemoryStore
 from langgraph.store.base import BaseStore
-from langgraph.store.postgres import AsyncPostgresStore
+from langgraph.store.postgres import PostgresStore
 
 from langmem import ReflectionExecutor, create_memory_store_manager
 from chat_graph.configuration import ChatConfigurable
 
+# Get database URL
+load_dotenv()
+db_url = os.getenv('SUPABASE_URL')
+if not db_url:
+    raise ValueError("SUPABASE_URL environment variable is not set")
+
+conn = Connection.connect(db_url, autocommit=True)
+store = PostgresStore(
+    conn,
+    index={
+        "dims": 1536,
+        "embed": "openai:text-embedding-3-small",
+        "fields": ["test-memory"],
+    }
+)
+store.setup()
 
 llm = init_chat_model("gpt-4o-mini", model_provider="openai", temperature=0)
 
@@ -28,12 +47,12 @@ class Triple(BaseModel):
 
 namespace = ("memories", "{user_id}", "triples")
 
-in_memory_store = InMemoryStore(
-    index={
-        "dims": 1536,
-        "embed": "openai:text-embedding-3-small",
-    }
-)
+# in_memory_store = InMemoryStore(
+#     index={
+#         "dims": 1536,
+#         "embed": "openai:text-embedding-3-small",
+#     }
+# )
 
 memory_manager = create_memory_store_manager(
     "anthropic:claude-3-5-sonnet-latest",
@@ -44,13 +63,13 @@ memory_manager = create_memory_store_manager(
     namespace=namespace,
 )
 
+# Wrap memory_manager to handle deferred background processing
+executor = ReflectionExecutor(memory_manager, store=store)
+
 
 async def chatbot(state: MessagesState, config: ChatConfigurable, *, store: BaseStore) -> dict:
     """Chat node that processes messages and generates responses."""
     print(f"store: {store}")
-
-    # Wrap memory_manager to handle deferred background processing
-    executor = ReflectionExecutor(memory_manager, store=store)
 
     # Get user_id from config
     configurable = ChatConfigurable.from_runnable_config(config)
@@ -62,9 +81,10 @@ async def chatbot(state: MessagesState, config: ChatConfigurable, *, store: Base
     namespace = ("memories", user_id, "triples")
 
     # Search for existing memories
-    memories = await store.asearch(namespace, query=str(
+    memories = store.search(namespace, query=str(
         state["messages"][-1].content))
-    print(f"Found {len(memories)} existing memories")
+    print(f"memories: {memories}")
+    memories = []
 
     info = "\n".join([d.value.get("data", "") for d in memories if d.value])
     system_msg = f"You are a helpful assistant talking to the user. User info: {info}"
@@ -78,7 +98,6 @@ async def chatbot(state: MessagesState, config: ChatConfigurable, *, store: Base
     print("Submitting memory processing task...")
     to_process = {"messages": [
         {"role": "user", "content": state["messages"][-1].content}] + [response]}
-
     executor.submit(to_process, after_seconds=0.5, config=config)
     print("Memory processing task submitted")
 
@@ -98,7 +117,7 @@ workflow.add_edge(START, "chatbot")
 workflow.add_edge("chatbot", END)
 
 # Compile graph
-graph = workflow.compile(checkpointer=MemorySaver(), store=in_memory_store)
+graph = workflow.compile(checkpointer=MemorySaver(), store=store)
 graph.name = "chat_agent"
 
 __all__ = ["graph"]

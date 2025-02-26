@@ -7,6 +7,8 @@ import asyncio
 from dotenv import load_dotenv
 from langchain_core.messages import HumanMessage
 from langgraph.store.postgres import AsyncPostgresStore
+from langgraph.prebuilt import create_react_agent
+
 from chat_graph.graph import graph, Triple
 
 # Load environment variables
@@ -51,7 +53,7 @@ class TestSupabaseMemory:
         assert "messages" in last_event
 
         # Wait a bit for background memory processing
-        await asyncio.sleep(2)
+        await asyncio.sleep(3)
 
         # Search for stored memories
         db_url = os.getenv('SUPABASE_URL')
@@ -69,6 +71,7 @@ class TestSupabaseMemory:
                 TEST_NAMESPACE,
                 query="Alice"
             )
+            print(f"memories: {memories}")
 
             # Verify memories were stored
             assert len(memories) > 0
