@@ -1,7 +1,7 @@
 "use client";
 
 import { useCopilotAction } from "@copilotkit/react-core";
-import { CopilotSidebar } from "@copilotkit/react-ui";
+import { CopilotChat } from "@copilotkit/react-ui";
 import "@copilotkit/react-ui/styles.css";
 import { useState } from "react";
 
@@ -120,7 +120,7 @@ export default function ChatAgentPage() {
         </div>
       </div>
 
-      <CopilotSidebar
+      <CopilotChat
         defaultOpen={true}
         labels={{
           title: "AI Assistant",
