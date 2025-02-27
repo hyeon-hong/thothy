@@ -11,8 +11,8 @@ export default function Home() {
       <CopilotSidebar
         defaultOpen={true}
         labels={{
-          title: "Popup Assistant",
-          initial: "Hi! I'm connected to an agent. How can I help?",
+          title: "AI Assistant",
+          initial: "Hi! I'm your UI assistant. I can help you interact with the page and change its appearance!",
         }}
       />
     </main>
@@ -30,6 +30,8 @@ function YourMainContent() {
       {
         name: "name",
         description: "The name of the user to greet.",
+        type: "string",
+        required: true,
       },
     ],
     render: ({ args }) => {
@@ -48,8 +50,9 @@ function YourMainContent() {
     parameters: [
       {
         name: "backgroundColor",
-        description:
-          "The background color to set. Make sure to pick nice colors.",
+        description: "The background color to set. Make sure to pick nice colors.",
+        type: "string",
+        required: true,
       },
     ],
     handler({ backgroundColor }) {
