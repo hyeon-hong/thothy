@@ -27,6 +27,7 @@ export default function MyAgents() {
                             name,
                             description,
                             image_url,
+                            graph_name,
                             code
                         )
                     `)
@@ -40,7 +41,8 @@ export default function MyAgents() {
                 // Transform the data to match the expected format
                 const agents = data.map(ua => ({
                     ...ua.agents,
-                    imageUrl: ua.agents.image_url // Map image_url to imageUrl for consistency
+                    imageUrl: ua.agents.image_url, // Map image_url to imageUrl for consistency
+                    graph_name: ua.agents.graph_name
                 }));
 
                 setMyAgents(agents);

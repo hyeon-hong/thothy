@@ -10,7 +10,7 @@ export async function GET() {
   try {
     const { data: agents, error } = await supabase
       .from('agents')
-      .select('*');
+      .select('id, name, description, image_url, graph_name');
 
     if (error) throw error;
 

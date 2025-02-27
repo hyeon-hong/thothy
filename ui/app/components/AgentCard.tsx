@@ -11,6 +11,7 @@ interface Agent {
   name: string;
   description: string;
   imageUrl?: string;
+  graph_name: string;
 }
 
 interface AgentCardProps {
@@ -155,7 +156,12 @@ export default function AgentCard({ agent, onSelect, isSelected: propIsSelected 
       return;
     }
     
-    router.push(`/agents?id=${agent.id}`);
+    if (!agent.graph_name) {
+      alert('This agent does not have a valid graph name');
+      return;
+    }
+
+    router.push(`/agents/${agent.graph_name}`);
   };
 
   return (
@@ -181,7 +187,7 @@ export default function AgentCard({ agent, onSelect, isSelected: propIsSelected 
         />
       )}
       <CardContent sx={{ flexGrow: 1 }}>
-        <HeadlineTypography gutterBottom variant="h5" component="div">
+        <HeadlineTypography gutterBottom variant="h5">
           {agent.name}
         </HeadlineTypography>
         <Typography 
