@@ -14,16 +14,9 @@ class ChatConfigurable:
     """The configurable fields for the chatbot."""
 
     user_id: str = "default-user"
-    supabase: str = ""
-    mem_assistant_id: str = (
-        "memory_graph"
-    )
     model: str = "anthropic/claude-3-5-sonnet-20240620"
     delay_seconds: int = 1
     system_prompt: str = SYSTEM_PROMPT
-
-    memory_types: Optional[list[dict]] = None
-    """The memory_types for the memory assistant."""
 
     @classmethod
     def from_runnable_config(

@@ -12,35 +12,40 @@ export default function AgentPage() {
     // CopilotKit configuration
     const copilotConfig = {
         runtimeUrl: "/api/copilotkit",
+        chatOptions: {
+            config: {
+                configurable: {
+                    user_id: "test-user",
+                    model: "anthropic/claude-3-5-sonnet-20240620",
+                    delay_seconds: 1,
+                    system_prompt:
+                        "You are a helpful and friendly chatbot. Get to know the user! Ask questions! Be spontaneous!",
+                },
+            },
+        },
         agent: graph_name,
+        properties: {
+            config: {
+                configurable: {
+                    user_id: "test-user",
+                    model: "anthropic/claude-3-5-sonnet-20240620",
+                    delay_seconds: 1,
+                    system_prompt:
+                        "You are a helpful and friendly chatbot. Get to know the user! Ask questions! Be spontaneous!",
+                },
+            },
+        },
         // Backend configuration
         backend: {
             timeout: 30000, // 30 seconds
             streaming: true,
-        },
-        // Chat configuration
-        chat: {
-            maxMessages: 100,
-            templatesSidebar: true,
-            config: {
-                configurable: {
-                    user_id: "test-user",
-                    supabase: "",
-                    mem_assistant_id: "memory_graph",
-                    model: "anthropic/claude-3-5-sonnet-20240620",
-                    delay_seconds: 1,
-                    system_prompt: (
-                        "You are a helpful and friendly chatbot. Get to know the user! Ask questions! Be spontaneous!"
-                    )
-                }
-            }
         },
         // UI configuration
         ui: {
             darkMode: true,
             markdown: true,
             codeHighlighting: true,
-        }
+        },
     };
 
     // Function to render the appropriate agent component
@@ -63,7 +68,6 @@ export default function AgentPage() {
         }
     };
 
-    // TODO: Add chat config to the copilot config
     return (
         <CopilotKit {...copilotConfig}>
             <div className="min-h-screen w-full">{renderAgentComponent()}</div>
