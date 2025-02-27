@@ -1,11 +1,12 @@
+"""Agent authentication & authorization"""
+
 import os
 import httpx
 from langgraph_sdk import Auth
 
 auth = Auth()
 
-# This is loaded from the `.env` file you created above
-SUPABASE_URL = os.environ["SUPABASE_URL"]
+SUPABASE_API_URL = os.environ["SUPABASE_API_URL"]
 SUPABASE_SERVICE_KEY = os.environ["SUPABASE_SERVICE_KEY"]
 
 
@@ -20,7 +21,7 @@ async def get_current_user(authorization: str | None):
         # Verify token with auth provider
         async with httpx.AsyncClient() as client:
             response = await client.get(
-                f"{SUPABASE_URL}/auth/v1/user",
+                f"{SUPABASE_API_URL}/auth/v1/user",
                 headers={
                     "Authorization": authorization,
                     "apiKey": SUPABASE_SERVICE_KEY,
