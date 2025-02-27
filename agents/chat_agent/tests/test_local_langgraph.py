@@ -8,7 +8,7 @@ from typing import Dict, Any, List
 class TestLocalLangGraph:
     # Base URL for the LangGraph API
     BASE_URL = (
-        "http://localhost:8000"  # Adjust if your server runs on different port
+        "http://localhost:8000"
     )
 
     def get_headers(self) -> Dict[str, str]:
@@ -49,25 +49,23 @@ class TestLocalLangGraph:
     ) -> Dict[str, Any]:
         """Create a new chat run in the thread and wait for completion"""
         url = f"{self.BASE_URL}/threads/{thread_id}/runs/wait"
-        
+
         # Format the message according to chat graph expectations
         message = self.create_chat_message(input_message)
-        
+
         # Default configuration data
         config = {
             "configurable": {
                 "user_id": "test-user",
-                "supabase": "",
-                "mem_assistant_id": "memory_graph",
                 "model": "anthropic/claude-3-5-sonnet-20240620",
                 "delay_seconds": 1,
                 "system_prompt": (
                     "You are a helpful and friendly chatbot. "
                     "Get to know the user! Ask questions! Be spontaneous!"
-                )
+                ),
             }
         }
-        
+
         payload = {
             "assistant_id": "chat_graph",  # Using graph_id as in OpenAPI
             "input": {
