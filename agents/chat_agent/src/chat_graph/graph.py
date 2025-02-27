@@ -27,7 +27,8 @@ store = PostgresStore(
     index={
         "dims": 1536,
         "embed": "openai:text-embedding-3-small",
-        "fields": ["test-memory"],
+        # Embed entire document (default)
+        "fields": ["$"],
     }
 )
 store.setup()
