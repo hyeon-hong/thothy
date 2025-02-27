@@ -1,74 +1,98 @@
 "use client";
 
-import { useCopilotAction } from "@copilotkit/react-core";
-import { CopilotSidebar } from "@copilotkit/react-ui";
-import { useState } from "react";
+import React from "react";
+import { Container, Grid, Typography } from "@mui/material";
+import AgentCard from "./components/AgentCard";
+import Header from "./components/Header";
+import MyAgents from "./components/MyAgents";
+import { useState, useEffect } from "react";
+import { useUser } from "./contexts/UserContext";
 
 export default function Home() {
-  return (
-    <main>
-      <YourMainContent />
-      <CopilotSidebar
-        defaultOpen={true}
-        labels={{
-          title: "AI Assistant",
-          initial: "Hi! I'm your UI assistant. I can help you interact with the page and change its appearance!",
-        }}
-      />
-    </main>
-  );
-}
+    const { user } = useUser();
+    const [currentView, setCurrentView] = useState("home"); // "home" or "myAgents"
+    const [agents, setAgents] = useState([]);
+    const [selectedAgentIds, setSelectedAgentIds] = useState(new Set());
 
-function YourMainContent() {
-  const [backgroundColor, setBackgroundColor] = useState("#ADD8E6");
+    useEffect(() => {
+        const fetchAgents = async () => {
+            try {
+                const response = await fetch("/api/agents");
+                const data = await response.json();
+                setAgents(data);
+            } catch (error) {
+                console.error("Error fetching agents:", error);
+            }
+        };
 
-  // Render a greeting in the chat
-  useCopilotAction({
-    name: "greetUser",
-    available: "remote", // make this available only to the agent
-    parameters: [
-      {
-        name: "name",
-        description: "The name of the user to greet.",
-        type: "string",
-        required: true,
-      },
-    ],
-    render: ({ args }) => {
-      return (
-        <div className="text-lg font-bold bg-blue-500 text-white p-2 rounded-xl text-center">
-          Hello, {args.name}!
-        </div>
-      );
-    },
-  });
+        fetchAgents();
+    }, []);
 
-  // Action for setting the background color
-  useCopilotAction({
-    name: "setBackgroundColor",
-    available: "remote", // make this available only to the agent
-    parameters: [
-      {
-        name: "backgroundColor",
-        description: "The background color to set. Make sure to pick nice colors.",
-        type: "string",
-        required: true,
-      },
-    ],
-    handler({ backgroundColor }) {
-      setBackgroundColor(backgroundColor);
-    },
-  });
+    useEffect(() => {
+        const fetchSelectedAgents = async () => {
+            if (!user?.id) {
+                setSelectedAgentIds(new Set());
+                return;
+            }
+            try {
+                const response = await fetch(
+                    `/api/agents/user?userId=${user.id}`
+                );
+                const data = await response.json();
 
-  // Render the main content
-  return (
-    <div
-      style={{ backgroundColor }}
-      className="h-screen w-screen flex justify-center items-center flex-col"
-    >
-      <h1 className="bg-blue-500 p-10 rounded-xl text-white text-4xl">
-        Your main content
-      </h1>
-    </div>
-  );
+                if (Array.isArray(data)) {
+                    setSelectedAgentIds(new Set(data.map((agent) => agent.id)));
+                } else {
+                    console.error("Unexpected data format:", data);
+                    setSelectedAgentIds(new Set());
+                }
+            } catch (error) {
+                console.error("Error fetching selected agents:", error);
+                setSelectedAgentIds(new Set());
+            }
+        };
+
+        fetchSelectedAgents();
+    }, [user?.id, currentView]);
+
+    const handleAgentSelect = (agentId) => {
+        setSelectedAgentIds((prev) => new Set([...prev, agentId]));
+    };
+
+    return (
+        <>
+            <Header onViewChange={setCurrentView} currentView={currentView} />
+            {currentView === "home" ? (
+                <Container maxWidth="lg" sx={{ py: 8 }}>
+                    <Typography
+                        variant="h3"
+                        component="h1"
+                        gutterBottom
+                        align="center"
+                        sx={{
+                            mb: 6,
+                            fontWeight: 700,
+                            letterSpacing: "-0.02em",
+                        }}
+                    >
+                        Agent Hub
+                    </Typography>
+                    <Grid container spacing={4} sx={{ mt: 2 }}>
+                        {agents.map((agent) => (
+                            <Grid item key={agent.id} xs={12} sm={6} md={4}>
+                                <AgentCard
+                                    agent={agent}
+                                    onSelect={handleAgentSelect}
+                                    userId={user?.id}
+                                    isSelected={selectedAgentIds.has(agent.id)}
+                                />
+                            </Grid>
+                        ))}
+                    </Grid>
+                </Container>
+            ) : (
+                <MyAgents userId={user?.id} />
+            )}
+        </>
+    );
 }
