@@ -12,16 +12,7 @@ export default function AgentPage() {
     // CopilotKit configuration
     const copilotConfig = {
         runtimeUrl: "/api/copilotkit",
-        agent: graph_name,
-        // Backend configuration
-        backend: {
-            timeout: 30000, // 30 seconds
-            streaming: true,
-        },
-        // Chat configuration
-        chat: {
-            maxMessages: 100,
-            templatesSidebar: true,
+        chatOptions: {
             config: {
                 configurable: {
                     user_id: "test-user",
@@ -31,6 +22,23 @@ export default function AgentPage() {
                         "You are a helpful and friendly chatbot. Get to know the user! Ask questions! Be spontaneous!",
                 },
             },
+        },
+        agent: graph_name,
+        properties: {
+            config: {
+                configurable: {
+                    user_id: "test-user",
+                    model: "anthropic/claude-3-5-sonnet-20240620",
+                    delay_seconds: 1,
+                    system_prompt:
+                        "You are a helpful and friendly chatbot. Get to know the user! Ask questions! Be spontaneous!",
+                },
+            },
+        },
+        // Backend configuration
+        backend: {
+            timeout: 30000, // 30 seconds
+            streaming: true,
         },
         // UI configuration
         ui: {
@@ -60,7 +68,6 @@ export default function AgentPage() {
         }
     };
 
-    // TODO: Add chat config to the copilot config
     return (
         <CopilotKit {...copilotConfig}>
             <div className="min-h-screen w-full">{renderAgentComponent()}</div>
