@@ -9,7 +9,6 @@ from langchain.chat_models import init_chat_model
 
 from langgraph.checkpoint.memory import MemorySaver
 from langgraph.graph import MessagesState, StateGraph, START, END
-from langgraph.store.memory import InMemoryStore
 from langgraph.store.base import BaseStore
 from langgraph.store.postgres import PostgresStore
 
@@ -46,13 +45,6 @@ class Triple(BaseModel):
 
 
 namespace = ("memories", "{user_id}", "triples")
-
-# in_memory_store = InMemoryStore(
-#     index={
-#         "dims": 1536,
-#         "embed": "openai:text-embedding-3-small",
-#     }
-# )
 
 memory_manager = create_memory_store_manager(
     "anthropic:claude-3-5-sonnet-latest",
