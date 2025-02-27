@@ -9,6 +9,7 @@ interface UserContextType {
   loading: boolean;
   signInWithGoogle: () => Promise<void>;
   signOut: () => Promise<void>;
+  supabase: typeof supabase;
 }
 
 const UserContext = createContext<UserContextType>({
@@ -16,6 +17,7 @@ const UserContext = createContext<UserContextType>({
   loading: true,
   signInWithGoogle: async () => {},
   signOut: async () => {},
+  supabase: supabase,
 });
 
 interface UserProviderProps {
@@ -68,7 +70,7 @@ export function UserProvider({ children }: UserProviderProps) {
   };
 
   return (
-    <UserContext.Provider value={{ user, loading, signInWithGoogle, signOut }}>
+    <UserContext.Provider value={{ user, loading, signInWithGoogle, signOut, supabase }}>
       {children}
     </UserContext.Provider>
   );

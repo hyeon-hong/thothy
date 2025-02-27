@@ -1,8 +1,24 @@
+'use client';
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardMedia, Typography, Button, Box } from '@mui/material';
 import { styled } from '@mui/material/styles';
 import { useRouter } from 'next/navigation';
 import { useUser } from '../contexts/UserContext';
+
+interface Agent {
+  id: string;
+  name: string;
+  description: string;
+  imageUrl?: string;
+}
+
+interface AgentCardProps {
+  agent: Agent;
+  onSelect?: (agentId: string) => void;
+  isSelected?: boolean;
+  showUnselect?: boolean;
+}
 
 const HeadlineTypography = styled(Typography)({
   fontFamily: "'Roboto Mono', monospace",
@@ -44,7 +60,7 @@ const RunButton = styled(Button)({
   },
 });
 
-export default function AgentCard({ agent, onSelect, isSelected: propIsSelected, showUnselect = false }) {
+export default function AgentCard({ agent, onSelect, isSelected: propIsSelected = false, showUnselect = false }: AgentCardProps) {
   const router = useRouter();
   const { user, supabase } = useUser();
   const [isSelected, setIsSelected] = useState(propIsSelected);
@@ -82,7 +98,6 @@ export default function AgentCard({ agent, onSelect, isSelected: propIsSelected,
         return; // Do nothing if already selected
       }
 
-      // Save user-agent relationship to Supabase
       const { error } = await supabase
         .from('user_agents')
         .insert({
