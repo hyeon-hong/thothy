@@ -1,36 +1,28 @@
 import asyncio
-
-from langchain_core.messages import HumanMessage
 from chat_graph.graph import graph
 
-# Create test message
-test_message = HumanMessage(
-    content="My name is Alice and I love pizza"
-)
 
-# Create test state
-state = {"messages": [test_message]}
-
-# Create test config
-config = {
-    "configurable": {
-        "thread_id": "test-thread-123",
-        "user_id": "test-user-123",
-        "model": "gpt-4-turbo-preview",
+# TODO: Handle langmem ReflectionExecutor
+async def test_chat_graph():
+    """Test the chat graph with a simple message."""
+    config = {
+        "configurable": {
+            "thread_id": "7ed19312-84c0-43b9-8861-40716ec13307",
+            "user_id": "alice-test"}
     }
-}
+    input_message = {
+        "role": "user",
+        "content": "My name is Alice, and I love pizza."
+    }
 
-# Collect all events from the stream
+    # Stream the response
+    async for chunk in graph.astream(
+        {"messages": [input_message]},
+        config,
+        stream_mode="values"
+    ):
+        print(f"Response: {chunk['messages'][-1].content}")
 
 
-async def main():
-    events = []
-    async for event in graph.astream(state, config, stream_mode="values"):
-        events.append(event)
-        event["messages"][-1].pretty_print()
-    print("waiting for 5 seconds")
-    await asyncio.sleep(5)
-    print("done waiting")
-    print(f"events: {events}")
-
-asyncio.run(main())
+if __name__ == "__main__":
+    asyncio.run(test_chat_graph())

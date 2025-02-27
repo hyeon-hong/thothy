@@ -25,10 +25,10 @@ requires = ["setuptools>=73.0.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools]
-packages = ["research_agent"]
+packages = ["research_graph"]
 [tool.setuptools.package-dir]
-"research_agent" = "src/research_agent"
-"langgraph.templates.thothy.research_agent" = "src/research_agent"
+"research_graph" = "src/research_graph"
+"langgraph.templates.thothy.research_graph" = "src/research_graph"
 
 
 [tool.setuptools.package-data]

@@ -1,0 +1,74 @@
+"use client";
+
+import { useCopilotAction } from "@copilotkit/react-core";
+import { CopilotSidebar } from "@copilotkit/react-ui";
+import { useState } from "react";
+
+export default function Home() {
+  return (
+    <main>
+      <YourMainContent />
+      <CopilotSidebar
+        defaultOpen={true}
+        labels={{
+          title: "AI Assistant",
+          initial: "Hi! I'm your UI assistant. I can help you interact with the page and change its appearance!",
+        }}
+      />
+    </main>
+  );
+}
+
+function YourMainContent() {
+  const [backgroundColor, setBackgroundColor] = useState("#ADD8E6");
+
+  // Render a greeting in the chat
+  useCopilotAction({
+    name: "greetUser",
+    available: "remote", // make this available only to the agent
+    parameters: [
+      {
+        name: "name",
+        description: "The name of the user to greet.",
+        type: "string",
+        required: true,
+      },
+    ],
+    render: ({ args }) => {
+      return (
+        <div className="text-lg font-bold bg-blue-500 text-white p-2 rounded-xl text-center">
+          Hello, {args.name}!
+        </div>
+      );
+    },
+  });
+
+  // Action for setting the background color
+  useCopilotAction({
+    name: "setBackgroundColor",
+    available: "remote", // make this available only to the agent
+    parameters: [
+      {
+        name: "backgroundColor",
+        description: "The background color to set. Make sure to pick nice colors.",
+        type: "string",
+        required: true,
+      },
+    ],
+    handler({ backgroundColor }) {
+      setBackgroundColor(backgroundColor);
+    },
+  });
+
+  // Render the main content
+  return (
+    <div
+      style={{ backgroundColor }}
+      className="h-screen w-screen flex justify-center items-center flex-col"
+    >
+      <h1 className="bg-blue-500 p-10 rounded-xl text-white text-4xl">
+        Your main content
+      </h1>
+    </div>
+  );
+}
