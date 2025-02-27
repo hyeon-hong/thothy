@@ -1,6 +1,6 @@
 {
   "python_version": "3.12",
-  "env": "../../../.env",
+  "env": "../../.env",
   "dependencies": [
     "./src/chat_graph"
   ],
