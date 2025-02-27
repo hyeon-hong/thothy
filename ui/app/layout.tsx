@@ -1,39 +1,66 @@
-import type { Metadata } from "next";
+"use client";
 
-import { CopilotKit } from "@copilotkit/react-core";
+import React from "react";
+import { ThemeProvider, createTheme } from "@mui/material/styles";
+import CssBaseline from "@mui/material/CssBaseline";
+import { UserProvider } from "./contexts/UserContext";
 
-import "@copilotkit/react-ui/styles.css";
-import "./globals.css";
+const theme = createTheme({
+    palette: {
+        mode: "light",
+        background: {
+            default: "#ffffff",
+        },
+        primary: {
+            main: "#000000",
+        },
+    },
+    typography: {
+        fontFamily: "'Roboto', 'Arial', sans-serif",
+        h1: {
+            fontSize: "4rem",
+            fontWeight: 700,
+            letterSpacing: "-0.02em",
+        },
+        h3: {
+            fontSize: "2.5rem",
+            fontWeight: 700,
+            letterSpacing: "-0.02em",
+        },
+        h5: {
+            fontFamily: "'Roboto Mono', monospace",
+        },
+    },
+    components: {
+        MuiButton: {
+            styleOverrides: {
+                root: {
+                    borderRadius: 28,
+                    padding: "10px 24px",
+                    textTransform: "none",
+                    fontSize: "1rem",
+                },
+            },
+        },
+    },
+});
 
-export const metadata: Metadata = {
-    title: "CoAgents Starter",
-    description: "CoAgents Starter",
-};
-
-export default function RootLayout({ children }: { children: any }) {
+export default function RootLayout({ children }) {
     return (
         <html lang="en">
+            <head>
+                <link
+                    href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;700&display=swap"
+                    rel="stylesheet"
+                />
+            </head>
             <body>
-                <CopilotKit
-                    agent="chat_graph"
-                    runtimeUrl="/api/copilotkit"
-                    // threadId="7ed19312-84c0-43b9-8861-40716ec13307"
-                    chatOptions={{
-                        configurable: {
-                            user_id: "web-user",
-                            supabase: "",
-                            mem_assistant_id: "memory_graph",
-                            model: "anthropic/claude-3-5-sonnet-20240620",
-                            delay_seconds: 1,
-                            system_prompt:
-                                "You are a helpful UI assistant. You can interact with the webpage " +
-                                "using actions like greetUser and setBackgroundColor. Be friendly and helpful!",
-                        },
-                    }}
-                    showDevConsole={true}
-                >
-                    {children}
-                </CopilotKit>
+                <UserProvider>
+                    <ThemeProvider theme={theme}>
+                        <CssBaseline />
+                        {children}
+                    </ThemeProvider>
+                </UserProvider>
             </body>
         </html>
     );
