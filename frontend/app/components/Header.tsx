@@ -14,6 +14,7 @@ import {
 } from '@mui/material';
 import { useAuth } from '../contexts/AuthContext';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 interface HeaderProps {
   currentView: string;
@@ -24,6 +25,14 @@ export default function Header({ currentView, onViewChange }: HeaderProps) {
   const { user, signInWithGoogle, signOut } = useAuth();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const router = useRouter();
+
+  const navButtonStyle = {
+    textTransform: 'none',
+    fontSize: '1rem',
+    minWidth: 'auto',
+    px: 2,
+  };
 
   return (
     <AppBar position="static" color="transparent" elevation={0} sx={{ borderBottom: '2px solid rgba(0, 0, 0, 0.12)' }}>
@@ -46,8 +55,9 @@ export default function Header({ currentView, onViewChange }: HeaderProps) {
           <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
             <Button
               color={currentView === 'home' ? 'primary' : 'inherit'}
-              onClick={() => onViewChange('home')}
+              onClick={() => router.push('/')}
               sx={{
+                ...navButtonStyle,
                 fontWeight: currentView === 'home' ? 700 : 400,
               }}
             >
@@ -57,8 +67,9 @@ export default function Header({ currentView, onViewChange }: HeaderProps) {
             {user && (
               <Button
                 color={currentView === 'myAgents' ? 'primary' : 'inherit'}
-                onClick={() => onViewChange('myAgents')}
+                onClick={() => router.push('/my-agents')}
                 sx={{
+                  ...navButtonStyle,
                   fontWeight: currentView === 'myAgents' ? 700 : 400,
                 }}
               >
