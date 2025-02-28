@@ -57,12 +57,12 @@ export function ChatSidebar() {
       {/* Collapse Toggle Button */}
       <button
         onClick={() => setIsCollapsed(!isCollapsed)}
-        className="absolute -right-3 top-4 bg-gray-200 rounded-full p-1 hover:bg-gray-300 z-10"
+        className="absolute -right-3 top-4 bg-gray-200 rounded-full p-1.5 hover:bg-gray-300 z-10"
         title={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
       >
         <svg
           xmlns="http://www.w3.org/2000/svg"
-          className={`h-4 w-4 transition-transform ${isCollapsed ? 'rotate-180' : ''}`}
+          className={`h-5 w-5 transition-transform ${isCollapsed ? 'rotate-180' : ''}`}
           viewBox="0 0 20 20"
           fill="currentColor"
         >
@@ -76,65 +76,80 @@ export function ChatSidebar() {
 
       {/* Resize Handle */}
       <div
-        className="absolute right-0 top-0 bottom-0 w-1 cursor-ew-resize hover:bg-blue-500 transition-colors"
+        className={`absolute right-0 top-0 bottom-0 w-1 cursor-ew-resize hover:bg-blue-500 transition-colors ${
+          isCollapsed ? 'hidden' : ''
+        }`}
         onMouseDown={startResizing}
       />
 
-      {!isCollapsed && (
+      {/* Loading State */}
+      {(authLoading || !session?.access_token) ? (
+        <div className="flex flex-col items-center justify-center flex-1 p-4">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mb-4"></div>
+          {!isCollapsed && (
+            <p className="text-gray-500 text-sm text-center">
+              {authLoading ? "Loading..." : "Please sign in to view threads"}
+            </p>
+          )}
+        </div>
+      ) : (
         <>
-          {/* Loading State */}
-          {(authLoading || !session?.access_token) ? (
-            <div className="flex flex-col items-center justify-center flex-1 p-4">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mb-4"></div>
-              <p className="text-gray-500 text-sm text-center">
-                {authLoading ? "Loading..." : "Please sign in to view threads"}
-              </p>
-            </div>
-          ) : (
-            <>
-              {/* New Chat Button */}
-              <div className="p-4 shrink-0">
-                <button
-                  onClick={createNewThread}
-                  className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
-                >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="h-5 w-5"
-                    viewBox="0 0 20 20"
-                    fill="currentColor"
-                  >
-                    <path
-                      fillRule="evenodd"
-                      d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
-                  New Chat
-                </button>
-              </div>
+          {/* New Chat Button */}
+          <div className={`${isCollapsed ? 'p-2 mt-12' : 'p-4'} shrink-0`}>
+            <button
+              onClick={createNewThread}
+              className={`w-full flex items-center justify-center gap-2 ${
+                isCollapsed ? 'p-2' : 'px-4 py-2'
+              } bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors`}
+              title="New Chat"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-5 w-5"
+                viewBox="0 0 20 20"
+                fill="currentColor"
+              >
+                <path
+                  fillRule="evenodd"
+                  d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z"
+                  clipRule="evenodd"
+                />
+              </svg>
+              {!isCollapsed && "New Chat"}
+            </button>
+          </div>
 
-              {/* Chat List */}
-              <div className="flex-1 overflow-y-auto min-h-0">
-                {threads.map((thread) => {
-                  const title = thread.values?.title || "New Chat";
-                  const description = thread.values?.description;
-                  const lastMessage = thread.values?.messages?.[thread.values.messages.length - 1];
-                  const messageContent = typeof lastMessage?.content === 'string' 
-                    ? lastMessage.content 
-                    : lastMessage?.content?.text || "No messages yet";
-                  
-                  return (
-                    <div
-                      key={thread.thread_id}
-                      className="flex items-center hover:bg-gray-100 transition-colors relative [&:hover>button:last-child]:block"
-                    >
-                      <button
-                        onClick={() => switchThread(thread.thread_id)}
-                        className={`flex-1 text-left p-3 group ${
-                          currentThreadId === thread.thread_id ? "bg-gray-100" : ""
-                        }`}
-                      >
+          {/* Chat List */}
+          <div className="flex-1 overflow-y-auto min-h-0">
+            {threads.map((thread) => {
+              const title = thread.values?.title || "New Chat";
+              const description = thread.values?.description;
+              const lastMessage = thread.values?.messages?.[thread.values.messages.length - 1];
+              const messageContent = typeof lastMessage?.content === 'string' 
+                ? lastMessage.content 
+                : lastMessage?.content?.text || "No messages yet";
+              
+              // Get first two characters for collapsed view
+              const shortTitle = title.substring(0, 2).toUpperCase();
+              
+              return (
+                <div
+                  key={thread.thread_id}
+                  className="flex items-center hover:bg-gray-100 transition-colors relative [&:hover>button:last-child]:block"
+                >
+                  <button
+                    onClick={() => switchThread(thread.thread_id)}
+                    className={`flex-1 text-left ${isCollapsed ? 'p-2' : 'p-3'} group ${
+                      currentThreadId === thread.thread_id ? "bg-gray-100" : ""
+                    }`}
+                    title={isCollapsed ? title : undefined}
+                  >
+                    {isCollapsed ? (
+                      <div className="font-medium text-gray-900 text-center">
+                        {shortTitle}
+                      </div>
+                    ) : (
+                      <>
                         <div className="font-medium text-gray-900 truncate">
                           {title}
                         </div>
@@ -144,31 +159,33 @@ export function ChatSidebar() {
                         >
                           {description || messageContent}
                         </div>
-                      </button>
-                      <button
-                        onClick={(e) => handleDelete(e, thread.thread_id)}
-                        className="hidden absolute right-2 p-2 text-gray-400 hover:text-red-600 transition-colors"
-                        title="Delete thread"
+                      </>
+                    )}
+                  </button>
+                  {!isCollapsed && (
+                    <button
+                      onClick={(e) => handleDelete(e, thread.thread_id)}
+                      className="hidden absolute right-2 p-2 text-gray-400 hover:text-red-600 transition-colors"
+                      title="Delete thread"
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="h-5 w-5"
+                        viewBox="0 0 20 20"
+                        fill="currentColor"
                       >
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          className="h-5 w-5"
-                          viewBox="0 0 20 20"
-                          fill="currentColor"
-                        >
-                          <path
-                            fillRule="evenodd"
-                            d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z"
-                            clipRule="evenodd"
-                          />
-                        </svg>
-                      </button>
-                    </div>
-                  );
-                })}
-              </div>
-            </>
-          )}
+                        <path
+                          fillRule="evenodd"
+                          d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z"
+                          clipRule="evenodd"
+                        />
+                      </svg>
+                    </button>
+                  )}
+                </div>
+              );
+            })}
+          </div>
         </>
       )}
     </div>

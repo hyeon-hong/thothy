@@ -323,7 +323,9 @@ export function Chat({ inputRef, currentView, onViewChange }) {
   return (
     <div className="flex flex-col h-screen bg-gray-50">
       {/* Header */}
-      <Header currentView={currentView} onViewChange={onViewChange} />
+      <div className="border-b border-gray-200 shadow-sm">
+        <Header currentView={currentView} onViewChange={onViewChange} />
+      </div>
 
       {/* Main Content Area */}
       <div className="flex flex-1 overflow-hidden">
