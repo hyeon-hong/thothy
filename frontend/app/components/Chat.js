@@ -13,6 +13,7 @@ export function Chat({ inputRef }) {
   const defaultInputRef = useRef(null);
   const actualInputRef = inputRef || defaultInputRef;
   const [isSpeaking, setIsSpeaking] = useState(false);
+  const [threadMessages, setThreadMessages] = useState([]);
   const [currentWordIndex, setCurrentWordIndex] = useState(-1);
   const [currentMessageIndex, setCurrentMessageIndex] = useState(-1);
   const speechQueue = useRef([]);
@@ -20,6 +21,33 @@ export function Chat({ inputRef }) {
   const nextUtterance = useRef(null);
   const voicesLoaded = useRef(false);
   const OVERLAP_TIME = 100;
+
+  // Add effect to handle thread messages loaded event
+  useEffect(() => {
+    const handleThreadMessagesLoaded = (event) => {
+      const { messages: loadedMessages } = event.detail;
+      console.log('Thread messages loaded:', loadedMessages);
+      if (Array.isArray(loadedMessages)) {
+        // Convert the messages to the expected format
+        const formattedMessages = loadedMessages.map(msg => ({
+          role: msg.role,
+          content: msg.content[0]?.text?.value || msg.content
+        }));
+        setThreadMessages(formattedMessages);
+      }
+    };
+
+    // Add event listener
+    window.addEventListener('threadMessagesLoaded', handleThreadMessagesLoaded);
+
+    // Cleanup
+    return () => {
+      window.removeEventListener('threadMessagesLoaded', handleThreadMessagesLoaded);
+    };
+  }, []);
+
+  // Combine thread messages with new messages
+  const allMessages = [...threadMessages, ...messages];
 
   // Split text into smaller, more manageable chunks
   const splitTextIntoChunks = (text) => {
@@ -349,7 +377,7 @@ export function Chat({ inputRef }) {
 
           {/* Messages area - fills remaining space */}
           <div className="flex-1 overflow-y-auto p-4 space-y-4">
-            {messages.map((message, index) => (
+            {allMessages.map((message, index) => (
               <div
                 key={index}
                 className={`flex ${
@@ -363,7 +391,7 @@ export function Chat({ inputRef }) {
                       : "bg-white text-gray-800 mr-4"
                   } ${
                     isLoading &&
-                    index === messages.length - 1 &&
+                    index === allMessages.length - 1 &&
                     message.role === "assistant"
                       ? "animate-pulse"
                       : ""

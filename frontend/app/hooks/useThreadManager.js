@@ -12,6 +12,8 @@ export function useThreadManager(userId, client) {
     const [isLoading, setIsLoading] = useState(false);
     const [retryCount, setRetryCount] = useState(0);
     const { refreshSession } = useAuth();
+    const [shouldFetchMessages, setShouldFetchMessages] = useState(false);
+    const [initialLoadComplete, setInitialLoadComplete] = useState(false);
     console.log("userId", userId);
     console.log("client", client);
 
@@ -89,6 +91,17 @@ export function useThreadManager(userId, client) {
 
                 setThreads(sortedThreads);
                 setRetryCount(0); // Reset retry count on success
+
+                // Auto-select the first thread if no thread is currently selected
+                if (sortedThreads.length > 0 && !currentThreadId) {
+                    const firstThread = sortedThreads[0];
+                    console.log("Auto-selecting first thread:", firstThread.thread_id);
+                    setCurrentThreadId(firstThread.thread_id);
+                    localStorage.setItem(THREAD_ID_KEY, firstThread.thread_id);
+                }
+                
+                // Mark initial load as complete
+                setInitialLoadComplete(true);
             } catch (error) {
                 console.error("Error fetching threads:", error);
                 if ((error.status === 401 || error.status === 403) && retry && retryCount < MAX_RETRIES) {
@@ -104,8 +117,53 @@ export function useThreadManager(userId, client) {
                 setIsLoading(false);
             }
         }, 300),
-        [userId, client, retryCount, refreshSession]
+        [userId, client, retryCount, refreshSession, currentThreadId]
     );
+
+    // New effect to handle initial message loading
+    useEffect(() => {
+        if (initialLoadComplete && currentThreadId && client) {
+            console.log("Initial load complete, fetching messages for thread:", currentThreadId);
+            setShouldFetchMessages(true);
+        }
+    }, [initialLoadComplete, currentThreadId, client]);
+
+    // Effect to fetch messages when a thread is selected (either by user or auto-selection)
+    useEffect(() => {
+        const fetchMessages = async () => {
+            if (!currentThreadId || !client || !shouldFetchMessages) return;
+
+            try {
+                console.log("Fetching messages for thread:", currentThreadId);
+                await withRetry(
+                    async () => {
+                        // Use the correct API endpoint structure
+                        const response = await client.threads.get(currentThreadId);
+                        const messages = response.messages || [];
+                        console.log("Fetched messages:", messages);
+                        
+                        // Emit a custom event that the Chat component can listen to
+                        window.dispatchEvent(new CustomEvent('threadMessagesLoaded', {
+                            detail: { messages, threadId: currentThreadId }
+                        }));
+                    },
+                    "Fetch messages"
+                );
+            } catch (error) {
+                console.error("Error fetching messages:", error);
+            } finally {
+                setShouldFetchMessages(false);
+            }
+        };
+
+        fetchMessages();
+    }, [currentThreadId, client, shouldFetchMessages]);
+
+    // Update the setCurrentThreadId function to trigger message fetch
+    const setCurrentThreadIdWithMessages = useCallback((threadId) => {
+        setCurrentThreadId(threadId);
+        setShouldFetchMessages(true);
+    }, []);
 
     // Load threads on mount and when userId or client changes
     useEffect(() => {
@@ -147,7 +205,10 @@ export function useThreadManager(userId, client) {
             try {
                 if (currentThreadId) {
                     const thread = await getThreadById(currentThreadId);
-                    if (thread) return;
+                    if (thread) {
+                        setShouldFetchMessages(true); // Trigger message fetch for existing thread
+                        return;
+                    }
                 }
 
                 const storedThreadId = localStorage.getItem(THREAD_ID_KEY);
@@ -156,6 +217,7 @@ export function useThreadManager(userId, client) {
                         const thread = await getThreadById(storedThreadId);
                         if (thread) {
                             setCurrentThreadId(storedThreadId);
+                            setShouldFetchMessages(true); // Trigger message fetch for restored thread
                             return;
                         }
                     } catch (error) {
@@ -174,6 +236,7 @@ export function useThreadManager(userId, client) {
                 if (threads.length > 0) {
                     setCurrentThreadId(threads[0].thread_id);
                     localStorage.setItem(THREAD_ID_KEY, threads[0].thread_id);
+                    setShouldFetchMessages(true); // Trigger message fetch for first thread
                     return;
                 }
 
@@ -181,6 +244,7 @@ export function useThreadManager(userId, client) {
                 const newThread = await createNewThread();
                 if (newThread) {
                     setCurrentThreadId(newThread.thread_id);
+                    setShouldFetchMessages(true); // Trigger message fetch for new thread
                 }
             } catch (error) {
                 if (error.status === 401 && retryCount < MAX_RETRIES) {
@@ -346,7 +410,7 @@ export function useThreadManager(userId, client) {
         createNewThread,
         deleteThread,
         updateThreadMetadata,
-        setCurrentThreadId,
+        setCurrentThreadId: setCurrentThreadIdWithMessages,
         refreshThreads: () => debouncedFetchThreads(true),
         setThreads,
     };
