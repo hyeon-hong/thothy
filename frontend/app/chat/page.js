@@ -1,3 +1,5 @@
+"use client";
+
 import "./index.css";
 import React, { useState, useEffect } from "react";
 import { createClient } from "@supabase/supabase-js";
@@ -7,13 +9,10 @@ import { Chat } from "../components/Chat";
 import { ChatProvider } from "../contexts/ChatContext";
 import { AuthProvider } from "../contexts/AuthContext";
 
-const SUPABASE_PROJECT_URL = process.env.SUPABASE_API_URL;
-const ANON_KEY = process.env.SUPABASE_SERVICE_KEY;
-const REDIRECT_TO =
-    process.env.NEXT_PUBLIC_REDIRECT_TO ?? window.location.origin;
-
-// Initialize the Supabase client
-const supabase = createClient(SUPABASE_PROJECT_URL, ANON_KEY);
+const supabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_API_URL,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+);
 
 // Error boundary component
 class ErrorBoundary extends React.Component {
@@ -42,8 +41,12 @@ class ErrorBoundary extends React.Component {
 export default function ChatPage() {
     const [session, setSession] = useState(null);
     const [error, setError] = useState(null);
+    const [redirectTo, setRedirectTo] = useState(null);
 
     useEffect(() => {
+        // Set redirectTo after component mounts (client-side only)
+        setRedirectTo(process.env.NEXT_PUBLIC_REDIRECT_TO ?? window.location.origin);
+
         // Get initial session
         supabase.auth
             .getSession()
@@ -116,7 +119,7 @@ export default function ChatPage() {
                                 // Can enable other providers
                                 // 'github',
                             ]}
-                            redirectTo={REDIRECT_TO}
+                            redirectTo={redirectTo}
                         />
                     </ErrorBoundary>
                 </div>
