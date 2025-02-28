@@ -159,7 +159,7 @@ export function ChatSidebar() {
                           {title}
                         </div>
                         <div 
-                          className="text-sm text-gray-500 truncate group-hover:whitespace-normal group-hover:overflow-visible group-hover:absolute group-hover:bg-white group-hover:shadow-lg group-hover:p-2 group-hover:rounded group-hover:z-10 group-hover:max-w-md"
+                          className="text-sm text-gray-500 truncate"
                           title={description || messageContent}
                         >
                           {description || messageContent}
