@@ -1,8 +1,10 @@
 import { useState, useRef, useEffect } from 'react';
 import { useChat } from '../contexts/ChatContext';
+import { useAuth } from '../contexts/AuthContext';
 
 export function ChatSidebar() {
   const { threads, currentThreadId, createNewThread, switchThread, deleteThread } = useChat();
+  const { session, loading: authLoading } = useAuth();
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [width, setWidth] = useState(256); // 16 * 16 = 256px default
   const sidebarRef = useRef(null);
@@ -80,81 +82,93 @@ export function ChatSidebar() {
 
       {!isCollapsed && (
         <>
-          {/* New Chat Button */}
-          <div className="p-4">
-            <button
-              onClick={createNewThread}
-              className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-5 w-5"
-                viewBox="0 0 20 20"
-                fill="currentColor"
-              >
-                <path
-                  fillRule="evenodd"
-                  d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z"
-                  clipRule="evenodd"
-                />
-              </svg>
-              New Chat
-            </button>
-          </div>
-
-          {/* Chat List */}
-          <div className="flex-1 overflow-y-auto">
-            {threads.map((thread) => {
-              const title = thread.values?.title || "New Chat";
-              const description = thread.values?.description;
-              const lastMessage = thread.values?.messages?.[thread.values.messages.length - 1];
-              const messageContent = typeof lastMessage?.content === 'string' 
-                ? lastMessage.content 
-                : lastMessage?.content?.text || "No messages yet";
-              
-              return (
-                <div
-                  key={thread.thread_id}
-                  className="flex items-center hover:bg-gray-100 transition-colors relative [&:hover>button:last-child]:block"
+          {/* Loading State */}
+          {(authLoading || !session?.access_token) ? (
+            <div className="flex flex-col items-center justify-center h-full p-4">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mb-4"></div>
+              <p className="text-gray-500 text-sm text-center">
+                {authLoading ? "Loading..." : "Please sign in to view threads"}
+              </p>
+            </div>
+          ) : (
+            <>
+              {/* New Chat Button */}
+              <div className="p-4">
+                <button
+                  onClick={createNewThread}
+                  className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
                 >
-                  <button
-                    onClick={() => switchThread(thread.thread_id)}
-                    className={`flex-1 text-left p-3 group ${
-                      currentThreadId === thread.thread_id ? "bg-gray-100" : ""
-                    }`}
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-5 w-5"
+                    viewBox="0 0 20 20"
+                    fill="currentColor"
                   >
-                    <div className="font-medium text-gray-900 truncate">
-                      {title}
-                    </div>
-                    <div 
-                      className="text-sm text-gray-500 truncate group-hover:whitespace-normal group-hover:overflow-visible group-hover:absolute group-hover:bg-white group-hover:shadow-lg group-hover:p-2 group-hover:rounded group-hover:z-10 group-hover:max-w-md"
-                      title={description || messageContent}
+                    <path
+                      fillRule="evenodd"
+                      d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                  New Chat
+                </button>
+              </div>
+
+              {/* Chat List */}
+              <div className="flex-1 overflow-y-auto">
+                {threads.map((thread) => {
+                  const title = thread.values?.title || "New Chat";
+                  const description = thread.values?.description;
+                  const lastMessage = thread.values?.messages?.[thread.values.messages.length - 1];
+                  const messageContent = typeof lastMessage?.content === 'string' 
+                    ? lastMessage.content 
+                    : lastMessage?.content?.text || "No messages yet";
+                  
+                  return (
+                    <div
+                      key={thread.thread_id}
+                      className="flex items-center hover:bg-gray-100 transition-colors relative [&:hover>button:last-child]:block"
                     >
-                      {description || messageContent}
+                      <button
+                        onClick={() => switchThread(thread.thread_id)}
+                        className={`flex-1 text-left p-3 group ${
+                          currentThreadId === thread.thread_id ? "bg-gray-100" : ""
+                        }`}
+                      >
+                        <div className="font-medium text-gray-900 truncate">
+                          {title}
+                        </div>
+                        <div 
+                          className="text-sm text-gray-500 truncate group-hover:whitespace-normal group-hover:overflow-visible group-hover:absolute group-hover:bg-white group-hover:shadow-lg group-hover:p-2 group-hover:rounded group-hover:z-10 group-hover:max-w-md"
+                          title={description || messageContent}
+                        >
+                          {description || messageContent}
+                        </div>
+                      </button>
+                      <button
+                        onClick={(e) => handleDelete(e, thread.thread_id)}
+                        className="hidden absolute right-2 p-2 text-gray-400 hover:text-red-600 transition-colors"
+                        title="Delete thread"
+                      >
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          className="h-5 w-5"
+                          viewBox="0 0 20 20"
+                          fill="currentColor"
+                        >
+                          <path
+                            fillRule="evenodd"
+                            d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z"
+                            clipRule="evenodd"
+                          />
+                        </svg>
+                      </button>
                     </div>
-                  </button>
-                  <button
-                    onClick={(e) => handleDelete(e, thread.thread_id)}
-                    className="hidden absolute right-2 p-2 text-gray-400 hover:text-red-600 transition-colors"
-                    title="Delete thread"
-                  >
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      className="h-5 w-5"
-                      viewBox="0 0 20 20"
-                      fill="currentColor"
-                    >
-                      <path
-                        fillRule="evenodd"
-                        d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
-                  </button>
-                </div>
-              );
-            })}
-          </div>
+                  );
+                })}
+              </div>
+            </>
+          )}
         </>
       )}
     </div>
