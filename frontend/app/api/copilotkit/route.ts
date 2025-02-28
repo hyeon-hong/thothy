@@ -17,7 +17,6 @@ const runtime = new CopilotRuntime({
                 {
                     name: "chat_graph",
                     description: "A chat graph for a chatbot.",
-                    assistantId: "9ffb3165-ee08-53d3-8cd9-fa32b19028a1",
                 },
             ],
         }),
