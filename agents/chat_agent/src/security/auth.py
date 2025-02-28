@@ -8,7 +8,7 @@ from langgraph_sdk import Auth
 from datetime import timedelta
 
 SUPABASE_API_URL = os.environ["SUPABASE_API_URL"]
-SUPABASE_SERVICE_KEY = os.environ["SUPABASE_SERVICE_KEY"]
+SUPABASE_SERVICE_ROLE_KEY = os.environ["SUPABASE_SERVICE_ROLE_KEY"]
 SUPABASE_JWT_SECRET = os.environ["SUPABASE_JWT_SECRET"]
 ALGORITHM = "HS256"
 
@@ -46,7 +46,7 @@ async def get_current_user(
                 f"{SUPABASE_API_URL}/auth/v1/user",
                 headers={
                     "Authorization": f"Bearer {token}",
-                    "apiKey": SUPABASE_SERVICE_KEY,
+                    "apiKey": SUPABASE_SERVICE_ROLE_KEY,
                 },
             )
             assert response.status_code == 200
