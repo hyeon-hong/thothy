@@ -50,12 +50,14 @@ export function useThreadManager(userId, client) {
     if (!client) return;
 
     const initializeThread = async () => {
+      console.log("currentThreadId", currentThreadId);
       if (currentThreadId) {
         const thread = await getThreadById(currentThreadId);
         if (thread) return;
       }
 
       const storedThreadId = localStorage.getItem(THREAD_ID_KEY);
+      console.log("storedThreadId", storedThreadId);
       if (storedThreadId) {
         try {
           const thread = await getThreadById(storedThreadId);
@@ -90,7 +92,9 @@ export function useThreadManager(userId, client) {
       console.error("Invalid thread ID format or missing client");
       return null;
     }
-    
+
+    console.log("threadId", threadId);
+    console.log("client", client);
     try {
       return await client.threads.get(threadId);
     } catch (error) {

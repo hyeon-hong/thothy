@@ -12,29 +12,10 @@ export default function AgentPage() {
     const params = useParams();
     const graph_name = params.graph_name as string;
 
-    // CopilotKit configuration
-    const copilotConfig = {
-        runtimeUrl: "/api/copilotkit",
-        agent: graph_name,
-        // Backend configuration
-        backend: {
-            timeout: 30000, // 30 seconds
-            streaming: true,
-        },
-        // UI configuration
-        ui: {
-            darkMode: true,
-            markdown: true,
-            codeHighlighting: true,
-        },
-    };
-
     // Function to render the appropriate agent component
     const renderAgentComponent = () => {
-        console.log("graph_name", graph_name);
         switch (graph_name) {
             case "chat_graph":
-                // return <ChatAgentPage />;
                 return <ChatPage />;
             default:
                 return (
@@ -50,22 +31,5 @@ export default function AgentPage() {
         }
     };
 
-    return (
-        <ChatPage />
-        // <CopilotKit agent={graph_name} runtimeUrl="/api/copilotkit">
-        //     <div className="min-h-screen w-full">
-        //         <div className="container mx-auto px-4 py-8">
-        //             <h1 className="text-3xl font-bold mb-6">
-        //                 Agent: {graph_name}
-        //             </h1>
-        //             <CopilotPopup
-        //                 labels={{
-        //                     title: "AI Assistant",
-        //                     initial: "Hi! I'm your AI assistant. How can I help you today?",
-        //                 }}
-        //             />
-        //         </div>
-        //     </div>
-        // </CopilotKit>
-    );
+    return <ChatPage />;
 }

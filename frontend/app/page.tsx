@@ -21,7 +21,8 @@ export default function Home() {
                 const data = await response.json();
                 setAgents(data);
             } catch (error) {
-                console.error("Error fetching agents:", error);
+                setAgents([]);
+                // Handle error silently or show user-friendly message
             }
         };
 
@@ -43,12 +44,11 @@ export default function Home() {
                 if (Array.isArray(data)) {
                     setSelectedAgentIds(new Set(data.map((agent) => agent.id)));
                 } else {
-                    console.error("Unexpected data format:", data);
                     setSelectedAgentIds(new Set());
                 }
             } catch (error) {
-                console.error("Error fetching selected agents:", error);
                 setSelectedAgentIds(new Set());
+                // Handle error silently or show user-friendly message
             }
         };
 

@@ -34,20 +34,19 @@ export default function MyAgents() {
                     .eq('user_id', user.id);
 
                 if (error) {
-                    console.error('Error fetching my agents:', error);
-                    return;
+                    throw error;
                 }
 
                 // Transform the data to match the expected format
                 const agents = data.map(ua => ({
                     ...ua.agents,
-                    imageUrl: ua.agents.image_url, // Map image_url to imageUrl for consistency
+                    imageUrl: ua.agents.image_url,
                     graph_name: ua.agents.graph_name
                 }));
 
                 setMyAgents(agents);
             } catch (error) {
-                console.error('Error fetching my agents:', error);
+                setMyAgents([]);
             } finally {
                 setLoading(false);
             }
@@ -60,7 +59,7 @@ export default function MyAgents() {
         try {
             setMyAgents(prevAgents => prevAgents.filter(agent => agent.id !== agentId));
         } catch (error) {
-            console.error('Error removing agent:', error);
+            // Handle error silently
         }
     };
 

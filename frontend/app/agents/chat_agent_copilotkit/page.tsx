@@ -26,7 +26,6 @@ export default function ChatAgentPage() {
             fontSize,
         },
     });
-    console.log("coAgent", coAgent);
 
     // Render a greeting in the chat
     useCopilotAction({
