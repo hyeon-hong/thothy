@@ -3,7 +3,7 @@
 import React from "react";
 import { ThemeProvider, createTheme } from "@mui/material/styles";
 import CssBaseline from "@mui/material/CssBaseline";
-import { UserProvider } from "./contexts/UserContext";
+import { AuthProvider } from "./contexts/AuthContext";
 
 const theme = createTheme({
     palette: {
@@ -55,12 +55,12 @@ export default function RootLayout({ children }) {
                 />
             </head>
             <body>
-                <UserProvider>
+                <AuthProvider>
                     <ThemeProvider theme={theme}>
                         <CssBaseline />
                         {children}
                     </ThemeProvider>
-                </UserProvider>
+                </AuthProvider>
             </body>
         </html>
     );

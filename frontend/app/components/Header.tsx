@@ -10,9 +10,11 @@ import {
   Container,
   useTheme,
   useMediaQuery,
+  Avatar,
 } from '@mui/material';
-import { useUser } from '../contexts/UserContext';
+import { useAuth } from '../contexts/AuthContext';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 interface HeaderProps {
   currentView: string;
@@ -20,12 +22,20 @@ interface HeaderProps {
 }
 
 export default function Header({ currentView, onViewChange }: HeaderProps) {
-  const { user, signInWithGoogle, signOut } = useUser();
+  const { user, signInWithGoogle, signOut } = useAuth();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const router = useRouter();
+
+  const navButtonStyle = {
+    textTransform: 'none',
+    fontSize: '1rem',
+    minWidth: 'auto',
+    px: 2,
+  };
 
   return (
-    <AppBar position="static" color="transparent" elevation={0}>
+    <AppBar position="static" color="transparent" elevation={0} sx={{ borderBottom: '2px solid rgba(0, 0, 0, 0.12)' }}>
       <Container maxWidth="lg">
         <Toolbar sx={{ justifyContent: 'space-between', px: { xs: 0, sm: 2 } }}>
           <Link href="/" passHref style={{ textDecoration: 'none', color: 'inherit' }}>
@@ -42,11 +52,12 @@ export default function Header({ currentView, onViewChange }: HeaderProps) {
             </Typography>
           </Link>
 
-          <Box sx={{ display: 'flex', gap: 2 }}>
+          <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
             <Button
               color={currentView === 'home' ? 'primary' : 'inherit'}
-              onClick={() => onViewChange('home')}
+              onClick={() => router.push('/')}
               sx={{
+                ...navButtonStyle,
                 fontWeight: currentView === 'home' ? 700 : 400,
               }}
             >
@@ -56,8 +67,9 @@ export default function Header({ currentView, onViewChange }: HeaderProps) {
             {user && (
               <Button
                 color={currentView === 'myAgents' ? 'primary' : 'inherit'}
-                onClick={() => onViewChange('myAgents')}
+                onClick={() => router.push('/my-agents')}
                 sx={{
+                  ...navButtonStyle,
                   fontWeight: currentView === 'myAgents' ? 700 : 400,
                 }}
               >
@@ -70,8 +82,20 @@ export default function Header({ currentView, onViewChange }: HeaderProps) {
                 variant="outlined"
                 color="primary"
                 onClick={signOut}
-                sx={{ ml: 2 }}
+                sx={{ 
+                  ml: 2,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 1,
+                  px: 2,
+                  py: 1,
+                }}
               >
+                <Avatar
+                  src={user.user_metadata?.avatar_url || user.user_metadata?.picture}
+                  alt={user.user_metadata?.full_name || user.email}
+                  sx={{ width: 24, height: 24 }}
+                />
                 Sign Out
               </Button>
             ) : (

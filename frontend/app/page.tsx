@@ -1,27 +1,41 @@
 "use client";
 
 import React from "react";
-import { Container, Grid, Typography } from "@mui/material";
+import { Container, Grid, Typography, CircularProgress, Box } from "@mui/material";
 import AgentCard from "./components/AgentCard";
 import Header from "./components/Header";
 import MyAgents from "./components/MyAgents";
 import { useState, useEffect } from "react";
-import { useUser } from "./contexts/UserContext";
+import { useAuth } from "./contexts/AuthContext";
+
+interface Agent {
+    id: string;
+    name: string;
+    description: string;
+    image_url?: string;
+    graph_name?: string;
+    code?: string;
+}
 
 export default function Home() {
-    const { user } = useUser();
+    const { user } = useAuth();
     const [currentView, setCurrentView] = useState("home"); // "home" or "myAgents"
-    const [agents, setAgents] = useState([]);
-    const [selectedAgentIds, setSelectedAgentIds] = useState(new Set());
+    const [agents, setAgents] = useState<Agent[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [selectedAgentIds, setSelectedAgentIds] = useState<Set<string>>(new Set());
 
     useEffect(() => {
         const fetchAgents = async () => {
+            setLoading(true);
             try {
                 const response = await fetch("/api/agents");
                 const data = await response.json();
                 setAgents(data);
             } catch (error) {
-                console.error("Error fetching agents:", error);
+                setAgents([]);
+                // Handle error silently or show user-friendly message
+            } finally {
+                setLoading(false);
             }
         };
 
@@ -41,21 +55,20 @@ export default function Home() {
                 const data = await response.json();
 
                 if (Array.isArray(data)) {
-                    setSelectedAgentIds(new Set(data.map((agent) => agent.id)));
+                    setSelectedAgentIds(new Set(data.map((agent: Agent) => agent.id)));
                 } else {
-                    console.error("Unexpected data format:", data);
                     setSelectedAgentIds(new Set());
                 }
             } catch (error) {
-                console.error("Error fetching selected agents:", error);
                 setSelectedAgentIds(new Set());
+                // Handle error silently or show user-friendly message
             }
         };
 
         fetchSelectedAgents();
     }, [user?.id, currentView]);
 
-    const handleAgentSelect = (agentId) => {
+    const handleAgentSelect = (agentId: string) => {
         setSelectedAgentIds((prev) => new Set([...prev, agentId]));
     };
 
@@ -77,21 +90,35 @@ export default function Home() {
                     >
                         Agent Hub
                     </Typography>
-                    <Grid container spacing={4} sx={{ mt: 2 }}>
-                        {agents.map((agent) => (
-                            <Grid item key={agent.id} xs={12} sm={6} md={4}>
-                                <AgentCard
-                                    agent={agent}
-                                    onSelect={handleAgentSelect}
-                                    userId={user?.id}
-                                    isSelected={selectedAgentIds.has(agent.id)}
-                                />
-                            </Grid>
-                        ))}
-                    </Grid>
+                    {loading ? (
+                        <Box 
+                            display="flex" 
+                            justifyContent="center" 
+                            alignItems="center" 
+                            minHeight="300px"
+                        >
+                            <CircularProgress size={60} thickness={4} />
+                        </Box>
+                    ) : (
+                        <Grid container spacing={4} sx={{ mt: 2 }}>
+                            {agents.map((agent) => (
+                                <Grid item key={agent.id} xs={12} sm={6} md={4}>
+                                    <AgentCard
+                                        agent={{
+                                            ...agent,
+                                            imageUrl: agent.image_url,
+                                            graph_name: agent.graph_name || ''
+                                        }}
+                                        onSelect={handleAgentSelect}
+                                        isSelected={selectedAgentIds.has(agent.id)}
+                                    />
+                                </Grid>
+                            ))}
+                        </Grid>
+                    )}
                 </Container>
             ) : (
-                <MyAgents userId={user?.id} />
+                <MyAgents />
             )}
         </>
     );
