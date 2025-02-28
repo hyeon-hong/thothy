@@ -11,6 +11,7 @@ console.log("DEPLOYMENT_URL", DEPLOYMENT_URL);
 
 export function ChatProvider({ children }) {
   const { session } = useAuth();
+  console.log("session", session);
 
   const client = useMemo(() => {
     return new Client({
@@ -20,6 +21,7 @@ export function ChatProvider({ children }) {
       },
     });
   }, [session?.access_token]);
+  console.log("client", client);
 
   const {
     threads,

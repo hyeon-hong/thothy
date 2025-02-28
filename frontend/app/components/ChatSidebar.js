@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useChat } from '../contexts/ChatContext';
 import { useAuth } from '../contexts/AuthContext';
+import debounce from 'lodash/debounce';
 
 const HEADER_HEIGHT = 64; // Same as in Chat.js
 
@@ -11,6 +12,20 @@ export function ChatSidebar() {
   const [width, setWidth] = useState(256); // 16 * 16 = 256px default
   const sidebarRef = useRef(null);
   const isResizing = useRef(false);
+  const [isDeletingThread, setIsDeletingThread] = useState(false);
+
+  // Create a debounced version of deleteThread
+  const debouncedDeleteThread = useRef(
+    debounce(async (threadId) => {
+      if (isDeletingThread) return;
+      try {
+        setIsDeletingThread(true);
+        await deleteThread(threadId);
+      } finally {
+        setIsDeletingThread(false);
+      }
+    }, 300)
+  ).current;
 
   useEffect(() => {
     const handleMouseMove = (e) => {
@@ -33,6 +48,8 @@ export function ChatSidebar() {
     return () => {
       document.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('mouseup', handleMouseUp);
+      // Cleanup debounced function
+      debouncedDeleteThread.cancel();
     };
   }, []);
 
@@ -41,10 +58,12 @@ export function ChatSidebar() {
     document.body.style.cursor = 'ew-resize';
   };
 
-  const handleDelete = async (e, threadId) => {
-    e.stopPropagation(); // Prevent triggering thread switch
+  const handleDelete = (e, threadId) => {
+    e.preventDefault(); // Prevent any default behavior
+    e.stopPropagation(); // Prevent event bubbling
+    
     if (window.confirm('Are you sure you want to delete this thread?')) {
-      await deleteThread(threadId);
+      debouncedDeleteThread(threadId);
     }
   };
 
