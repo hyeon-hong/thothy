@@ -26,7 +26,7 @@ export default function Header({ currentView, onViewChange }: HeaderProps) {
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
   return (
-    <AppBar position="static" color="transparent" elevation={0}>
+    <AppBar position="static" color="transparent" elevation={0} sx={{ borderBottom: '2px solid rgba(0, 0, 0, 0.12)' }}>
       <Container maxWidth="lg">
         <Toolbar sx={{ justifyContent: 'space-between', px: { xs: 0, sm: 2 } }}>
           <Link href="/" passHref style={{ textDecoration: 'none', color: 'inherit' }}>

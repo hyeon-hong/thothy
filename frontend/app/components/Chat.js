@@ -333,7 +333,7 @@ export function Chat({ inputRef }) {
         {/* Main Chat Area */}
         <div className="flex-1 flex flex-col relative">
           {/* Chat header */}
-          <div className="p-4 bg-white border-b shadow-sm flex justify-between items-center">
+          <div className="p-4 bg-white border-b shadow-sm flex justify-between items-center border-gray-200">
             <h1 className="text-xl font-semibold text-gray-800">Chat</h1>
             {isSpeaking && (
               <div className="flex items-center text-blue-500">
@@ -343,6 +343,9 @@ export function Chat({ inputRef }) {
               </div>
             )}
           </div>
+
+          {/* Divider */}
+          <div className="h-[2px] bg-gray-300" />
 
           {/* Messages area - fills remaining space */}
           <div className="flex-1 overflow-y-auto p-4 space-y-4">
