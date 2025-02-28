@@ -10,6 +10,7 @@ import {
   Container,
   useTheme,
   useMediaQuery,
+  Avatar,
 } from '@mui/material';
 import { useAuth } from '../contexts/AuthContext';
 import Link from 'next/link';
@@ -42,7 +43,7 @@ export default function Header({ currentView, onViewChange }: HeaderProps) {
             </Typography>
           </Link>
 
-          <Box sx={{ display: 'flex', gap: 2 }}>
+          <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
             <Button
               color={currentView === 'home' ? 'primary' : 'inherit'}
               onClick={() => onViewChange('home')}
@@ -70,8 +71,20 @@ export default function Header({ currentView, onViewChange }: HeaderProps) {
                 variant="outlined"
                 color="primary"
                 onClick={signOut}
-                sx={{ ml: 2 }}
+                sx={{ 
+                  ml: 2,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 1,
+                  px: 2,
+                  py: 1,
+                }}
               >
+                <Avatar
+                  src={user.user_metadata?.avatar_url || user.user_metadata?.picture}
+                  alt={user.user_metadata?.full_name || user.email}
+                  sx={{ width: 24, height: 24 }}
+                />
                 Sign Out
               </Button>
             ) : (

@@ -49,7 +49,7 @@ export function ChatSidebar() {
   return (
     <div 
       ref={sidebarRef}
-      className={`bg-gray-50 border-r border-gray-200 flex flex-col h-screen relative transition-all duration-300 ease-in-out ${
+      className={`bg-gray-50 border-r border-gray-200 flex flex-col relative transition-all duration-300 ease-in-out ${
         isCollapsed ? 'w-12' : ''
       }`}
       style={{ width: isCollapsed ? '48px' : `${width}px` }}
@@ -84,7 +84,7 @@ export function ChatSidebar() {
         <>
           {/* Loading State */}
           {(authLoading || !session?.access_token) ? (
-            <div className="flex flex-col items-center justify-center h-full p-4">
+            <div className="flex flex-col items-center justify-center flex-1 p-4">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mb-4"></div>
               <p className="text-gray-500 text-sm text-center">
                 {authLoading ? "Loading..." : "Please sign in to view threads"}
@@ -93,7 +93,7 @@ export function ChatSidebar() {
           ) : (
             <>
               {/* New Chat Button */}
-              <div className="p-4">
+              <div className="p-4 shrink-0">
                 <button
                   onClick={createNewThread}
                   className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
@@ -115,7 +115,7 @@ export function ChatSidebar() {
               </div>
 
               {/* Chat List */}
-              <div className="flex-1 overflow-y-auto">
+              <div className="flex-1 overflow-y-auto min-h-0">
                 {threads.map((thread) => {
                   const title = thread.values?.title || "New Chat";
                   const description = thread.values?.description;

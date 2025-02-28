@@ -1,9 +1,9 @@
 import { useState, useRef, useEffect } from "react";
 import { useChat } from "../contexts/ChatContext";
 import { ChatSidebar } from "./ChatSidebar";
-import { ProfileMenu } from "./ProfileMenu";
+import Header from "./Header";
 
-export function Chat({ inputRef }) {
+export function Chat({ inputRef, currentView, onViewChange }) {
   const [input, setInput] = useState("");
   const { messages, sendMessage, isLoading } = useChat();
   const messagesEndRef = useRef(null);
@@ -321,16 +321,20 @@ export function Chat({ inputRef }) {
   };
 
   return (
-    <div className="flex h-screen bg-gray-50">
-      {/* Sidebar */}
-      <ChatSidebar />
+    <div className="flex flex-col h-screen bg-gray-50">
+      {/* Header */}
+      <Header currentView={currentView} onViewChange={onViewChange} />
 
-      {/* Main Chat Area */}
-      <div className="flex-1 flex flex-col">
-        {/* Chat header */}
-        <div className="p-4 bg-white border-b shadow-sm flex justify-between items-center">
-          <h1 className="text-xl font-semibold text-gray-800">LangGraph Chat</h1>
-          <div className="flex items-center space-x-4">
+      {/* Main Content Area */}
+      <div className="flex flex-1 overflow-hidden">
+        {/* Sidebar */}
+        <ChatSidebar />
+
+        {/* Main Chat Area */}
+        <div className="flex-1 flex flex-col min-h-0">
+          {/* Chat header */}
+          <div className="p-4 bg-white border-b shadow-sm flex justify-between items-center">
+            <h1 className="text-xl font-semibold text-gray-800">LangGraph Chat</h1>
             {isSpeaking && (
               <div className="flex items-center text-blue-500">
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 animate-pulse" viewBox="0 0 20 20" fill="currentColor">
@@ -338,85 +342,84 @@ export function Chat({ inputRef }) {
                 </svg>
               </div>
             )}
-            <ProfileMenu />
           </div>
-        </div>
 
-        {/* Messages area */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-4">
-          {messages.map((message, index) => (
-            <div
-              key={index}
-              className={`flex ${
-                message.role === "user" ? "justify-end" : "justify-start"
-              } animate-fade-in`}
-            >
+          {/* Messages area */}
+          <div className="flex-1 overflow-y-auto p-4 space-y-4">
+            {messages.map((message, index) => (
               <div
-                className={`max-w-[80%] p-4 rounded-lg shadow-sm ${
-                  message.role === "user"
-                    ? "bg-blue-500 text-white ml-4"
-                    : "bg-white text-gray-800 mr-4"
-                } ${
-                  isLoading &&
-                  index === messages.length - 1 &&
-                  message.role === "assistant"
-                    ? "animate-pulse"
-                    : ""
-                }`}
+                key={index}
+                className={`flex ${
+                  message.role === "user" ? "justify-end" : "justify-start"
+                } animate-fade-in`}
               >
-                {renderMessageContent(message.content, index === currentMessageIndex)}
+                <div
+                  className={`max-w-[80%] p-4 rounded-lg shadow-sm ${
+                    message.role === "user"
+                      ? "bg-blue-500 text-white ml-4"
+                      : "bg-white text-gray-800 mr-4"
+                  } ${
+                    isLoading &&
+                    index === messages.length - 1 &&
+                    message.role === "assistant"
+                      ? "animate-pulse"
+                      : ""
+                  }`}
+                >
+                  {renderMessageContent(message.content, index === currentMessageIndex)}
+                </div>
               </div>
-            </div>
-          ))}
-          <div ref={messagesEndRef} />
-        </div>
+            ))}
+            <div ref={messagesEndRef} />
+          </div>
 
-        {/* Input area */}
-        <div className="border-t bg-white p-4">
-          <form onSubmit={handleSubmit} className="max-w-4xl mx-auto">
-            <div className="flex space-x-4">
-              <input
-                ref={actualInputRef}
-                type="text"
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                placeholder="Type your message..."
-                className="flex-1 p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50"
-                disabled={isLoading}
-              />
-              <button
-                type="submit"
-                disabled={isLoading || !input.trim()}
-                className="px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 
-                       disabled:opacity-50 disabled:cursor-not-allowed transition-colors
-                       focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-              >
-                {isLoading ? (
-                  <div className="flex items-center">
-                    <svg className="animate-spin h-5 w-5 mr-2" viewBox="0 0 24 24">
-                      <circle
-                        className="opacity-25"
-                        cx="12"
-                        cy="12"
-                        r="10"
-                        stroke="currentColor"
-                        strokeWidth="4"
-                        fill="none"
-                      />
-                      <path
-                        className="opacity-75"
-                        fill="currentColor"
-                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                      />
-                    </svg>
-                    Sending...
-                  </div>
-                ) : (
-                  "Send"
-                )}
-              </button>
-            </div>
-          </form>
+          {/* Input area */}
+          <div className="border-t bg-white p-4">
+            <form onSubmit={handleSubmit} className="max-w-4xl mx-auto">
+              <div className="flex space-x-4">
+                <input
+                  ref={actualInputRef}
+                  type="text"
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  placeholder="Type your message..."
+                  className="flex-1 p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50"
+                  disabled={isLoading}
+                />
+                <button
+                  type="submit"
+                  disabled={isLoading || !input.trim()}
+                  className="px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 
+                         disabled:opacity-50 disabled:cursor-not-allowed transition-colors
+                         focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                >
+                  {isLoading ? (
+                    <div className="flex items-center">
+                      <svg className="animate-spin h-5 w-5 mr-2" viewBox="0 0 24 24">
+                        <circle
+                          className="opacity-25"
+                          cx="12"
+                          cy="12"
+                          r="10"
+                          stroke="currentColor"
+                          strokeWidth="4"
+                          fill="none"
+                        />
+                        <path
+                          className="opacity-75"
+                          fill="currentColor"
+                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                        />
+                      </svg>
+                      Sending...
+                    </div>
+                  ) : (
+                    "Send"
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
       </div>
     </div>
