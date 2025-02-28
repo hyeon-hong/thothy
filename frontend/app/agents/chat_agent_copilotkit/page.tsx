@@ -4,11 +4,17 @@ import { useCopilotAction, useCoAgent } from "@copilotkit/react-core";
 import { CopilotChat } from "@copilotkit/react-ui";
 import "@copilotkit/react-ui/styles.css";
 import { useState } from "react";
+import Header from "../../components/Header";
 
 export default function ChatAgentPage() {
     const [backgroundColor, setBackgroundColor] = useState("#ffffff");
     const [theme, setTheme] = useState("light");
     const [fontSize, setFontSize] = useState("16px");
+    const [currentView, setCurrentView] = useState("home");
+
+    const handleViewChange = (view: string) => {
+        setCurrentView(view);
+    };
 
     // Track agent state
     const coAgent = useCoAgent({
@@ -109,6 +115,7 @@ export default function ChatAgentPage() {
                 theme === "dark" ? "text-white" : "text-gray-800"
             }`}
         >
+            <Header currentView={currentView} onViewChange={handleViewChange} />
             <div className="container mx-auto px-4 py-8">
                 <div className="max-w-4xl mx-auto">
                     <div className="bg-gradient-to-r from-blue-500 to-purple-500 p-8 rounded-2xl shadow-2xl mb-8">

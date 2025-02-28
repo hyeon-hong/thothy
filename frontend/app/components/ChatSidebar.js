@@ -2,6 +2,8 @@ import { useState, useRef, useEffect } from 'react';
 import { useChat } from '../contexts/ChatContext';
 import { useAuth } from '../contexts/AuthContext';
 
+const HEADER_HEIGHT = 64; // Same as in Chat.js
+
 export function ChatSidebar() {
   const { threads, currentThreadId, createNewThread, switchThread, deleteThread } = useChat();
   const { session, loading: authLoading } = useAuth();
@@ -52,7 +54,10 @@ export function ChatSidebar() {
       className={`bg-gray-50 border-r border-gray-200 flex flex-col relative transition-all duration-300 ease-in-out ${
         isCollapsed ? 'w-12' : ''
       }`}
-      style={{ width: isCollapsed ? '48px' : `${width}px` }}
+      style={{ 
+        width: isCollapsed ? '48px' : `${width}px`,
+        height: `calc(100vh - ${HEADER_HEIGHT}px)`
+      }}
     >
       {/* Collapse Toggle Button */}
       <button

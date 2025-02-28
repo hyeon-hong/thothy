@@ -1,9 +1,12 @@
 import { useState, useRef, useEffect } from "react";
 import { useChat } from "../contexts/ChatContext";
 import { ChatSidebar } from "./ChatSidebar";
-import Header from "./Header";
 
-export function Chat({ inputRef, currentView, onViewChange }) {
+// Constants for layout calculations
+const HEADER_HEIGHT = 64; // MUI AppBar default height
+const INPUT_HEIGHT = 88; // Input area height including padding
+
+export function Chat({ inputRef }) {
   const [input, setInput] = useState("");
   const { messages, sendMessage, isLoading } = useChat();
   const messagesEndRef = useRef(null);
@@ -321,19 +324,14 @@ export function Chat({ inputRef, currentView, onViewChange }) {
   };
 
   return (
-    <div className="flex flex-col h-screen bg-gray-50">
-      {/* Header */}
-      <div className="border-b border-gray-200 shadow-sm">
-        <Header currentView={currentView} onViewChange={onViewChange} />
-      </div>
-
+    <div className="flex h-[calc(100vh-64px)] bg-gray-50">
       {/* Main Content Area */}
       <div className="flex flex-1 overflow-hidden">
         {/* Sidebar */}
         <ChatSidebar />
 
         {/* Main Chat Area */}
-        <div className="flex-1 flex flex-col min-h-0">
+        <div className="flex-1 flex flex-col relative">
           {/* Chat header */}
           <div className="p-4 bg-white border-b shadow-sm flex justify-between items-center">
             <h1 className="text-xl font-semibold text-gray-800">Chat</h1>
@@ -346,7 +344,7 @@ export function Chat({ inputRef, currentView, onViewChange }) {
             )}
           </div>
 
-          {/* Messages area */}
+          {/* Messages area - fills remaining space */}
           <div className="flex-1 overflow-y-auto p-4 space-y-4">
             {messages.map((message, index) => (
               <div
@@ -375,9 +373,9 @@ export function Chat({ inputRef, currentView, onViewChange }) {
             <div ref={messagesEndRef} />
           </div>
 
-          {/* Input area */}
-          <div className="border-t bg-white p-4">
-            <form onSubmit={handleSubmit} className="flex w-full max-w-6xl mx-auto">
+          {/* Input area - fixed to main chat area */}
+          <div className="absolute bottom-0 left-0 right-0 border-t bg-white" style={{ height: INPUT_HEIGHT }}>
+            <form onSubmit={handleSubmit} className="flex w-full h-full p-4">
               <div className="flex flex-1 gap-4">
                 <input
                   ref={actualInputRef}
