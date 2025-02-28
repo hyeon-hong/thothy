@@ -10,12 +10,9 @@ const serviceAdapter = new ExperimentalEmptyAdapter();
 
 const runtime = new CopilotRuntime({
     remoteEndpoints: [
-        // Uncomment this if you want to use LangGraph JS, make sure to
-        // remove the remote action url below too.
-        //
         langGraphPlatformEndpoint({
-            deploymentUrl: "http://localhost:8000",
-            langsmithApiKey: process.env.LANGSMITH_API_KEY || "", // only used in LangGraph Platform deployments
+            deploymentUrl: "http://localhost:2024",
+            langsmithApiKey: process.env.LANGSMITH_API_KEY || "",
             agents: [
                 {
                     name: "chat_graph",
@@ -24,9 +21,6 @@ const runtime = new CopilotRuntime({
                 },
             ],
         }),
-        // {
-        //   url: process.env.REMOTE_ACTION_URL || "http://localhost:8000/copilotkit",
-        // },
     ],
 });
 
