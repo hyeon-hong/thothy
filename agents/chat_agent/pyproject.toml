@@ -5,12 +5,10 @@ description = "An agent that can chat with a user."
 authors = [
     { name = "Thothy", email = "ai.thothy@gmail.com" },
 ]
-readme = "README.md"
 license = { text = "Apache-2.0" }
 requires-python = ">=3.12"
 dependencies = [
     "langgraph>=0.2.34,<0.3.0",
-    # Optional (for selecting different models)
     "langchain-openai>=0.2.1",
     "langchain-anthropic>=0.2.1",
     "langchain>=0.3.9",
@@ -26,10 +24,10 @@ requires = ["setuptools>=73.0.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools]
-packages = ["chat_agent"]
+packages = ["chat_graph"]
 [tool.setuptools.package-dir]
-"chat_agent" = "src/chat_agent"
-"langgraph.templates.thothy.chat_agent" = "src/chat_agent"
+"chat_graph" = "src/chat_graph"
+"langgraph.templates.chat_graph" = "src/chat_graph"
 
 
 [tool.setuptools.package-data]
