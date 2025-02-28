@@ -3,7 +3,8 @@
 import os
 from dotenv import load_dotenv
 from pydantic import BaseModel
-from psycopg import Connection
+from psycopg import Connection, OperationalError
+from typing import Any, Dict
 
 from langchain.chat_models import init_chat_model
 
@@ -15,15 +16,66 @@ from langgraph.store.postgres import PostgresStore
 from langmem import ReflectionExecutor, create_memory_store_manager
 from chat_graph.configuration import ChatConfigurable
 
+
+class ReconnectingPostgresStore:
+    """PostgresStore wrapper that handles reconnection."""
+
+    def __init__(self, db_url: str, index: Dict[str, Any]):
+        """Initialize with database URL and index configuration."""
+        self.db_url = db_url
+        self.index = index
+        self.store = None
+        self._connect()
+
+    def _connect(self) -> None:
+        """Establish database connection and setup store."""
+        try:
+            conn = Connection.connect(self.db_url, autocommit=True)
+            self.store = PostgresStore(conn)
+            self.store.index = self.index
+            self.store.setup()
+        except Exception as e:
+            raise ValueError(f"Failed to connect to database: {e}")
+
+    def _ensure_connection(self) -> None:
+        """Ensure database connection is active, reconnect if needed."""
+        try:
+            # Test connection with a simple query
+            self.store.conn.execute("SELECT 1")
+        except (OperationalError, Exception):
+            # Connection is closed or error occurred, try to reconnect
+            self._connect()
+
+    async def asearch(self, *args, **kwargs):
+        """Wrap asearch with connection check."""
+        self._ensure_connection()
+        return await self.store.asearch(*args, **kwargs)
+
+    async def aput(self, *args, **kwargs):
+        """Wrap aput with connection check."""
+        self._ensure_connection()
+        return await self.store.aput(*args, **kwargs)
+
+    async def adelete(self, *args, **kwargs):
+        """Wrap adelete with connection check."""
+        self._ensure_connection()
+        return await self.store.adelete(*args, **kwargs)
+
+    def setup(self):
+        """Setup the store."""
+        self._ensure_connection()
+        self.store.setup()
+
+
 # Get database URL
 load_dotenv()
 db_url = os.getenv("SUPABASE_DATABASE_URL")
 if not db_url:
     raise ValueError("SUPABASE_DATABASE_URL environment variable is not set")
 
-conn = Connection.connect(db_url, autocommit=True)
-store = PostgresStore(
-    conn,
+# Initialize store with reconnection capability
+store = ReconnectingPostgresStore(
+    db_url=db_url,
     index={
         "dims": 1536,
         "embed": "openai:text-embedding-3-small",
@@ -31,7 +83,6 @@ store = PostgresStore(
         "fields": ["$"],
     }
 )
-store.setup()
 
 llm = init_chat_model("gpt-4o-mini", model_provider="openai", temperature=0)
 
@@ -60,27 +111,34 @@ memory_manager = create_memory_store_manager(
 executor = ReflectionExecutor(memory_manager, store=store)
 
 
-async def chatbot(state: MessagesState, config: ChatConfigurable, *, store: BaseStore) -> dict:
+async def chatbot(
+    state: MessagesState,
+    config: ChatConfigurable,
+    *,
+    store: BaseStore
+) -> dict:
     """Chat node that processes messages and generates responses."""
-    print(f"store: {store}")
-
     # Get user_id from config
     configurable = ChatConfigurable.from_runnable_config(config)
-    print(f"configurable: {configurable}")
     user_id = configurable.user_id
-    print(f"Processing chat for user_id: {user_id}")
 
     # Use the same namespace format as defined above
     namespace = ("memories", user_id, "triples")
 
     # Search for existing memories
-    memories = await store.asearch(namespace, query=str(
-        state["messages"][-1].content))
-    print(f"memories: {memories}")
+    memories = await store.asearch(
+        namespace,
+        query=str(state["messages"][-1].content)
+    )
     memories = []
 
-    info = "\n".join([d.value.get("data", "") for d in memories if d.value])
-    system_msg = f"You are a helpful assistant talking to the user. User info: {info}"
+    info = "\n".join(
+        [d.value.get("data", "") for d in memories if d.value]
+    )
+    system_msg = (
+        f"You are a helpful assistant talking to the user. "
+        f"User info: {info}"
+    )
 
     # Invoke the LLM
     response = llm.invoke(
@@ -88,13 +146,12 @@ async def chatbot(state: MessagesState, config: ChatConfigurable, *, store: Base
     )
 
     # Submit memory processing task
-    print("Submitting memory processing task...")
-    print(f"response: {response}")
-    to_process = {"messages": [
-        {"role": "user", "content": state["messages"][-1].content}] + [response]}
+    to_process = {
+        "messages": [
+            {"role": "user", "content": state["messages"][-1].content}
+        ] + [response]
+    }
     executor.submit(to_process, after_seconds=0.5, config=config)
-
-    print("Memory processing task submitted")
 
     return {"messages": response}
 
@@ -112,7 +169,7 @@ workflow.add_edge(START, "chatbot")
 workflow.add_edge("chatbot", END)
 
 # Compile graph
-graph = workflow.compile(checkpointer=MemorySaver(), store=store)
+graph = workflow.compile(checkpointer=MemorySaver(), store=store.store)
 graph.name = "chat_graph"
 
 __all__ = ["graph"]
