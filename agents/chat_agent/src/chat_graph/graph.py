@@ -46,15 +46,30 @@ class ReconnectingPostgresStore:
             # Connection is closed or error occurred, try to reconnect
             self._connect()
 
+    def search(self, *args, **kwargs):
+        """Synchronous version of asearch."""
+        self._ensure_connection()
+        return self.store.search(*args, **kwargs)
+
     async def asearch(self, *args, **kwargs):
         """Wrap asearch with connection check."""
         self._ensure_connection()
         return await self.store.asearch(*args, **kwargs)
 
+    def put(self, *args, **kwargs):
+        """Synchronous version of aput."""
+        self._ensure_connection()
+        return self.store.put(*args, **kwargs)
+
     async def aput(self, *args, **kwargs):
         """Wrap aput with connection check."""
         self._ensure_connection()
         return await self.store.aput(*args, **kwargs)
+
+    def delete(self, *args, **kwargs):
+        """Synchronous version of adelete."""
+        self._ensure_connection()
+        return self.store.delete(*args, **kwargs)
 
     async def adelete(self, *args, **kwargs):
         """Wrap adelete with connection check."""
