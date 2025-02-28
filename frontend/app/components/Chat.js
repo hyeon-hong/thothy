@@ -99,6 +99,36 @@ export function Chat({ inputRef }) {
     }
   };
 
+  // Helper function to highlight current chunk
+  const renderMessageContent = (content, isCurrentMessage) => {
+    if (!isCurrentMessage || !isSpeaking) {
+      return <div className="whitespace-pre-wrap">{content}</div>;
+    }
+
+    // Get the current chunk being spoken
+    const currentChunk = speechQueue.current[0] || '';
+    
+    // Find the position of the current chunk in the full content
+    const chunkStart = content.indexOf(currentChunk);
+    
+    if (chunkStart === -1) {
+      return <div className="whitespace-pre-wrap">{content}</div>;
+    }
+    
+    const beforeChunk = content.substring(0, chunkStart);
+    const afterChunk = content.substring(chunkStart + currentChunk.length);
+    
+    return (
+      <div className="whitespace-pre-wrap">
+        {beforeChunk}
+        <span className="bg-yellow-200 rounded px-1 transition-colors duration-300">
+          {currentChunk}
+        </span>
+        {afterChunk}
+      </div>
+    );
+  };
+
   // Process the speech queue with better error handling
   const processSpeechQueue = async () => {
     if (!window.speechSynthesis || !speechQueue.current.length) {
@@ -134,13 +164,6 @@ export function Chat({ inputRef }) {
 
     currentUtterance.current = utterance;
 
-    // Word boundary handling
-    utterance.onboundary = (event) => {
-      if (event.name === 'word') {
-        setCurrentWordIndex(event.charIndex);
-      }
-    };
-
     utterance.onstart = () => {
       console.log('Started speaking chunk:', text);
       setIsSpeaking(true);
@@ -154,13 +177,10 @@ export function Chat({ inputRef }) {
       // Remove the current chunk and process the next one
       if (speechQueue.current.length > 0) {
         speechQueue.current.shift();
-        setCurrentWordIndex(-1);
         // Small delay to ensure proper transition
         setTimeout(() => {
           processSpeechQueue();
         }, 50);
-      } else {
-        setCurrentWordIndex(-1);
       }
     };
 
@@ -172,7 +192,6 @@ export function Chat({ inputRef }) {
       // Try to recover from error
       if (speechQueue.current.length > 0) {
         speechQueue.current.shift();
-        setCurrentWordIndex(-1);
         setTimeout(processSpeechQueue, 100);
       }
     };
@@ -299,35 +318,6 @@ export function Chat({ inputRef }) {
         actualInputRef.current?.focus();
       }, 0);
     }
-  };
-
-  // Helper function to highlight current word
-  const renderMessageContent = (content, isCurrentMessage) => {
-    if (!isCurrentMessage || currentWordIndex === -1) {
-      return <div className="whitespace-pre-wrap">{content}</div>;
-    }
-
-    const words = content.split(/(\s+)/);
-    let charCount = 0;
-    
-    return (
-      <div className="whitespace-pre-wrap">
-        {words.map((word, index) => {
-          const isCurrentWord = charCount <= currentWordIndex && 
-                              currentWordIndex < charCount + word.length;
-          charCount += word.length;
-          
-          return (
-            <span
-              key={index}
-              className={isCurrentWord ? "bg-blue-200 rounded px-1 transition-all duration-200" : ""}
-            >
-              {word}
-            </span>
-          );
-        })}
-      </div>
-    );
   };
 
   return (
