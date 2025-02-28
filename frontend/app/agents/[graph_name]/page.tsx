@@ -3,7 +3,7 @@
 import React from "react";
 import { useParams } from "next/navigation";
 import { CopilotKit } from "@copilotkit/react-core";
-import ChatAgentPage from "../chat_agent/page";
+import ChatAgentPage from "../chat_agent.backup/page";
 
 export default function AgentPage() {
     const params = useParams();
@@ -12,29 +12,7 @@ export default function AgentPage() {
     // CopilotKit configuration
     const copilotConfig = {
         runtimeUrl: "/api/copilotkit",
-        chatOptions: {
-            config: {
-                configurable: {
-                    user_id: "test-user",
-                    model: "anthropic/claude-3-5-sonnet-20240620",
-                    delay_seconds: 1,
-                    system_prompt:
-                        "You are a helpful and friendly chatbot. Get to know the user! Ask questions! Be spontaneous!",
-                },
-            },
-        },
         agent: graph_name,
-        properties: {
-            config: {
-                configurable: {
-                    user_id: "test-user",
-                    model: "anthropic/claude-3-5-sonnet-20240620",
-                    delay_seconds: 1,
-                    system_prompt:
-                        "You are a helpful and friendly chatbot. Get to know the user! Ask questions! Be spontaneous!",
-                },
-            },
-        },
         // Backend configuration
         backend: {
             timeout: 30000, // 30 seconds

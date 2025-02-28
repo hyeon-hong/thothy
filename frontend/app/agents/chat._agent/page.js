@@ -5,9 +5,9 @@ import React, { useState, useEffect } from "react";
 import { createClient } from "@supabase/supabase-js";
 import { Auth } from "@supabase/auth-ui-react";
 import { ThemeSupa } from "@supabase/auth-ui-shared";
-import { Chat } from "../components/Chat";
-import { ChatProvider } from "../contexts/ChatContext";
-import { AuthProvider } from "../contexts/AuthContext";
+import { Chat } from "../../components/Chat";
+import { ChatProvider } from "../../contexts/ChatContext";
+import { AuthProvider } from "../../contexts/AuthContext";
 
 const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_API_URL,
