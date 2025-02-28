@@ -1,17 +1,25 @@
-import { NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
+import { NextResponse } from "next/server";
+import { createClient } from "@supabase/supabase-js";
 
-const prisma = new PrismaClient();
+const supabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_API_URL,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+);
 
 export async function GET() {
-  try {
-    const agents = await prisma.agent.findMany();
-    return NextResponse.json(agents);
-  } catch (error) {
-    console.error('Error fetching agents:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch agents' },
-      { status: 500 }
-    );
-  }
-} 
+    try {
+        const { data: agents, error } = await supabase
+            .from("agents")
+            .select("id, name, description, image_url, graph_name");
+
+        if (error) throw error;
+
+        return NextResponse.json(agents);
+    } catch (error) {
+        console.error("Error fetching agents:", error);
+        return NextResponse.json(
+            { error: "Failed to fetch agents" },
+            { status: 500 }
+        );
+    }
+}

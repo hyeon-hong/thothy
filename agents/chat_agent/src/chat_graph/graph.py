@@ -17,9 +17,9 @@ from chat_graph.configuration import ChatConfigurable
 
 # Get database URL
 load_dotenv()
-db_url = os.getenv('SUPABASE_URL')
+db_url = os.getenv("SUPABASE_DATABASE_URL")
 if not db_url:
-    raise ValueError("SUPABASE_URL environment variable is not set")
+    raise ValueError("SUPABASE_DATABASE_URL environment variable is not set")
 
 conn = Connection.connect(db_url, autocommit=True)
 store = PostgresStore(
