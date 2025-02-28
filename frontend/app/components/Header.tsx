@@ -11,7 +11,7 @@ import {
   useTheme,
   useMediaQuery,
 } from '@mui/material';
-import { useUser } from '../contexts/UserContext';
+import { useAuth } from '../contexts/AuthContext';
 import Link from 'next/link';
 
 interface HeaderProps {
@@ -20,7 +20,7 @@ interface HeaderProps {
 }
 
 export default function Header({ currentView, onViewChange }: HeaderProps) {
-  const { user, signInWithGoogle, signOut } = useUser();
+  const { user, signInWithGoogle, signOut } = useAuth();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 

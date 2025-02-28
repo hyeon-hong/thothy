@@ -6,10 +6,10 @@ import AgentCard from "./components/AgentCard";
 import Header from "./components/Header";
 import MyAgents from "./components/MyAgents";
 import { useState, useEffect } from "react";
-import { useUser } from "./contexts/UserContext";
+import { useAuth } from "./contexts/AuthContext";
 
 export default function Home() {
-    const { user } = useUser();
+    const { user } = useAuth();
     const [currentView, setCurrentView] = useState("home"); // "home" or "myAgents"
     const [agents, setAgents] = useState([]);
     const [selectedAgentIds, setSelectedAgentIds] = useState(new Set());

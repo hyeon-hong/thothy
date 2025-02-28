@@ -4,7 +4,7 @@ import React, { createContext, useContext, useState, useEffect, ReactNode } from
 import { supabase } from "@/lib/supabase";
 import { User } from "@supabase/supabase-js";
 
-interface UserContextType {
+interface AuthContextType {
   user: User | null;
   loading: boolean;
   signInWithGoogle: () => Promise<void>;
@@ -12,7 +12,7 @@ interface UserContextType {
   supabase: typeof supabase;
 }
 
-const UserContext = createContext<UserContextType>({
+const AuthContext = createContext<AuthContextType>({
   user: null,
   loading: true,
   signInWithGoogle: async () => {},
@@ -20,11 +20,11 @@ const UserContext = createContext<UserContextType>({
   supabase: supabase,
 });
 
-interface UserProviderProps {
+interface AuthProviderProps {
   children: ReactNode;
 }
 
-export function UserProvider({ children }: UserProviderProps) {
+export function AuthProvider({ children }: AuthProviderProps) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -70,16 +70,16 @@ export function UserProvider({ children }: UserProviderProps) {
   };
 
   return (
-    <UserContext.Provider value={{ user, loading, signInWithGoogle, signOut, supabase }}>
+    <AuthContext.Provider value={{ user, loading, signInWithGoogle, signOut, supabase }}>
       {children}
-    </UserContext.Provider>
+    </AuthContext.Provider>
   );
 }
 
-export function useUser() {
-  const context = useContext(UserContext);
+export function useAuth() {
+  const context = useContext(AuthContext);
   if (context === undefined) {
-    throw new Error("useUser must be used within a UserProvider");
+    throw new Error("useAuth must be used within an AuthProvider");
   }
   return context;
 } 

@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardMedia, Typography, Button, Box } from '@mui/material';
 import { styled } from '@mui/material/styles';
 import { useRouter } from 'next/navigation';
-import { useUser } from '../contexts/UserContext';
+import { useAuth } from '../contexts/AuthContext';
 
 interface Agent {
   id: string;
@@ -63,7 +63,7 @@ const RunButton = styled(Button)({
 
 export default function AgentCard({ agent, onSelect, isSelected: propIsSelected = false, showUnselect = false }: AgentCardProps) {
   const router = useRouter();
-  const { user, supabase } = useUser();
+  const { user, supabase } = useAuth();
   const [isSelected, setIsSelected] = useState(propIsSelected);
 
   useEffect(() => {

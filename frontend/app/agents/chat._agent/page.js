@@ -45,7 +45,9 @@ export default function ChatPage() {
 
     useEffect(() => {
         // Set redirectTo after component mounts (client-side only)
-        setRedirectTo(process.env.NEXT_PUBLIC_REDIRECT_TO ?? window.location.origin);
+        setRedirectTo(
+            process.env.NEXT_PUBLIC_REDIRECT_TO ?? window.location.origin
+        );
 
         // Get initial session
         supabase.auth
@@ -128,10 +130,8 @@ export default function ChatPage() {
     }
 
     return (
-        <AuthProvider supabase={supabase}>
-            <ChatProvider>
-                <Chat />
-            </ChatProvider>
-        </AuthProvider>
+        <ChatProvider>
+            <Chat />
+        </ChatProvider>
     );
 }

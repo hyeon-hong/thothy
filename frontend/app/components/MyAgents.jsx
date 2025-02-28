@@ -2,10 +2,10 @@ import React from 'react';
 import { Container, Grid, Typography, Box } from "@mui/material";
 import AgentCard from "./AgentCard";
 import { useState, useEffect } from "react";
-import { useUser } from '../contexts/UserContext';
+import { useAuth } from '../contexts/AuthContext';
 
 export default function MyAgents() {
-    const { user, supabase } = useUser();
+    const { user, supabase } = useAuth();
     const [myAgents, setMyAgents] = useState([]);
     const [loading, setLoading] = useState(true);
 
