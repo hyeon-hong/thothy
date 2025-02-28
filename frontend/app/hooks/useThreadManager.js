@@ -18,6 +18,7 @@ export function useThreadManager(userId, client) {
         const userThreads = await client.threads.search({
           limit: 100,
         });
+        console.log("userThreads", userThreads);
 
         // Sort threads by creation time, newest first
         const sortedThreads = userThreads

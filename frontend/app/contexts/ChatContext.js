@@ -4,9 +4,9 @@ import { useThreadManager } from "../hooks/useThreadManager";
 import { useAuth } from "./AuthContext";
 
 const ChatContext = createContext();
-const ASSISTANT_ID = process.env.REACT_APP_ASSISTANT_ID ?? "agent";
+const ASSISTANT_ID = process.env.NEXT_PUBLIC_ASSISTANT_ID ?? "chat_graph";
 const DEPLOYMENT_URL =
-  process.env.REACT_APP_DEPLOYMENT_URL ?? "http://localhost:2024";
+  process.env.NEXT_PUBLIC_DEPLOYMENT_URL ?? "http://localhost:2024";
 console.log("DEPLOYMENT_URL", DEPLOYMENT_URL);
 
 export function ChatProvider({ children }) {
@@ -67,6 +67,7 @@ export function ChatProvider({ children }) {
         config,
         streamMode: ["messages-tuple", "updates"],
       });
+      console.log("streamResponse", streamResponse);
 
       let assistantMessage = "";
 
