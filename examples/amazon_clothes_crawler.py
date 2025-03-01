@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import json
 from crawl4ai import (
     AsyncWebCrawler,
     BrowserConfig,
@@ -13,8 +14,7 @@ class AmazonClothesCrawler:
     def __init__(self):
         # Set up logging
         logging.basicConfig(
-            level=logging.INFO,
-            format="%(asctime)s - %(levelname)s - %(message)s"
+            level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
         )
         self.logger = logging.getLogger(__name__)
 
@@ -74,22 +74,12 @@ class AmazonClothesCrawler:
                 "AppleWebKit/537.36 (KHTML, like Gecko) "
                 "Chrome/91.0.4472.124 Safari/537.36"
             ),
-            viewport={"width": 1920, "height": 1080},
-            timeout=30000,  # 30 seconds timeout
         )
 
         # Configure crawler settings
         run_config = CrawlerRunConfig(
             cache_mode=CacheMode.ENABLED,
-            extraction_strategy=JsonCssExtractionStrategy(
-                self.schema,
-                verbose=True
-            ),
-            wait_for_selectors=[
-                "div.s-result-item[data-component-type='s-search-result']"
-            ],
-            wait_for_navigation=True,
-            wait_for_network_idle=True,
+            extraction_strategy=JsonCssExtractionStrategy(self.schema, verbose=True),
         )
 
         base_url = "https://www.amazon.com/s?k=clothes&rh=n%3A7141123011"
@@ -103,8 +93,9 @@ class AmazonClothesCrawler:
 
                 try:
                     result = await crawler.arun(url=url, config=run_config)
-                    
-                    if not result or not result.extracted_data:
+                    print(f"result.extracted_content: {result.extracted_content}")
+
+                    if not result or not result.extracted_content:
                         msg = f"No products found on page {page}"
                         self.logger.warning(msg)
                         consecutive_failures += 1
@@ -117,24 +108,33 @@ class AmazonClothesCrawler:
 
                     # Reset failure counter on successful extraction
                     consecutive_failures = 0
-                    products_found = len(result.extracted_data)
+                    products_found = len(result.extracted_content)
                     self.logger.info(f"Found {products_found} products")
 
                     # Process extracted products
-                    for product in result.extracted_data:
+                    for product_data in result.extracted_content:
                         if len(self.products) >= max_products:
                             break
 
-                        # Clean and validate product data
-                        if self._is_valid_product(product):
-                            clean_product = self._clean_product_data(product)
-                            self.products.append(clean_product)
-                            name_preview = clean_product['name'][:50]
-                            self.logger.info(
-                                f"Crawled: {name_preview}..."
+                        try:
+                            # Convert string to dictionary if needed
+                            product = (
+                                json.loads(product_data)
+                                if isinstance(product_data, str)
+                                else product_data
                             )
-                            progress = f"{len(self.products)}/{max_products}"
-                            self.logger.info(f"Progress: {progress}")
+
+                            # Clean and validate product data
+                            if self._is_valid_product(product):
+                                clean_product = self._clean_product_data(product)
+                                self.products.append(clean_product)
+                                name_preview = clean_product["name"][:50]
+                                self.logger.info(f"Crawled: {name_preview}...")
+                                progress = f"{len(self.products)}/{max_products}"
+                                self.logger.info(f"Progress: {progress}")
+                        except json.JSONDecodeError as e:
+                            self.logger.error(f"Failed to parse product data: {str(e)}")
+                            continue
 
                     page += 1
 
@@ -153,26 +153,36 @@ class AmazonClothesCrawler:
 
     def _is_valid_product(self, product):
         """Validate if product data is complete enough to be included."""
-        required = ('name', 'url', 'image_url')
+        if not isinstance(product, dict):
+            return False
+        required = ("name", "url", "image_url")
         return all(product.get(field) for field in required)
 
     def _clean_product_data(self, product):
         """Clean and normalize product data."""
+        # Create a copy to avoid modifying the original
+        cleaned = product.copy()
+
         # Clean URL
-        if product.get("url"):
-            if not product["url"].startswith("http"):
-                product["url"] = "https://www.amazon.com" + product["url"]
+        if cleaned.get("url"):
+            if not cleaned["url"].startswith("http"):
+                cleaned["url"] = "https://www.amazon.com" + cleaned["url"]
 
         # Clean price
-        price = product.get("price", "N/A")
-        product["price"] = price if price != "N/A" else "N/A"
+        price = cleaned.get("price", "N/A")
+        cleaned["price"] = price if price != "N/A" else "N/A"
 
         # Clean rating
-        rating = product.get("rating", "N/A")
+        rating = cleaned.get("rating", "N/A")
         if rating != "N/A":
-            product["rating"] = rating.split(" out of")[0]
+            cleaned["rating"] = rating.split(" out of")[0]
 
-        return product
+        # Ensure all required fields exist
+        for field in ["price", "rating", "reviews_count"]:
+            if field not in cleaned:
+                cleaned[field] = "N/A"
+
+        return cleaned
 
     def _save_to_markdown(self):
         """Save crawled products to a markdown file."""
@@ -188,7 +198,7 @@ class AmazonClothesCrawler:
                 f.write(f"- **Price:** ${product['price']}\n")
                 f.write(f"- **Rating:** {product['rating']}\n")
                 f.write(f"- **Reviews:** {product['reviews_count']}\n")
-                url = product['url']
+                url = product["url"]
                 f.write(f"- **Product URL:** [View on Amazon]({url})\n\n")
                 f.write("---\n\n")
 
