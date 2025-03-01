@@ -127,14 +127,10 @@ class AmazonClothesCrawler:
                             break
 
                         try:
-                            # product_data is already a dictionary,
-                            # no need for conversion
-                            product = product_data
-
                             # Clean and validate product data
-                            if self._is_valid_product(product):
+                            if self._is_valid_product(product_data):
                                 clean_product = self._clean_product_data(
-                                    product
+                                    product_data
                                 )
                                 self.products.append(clean_product)
                                 name_preview = clean_product["name"][:50]
