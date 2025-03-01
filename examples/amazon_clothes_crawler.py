@@ -14,8 +14,7 @@ class AmazonClothesCrawler:
     def __init__(self):
         # Set up logging
         logging.basicConfig(
-            level=logging.INFO, 
-            format="%(asctime)s - %(levelname)s - %(message)s"
+            level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
         )
         self.logger = logging.getLogger(__name__)
 
@@ -80,9 +79,7 @@ class AmazonClothesCrawler:
         # Configure crawler settings
         run_config = CrawlerRunConfig(
             cache_mode=CacheMode.ENABLED,
-            extraction_strategy=JsonCssExtractionStrategy(
-                self.schema, verbose=True
-            ),
+            extraction_strategy=JsonCssExtractionStrategy(self.schema, verbose=True),
         )
 
         base_url = "https://www.amazon.com/s?k=clothes&rh=n%3A7141123011"
@@ -96,11 +93,13 @@ class AmazonClothesCrawler:
 
                 try:
                     result = await crawler.arun(url=url, config=run_config)
-                    print(
-                        f"result.extracted_content: {result.extracted_content}"
+                    # Convert result.extracted_content to a list of dictionaries
+                    converted_extracted_content = json.loads(result.extracted_content)
+                    self.logger.info(
+                        f"result.extracted_content: {converted_extracted_content}"
                     )
 
-                    if not result or not result.extracted_content:
+                    if not result or not converted_extracted_content:
                         msg = f"No products found on page {page}"
                         self.logger.warning(msg)
                         consecutive_failures += 1
@@ -113,42 +112,46 @@ class AmazonClothesCrawler:
 
                     # Reset failure counter on successful extraction
                     consecutive_failures = 0
-                    products_found = len(result.extracted_content)
+                    products_found = len(converted_extracted_content)
                     self.logger.info(f"Found {products_found} products")
 
                     # Process extracted products
-                    for product_data in result.extracted_content:
+                    for product_data in converted_extracted_content:
+                        self.logger.info(f"product_data: {product_data}")
+
                         if len(self.products) >= max_products:
                             # If enough products, stop
                             self.logger.info(
-                                f"Reached {max_products} "
-                                f"products. Stopping."
+                                f"Reached {max_products} " f"products. Stopping."
                             )
                             break
 
                         try:
                             # Clean and validate product data
                             if self._is_valid_product(product_data):
-                                clean_product = self._clean_product_data(
-                                    product_data
-                                )
+                                self.logger.info(f"Processing product: {product_data}")
+
+                                clean_product = self._clean_product_data(product_data)
+                                print(f"clean_product: {clean_product}")
+
                                 self.products.append(clean_product)
                                 name_preview = clean_product["name"][:50]
                                 self.logger.info(f"Crawled: {name_preview}...")
-                                progress = (
-                                    f"{len(self.products)}/{max_products}"
-                                )
+
+                                progress = f"{len(self.products)}/{max_products}"
                                 self.logger.info(f"Progress: {progress}")
+                            else:
+                                self.logger.info(
+                                    f"Skipping product: {product_data["name"]}"
+                                )
                         except json.JSONDecodeError as e:
-                            self.logger.error(
-                                f"Failed to parse product data: {str(e)}"
-                            )
+                            self.logger.error(f"Failed to parse product data: {str(e)}")
                             continue
-                    
+
                     # Break page loop if max_products reached
                     if len(self.products) >= max_products:
                         break
-                        
+
                     page += 1
 
                 except Exception as e:
@@ -167,9 +170,12 @@ class AmazonClothesCrawler:
     def _is_valid_product(self, product):
         """Validate if product data is complete enough to be included."""
         if not isinstance(product, dict):
+            self.logger.info(f"product is not a dict: {product}")
             return False
-        required = ("name", "url", "image_url")
-        return all(product.get(field) for field in required)
+        required = ("name", "price", "image_url")
+        result = all(product.get(field) for field in required)
+        self.logger.info(f"is_valid_product: {result}")
+        return result
 
     def _clean_product_data(self, product):
         """Clean and normalize product data."""
