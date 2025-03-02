@@ -29,6 +29,32 @@ The script will:
 3. Extract data for up to 100 products
 4. Save the results in `amazon_clothes.md`
 
+## Command Line Options
+
+The script supports several command-line arguments to customize its behavior:
+
+```bash
+# Specify a custom output file
+python amazon_clothes_crawler.py --output custom_output.md
+
+# Limit the number of products to crawl
+python amazon_clothes_crawler.py --max-products 50
+
+# Enable verbose logging
+python amazon_clothes_crawler.py --verbose
+
+# Combine multiple options
+python amazon_clothes_crawler.py --output amazon_winter.md --max-products 200 --verbose
+```
+
+### Available Options
+
+| Option | Short Form | Description | Default |
+|--------|------------|-------------|---------|
+| `--output` | `-o` | Output file path | `amazon_clothes.md` |
+| `--max-products` | `-m` | Maximum number of products to crawl | `100` |
+| `--verbose` | `-v` | Enable verbose logging | `False` |
+
 ## Output
 
 The script generates a markdown file (`amazon_clothes.md`) containing:
