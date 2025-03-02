@@ -88,18 +88,22 @@ class AmazonClothesCrawler:
 
         async with AsyncWebCrawler(config=browser_config) as crawler:
             while len(self.products) < max_products:
+                self.logger.info(f"------- Processing page {page} -------")
                 url = f"{base_url}&page={page}"
-                self.logger.info(f"Processing page {page}, URL: {url}")
+                self.logger.info(f"URL: {url}")
 
                 try:
+                    # Crawl single page
+                    self.logger.info(f"Crawling page {page}...")
                     result = await crawler.arun(url=url, config=run_config)
-                    # Convert result.extracted_content to a list of dictionaries
-                    converted_extracted_content = json.loads(result.extracted_content)
-                    self.logger.info(
-                        f"result.extracted_content: {converted_extracted_content}"
+
+                    # Convert extracted content to a list of dictionaries
+                    converted_content = json.loads(
+                        result.extracted_content
                     )
 
-                    if not result or not converted_extracted_content:
+                    # Check if page has products
+                    if not result or not converted_content:
                         msg = f"No products found on page {page}"
                         self.logger.warning(msg)
                         consecutive_failures += 1
@@ -112,47 +116,69 @@ class AmazonClothesCrawler:
 
                     # Reset failure counter on successful extraction
                     consecutive_failures = 0
-                    products_found = len(converted_extracted_content)
-                    self.logger.info(f"Found {products_found} products")
+                    products_found = len(converted_content)
+                    self.logger.info(
+                        f"Found {products_found} products on page {page}"
+                    )
 
-                    # Process extracted products
-                    for product_data in converted_extracted_content:
-                        self.logger.info(f"product_data: {product_data}")
+                    # Process each product from this page
+                    self.logger.info(
+                        f"Processing products from page {page}..."
+                    )
+                    products_added = 0
 
+                    for product_data in converted_content:
+                        # Check if we've reached max products
                         if len(self.products) >= max_products:
-                            # If enough products, stop
                             self.logger.info(
-                                f"Reached {max_products} " f"products. Stopping."
+                                f"Reached {max_products} products. "
+                                f"Stopping crawl."
                             )
                             break
 
                         try:
+                            # Add page URL to product data
+                            product_data["page_url"] = url
+
                             # Clean and validate product data
                             if self._is_valid_product(product_data):
-                                self.logger.info(f"Processing product: {product_data}")
-
-                                clean_product = self._clean_product_data(product_data)
-                                print(f"clean_product: {clean_product}")
-
-                                self.products.append(clean_product)
-                                name_preview = clean_product["name"][:50]
-                                self.logger.info(f"Crawled: {name_preview}...")
-
-                                progress = f"{len(self.products)}/{max_products}"
-                                self.logger.info(f"Progress: {progress}")
-                            else:
-                                self.logger.info(
-                                    f"Skipping product: {product_data["name"]}"
+                                clean_product = self._clean_product_data(
+                                    product_data
                                 )
-                        except json.JSONDecodeError as e:
-                            self.logger.error(f"Failed to parse product data: {str(e)}")
+                                self.products.append(clean_product)
+                                products_added += 1
+
+                                # Log progress
+                                name = clean_product["name"][:15]
+                                count = len(self.products)
+                                self.logger.info(
+                                    f"Added: {name}... "
+                                    f"({count}/{max_products})"
+                                )
+                        except Exception as e:
+                            self.logger.error(
+                                f"Error processing product: "
+                                f"{str(e)}"
+                            )
                             continue
+
+                    self.logger.info(
+                        f"Added {products_added} products from page {page}"
+                    )
 
                     # Break page loop if max_products reached
                     if len(self.products) >= max_products:
+                        self.logger.info(
+                            f"Target of {max_products} products reached. "
+                            f"Stopping crawl."
+                        )
                         break
 
                     page += 1
+                    self.logger.info(
+                        f"Moving to page {page}. "
+                        f"Total products so far: {len(self.products)}"
+                    )
 
                 except Exception as e:
                     self.logger.error(f"Error on page {page}: {str(e)}")
@@ -186,6 +212,9 @@ class AmazonClothesCrawler:
         if cleaned.get("url"):
             if not cleaned["url"].startswith("http"):
                 cleaned["url"] = "https://www.amazon.com" + cleaned["url"]
+        else:
+            # Ensure URL exists, use page_url as fallback if available
+            cleaned["url"] = cleaned.get("page_url", "https://www.amazon.com")
 
         # Clean price
         price = cleaned.get("price", "N/A")
@@ -217,9 +246,20 @@ class AmazonClothesCrawler:
                 f.write(f"- **Price:** ${product['price']}\n")
                 f.write(f"- **Rating:** {product['rating']}\n")
                 f.write(f"- **Reviews:** {product['reviews_count']}\n")
-                url = product["url"]
-                f.write(f"- **Product URL:** [View on Amazon]({url})\n\n")
-                f.write("---\n\n")
+                
+                # Product URL - safely access it
+                product_url = product.get('url', 'https://www.amazon.com')
+                f.write(
+                    f"- **Product URL:** [View on Amazon]({product_url})\n"
+                )
+                
+                # Add page URL where this product was found
+                if product.get("page_url"):
+                    page_url = product["page_url"]
+                    f.write(
+                        f"- **Found on:** [{page_url}]({page_url})\n"
+                    )
+                f.write("\n---\n\n")
 
         self.logger.info("Results saved successfully")
 
