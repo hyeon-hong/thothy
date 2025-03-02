@@ -1,2 +1,0 @@
-# Amazon Clothes Products
-

@@ -1,6 +1,7 @@
 import asyncio
 import logging
 import json
+import argparse
 from crawl4ai import (
     AsyncWebCrawler,
     BrowserConfig,
@@ -11,12 +12,13 @@ from crawl4ai import (
 
 
 class AmazonClothesCrawler:
-    def __init__(self):
+    def __init__(self, output_file="amazon_clothes.md"):
         # Set up logging
         logging.basicConfig(
             level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
         )
         self.logger = logging.getLogger(__name__)
+        self.output_file = output_file
 
         # Define extraction schema for Amazon products
         self.schema = {
@@ -234,10 +236,9 @@ class AmazonClothesCrawler:
 
     def _save_to_markdown(self):
         """Save crawled products to a markdown file."""
-        output_file = "amazon_clothes.md"
-        self.logger.info(f"Saving results to {output_file}")
+        self.logger.info(f"Saving results to {self.output_file}")
 
-        with open(output_file, "w", encoding="utf-8") as f:
+        with open(self.output_file, "w", encoding="utf-8") as f:
             f.write("# Amazon Clothes Products\n\n")
 
             for idx, product in enumerate(self.products, 1):
@@ -264,6 +265,44 @@ class AmazonClothesCrawler:
         self.logger.info("Results saved successfully")
 
 
+def parse_arguments():
+    """Parse command line arguments for the crawler."""
+    parser = argparse.ArgumentParser(
+        description="Amazon Clothes Crawler - Scrape clothes products from Amazon"
+    )
+    parser.add_argument(
+        "-o", 
+        "--output", 
+        default="amazon_clothes.md",
+        help="Output file path (default: amazon_clothes.md)"
+    )
+    parser.add_argument(
+        "-m", 
+        "--max-products", 
+        type=int, 
+        default=100,
+        help="Maximum number of products to crawl (default: 100)"
+    )
+    parser.add_argument(
+        "-v", 
+        "--verbose", 
+        action="store_true",
+        help="Enable verbose logging"
+    )
+    return parser.parse_args()
+
+
 if __name__ == "__main__":
-    crawler = AmazonClothesCrawler()
-    asyncio.run(crawler.start_crawling(max_products=100))
+    # Parse command-line arguments
+    args = parse_arguments()
+    
+    # Configure logging level based on verbose flag
+    if args.verbose:
+        logging.getLogger().setLevel(logging.DEBUG)
+        print(f"Verbose mode enabled. Arguments: {args}")
+    
+    # Initialize crawler with output file
+    crawler = AmazonClothesCrawler(output_file=args.output)
+    
+    # Run the crawler with specified max products
+    asyncio.run(crawler.start_crawling(max_products=args.max_products))
