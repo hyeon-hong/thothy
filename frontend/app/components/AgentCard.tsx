@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardMedia, Typography, Button, Box } from '@mui/material';
 import { styled } from '@mui/material/styles';
 import { useRouter } from 'next/navigation';
-import { useUser } from '../contexts/UserContext';
+import { useAuth } from '../contexts/AuthContext';
 
 interface Agent {
   id: string;
@@ -63,7 +63,7 @@ const RunButton = styled(Button)({
 
 export default function AgentCard({ agent, onSelect, isSelected: propIsSelected = false, showUnselect = false }: AgentCardProps) {
   const router = useRouter();
-  const { user, supabase } = useUser();
+  const { user, supabase } = useAuth();
   const [isSelected, setIsSelected] = useState(propIsSelected);
 
   useEffect(() => {
@@ -81,7 +81,7 @@ export default function AgentCard({ agent, onSelect, isSelected: propIsSelected 
         if (error) throw error;
         setIsSelected(!!data);
       } catch (error) {
-        console.error('Error checking if agent is selected:', error);
+        setIsSelected(false);
       }
     };
 
@@ -96,7 +96,7 @@ export default function AgentCard({ agent, onSelect, isSelected: propIsSelected 
 
     try {
       if (isSelected) {
-        return; // Do nothing if already selected
+        return;
       }
 
       const { error } = await supabase
@@ -109,9 +109,7 @@ export default function AgentCard({ agent, onSelect, isSelected: propIsSelected 
         .single();
 
       if (error) {
-        console.error('Error selecting agent:', error);
-        alert('Failed to select agent. Please try again.');
-        return;
+        throw error;
       }
 
       setIsSelected(true);
@@ -119,7 +117,6 @@ export default function AgentCard({ agent, onSelect, isSelected: propIsSelected 
         onSelect(agent.id);
       }
     } catch (error) {
-      console.error('Error selecting agent:', error);
       alert('Failed to select agent. Please try again.');
     }
   };
@@ -135,9 +132,7 @@ export default function AgentCard({ agent, onSelect, isSelected: propIsSelected 
         .eq('agent_id', agent.id);
 
       if (error) {
-        console.error('Error unselecting agent:', error);
-        alert('Failed to unselect agent. Please try again.');
-        return;
+        throw error;
       }
 
       setIsSelected(false);
@@ -145,7 +140,6 @@ export default function AgentCard({ agent, onSelect, isSelected: propIsSelected 
         onSelect(agent.id);
       }
     } catch (error) {
-      console.error('Error unselecting agent:', error);
       alert('Failed to unselect agent. Please try again.');
     }
   };

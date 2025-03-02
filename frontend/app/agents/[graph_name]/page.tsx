@@ -3,57 +3,20 @@
 import React from "react";
 import { useParams } from "next/navigation";
 import { CopilotKit } from "@copilotkit/react-core";
-import ChatAgentPage from "../chat_agent/page";
+import { CopilotPopup } from "@copilotkit/react-ui";
+import "@copilotkit/react-ui/styles.css";
+import ChatAgentPage from "../chat_agent_copilotkit/page";
+import ChatPage from "../chat_agent/page";
 
 export default function AgentPage() {
     const params = useParams();
     const graph_name = params.graph_name as string;
 
-    // CopilotKit configuration
-    const copilotConfig = {
-        runtimeUrl: "/api/copilotkit",
-        chatOptions: {
-            config: {
-                configurable: {
-                    user_id: "test-user",
-                    model: "anthropic/claude-3-5-sonnet-20240620",
-                    delay_seconds: 1,
-                    system_prompt:
-                        "You are a helpful and friendly chatbot. Get to know the user! Ask questions! Be spontaneous!",
-                },
-            },
-        },
-        agent: graph_name,
-        properties: {
-            config: {
-                configurable: {
-                    user_id: "test-user",
-                    model: "anthropic/claude-3-5-sonnet-20240620",
-                    delay_seconds: 1,
-                    system_prompt:
-                        "You are a helpful and friendly chatbot. Get to know the user! Ask questions! Be spontaneous!",
-                },
-            },
-        },
-        // Backend configuration
-        backend: {
-            timeout: 30000, // 30 seconds
-            streaming: true,
-        },
-        // UI configuration
-        ui: {
-            darkMode: true,
-            markdown: true,
-            codeHighlighting: true,
-        },
-    };
-
     // Function to render the appropriate agent component
     const renderAgentComponent = () => {
-        console.log("graph_name", graph_name);
         switch (graph_name) {
             case "chat_graph":
-                return <ChatAgentPage />;
+                return <ChatPage />;
             default:
                 return (
                     <div className="container mx-auto px-4 py-8">
@@ -68,9 +31,5 @@ export default function AgentPage() {
         }
     };
 
-    return (
-        <CopilotKit {...copilotConfig}>
-            <div className="min-h-screen w-full">{renderAgentComponent()}</div>
-        </CopilotKit>
-    );
+    return <ChatPage />;
 }
