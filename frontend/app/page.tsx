@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState } from "react";
-import { Container, Typography, Button, Box, Grid, Paper, Alert } from "@mui/material";
+import React, { useState, useEffect } from "react";
+import { Container, Typography, Button, Box, Grid, Paper, Snackbar, Alert } from "@mui/material";
 import { useRouter } from "next/navigation";
 import { useAuth } from "./contexts/AuthContext";
 import Header from "./components/Header";
@@ -12,6 +12,15 @@ export default function Home() {
     const router = useRouter();
     const { user } = useAuth();
     const [currentView, setCurrentView] = useState("landing"); // "landing", "home", or "myAgents"
+    const [openSnackbar, setOpenSnackbar] = useState(false);
+
+    useEffect(() => {
+        // Check if user has previously acknowledged the notice
+        const hasAcknowledged = localStorage.getItem('thothyNoticeAcknowledged');
+        if (!hasAcknowledged) {
+            setOpenSnackbar(true);
+        }
+    }, []);
 
     const handleGetStarted = () => {
         if (user) {
@@ -19,6 +28,20 @@ export default function Home() {
         } else {
             router.push("/auth/signin");
         }
+    };
+
+    const handleCloseSnackbar = (event: React.SyntheticEvent | Event, reason?: string) => {
+        if (reason === 'clickaway') {
+            return;
+        }
+        setOpenSnackbar(false);
+    };
+
+    const handleAcknowledgeNotice = (acknowledge: boolean) => {
+        if (acknowledge) {
+            localStorage.setItem('thothyNoticeAcknowledged', 'true');
+        }
+        setOpenSnackbar(false);
     };
 
     if (currentView === "landing") {
@@ -163,37 +186,6 @@ export default function Home() {
                     </Grid>
                 </Container>
 
-                {/* Disclaimer Section */}
-                <Box sx={{ bgcolor: "#fff3e0", py: 6 }}>
-                    <Container maxWidth="md">
-                        <Alert 
-                            severity="warning" 
-                            sx={{ 
-                                fontSize: '1.1rem',
-                                '& .MuiAlert-message': {
-                                    width: '100%',
-                                }
-                            }}
-                        >
-                            <Typography variant="h6" gutterBottom sx={{ fontWeight: 600 }}>
-                                Important Notice
-                            </Typography>
-                            <Typography variant="body1" sx={{ mb: 2 }}>
-                                Thothy is currently under development and not ready for production use. This is a beta version of the service.
-                            </Typography>
-                            <Typography variant="body1" sx={{ mb: 2 }}>
-                                By using this service, you acknowledge and agree that:
-                            </Typography>
-                            <ul style={{ margin: '0 0 0 20px', padding: 0 }}>
-                                <li>The service is provided "as is" without any warranties</li>
-                                <li>We are not responsible for any errors, accidents, or damages that may occur while using this service</li>
-                                <li>You use this service at your own risk</li>
-                                <li>We reserve the right to modify or discontinue the service at any time</li>
-                            </ul>
-                        </Alert>
-                    </Container>
-                </Box>
-
                 {/* CTA Section */}
                 <Box sx={{ bgcolor: "#f8f9fa", py: 8 }}>
                     <Container maxWidth="md">
@@ -232,6 +224,48 @@ export default function Home() {
                         </Box>
                     </Container>
                 </Box>
+
+                {/* Disclaimer Snackbar */}
+                <Snackbar
+                    open={openSnackbar}
+                    anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+                    onClose={handleCloseSnackbar}
+                    sx={{ bottom: { xs: 16, sm: 24 } }}
+                >
+                    <Alert
+                        severity="warning"
+                        sx={{ width: '100%' }}
+                        action={
+                            <Box>
+                                <Button 
+                                    color="inherit" 
+                                    size="small" 
+                                    onClick={() => handleAcknowledgeNotice(true)}
+                                    sx={{ mr: 1 }}
+                                >
+                                    OK
+                                </Button>
+                                <Button 
+                                    color="inherit" 
+                                    size="small" 
+                                    onClick={() => handleAcknowledgeNotice(false)}
+                                >
+                                    Cancel
+                                </Button>
+                            </Box>
+                        }
+                    >
+                        <Typography variant="subtitle1" gutterBottom sx={{ fontWeight: 600 }}>
+                            Important Notice
+                        </Typography>
+                        <Typography variant="body2" sx={{ mb: 1 }}>
+                            Thothy is currently under development and not ready for production use. This is a beta version of the service.
+                        </Typography>
+                        <Typography variant="body2">
+                            By using this service, you acknowledge and agree that you use it at your own risk and without any warranties.
+                        </Typography>
+                    </Alert>
+                </Snackbar>
             </Box>
         );
     }
