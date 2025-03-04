@@ -34,28 +34,32 @@ export default function Header({ currentView, onViewChange }: HeaderProps) {
     px: 2,
   };
 
+  const handleTothyClick = () => {
+    onViewChange('landing');
+  };
+
   return (
     <AppBar position="static" color="transparent" elevation={0} sx={{ borderBottom: '2px solid rgba(0, 0, 0, 0.12)' }}>
       <Container maxWidth="lg">
         <Toolbar sx={{ justifyContent: 'space-between', px: { xs: 0, sm: 2 } }}>
-          <Link href="/" passHref style={{ textDecoration: 'none', color: 'inherit' }}>
-            <Typography
-              variant="h5"
-              component="div"
-              sx={{
-                fontFamily: "'Roboto Mono', monospace",
-                fontWeight: 700,
-                cursor: 'pointer',
-              }}
-            >
-              Thothy
-            </Typography>
-          </Link>
+          <Typography
+            variant="h5"
+            component="div"
+            onClick={handleTothyClick}
+            sx={{
+              fontFamily: "'Roboto Mono', monospace",
+              fontWeight: 700,
+              cursor: 'pointer',
+              color: 'inherit',
+            }}
+          >
+            Thothy
+          </Typography>
 
           <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
             <Button
               color={currentView === 'home' ? 'primary' : 'inherit'}
-              onClick={() => router.push('/')}
+              onClick={() => onViewChange('home')}
               sx={{
                 ...navButtonStyle,
                 fontWeight: currentView === 'home' ? 700 : 400,
@@ -67,7 +71,7 @@ export default function Header({ currentView, onViewChange }: HeaderProps) {
             {user && (
               <Button
                 color={currentView === 'myAgents' ? 'primary' : 'inherit'}
-                onClick={() => router.push('/my-agents')}
+                onClick={() => onViewChange('myAgents')}
                 sx={{
                   ...navButtonStyle,
                   fontWeight: currentView === 'myAgents' ? 700 : 400,
