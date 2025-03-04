@@ -51,7 +51,7 @@ export function ChatSidebar() {
       // Cleanup debounced function
       debouncedDeleteThread.cancel();
     };
-  }, []);
+  }, [debouncedDeleteThread]);
 
   const startResizing = () => {
     isResizing.current = true;

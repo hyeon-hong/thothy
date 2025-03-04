@@ -18,7 +18,7 @@ export function useThreadManager(userId, client) {
     console.log("client", client);
 
     // Helper function to validate client session
-    const validateClientSession = async () => {
+    const validateClientSession = useCallback(async () => {
         if (!client) return false;
         
         try {
@@ -40,10 +40,10 @@ export function useThreadManager(userId, client) {
             }
             return false;
         }
-    };
+    }, [client, refreshSession]);
 
     // Enhanced withRetry to include session validation
-    const withRetry = async (operation, operationName) => {
+    const withRetry = useCallback(async (operation, operationName) => {
         let attempts = 0;
         while (attempts < MAX_RETRIES) {
             try {
@@ -65,7 +65,7 @@ export function useThreadManager(userId, client) {
                 }
             }
         }
-    };
+    }, [validateClientSession, MAX_RETRIES, RETRY_DELAY]);
 
     // Debounced version of thread fetching with retry logic
     const debouncedFetchThreads = useCallback(
@@ -117,7 +117,7 @@ export function useThreadManager(userId, client) {
                 setIsLoading(false);
             }
         }, 300),
-        [userId, client, retryCount, refreshSession, currentThreadId]
+        [userId, client, retryCount, refreshSession, currentThreadId, validateClientSession, setThreads, setCurrentThreadId, setInitialLoadComplete, setRetryCount, setIsLoading]
     );
 
     // New effect to handle initial message loading
@@ -157,7 +157,7 @@ export function useThreadManager(userId, client) {
         };
 
         fetchMessages();
-    }, [currentThreadId, client, shouldFetchMessages]);
+    }, [currentThreadId, client, shouldFetchMessages, withRetry]);
 
     // Update the setCurrentThreadId function to trigger message fetch
     const setCurrentThreadIdWithMessages = useCallback((threadId) => {
@@ -171,9 +171,9 @@ export function useThreadManager(userId, client) {
             debouncedFetchThreads(true); // Enable retry on initial load
             return () => debouncedFetchThreads.cancel();
         }
-    }, [userId, client]);
+    }, [userId, client, debouncedFetchThreads]);
 
-    const getThreadById = async (threadId) => {
+    const getThreadById = useCallback(async (threadId) => {
         if (
             !client ||
             !threadId ||
@@ -195,7 +195,40 @@ export function useThreadManager(userId, client) {
             console.error("Error getting thread:", error);
             return null;
         }
-    };
+    }, [client, withRetry]);
+
+    const createNewThread = useCallback(async () => {
+        if (!client) return null;
+
+        try {
+            const thread = await withRetry(
+                () =>
+                    client.threads.create({
+                        metadata: {
+                            user_id: userId,
+                            created_at: new Date().toISOString(),
+                            title: "New Chat",
+                        },
+                    }),
+                "Create thread"
+            );
+
+            localStorage.setItem(THREAD_ID_KEY, thread.thread_id);
+
+            setThreads((prev) => [
+                {
+                    ...thread,
+                    title: "New Chat",
+                },
+                ...prev,
+            ]);
+
+            return thread;
+        } catch (error) {
+            console.error("Error creating thread:", error);
+            return null;
+        }
+    }, [client, userId, withRetry, setThreads]);
 
     // Initialize or restore current thread with retry logic
     useEffect(() => {
@@ -265,40 +298,7 @@ export function useThreadManager(userId, client) {
         };
 
         initializeThread();
-    }, [client, currentThreadId, threads, retryCount]);
-
-    const createNewThread = async () => {
-        if (!client) return null;
-
-        try {
-            const thread = await withRetry(
-                () =>
-                    client.threads.create({
-                        metadata: {
-                            user_id: userId,
-                            created_at: new Date().toISOString(),
-                            title: "New Chat",
-                        },
-                    }),
-                "Create thread"
-            );
-
-            localStorage.setItem(THREAD_ID_KEY, thread.thread_id);
-
-            setThreads((prev) => [
-                {
-                    ...thread,
-                    title: "New Chat",
-                },
-                ...prev,
-            ]);
-
-            return thread;
-        } catch (error) {
-            console.error("Error creating thread:", error);
-            return null;
-        }
-    };
+    }, [client, currentThreadId, threads, retryCount, createNewThread, getThreadById, setCurrentThreadId, setShouldFetchMessages, setRetryCount]);
 
     const deleteThread = async (threadId) => {
         console.log("Deleting thread:", threadId);

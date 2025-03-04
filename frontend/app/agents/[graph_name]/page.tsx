@@ -10,7 +10,7 @@ import ChatPage from "../chat_agent/page";
 
 export default function AgentPage() {
     const params = useParams();
-    const graph_name = params.graph_name as string;
+    const graph_name = params?.graph_name as string || 'chat_graph';
 
     // Function to render the appropriate agent component
     const renderAgentComponent = () => {

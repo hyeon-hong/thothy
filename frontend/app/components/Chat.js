@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { useChat } from "../contexts/ChatContext";
 import { ChatSidebar } from "./ChatSidebar";
 
@@ -75,7 +75,7 @@ export function Chat({ inputRef }) {
   };
 
   // Initialize speech synthesis and load voices
-  const initSpeechSynthesis = async () => {
+  const initSpeechSynthesis = useCallback(async () => {
     if (!window.speechSynthesis) {
       console.error('Speech synthesis not supported');
       return false;
@@ -99,10 +99,10 @@ export function Chat({ inputRef }) {
 
     console.error('Failed to load voices after', maxAttempts, 'attempts');
     return false;
-  };
+  }, []);
 
   // Prepare utterance object with retry mechanism
-  const createUtterance = (text, isNext = false) => {
+  const createUtterance = useCallback((text, isNext = false) => {
     try {
       const utterance = new SpeechSynthesisUtterance(text);
       utterance.rate = 0.9;
@@ -128,7 +128,7 @@ export function Chat({ inputRef }) {
       console.error('Error creating utterance:', error);
       return null;
     }
-  };
+  }, []);
 
   // Helper function to highlight current chunk
   const renderMessageContent = (content, isCurrentMessage) => {
@@ -161,7 +161,7 @@ export function Chat({ inputRef }) {
   };
 
   // Process the speech queue with better error handling
-  const processSpeechQueue = async () => {
+  const processSpeechQueue = useCallback(async () => {
     if (!window.speechSynthesis || !speechQueue.current.length) {
       console.log('Speech queue stopped:', { 
         synthAvailable: !!window.speechSynthesis,
@@ -235,10 +235,10 @@ export function Chat({ inputRef }) {
       currentUtterance.current = null;
       setTimeout(processSpeechQueue, 100);
     }
-  };
+  }, [initSpeechSynthesis, setIsSpeaking, createUtterance]);
 
   // Initialize speech synthesis with better error handling
-  const speakMessage = async (text, messageIndex) => {
+  const speakMessage = useCallback(async (text, messageIndex) => {
     if (!window.speechSynthesis) {
       console.error('Speech synthesis not supported');
       return;
@@ -273,7 +273,7 @@ export function Chat({ inputRef }) {
       console.error('Speech synthesis initialization error:', error);
       setIsSpeaking(false);
     }
-  };
+  }, [initSpeechSynthesis, processSpeechQueue, setCurrentMessageIndex, setCurrentWordIndex, setIsSpeaking]);
 
   // Effect to handle voice selection with retry
   useEffect(() => {
@@ -308,7 +308,7 @@ export function Chat({ inputRef }) {
         nextUtterance.current = null;
       }
     };
-  }, []);
+  }, [initSpeechSynthesis]);
 
   // Effect to speak new AI messages
   useEffect(() => {
@@ -316,7 +316,7 @@ export function Chat({ inputRef }) {
     if (lastMessage?.role === 'assistant' && !isLoading) {
       speakMessage(lastMessage.content, messages.length - 1);
     }
-  }, [messages, isLoading]);
+  }, [messages, isLoading, speakMessage]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -329,7 +329,7 @@ export function Chat({ inputRef }) {
   // Focus input on component mount
   useEffect(() => {
     actualInputRef.current?.focus();
-  }, []);
+  }, [actualInputRef]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();

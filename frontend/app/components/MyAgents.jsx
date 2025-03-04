@@ -53,7 +53,7 @@ export default function MyAgents() {
         };
 
         fetchMyAgents();
-    }, [user?.id]);
+    }, [user?.id, supabase]);
 
     const handleAgentUnselect = async (agentId) => {
         try {
@@ -97,7 +97,7 @@ export default function MyAgents() {
                 </Typography>
                 <Box sx={{ textAlign: 'center', mt: 4 }}>
                     <Typography variant="h6" color="text.secondary">
-                        You haven't selected any agents yet.
+                        You haven&apos;t selected any agents yet.
                     </Typography>
                 </Box>
             </Container>
