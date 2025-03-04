@@ -11,6 +11,7 @@ interface AuthContextType {
     session: Session | null;
     signIn: (email: string, password: string) => Promise<void>;
     signUp: (email: string, password: string) => Promise<void>;
+    signInWithGoogle: () => Promise<void>;
     signOut: () => Promise<void>;
     loading: boolean;
 }
@@ -84,6 +85,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
     }, []);
 
+    const signInWithGoogle = useCallback(async () => {
+        try {
+            const response = await fetch('/api/auth/google', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    redirectTo: `${window.location.origin}/auth/callback`,
+                }),
+            });
+
+            if (!response.ok) {
+                throw new Error('Google sign in failed');
+            }
+
+            const data = await response.json();
+            // Redirect to the Google OAuth URL
+            window.location.href = data.url;
+        } catch (error) {
+            console.error('Error signing in with Google:', error);
+            throw error;
+        }
+    }, []);
+
     const signOut = useCallback(async () => {
         try {
             const response = await fetch('/api/auth/signout', {
@@ -103,7 +127,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }, []);
 
     return (
-        <AuthContext.Provider value={{ user, session, signIn, signUp, signOut, loading }}>
+        <AuthContext.Provider value={{ user, session, signIn, signUp, signInWithGoogle, signOut, loading }}>
             {children}
         </AuthContext.Provider>
     );
