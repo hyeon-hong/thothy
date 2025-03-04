@@ -230,25 +230,57 @@ export default function Home() {
                     open={openSnackbar}
                     anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
                     onClose={handleCloseSnackbar}
-                    sx={{ bottom: { xs: 16, sm: 24 } }}
+                    sx={{ 
+                        bottom: { xs: 16, sm: 24 },
+                        left: '50%',
+                        transform: 'translateX(-50%)',
+                        width: 'calc(100% - 20px)',
+                        maxWidth: 'none',
+                    }}
                 >
                     <Alert
                         severity="warning"
-                        sx={{ width: '100%' }}
+                        sx={{ 
+                            width: '100%',
+                            '& .MuiAlert-action': {
+                                alignItems: 'center',
+                                marginTop: 0,
+                                marginLeft: 2,
+                            }
+                        }}
                         action={
-                            <Box>
+                            <Box sx={{ display: 'flex', gap: 1 }}>
                                 <Button 
-                                    color="inherit" 
+                                    variant="contained"
                                     size="small" 
                                     onClick={() => handleAcknowledgeNotice(true)}
-                                    sx={{ mr: 1 }}
+                                    sx={{ 
+                                        bgcolor: '#e3f2fd',
+                                        color: '#1976d2',
+                                        '&:hover': {
+                                            bgcolor: '#bbdefb',
+                                        },
+                                        borderRadius: '20px',
+                                        px: 3,
+                                        py: 0.5,
+                                    }}
                                 >
                                     OK
                                 </Button>
                                 <Button 
-                                    color="inherit" 
+                                    variant="contained"
                                     size="small" 
                                     onClick={() => handleAcknowledgeNotice(false)}
+                                    sx={{ 
+                                        bgcolor: '#e3f2fd',
+                                        color: '#1976d2',
+                                        '&:hover': {
+                                            bgcolor: '#bbdefb',
+                                        },
+                                        borderRadius: '20px',
+                                        px: 3,
+                                        py: 0.5,
+                                    }}
                                 >
                                     Cancel
                                 </Button>
