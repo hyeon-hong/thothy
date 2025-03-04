@@ -2,10 +2,6 @@
 
 import React from "react";
 import { useParams } from "next/navigation";
-import { CopilotKit } from "@copilotkit/react-core";
-import { CopilotPopup } from "@copilotkit/react-ui";
-import "@copilotkit/react-ui/styles.css";
-import ChatAgentPage from "../chat_agent_copilotkit/page";
 import ChatPage from "../chat_agent/page";
 
 export default function AgentPage() {
