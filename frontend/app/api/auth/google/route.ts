@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { cookies } from 'next/headers';
 
 if (!process.env.SUPABASE_API_URL) {
     throw new Error('Missing environment variable: SUPABASE_API_URL');
@@ -19,9 +20,29 @@ export async function POST(request: Request) {
     try {
         const { redirectTo } = await request.json();
         console.log('Redirect to:', redirectTo);
-        const redirectUrl = redirectTo || `${process.env.NEXT_PUBLIC_APP_URL}/api/auth/callback`;
+        
+        const cookieStore = cookies();
+        const supabaseClient = createClient(
+            process.env.SUPABASE_API_URL!,
+            process.env.SUPABASE_SERVICE_ROLE_KEY!,
+            {
+                cookies: {
+                    get(name: string) {
+                        return cookieStore.get(name)?.value;
+                    },
+                    set(name: string, value: string, options: any) {
+                        cookieStore.set({ name, value, ...options });
+                    },
+                    remove(name: string, options: any) {
+                        cookieStore.set({ name, value: '', ...options });
+                    },
+                },
+            }
+        );
 
-        const { data, error } = await supabase.auth.signInWithOAuth({
+        const redirectUrl = redirectTo || `${process.env.NEXT_PUBLIC_APP_URL}/auth/callback`;
+
+        const { data, error } = await supabaseClient.auth.signInWithOAuth({
             provider: 'google',
             options: {
                 redirectTo: redirectUrl,

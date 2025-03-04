@@ -5,6 +5,7 @@ import { User, Session } from "@supabase/supabase-js";
 import { api } from "@/lib/api";
 
 const MAX_RETRIES = 3;
+const STORAGE_KEY = 'thothy_auth_state';
 
 interface AuthContextType {
     user: User | null;
@@ -18,12 +19,42 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+// Helper function to save auth state to localStorage
+const saveAuthState = (user: User | null, session: Session | null) => {
+    if (typeof window !== 'undefined') {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify({ user, session }));
+    }
+};
+
+// Helper function to load auth state from localStorage
+const loadAuthState = () => {
+    if (typeof window !== 'undefined') {
+        const stored = localStorage.getItem(STORAGE_KEY);
+        if (stored) {
+            try {
+                return JSON.parse(stored);
+            } catch (error) {
+                console.error('Error parsing stored auth state:', error);
+                return null;
+            }
+        }
+    }
+    return null;
+};
+
 export function AuthProvider({ children }: { children: ReactNode }) {
     const [user, setUser] = useState<User | null>(null);
     const [session, setSession] = useState<Session | null>(null);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
+        // Load initial state from localStorage
+        const storedState = loadAuthState();
+        if (storedState) {
+            setUser(storedState.user);
+            setSession(storedState.session);
+        }
+
         // Check active sessions and sets the user
         const checkSession = async () => {
             try {
@@ -32,6 +63,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                     const data = await response.json();
                     setSession(data.session);
                     setUser(data.user);
+                    saveAuthState(data.user, data.session);
                 }
             } catch (error) {
                 console.error('Error checking session:', error);
@@ -58,6 +90,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             const data = await response.json();
             setSession(data.session);
             setUser(data.user);
+            saveAuthState(data.user, data.session);
         } catch (error) {
             console.error('Error signing in:', error);
             throw error;
@@ -79,6 +112,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             const data = await response.json();
             setSession(data.session);
             setUser(data.user);
+            saveAuthState(data.user, data.session);
         } catch (error) {
             console.error('Error signing up:', error);
             throw error;
@@ -91,7 +125,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    redirectTo: `${window.location.origin}/api/auth/callback`,
+                    redirectTo: `${window.location.origin}/auth/callback`,
                 }),
             });
             console.log('Google sign in response:', response);
@@ -121,6 +155,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
             setSession(null);
             setUser(null);
+            localStorage.removeItem(STORAGE_KEY);
         } catch (error) {
             console.error('Error signing out:', error);
             throw error;

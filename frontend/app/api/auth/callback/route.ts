@@ -20,23 +20,11 @@ export async function GET(request: Request) {
         console.log('request.url:', request.url);
         const { searchParams } = new URL(request.url);
         console.log('searchParams:', searchParams);
-        const code = searchParams.get('code');
         const next = searchParams.get('next') ?? '/';
-        console.log('code:', code);
         console.log('next:', next);
 
-        if (code) {
-            const { data, error } = await supabase.auth.exchangeCodeForSession(code);
-            console.log('Exchange code for session data:', data);
-            console.log('Exchange code for session error:', error);
-            console.log('request.url:', request.url);
-            if (!error) {
-                return NextResponse.redirect(new URL(next, request.url));
-            }
-            console.error('Error exchanging code for session:', error);
-        }
-
-        return NextResponse.redirect(new URL('/auth/auth-code-error', request.url));
+        // Redirect to the next URL directly
+        return NextResponse.redirect(new URL(next, request.url));
     } catch (error) {
         console.error("Error handling OAuth callback:", error);
         return NextResponse.redirect(new URL('/auth/auth-code-error', request.url));

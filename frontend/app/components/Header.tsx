@@ -1,6 +1,6 @@
 "use client";
 
-import React from 'react';
+import React, { useState } from 'react';
 import {
   AppBar,
   Toolbar,
@@ -11,10 +11,17 @@ import {
   useTheme,
   useMediaQuery,
   Avatar,
+  Menu,
+  MenuItem,
+  IconButton,
+  Divider,
 } from '@mui/material';
 import { useAuth } from '../contexts/AuthContext';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import AccountCircle from '@mui/icons-material/AccountCircle';
+import Settings from '@mui/icons-material/Settings';
+import Logout from '@mui/icons-material/Logout';
 
 interface HeaderProps {
   currentView: string;
@@ -26,6 +33,7 @@ export default function Header({ currentView, onViewChange }: HeaderProps) {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const router = useRouter();
+  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
 
   const navButtonStyle = {
     textTransform: 'none',
@@ -36,6 +44,24 @@ export default function Header({ currentView, onViewChange }: HeaderProps) {
 
   const handleTothyClick = () => {
     onViewChange('landing');
+  };
+
+  const handleProfileMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
+    setAnchorEl(event.currentTarget);
+  };
+
+  const handleMenuClose = () => {
+    setAnchorEl(null);
+  };
+
+  const handleSignOut = () => {
+    handleMenuClose();
+    signOut();
+  };
+
+  const handleSettings = () => {
+    handleMenuClose();
+    onViewChange('settings');
   };
 
   return (
@@ -82,26 +108,52 @@ export default function Header({ currentView, onViewChange }: HeaderProps) {
             )}
 
             {user ? (
-              <Button
-                variant="outlined"
-                color="primary"
-                onClick={signOut}
-                sx={{ 
-                  ml: 2,
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 1,
-                  px: 2,
-                  py: 1,
-                }}
-              >
-                <Avatar
-                  src={user.user_metadata?.avatar_url || user.user_metadata?.picture}
-                  alt={user.user_metadata?.full_name || user.email}
-                  sx={{ width: 24, height: 24 }}
-                />
-                Sign Out
-              </Button>
+              <>
+                <IconButton
+                  size="large"
+                  edge="end"
+                  aria-label="account of current user"
+                  aria-controls="menu-appbar"
+                  aria-haspopup="true"
+                  onClick={handleProfileMenuOpen}
+                  color="inherit"
+                >
+                  <Avatar
+                    src={user.user_metadata?.avatar_url || user.user_metadata?.picture}
+                    alt={user.user_metadata?.full_name || user.email}
+                    sx={{ width: 32, height: 32 }}
+                  />
+                </IconButton>
+                <Menu
+                  anchorEl={anchorEl}
+                  anchorOrigin={{
+                    vertical: 'bottom',
+                    horizontal: 'right',
+                  }}
+                  keepMounted
+                  transformOrigin={{
+                    vertical: 'top',
+                    horizontal: 'right',
+                  }}
+                  open={Boolean(anchorEl)}
+                  onClose={handleMenuClose}
+                >
+                  <MenuItem disabled>
+                    <Typography variant="body2" color="text.secondary">
+                      {user.user_metadata?.full_name || user.email}
+                    </Typography>
+                  </MenuItem>
+                  <Divider />
+                  <MenuItem onClick={handleSettings}>
+                    <Settings sx={{ mr: 1 }} />
+                    Settings
+                  </MenuItem>
+                  <MenuItem onClick={handleSignOut}>
+                    <Logout sx={{ mr: 1 }} />
+                    Sign Out
+                  </MenuItem>
+                </Menu>
+              </>
             ) : (
               <Button
                 variant="contained"
