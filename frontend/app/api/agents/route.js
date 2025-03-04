@@ -5,13 +5,13 @@ if (!process.env.NEXT_PUBLIC_SUPABASE_API_URL) {
     throw new Error('Missing environment variable: NEXT_PUBLIC_SUPABASE_API_URL');
 }
 
-if (!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
-    throw new Error('Missing environment variable: NEXT_PUBLIC_SUPABASE_ANON_KEY');
+if (!process.env.SUPABASE_ANON_KEY) {
+    throw new Error('Missing environment variable: SUPABASE_ANON_KEY');
 }
 
 const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_API_URL,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+    process.env.SUPABASE_ANON_KEY
 );
 
 export async function GET() {
