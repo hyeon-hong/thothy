@@ -123,6 +123,38 @@ When contributing, please:
 2. Submit PRs targeting the `develop` branch
 3. Ensure your changes are up-to-date with `develop` before submitting
 
+#### Git Flow Commands
+We use Git Flow for branch management. Here are the essential commands:
+
+```bash
+# Initialize Git Flow in your repository
+git flow init
+
+# Start a new feature
+git flow feature start feature-name
+
+# Finish a feature (merges back to develop)
+git flow feature finish feature-name
+
+# Start a bugfix
+git flow bugfix start bugfix-name
+
+# Finish a bugfix
+git flow bugfix finish bugfix-name
+
+# Start a release
+git flow release start 1.0.0
+
+# Finish a release (merges to main and develop)
+git flow release finish 1.0.0
+
+# Start a hotfix
+git flow hotfix start hotfix-name
+
+# Finish a hotfix (merges to main and develop)
+git flow hotfix finish hotfix-name
+```
+
 ### Pull Request Guidelines
 
 -   **Title**: Use a clear, descriptive title that explains the purpose of the PR
