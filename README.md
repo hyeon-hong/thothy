@@ -111,6 +111,18 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 
 ## ⚙️ Development Guidelines
 
+### Branch Strategy
+
+Our repository uses `develop` as the default branch instead of `main` because the project is currently under active development and not yet ready for production use. This follows the Git Flow branching model where:
+
+- `develop`: Contains the latest development changes
+- `main`: Will be used for production-ready releases in the future
+
+When contributing, please:
+1. Create your feature branches from `develop`
+2. Submit PRs targeting the `develop` branch
+3. Ensure your changes are up-to-date with `develop` before submitting
+
 ### Pull Request Guidelines
 
 -   **Title**: Use a clear, descriptive title that explains the purpose of the PR
