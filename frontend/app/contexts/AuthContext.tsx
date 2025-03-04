@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
 import { User, Session } from "@supabase/supabase-js";
 
@@ -36,24 +36,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Helper function to handle retries for auth operations
-  const withRetry = async <T,>(operation: () => Promise<T>, retryCount = 0): Promise<T> => {
-    try {
-      return await operation();
-    } catch (error: any) {
-      if ((error?.status === 401 || error?.status === 403) && retryCount < MAX_RETRIES) {
-        console.log(`Auth error, attempting to refresh session... (Attempt ${retryCount + 1}/${MAX_RETRIES})`);
-        await new Promise(resolve => setTimeout(resolve, RETRY_DELAY));
-        const newSession = await refreshSession();
-        if (newSession) {
-          return withRetry(operation, retryCount + 1);
-        }
-      }
-      throw error;
-    }
-  };
-
-  const refreshSession = async () => {
+  const refreshSession = useCallback(async () => {
     try {
       const { data: { session: currentSession } } = await supabase.auth.getSession();
       if (currentSession) {
@@ -75,7 +58,24 @@ export function AuthProvider({ children }: AuthProviderProps) {
       console.error('Error refreshing session:', error);
       return null;
     }
-  };
+  }, [setSession, setUser]);
+
+  // Helper function to handle retries for auth operations
+  const withRetry = useCallback(async <T,>(operation: () => Promise<T>, retryCount = 0): Promise<T> => {
+    try {
+      return await operation();
+    } catch (error: any) {
+      if ((error?.status === 401 || error?.status === 403) && retryCount < MAX_RETRIES) {
+        console.log(`Auth error, attempting to refresh session... (Attempt ${retryCount + 1}/${MAX_RETRIES})`);
+        await new Promise(resolve => setTimeout(resolve, RETRY_DELAY));
+        const newSession = await refreshSession();
+        if (newSession) {
+          return withRetry(operation, retryCount + 1);
+        }
+      }
+      throw error;
+    }
+  }, [refreshSession]);
 
   useEffect(() => {
     // Initialize session from localStorage if available
@@ -107,7 +107,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     });
 
     return () => subscription.unsubscribe();
-  }, []);
+  }, [withRetry]);
 
   const signInWithGoogle = async () => {
     return withRetry(async () => {
