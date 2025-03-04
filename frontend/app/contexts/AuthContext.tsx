@@ -1,158 +1,118 @@
 "use client";
 
 import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from "react";
-import { supabase } from "@/lib/supabase";
 import { User, Session } from "@supabase/supabase-js";
+import { api } from "@/lib/api";
 
 const MAX_RETRIES = 3;
-const RETRY_DELAY = 1000; // 1 second
 
 interface AuthContextType {
-  user: User | null;
-  session: Session | null;
-  loading: boolean;
-  signInWithGoogle: () => Promise<void>;
-  signOut: () => Promise<void>;
-  supabase: typeof supabase;
-  refreshSession: () => Promise<Session | null>;
+    user: User | null;
+    session: Session | null;
+    signIn: (email: string, password: string) => Promise<void>;
+    signUp: (email: string, password: string) => Promise<void>;
+    signOut: () => Promise<void>;
+    loading: boolean;
 }
 
-const AuthContext = createContext<AuthContextType>({
-  user: null,
-  session: null,
-  loading: true,
-  signInWithGoogle: async () => {},
-  signOut: async () => {},
-  supabase: supabase,
-  refreshSession: async () => null,
-});
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-interface AuthProviderProps {
-  children: ReactNode;
-}
+export function AuthProvider({ children }: { children: ReactNode }) {
+    const [user, setUser] = useState<User | null>(null);
+    const [session, setSession] = useState<Session | null>(null);
+    const [loading, setLoading] = useState(true);
 
-export function AuthProvider({ children }: AuthProviderProps) {
-  const [user, setUser] = useState<User | null>(null);
-  const [session, setSession] = useState<Session | null>(null);
-  const [loading, setLoading] = useState(true);
+    useEffect(() => {
+        // Check active sessions and sets the user
+        const checkSession = async () => {
+            try {
+                const response = await fetch('/api/auth/session');
+                if (response.ok) {
+                    const data = await response.json();
+                    setSession(data.session);
+                    setUser(data.user);
+                }
+            } catch (error) {
+                console.error('Error checking session:', error);
+            } finally {
+                setLoading(false);
+            }
+        };
 
-  const refreshSession = useCallback(async () => {
-    try {
-      const { data: { session: currentSession } } = await supabase.auth.getSession();
-      if (currentSession) {
-        setSession(currentSession);
-        setUser(currentSession.user);
-        return currentSession;
-      }
-      
-      // If no session, try to refresh
-      const { data: { session: refreshedSession } } = await supabase.auth.refreshSession();
-      if (refreshedSession) {
-        setSession(refreshedSession);
-        setUser(refreshedSession.user);
-        return refreshedSession;
-      }
-      
-      return null;
-    } catch (error) {
-      console.error('Error refreshing session:', error);
-      return null;
-    }
-  }, [setSession, setUser]);
+        checkSession();
+    }, []);
 
-  // Helper function to handle retries for auth operations
-  const withRetry = useCallback(async <T,>(operation: () => Promise<T>, retryCount = 0): Promise<T> => {
-    try {
-      return await operation();
-    } catch (error: any) {
-      if ((error?.status === 401 || error?.status === 403) && retryCount < MAX_RETRIES) {
-        console.log(`Auth error, attempting to refresh session... (Attempt ${retryCount + 1}/${MAX_RETRIES})`);
-        await new Promise(resolve => setTimeout(resolve, RETRY_DELAY));
-        const newSession = await refreshSession();
-        if (newSession) {
-          return withRetry(operation, retryCount + 1);
+    const signIn = useCallback(async (email: string, password: string) => {
+        try {
+            const response = await fetch('/api/auth/signin', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, password }),
+            });
+
+            if (!response.ok) {
+                throw new Error('Sign in failed');
+            }
+
+            const data = await response.json();
+            setSession(data.session);
+            setUser(data.user);
+        } catch (error) {
+            console.error('Error signing in:', error);
+            throw error;
         }
-      }
-      throw error;
-    }
-  }, [refreshSession]);
+    }, []);
 
-  useEffect(() => {
-    // Initialize session from localStorage if available
-    const initializeSession = async () => {
-      try {
-        await withRetry(async () => {
-          const { data: { session: currentSession } } = await supabase.auth.getSession();
-          if (currentSession) {
-            setSession(currentSession);
-            setUser(currentSession.user);
-          }
-        });
-      } catch (error) {
-        console.error('Error initializing session:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
+    const signUp = useCallback(async (email: string, password: string) => {
+        try {
+            const response = await fetch('/api/auth/signup', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, password }),
+            });
 
-    initializeSession();
+            if (!response.ok) {
+                throw new Error('Sign up failed');
+            }
 
-    // Listen for auth changes
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      setLoading(false);
-    });
+            const data = await response.json();
+            setSession(data.session);
+            setUser(data.user);
+        } catch (error) {
+            console.error('Error signing up:', error);
+            throw error;
+        }
+    }, []);
 
-    return () => subscription.unsubscribe();
-  }, [withRetry]);
+    const signOut = useCallback(async () => {
+        try {
+            const response = await fetch('/api/auth/signout', {
+                method: 'POST',
+            });
 
-  const signInWithGoogle = async () => {
-    return withRetry(async () => {
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: `${window.location.origin}/auth/callback`,
-          queryParams: {
-            access_type: 'offline',
-            prompt: 'consent',
-          },
-        },
-      });
-      if (error) throw error;
-    });
-  };
+            if (!response.ok) {
+                throw new Error('Sign out failed');
+            }
 
-  const signOut = async () => {
-    return withRetry(async () => {
-      const { error } = await supabase.auth.signOut();
-      if (error) throw error;
-      setSession(null);
-      setUser(null);
-    });
-  };
+            setSession(null);
+            setUser(null);
+        } catch (error) {
+            console.error('Error signing out:', error);
+            throw error;
+        }
+    }, []);
 
-  return (
-    <AuthContext.Provider value={{ 
-      user, 
-      session, 
-      loading, 
-      signInWithGoogle, 
-      signOut, 
-      supabase,
-      refreshSession 
-    }}>
-      {children}
-    </AuthContext.Provider>
-  );
+    return (
+        <AuthContext.Provider value={{ user, session, signIn, signUp, signOut, loading }}>
+            {children}
+        </AuthContext.Provider>
+    );
 }
 
 export function useAuth() {
-  const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error("useAuth must be used within an AuthProvider");
-  }
-  return context;
+    const context = useContext(AuthContext);
+    if (context === undefined) {
+        throw new Error('useAuth must be used within an AuthProvider');
+    }
+    return context;
 } 
