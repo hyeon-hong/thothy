@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState } from "react";
-import { Container, Typography, Button, Box, Grid, Paper } from "@mui/material";
+import React, { useState, useEffect } from "react";
+import { Container, Typography, Button, Box, Grid, Paper, Snackbar, Alert } from "@mui/material";
 import { useRouter } from "next/navigation";
 import { useAuth } from "./contexts/AuthContext";
 import Header from "./components/Header";
@@ -12,6 +12,15 @@ export default function Home() {
     const router = useRouter();
     const { user } = useAuth();
     const [currentView, setCurrentView] = useState("landing"); // "landing", "home", or "myAgents"
+    const [openSnackbar, setOpenSnackbar] = useState(false);
+
+    useEffect(() => {
+        // Check if user has previously acknowledged the notice
+        const hasAcknowledged = localStorage.getItem('thothyNoticeAcknowledged');
+        if (!hasAcknowledged) {
+            setOpenSnackbar(true);
+        }
+    }, []);
 
     const handleGetStarted = () => {
         if (user) {
@@ -19,6 +28,20 @@ export default function Home() {
         } else {
             router.push("/auth/signin");
         }
+    };
+
+    const handleCloseSnackbar = (event: React.SyntheticEvent | Event, reason?: string) => {
+        if (reason === 'clickaway') {
+            return;
+        }
+        setOpenSnackbar(false);
+    };
+
+    const handleAcknowledgeNotice = (acknowledge: boolean) => {
+        if (acknowledge) {
+            localStorage.setItem('thothyNoticeAcknowledged', 'true');
+        }
+        setOpenSnackbar(false);
     };
 
     if (currentView === "landing") {
@@ -201,6 +224,80 @@ export default function Home() {
                         </Box>
                     </Container>
                 </Box>
+
+                {/* Disclaimer Snackbar */}
+                <Snackbar
+                    open={openSnackbar}
+                    anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+                    onClose={handleCloseSnackbar}
+                    sx={{ 
+                        bottom: { xs: 16, sm: 24 },
+                        left: '50%',
+                        transform: 'translateX(-50%)',
+                        width: 'calc(100% - 20px)',
+                        maxWidth: 'none',
+                    }}
+                >
+                    <Alert
+                        severity="warning"
+                        sx={{ 
+                            width: '100%',
+                            '& .MuiAlert-action': {
+                                alignItems: 'center',
+                                marginTop: 0,
+                                marginLeft: 2,
+                            }
+                        }}
+                        action={
+                            <Box sx={{ display: 'flex', gap: 1 }}>
+                                <Button 
+                                    variant="contained"
+                                    size="small" 
+                                    onClick={() => handleAcknowledgeNotice(true)}
+                                    sx={{ 
+                                        bgcolor: '#e3f2fd',
+                                        color: '#1976d2',
+                                        '&:hover': {
+                                            bgcolor: '#bbdefb',
+                                        },
+                                        borderRadius: '20px',
+                                        px: 3,
+                                        py: 0.5,
+                                    }}
+                                >
+                                    OK
+                                </Button>
+                                <Button 
+                                    variant="contained"
+                                    size="small" 
+                                    onClick={() => handleAcknowledgeNotice(false)}
+                                    sx={{ 
+                                        bgcolor: '#e3f2fd',
+                                        color: '#1976d2',
+                                        '&:hover': {
+                                            bgcolor: '#bbdefb',
+                                        },
+                                        borderRadius: '20px',
+                                        px: 3,
+                                        py: 0.5,
+                                    }}
+                                >
+                                    Cancel
+                                </Button>
+                            </Box>
+                        }
+                    >
+                        <Typography variant="subtitle1" gutterBottom sx={{ fontWeight: 600 }}>
+                            Important Notice
+                        </Typography>
+                        <Typography variant="body2" sx={{ mb: 1 }}>
+                            Thothy is currently under development and not ready for production use. This is a beta version of the service.
+                        </Typography>
+                        <Typography variant="body2">
+                            By using this service, you acknowledge and agree that you use it at your own risk and without any warranties.
+                        </Typography>
+                    </Alert>
+                </Snackbar>
             </Box>
         );
     }
