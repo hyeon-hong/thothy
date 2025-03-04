@@ -111,7 +111,7 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 
 ## ⚙️ Development Guidelines
 
-### Branch Strategy
+### 🌿 Branch Strategy
 
 Our repository uses `develop` as the default branch instead of `main` because the project is currently under active development and not yet ready for production use. This follows the Git Flow branching model where:
 
@@ -123,7 +123,7 @@ When contributing, please:
 2. Submit PRs targeting the `develop` branch
 3. Ensure your changes are up-to-date with `develop` before submitting
 
-#### Git Flow Commands
+#### 🔄 Git Flow Commands
 We use Git Flow for branch management. Here are the essential commands:
 
 ```bash
@@ -155,7 +155,7 @@ git flow hotfix start hotfix-name
 git flow hotfix finish hotfix-name
 ```
 
-### Pull Request Guidelines
+### 📝 Pull Request Guidelines
 
 -   **Title**: Use a clear, descriptive title that explains the purpose of the PR
 -   **Description**: Provide a detailed description of your changes, including:
@@ -172,7 +172,7 @@ git flow hotfix finish hotfix-name
     -   Keep the PR up to date with the base branch
     -   Mark the PR as "Ready for Review" when complete
 
-### Commit Message Guidelines
+### 💬 Commit Message Guidelines
 
 We follow the [Conventional Commits](https://www.conventionalcommits.org/) specification:
 
@@ -203,7 +203,7 @@ fix #123 resolve memory leak in long-running sessions
 docs #123 update installation instructions
 ```
 
-### Automatic Issue Closing
+### 🔒 Automatic Issue Closing
 
 Issues will be automatically closed when:
 
