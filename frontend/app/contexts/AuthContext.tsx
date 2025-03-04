@@ -91,9 +91,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    redirectTo: `${window.location.origin}/auth/callback`,
+                    redirectTo: `${window.location.origin}/api/auth/callback`,
                 }),
             });
+            console.log('Google sign in response:', response);
 
             if (!response.ok) {
                 throw new Error('Google sign in failed');
