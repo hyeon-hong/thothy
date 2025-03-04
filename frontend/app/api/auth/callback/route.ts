@@ -17,6 +17,7 @@ const supabase = createClient(
 export async function GET(request: Request) {
     console.log('GET request received');
     try {
+        console.log('request.url:', request.url);
         const { searchParams } = new URL(request.url);
         console.log('searchParams:', searchParams);
         const code = searchParams.get('code');
