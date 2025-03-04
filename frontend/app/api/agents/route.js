@@ -1,6 +1,14 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
+if (!process.env.NEXT_PUBLIC_SUPABASE_API_URL) {
+    throw new Error('Missing environment variable: NEXT_PUBLIC_SUPABASE_API_URL');
+}
+
+if (!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+    throw new Error('Missing environment variable: NEXT_PUBLIC_SUPABASE_ANON_KEY');
+}
+
 const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_API_URL,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
