@@ -22,12 +22,12 @@
 
 Thothy is a modern, flexible toolkit for web crawling, data extraction, and web automation. It provides an easy-to-use API for scraping websites, with powerful features like:
 
-- **Headless browser automation** via Chrome/Chromium
-- **Smart extraction** for structured data
-- **Rate-limiting** and polite crawling built-in
-- **Asynchronous support** for high-performance operations
-- **Caching capabilities** to reduce bandwidth usage
-- **Customizable agents** for specialized tasks
+-   **Headless browser automation** via Chrome/Chromium
+-   **Smart extraction** for structured data
+-   **Rate-limiting** and polite crawling built-in
+-   **Asynchronous support** for high-performance operations
+-   **Caching capabilities** to reduce bandwidth usage
+-   **Customizable agents** for specialized tasks
 
 ## 🛠️ Installation
 
@@ -79,10 +79,10 @@ See the [examples directory](examples/) for more detailed examples and documenta
 
 Comprehensive documentation is available in the [docs](docs/) directory. Key topics include:
 
-- [Quickstart Guide](docs/)
-- [API Reference](docs/)
-- [Advanced Usage](docs/)
-- [Best Practices](docs/)
+-   [Quickstart Guide](docs/)
+-   [API Reference](docs/)
+-   [Advanced Usage](docs/)
+-   [Best Practices](docs/)
 
 ## 🧩 Project Structure
 
@@ -109,16 +109,74 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 4. Push to the branch (`git push origin feature/amazing-feature`)
 5. Open a Pull Request
 
+## ⚙️ Development Guidelines
+
+### Pull Request Guidelines
+
+-   **Title**: Use a clear, descriptive title that explains the purpose of the PR
+-   **Description**: Provide a detailed description of your changes, including:
+    -   What changes were made
+    -   Why these changes are necessary
+    -   Any related issues or PRs
+-   **Code Quality**:
+    -   Ensure all tests pass
+    -   Follow the project's coding style
+    -   Keep PRs focused and small (ideally under 400 lines)
+    -   Include tests for new features
+-   **Review Process**:
+    -   Address all review comments
+    -   Keep the PR up to date with the base branch
+    -   Mark the PR as "Ready for Review" when complete
+
+### Commit Message Guidelines
+
+We follow the [Conventional Commits](https://www.conventionalcommits.org/) specification:
+
+```
+<type> #<issue_number> <description>
+
+[optional body]
+
+[optional footer(s)]
+```
+
+**Types**:
+
+-   `feat`: New feature
+-   `fix`: Bug fix
+-   `docs`: Documentation changes
+-   `style`: Code style changes (formatting, etc.)
+-   `refactor`: Code refactoring
+-   `perf`: Performance improvements
+-   `test`: Adding or modifying tests
+-   `chore`: Maintenance tasks
+
+**Examples**:
+
+```
+feat #123 add OAuth2 login support
+fix #123 resolve memory leak in long-running sessions
+docs #123 update installation instructions
+```
+
+### Automatic Issue Closing
+
+Issues will be automatically closed when:
+
+-   A PR is merged with the commit message containing `fixes #123` or `closes #123`
+-   The PR description includes `Fixes #123` or `Closes #123`
+-   The PR is linked to an issue and marked as "merged"
+
 ## 📄 License
 
 This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENSE) file for details.
 
 ## 🙏 Acknowledgements
 
-- [Selenium](https://www.selenium.dev/) - WebDriver automation
-- [Playwright](https://playwright.dev/) - Browser automation
-- [Beautiful Soup](https://www.crummy.com/software/BeautifulSoup/) - HTML parsing
-- All contributors who have helped shape this project
+-   [Selenium](https://www.selenium.dev/) - WebDriver automation
+-   [Playwright](https://playwright.dev/) - Browser automation
+-   [Beautiful Soup](https://www.crummy.com/software/BeautifulSoup/) - HTML parsing
+-   All contributors who have helped shape this project
 
 ---
 
