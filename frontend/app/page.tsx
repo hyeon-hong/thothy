@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { Container, Typography, Button, Box, Grid, Paper } from "@mui/material";
+import { Container, Typography, Button, Box, Grid, Paper, Alert } from "@mui/material";
 import { useRouter } from "next/navigation";
 import { useAuth } from "./contexts/AuthContext";
 import Header from "./components/Header";
@@ -162,6 +162,37 @@ export default function Home() {
                         </Grid>
                     </Grid>
                 </Container>
+
+                {/* Disclaimer Section */}
+                <Box sx={{ bgcolor: "#fff3e0", py: 6 }}>
+                    <Container maxWidth="md">
+                        <Alert 
+                            severity="warning" 
+                            sx={{ 
+                                fontSize: '1.1rem',
+                                '& .MuiAlert-message': {
+                                    width: '100%',
+                                }
+                            }}
+                        >
+                            <Typography variant="h6" gutterBottom sx={{ fontWeight: 600 }}>
+                                Important Notice
+                            </Typography>
+                            <Typography variant="body1" sx={{ mb: 2 }}>
+                                Thothy is currently under development and not ready for production use. This is a beta version of the service.
+                            </Typography>
+                            <Typography variant="body1" sx={{ mb: 2 }}>
+                                By using this service, you acknowledge and agree that:
+                            </Typography>
+                            <ul style={{ margin: '0 0 0 20px', padding: 0 }}>
+                                <li>The service is provided "as is" without any warranties</li>
+                                <li>We are not responsible for any errors, accidents, or damages that may occur while using this service</li>
+                                <li>You use this service at your own risk</li>
+                                <li>We reserve the right to modify or discontinue the service at any time</li>
+                            </ul>
+                        </Alert>
+                    </Container>
+                </Box>
 
                 {/* CTA Section */}
                 <Box sx={{ bgcolor: "#f8f9fa", py: 8 }}>
