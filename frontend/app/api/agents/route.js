@@ -1,23 +1,30 @@
 import { NextResponse } from "next/server";
+import { headers } from "next/headers";
 
 export async function GET() {
     try {
-        const response = await fetch(`${process.env.NEXT_PUBLIC_APP_URL}/api/supabase`, {
-            method: 'POST',
+        // Get host from request headers
+        const headersList = await headers();
+        const host = headersList.get("host") || "localhost:3000";
+        const protocol = headersList.get("x-forwarded-proto") || "http";
+        const baseUrl = `${protocol}://${host}`;
+
+        const response = await fetch(`${baseUrl}/api/supabase`, {
+            method: "POST",
             headers: {
-                'Content-Type': 'application/json',
+                "Content-Type": "application/json",
             },
             body: JSON.stringify({
-                action: 'select',
-                table: 'agents',
+                action: "select",
+                table: "agents",
                 query: {
-                    select: 'id, name, description, image_url, graph_name'
-                }
+                    select: "id, name, description, image_url, graph_name",
+                },
             }),
         });
 
         if (!response.ok) {
-            throw new Error('Failed to fetch agents');
+            throw new Error("Failed to fetch agents");
         }
 
         const data = await response.json();
