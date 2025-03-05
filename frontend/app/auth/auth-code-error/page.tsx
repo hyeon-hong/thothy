@@ -1,135 +1,158 @@
 "use client";
 
-import { useRouter, useSearchParams } from "next/navigation";
-import { Button, Container, Typography, Box, Paper, Alert, Link } from "@mui/material";
-import { useEffect, useState } from "react";
+import React from "react";
+import { Button, Typography, Container, Box, Paper } from "@mui/material";
+import Link from "next/link";
 
-export default function AuthError() {
-    const router = useRouter();
-    const searchParams = useSearchParams();
-    const [errorReason, setErrorReason] = useState<string>("");
-    const [errorDetails, setErrorDetails] = useState<string>("");
-    const [troubleshootingSteps, setTroubleshootingSteps] = useState<string[]>([]);
+type AuthCodeErrorPageProps = {
+  searchParams: {
+    error?: string;
+    errorDescription?: string;
+    reason?: string;
+    code?: string;
+    details?: string;
+    url?: string;
+  };
+};
+
+export default function AuthCodeErrorPage({
+  searchParams,
+}: AuthCodeErrorPageProps) {
+  const { error, errorDescription, reason, code, details, url } = searchParams;
+
+  // Define error messages based on error codes
+  const errorMessages: Record<string, { title: string; message: string; solution: string }> = {
+    // OAuth provider errors
+    "access_denied": {
+      title: "Access Denied",
+      message: "You denied access to your Google account.",
+      solution: "Try signing in again and approve the permissions request."
+    },
+    "invalid_request": {
+      title: "Invalid Request",
+      message: "The OAuth request was malformed or missing parameters.",
+      solution: "Try again or contact support if the issue persists."
+    },
+    "unauthorized_client": {
+      title: "Unauthorized Client",
+      message: "The application is not authorized to use Google Sign-In.",
+      solution: "This is a configuration issue. Please contact support."
+    },
     
-    useEffect(() => {
-        const reason = searchParams.get("reason");
-        const error = searchParams.get("error");
-        
-        let details = "";
-        let steps: string[] = [];
-        
-        if (error) {
-            details = `Error from provider: ${error}`;
-            setErrorDetails(details);
-        }
-        
-        if (reason === "no_code") {
-            setErrorReason("No authentication code was received from the provider.");
-            steps = [
-                "Clear your browser cookies and cache",
-                "Try a different browser",
-                "Check if pop-ups are blocked by your browser",
-                "Ensure you have properly configured Google OAuth in Supabase"
-            ];
-        } else if (reason === "no_oauth_flow") {
-            setErrorReason("The authentication flow was not properly initiated.");
-            steps = [
-                "Return to the homepage and try again",
-                "Ensure JavaScript is enabled in your browser",
-                "Check your internet connection"
-            ];
-        } else if (reason === "exchange_error") {
-            setErrorReason("There was an error exchanging the authentication code for a session.");
-            steps = [
-                "The OAuth code may have expired. Try again from the beginning",
-                "Check your Supabase service role key and API URL settings",
-                "Ensure the callback URL is registered in your Supabase project"
-            ];
-        } else {
-            setErrorReason("There was an error during the authentication process.");
-            steps = [
-                "Try signing in again",
-                "Clear your browser cookies and cache",
-                "Try a different browser"
-            ];
-        }
-        
-        setTroubleshootingSteps(steps);
-    }, [searchParams]);
+    // Supabase specific errors
+    "exchange_failed": {
+      title: "Session Exchange Failed",
+      message: "We couldn't exchange the authorization code for a session.",
+      solution: "This may be a temporary issue. Try signing in again."
+    },
+    
+    // Custom error reasons
+    "no_code": {
+      title: "Authorization Code Missing",
+      message: "No authorization code was returned from Google.",
+      solution: "This could be due to a canceled sign-in or a configuration issue. Try again or contact support."
+    },
+    "no_oauth_flow": {
+      title: "OAuth Flow Not Initiated",
+      message: "The callback was accessed directly without starting the OAuth flow.",
+      solution: "Please start the sign-in process from the sign-in page."
+    },
+    "direct_callback_access": {
+      title: "OAuth Redirect Issue",
+      message: "The callback URL was accessed directly without completing the OAuth flow.",
+      solution: "This indicates a potential issue with the Google OAuth configuration in Supabase. Try clearing your cookies and signing in again."
+    },
+    "state_mismatch": {
+      title: "Security Verification Failed",
+      message: "The state parameter did not match the expected value.",
+      solution: "This could indicate a potential security issue. Try clearing your cookies and signing in again from a fresh browser window."
+    },
+    "no_state_parameter": {
+      title: "Missing Security Token",
+      message: "The state parameter was missing from the OAuth response.",
+      solution: "This could indicate an interrupted authentication flow. Try signing in again."
+    },
+    "exchange_error": {
+      title: "Session Creation Error",
+      message: "An error occurred when trying to create your session.",
+      solution: "This might be a temporary issue. Try again or contact support if the problem persists."
+    }
+  };
 
-    // Try login again function
-    const tryAgain = () => {
-        router.push("/");
+  // Get error information or use default
+  const errorInfo = 
+    errorMessages[reason || error || "unknown"] || 
+    {
+      title: "Authentication Error",
+      message: errorDescription || details || "An unknown error occurred during authentication.",
+      solution: "Please try signing in again. If the problem persists, contact support."
     };
 
-    return (
-        <Container maxWidth="sm">
-            <Box
-                sx={{
-                    mt: 8,
-                    mb: 8,
-                    display: "flex",
-                    flexDirection: "column",
-                    alignItems: "center",
-                }}
-            >
-                <Paper 
-                    elevation={3} 
-                    sx={{ 
-                        p: 4, 
-                        display: 'flex',
-                        flexDirection: 'column',
-                        alignItems: 'center',
-                        maxWidth: 500,
-                        width: '100%'
-                    }}
-                >
-                    <Typography component="h1" variant="h4" gutterBottom>
-                        Authentication Error
-                    </Typography>
-                    
-                    <Alert severity="error" sx={{ mb: 3, width: '100%' }}>
-                        {errorReason}
-                    </Alert>
-                    
-                    {errorDetails && (
-                        <Typography variant="body2" color="text.secondary" sx={{ mb: 2, width: '100%', fontFamily: 'monospace', backgroundColor: '#f5f5f5', p: 1, borderRadius: 1 }}>
-                            {errorDetails}
-                        </Typography>
-                    )}
-                    
-                    <Typography variant="h6" sx={{ mt: 2, mb: 1, alignSelf: 'flex-start' }}>
-                        Troubleshooting Steps:
-                    </Typography>
-                    
-                    <Box sx={{ width: '100%', mb: 3 }}>
-                        <ul>
-                            {troubleshootingSteps.map((step, index) => (
-                                <li key={index}>
-                                    <Typography variant="body1">
-                                        {step}
-                                    </Typography>
-                                </li>
-                            ))}
-                        </ul>
-                    </Box>
-                    
-                    <Box sx={{ display: 'flex', gap: 2, width: '100%' }}>
-                        <Button
-                            variant="contained"
-                            color="primary"
-                            onClick={tryAgain}
-                            fullWidth
-                        >
-                            Try Again
-                        </Button>
-                    </Box>
-                    
-                    <Typography variant="body2" color="text.secondary" sx={{ mt: 3, textAlign: 'center' }}>
-                        Need help? Contact <Link href="mailto:support@example.com">support@example.com</Link>
-                    </Typography>
-                </Paper>
+  console.error("Auth Code Error Page Loaded", {
+    error,
+    errorDescription,
+    reason,
+    code,
+    details,
+    url
+  });
+
+  return (
+    <Container maxWidth="sm" sx={{ mt: 8, mb: 8 }}>
+      <Paper elevation={3} sx={{ p: 4, borderRadius: 2 }}>
+        <Box sx={{ textAlign: "center", mb: 3 }}>
+          <Typography variant="h4" component="h1" color="error" gutterBottom>
+            {errorInfo.title}
+          </Typography>
+          <Typography variant="body1" color="text.secondary" gutterBottom>
+            {errorInfo.message}
+          </Typography>
+        </Box>
+        
+        <Box sx={{ mb: 4, p: 2, bgcolor: "#f5f5f5", borderRadius: 1 }}>
+          <Typography variant="h6" gutterBottom>
+            Troubleshooting:
+          </Typography>
+          <Typography variant="body2">
+            {errorInfo.solution}
+          </Typography>
+          
+          {(error || details || url) && (
+            <Box sx={{ mt: 2, p: 2, bgcolor: "#263238", color: "#fff", borderRadius: 1, overflow: "auto", maxHeight: "200px" }}>
+              <Typography variant="body2" component="div" sx={{ fontFamily: "monospace", fontSize: "0.75rem" }}>
+                {error && <Box><strong>Error:</strong> {error}</Box>}
+                {reason && <Box><strong>Reason:</strong> {reason}</Box>}
+                {details && <Box><strong>Details:</strong> {details}</Box>}
+                {url && (
+                  <Box sx={{ overflow: "hidden", textOverflow: "ellipsis" }}>
+                    <strong>URL:</strong> {url}
+                  </Box>
+                )}
+              </Typography>
             </Box>
-        </Container>
-    );
+          )}
+        </Box>
+
+        <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+          <Button 
+            variant="contained" 
+            color="primary" 
+            component={Link} 
+            href="/signin"
+            fullWidth
+          >
+            Try again
+          </Button>
+          <Button 
+            variant="outlined" 
+            component={Link} 
+            href="/"
+            fullWidth
+          >
+            Return to homepage
+          </Button>
+        </Box>
+      </Paper>
+    </Container>
+  );
 } 
