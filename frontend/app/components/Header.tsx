@@ -106,7 +106,7 @@ export default function Header({ currentView, onViewChange }: HeaderProps) {
                   fontWeight: currentView === 'myAgents' ? 700 : 400,
                 }}
               >
-                My Agents
+                Playground
               </Button>
             )}
 

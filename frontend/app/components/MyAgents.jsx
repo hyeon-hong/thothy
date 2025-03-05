@@ -99,7 +99,7 @@ export default function MyAgents() {
                         letterSpacing: "-0.02em",
                     }}
                 >
-                    My Agents
+                    Playground
                 </Typography>
                 <Box sx={{ textAlign: "center", mt: 4 }}>
                     <Typography variant="h6" color="text.secondary">
@@ -123,7 +123,7 @@ export default function MyAgents() {
                     letterSpacing: "-0.02em",
                 }}
             >
-                My Agents
+                Playground
             </Typography>
             <Grid container spacing={4} sx={{ mt: 2 }}>
                 {myAgents.map((agent) => (
