@@ -1,20 +1,27 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
-
-const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_API_URL,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-);
 
 export async function GET() {
     try {
-        const { data: agents, error } = await supabase
-            .from("agents")
-            .select("id, name, description, image_url, graph_name");
+        const response = await fetch(`${process.env.NEXT_PUBLIC_APP_URL}/api/supabase`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                action: 'select',
+                table: 'agents',
+                query: {
+                    select: 'id, name, description, image_url, graph_name'
+                }
+            }),
+        });
 
-        if (error) throw error;
+        if (!response.ok) {
+            throw new Error('Failed to fetch agents');
+        }
 
-        return NextResponse.json(agents);
+        const data = await response.json();
+        return NextResponse.json(data);
     } catch (error) {
         console.error("Error fetching agents:", error);
         return NextResponse.json(

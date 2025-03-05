@@ -1,4 +1,6 @@
-import { useState, useRef, useEffect } from "react";
+"use client";
+
+import React, { useState, useRef, useEffect, useCallback } from "react";
 import { useChat } from "../contexts/ChatContext";
 import { ChatSidebar } from "./ChatSidebar";
 
@@ -26,7 +28,6 @@ export function Chat({ inputRef }) {
   useEffect(() => {
     const handleThreadMessagesLoaded = (event) => {
       const { messages: loadedMessages } = event.detail;
-      console.log('Thread messages loaded:', loadedMessages);
       if (Array.isArray(loadedMessages)) {
         // Convert the messages to the expected format
         const formattedMessages = loadedMessages.map(msg => ({
@@ -75,9 +76,8 @@ export function Chat({ inputRef }) {
   };
 
   // Initialize speech synthesis and load voices
-  const initSpeechSynthesis = async () => {
+  const initSpeechSynthesis = useCallback(async () => {
     if (!window.speechSynthesis) {
-      console.error('Speech synthesis not supported');
       return false;
     }
 
@@ -89,7 +89,6 @@ export function Chat({ inputRef }) {
       const voices = window.speechSynthesis.getVoices();
       if (voices.length > 0) {
         voicesLoaded.current = true;
-        console.log('Voices loaded:', voices.length);
         return true;
       }
       
@@ -97,12 +96,11 @@ export function Chat({ inputRef }) {
       attempts++;
     }
 
-    console.error('Failed to load voices after', maxAttempts, 'attempts');
     return false;
-  };
+  }, []);
 
   // Prepare utterance object with retry mechanism
-  const createUtterance = (text, isNext = false) => {
+  const createUtterance = useCallback((text, isNext = false) => {
     try {
       const utterance = new SpeechSynthesisUtterance(text);
       utterance.rate = 0.9;
@@ -110,25 +108,20 @@ export function Chat({ inputRef }) {
       utterance.volume = 1.0;
 
       const voices = window.speechSynthesis.getVoices();
-      console.log('Available voices:', voices.length);
       
       const preferredVoice = voices.find(voice => 
         voice.lang.startsWith('en') && (voice.name.includes('Female') || voice.name.includes('Google'))
       ) || voices[0];
       
       if (preferredVoice) {
-        console.log('Selected voice:', preferredVoice.name);
         utterance.voice = preferredVoice;
-      } else {
-        console.warn('No preferred voice found');
       }
 
       return utterance;
     } catch (error) {
-      console.error('Error creating utterance:', error);
       return null;
     }
-  };
+  }, []);
 
   // Helper function to highlight current chunk
   const renderMessageContent = (content, isCurrentMessage) => {
@@ -161,12 +154,8 @@ export function Chat({ inputRef }) {
   };
 
   // Process the speech queue with better error handling
-  const processSpeechQueue = async () => {
+  const processSpeechQueue = useCallback(async () => {
     if (!window.speechSynthesis || !speechQueue.current.length) {
-      console.log('Speech queue stopped:', { 
-        synthAvailable: !!window.speechSynthesis,
-        queueLength: speechQueue.current.length
-      });
       return;
     }
 
@@ -174,7 +163,6 @@ export function Chat({ inputRef }) {
     if (!voicesLoaded.current) {
       const initialized = await initSpeechSynthesis();
       if (!initialized) {
-        console.error('Failed to initialize speech synthesis');
         return;
       }
     }
@@ -187,7 +175,6 @@ export function Chat({ inputRef }) {
     const utterance = createUtterance(text);
     
     if (!utterance) {
-      console.error('Failed to create utterance, skipping chunk');
       speechQueue.current.shift();
       setTimeout(processSpeechQueue, 100);
       return;
@@ -196,12 +183,10 @@ export function Chat({ inputRef }) {
     currentUtterance.current = utterance;
 
     utterance.onstart = () => {
-      console.log('Started speaking chunk:', text);
       setIsSpeaking(true);
     };
 
     utterance.onend = () => {
-      console.log('Finished speaking chunk:', text);
       setIsSpeaking(false);
       currentUtterance.current = null;
       
@@ -216,7 +201,6 @@ export function Chat({ inputRef }) {
     };
 
     utterance.onerror = (event) => {
-      console.error('Speech synthesis error:', event);
       setIsSpeaking(false);
       currentUtterance.current = null;
       
@@ -230,17 +214,15 @@ export function Chat({ inputRef }) {
     try {
       window.speechSynthesis.speak(utterance);
     } catch (error) {
-      console.error('Speech synthesis speak error:', error);
       setIsSpeaking(false);
       currentUtterance.current = null;
       setTimeout(processSpeechQueue, 100);
     }
-  };
+  }, [initSpeechSynthesis, setIsSpeaking, createUtterance]);
 
   // Initialize speech synthesis with better error handling
-  const speakMessage = async (text, messageIndex) => {
+  const speakMessage = useCallback(async (text, messageIndex) => {
     if (!window.speechSynthesis) {
-      console.error('Speech synthesis not supported');
       return;
     }
     
@@ -249,7 +231,6 @@ export function Chat({ inputRef }) {
       if (!voicesLoaded.current) {
         const initialized = await initSpeechSynthesis();
         if (!initialized) {
-          console.error('Failed to initialize speech synthesis');
           return;
         }
       }
@@ -262,7 +243,6 @@ export function Chat({ inputRef }) {
       setCurrentWordIndex(-1);
       
       const chunks = splitTextIntoChunks(text);
-      console.log('Created chunks:', chunks.length, chunks);
       speechQueue.current = chunks;
       
       // Small delay before starting to ensure clean state
@@ -270,10 +250,9 @@ export function Chat({ inputRef }) {
         processSpeechQueue();
       }, 50);
     } catch (error) {
-      console.error('Speech synthesis initialization error:', error);
       setIsSpeaking(false);
     }
-  };
+  }, [initSpeechSynthesis, processSpeechQueue, setCurrentMessageIndex, setCurrentWordIndex, setIsSpeaking]);
 
   // Effect to handle voice selection with retry
   useEffect(() => {
@@ -287,13 +266,11 @@ export function Chat({ inputRef }) {
             window.speechSynthesis.onvoiceschanged = () => {
               if (mounted) {
                 voicesLoaded.current = true;
-                console.log('Voices changed, reloaded voices');
               }
             };
           }
         }
       } catch (error) {
-        console.error('Error initializing voices:', error);
       }
     };
 
@@ -308,7 +285,7 @@ export function Chat({ inputRef }) {
         nextUtterance.current = null;
       }
     };
-  }, []);
+  }, [initSpeechSynthesis]);
 
   // Effect to speak new AI messages
   useEffect(() => {
@@ -316,7 +293,7 @@ export function Chat({ inputRef }) {
     if (lastMessage?.role === 'assistant' && !isLoading) {
       speakMessage(lastMessage.content, messages.length - 1);
     }
-  }, [messages, isLoading]);
+  }, [messages, isLoading, speakMessage]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -329,7 +306,7 @@ export function Chat({ inputRef }) {
   // Focus input on component mount
   useEffect(() => {
     actualInputRef.current?.focus();
-  }, []);
+  }, [actualInputRef]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();

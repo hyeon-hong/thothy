@@ -1,11 +1,13 @@
-import React from 'react';
+import React from "react";
 import { Container, Grid, Typography, Box } from "@mui/material";
 import AgentCard from "./AgentCard";
 import { useState, useEffect } from "react";
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from "../contexts/AuthContext";
+import { createClient } from "@/utils/supabase/client";
 
 export default function MyAgents() {
-    const { user, supabase } = useAuth();
+    const supabase = createClient();
+    const { user } = useAuth();
     const [myAgents, setMyAgents] = useState([]);
     const [loading, setLoading] = useState(true);
 
@@ -19,8 +21,9 @@ export default function MyAgents() {
 
             try {
                 const { data, error } = await supabase
-                    .from('user_agents')
-                    .select(`
+                    .from("user_agents")
+                    .select(
+                        `
                         agent_id,
                         agents:agent_id (
                             id,
@@ -30,18 +33,19 @@ export default function MyAgents() {
                             graph_name,
                             code
                         )
-                    `)
-                    .eq('user_id', user.id);
+                    `
+                    )
+                    .eq("user_id", user.id);
 
                 if (error) {
                     throw error;
                 }
 
                 // Transform the data to match the expected format
-                const agents = data.map(ua => ({
+                const agents = data.map((ua) => ({
                     ...ua.agents,
                     imageUrl: ua.agents.image_url,
-                    graph_name: ua.agents.graph_name
+                    graph_name: ua.agents.graph_name,
                 }));
 
                 setMyAgents(agents);
@@ -53,11 +57,13 @@ export default function MyAgents() {
         };
 
         fetchMyAgents();
-    }, [user?.id]);
+    }, [user?.id, supabase]);
 
     const handleAgentUnselect = async (agentId) => {
         try {
-            setMyAgents(prevAgents => prevAgents.filter(agent => agent.id !== agentId));
+            setMyAgents((prevAgents) =>
+                prevAgents.filter((agent) => agent.id !== agentId)
+            );
         } catch (error) {
             // Handle error silently
         }
@@ -90,14 +96,14 @@ export default function MyAgents() {
                     sx={{
                         mb: 6,
                         fontWeight: 700,
-                        letterSpacing: '-0.02em',
+                        letterSpacing: "-0.02em",
                     }}
                 >
-                    My Agents
+                    Playground
                 </Typography>
-                <Box sx={{ textAlign: 'center', mt: 4 }}>
+                <Box sx={{ textAlign: "center", mt: 4 }}>
                     <Typography variant="h6" color="text.secondary">
-                        You haven't selected any agents yet.
+                        You haven&apos;t selected any agents yet.
                     </Typography>
                 </Box>
             </Container>
@@ -114,10 +120,10 @@ export default function MyAgents() {
                 sx={{
                     mb: 6,
                     fontWeight: 700,
-                    letterSpacing: '-0.02em',
+                    letterSpacing: "-0.02em",
                 }}
             >
-                My Agents
+                Playground
             </Typography>
             <Grid container spacing={4} sx={{ mt: 2 }}>
                 {myAgents.map((agent) => (
@@ -133,4 +139,4 @@ export default function MyAgents() {
             </Grid>
         </Container>
     );
-} 
+}

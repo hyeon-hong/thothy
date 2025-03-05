@@ -2,15 +2,11 @@
 
 import React from "react";
 import { useParams } from "next/navigation";
-import { CopilotKit } from "@copilotkit/react-core";
-import { CopilotPopup } from "@copilotkit/react-ui";
-import "@copilotkit/react-ui/styles.css";
-import ChatAgentPage from "../chat_agent_copilotkit/page";
 import ChatPage from "../chat_agent/page";
 
 export default function AgentPage() {
     const params = useParams();
-    const graph_name = params.graph_name as string;
+    const graph_name = params?.graph_name as string || 'chat_graph';
 
     // Function to render the appropriate agent component
     const renderAgentComponent = () => {

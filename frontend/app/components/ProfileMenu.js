@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import Image from 'next/image';
 
 export function ProfileMenu() {
   const { user, signOut } = useAuth();
@@ -28,10 +29,12 @@ export function ProfileMenu() {
         title={userName}
       >
         {userAvatar ? (
-          <img
+          <Image
             src={userAvatar}
             alt={userName}
-            className="h-8 w-8 rounded-full"
+            width={32}
+            height={32}
+            className="rounded-full"
           />
         ) : (
           <div className="h-8 w-8 rounded-full bg-gray-200 flex items-center justify-center">
@@ -49,10 +52,12 @@ export function ProfileMenu() {
             <div className="px-4 py-3 border-b">
               <div className="flex items-center space-x-3">
                 {userAvatar && (
-                  <img
+                  <Image
                     src={userAvatar}
                     alt={userName}
-                    className="h-10 w-10 rounded-full"
+                    width={40}
+                    height={40}
+                    className="rounded-full"
                   />
                 )}
                 <div className="flex-1 min-w-0">

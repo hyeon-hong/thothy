@@ -1,158 +1,172 @@
 "use client";
 
-import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
-import { supabase } from "@/lib/supabase";
+import React, {
+    createContext,
+    useContext,
+    useState,
+    useEffect,
+    ReactNode,
+    useCallback,
+} from "react";
 import { User, Session } from "@supabase/supabase-js";
-
-const MAX_RETRIES = 3;
-const RETRY_DELAY = 1000; // 1 second
+import { createClient } from "@/utils/supabase/client";
+const STORAGE_KEY = "thothy_auth_state";
 
 interface AuthContextType {
-  user: User | null;
-  session: Session | null;
-  loading: boolean;
-  signInWithGoogle: () => Promise<void>;
-  signOut: () => Promise<void>;
-  supabase: typeof supabase;
-  refreshSession: () => Promise<Session | null>;
+    user: User | null;
+    session: Session | null;
+    signIn: () => Promise<void>;
+    signUp: () => Promise<void>;
+    signOut: () => Promise<void>;
+    loading: boolean;
 }
 
-const AuthContext = createContext<AuthContextType>({
-  user: null,
-  session: null,
-  loading: true,
-  signInWithGoogle: async () => {},
-  signOut: async () => {},
-  supabase: supabase,
-  refreshSession: async () => null,
-});
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-interface AuthProviderProps {
-  children: ReactNode;
-}
+// Helper function to save auth state to localStorage
+const saveAuthState = (user: User | null, session: Session | null) => {
+    if (typeof window !== "undefined") {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify({ user, session }));
+    }
+};
 
-export function AuthProvider({ children }: AuthProviderProps) {
-  const [user, setUser] = useState<User | null>(null);
-  const [session, setSession] = useState<Session | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  // Helper function to handle retries for auth operations
-  const withRetry = async <T,>(operation: () => Promise<T>, retryCount = 0): Promise<T> => {
-    try {
-      return await operation();
-    } catch (error: any) {
-      if ((error?.status === 401 || error?.status === 403) && retryCount < MAX_RETRIES) {
-        console.log(`Auth error, attempting to refresh session... (Attempt ${retryCount + 1}/${MAX_RETRIES})`);
-        await new Promise(resolve => setTimeout(resolve, RETRY_DELAY));
-        const newSession = await refreshSession();
-        if (newSession) {
-          return withRetry(operation, retryCount + 1);
+// Helper function to load auth state from localStorage
+const loadAuthState = () => {
+    if (typeof window !== "undefined") {
+        const stored = localStorage.getItem(STORAGE_KEY);
+        if (stored) {
+            try {
+                return JSON.parse(stored);
+            } catch (error) {
+                console.error("Error parsing stored auth state:", error);
+                return null;
+            }
         }
-      }
-      throw error;
     }
-  };
+    return null;
+};
 
-  const refreshSession = async () => {
-    try {
-      const { data: { session: currentSession } } = await supabase.auth.getSession();
-      if (currentSession) {
-        setSession(currentSession);
-        setUser(currentSession.user);
-        return currentSession;
-      }
-      
-      // If no session, try to refresh
-      const { data: { session: refreshedSession } } = await supabase.auth.refreshSession();
-      if (refreshedSession) {
-        setSession(refreshedSession);
-        setUser(refreshedSession.user);
-        return refreshedSession;
-      }
-      
-      return null;
-    } catch (error) {
-      console.error('Error refreshing session:', error);
-      return null;
-    }
-  };
+export function AuthProvider({ children }: { children: ReactNode }) {
+    const [user, setUser] = useState<User | null>(null);
+    const [session, setSession] = useState<Session | null>(null);
+    const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    // Initialize session from localStorage if available
-    const initializeSession = async () => {
-      try {
-        await withRetry(async () => {
-          const { data: { session: currentSession } } = await supabase.auth.getSession();
-          if (currentSession) {
-            setSession(currentSession);
-            setUser(currentSession.user);
-          }
-        });
-      } catch (error) {
-        console.error('Error initializing session:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
+    useEffect(() => {
+        // Load initial state from localStorage
+        const storedState = loadAuthState();
+        if (storedState) {
+            setUser(storedState.user);
+            setSession(storedState.session);
+        }
 
-    initializeSession();
+        // Check active sessions and sets the user
+        const checkSession = async () => {
+            try {
+                const response = await fetch("/api/auth/session");
+                const { session } = await response.json();
 
-    // Listen for auth changes
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      setLoading(false);
-    });
+                if (session?.user) {
+                    // Extract user metadata from Google OAuth
+                    const userMetadata = session.user.user_metadata || {};
 
-    return () => subscription.unsubscribe();
-  }, []);
+                    // Update user with Google profile information
+                    const updatedUser = {
+                        ...session.user,
+                        user_metadata: {
+                            ...userMetadata,
+                            full_name:
+                                userMetadata?.full_name ||
+                                userMetadata?.name ||
+                                session.user.email,
+                            avatar_url:
+                                userMetadata?.avatar_url ||
+                                userMetadata?.picture,
+                        },
+                    };
 
-  const signInWithGoogle = async () => {
-    return withRetry(async () => {
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: `${window.location.origin}/auth/callback`,
-          queryParams: {
-            access_type: 'offline',
-            prompt: 'consent',
-          },
-        },
-      });
-      if (error) throw error;
-    });
-  };
+                    setSession(session);
+                    setUser(updatedUser);
+                    saveAuthState(updatedUser, session);
+                } else {
+                    setSession(null);
+                    setUser(null);
+                    localStorage.removeItem(STORAGE_KEY);
+                }
+            } catch (error) {
+                console.error("Error checking session:", error);
+            } finally {
+                setLoading(false);
+            }
+        };
 
-  const signOut = async () => {
-    return withRetry(async () => {
-      const { error } = await supabase.auth.signOut();
-      if (error) throw error;
-      setSession(null);
-      setUser(null);
-    });
-  };
+        checkSession();
+    }, []);
 
-  return (
-    <AuthContext.Provider value={{ 
-      user, 
-      session, 
-      loading, 
-      signInWithGoogle, 
-      signOut, 
-      supabase,
-      refreshSession 
-    }}>
-      {children}
-    </AuthContext.Provider>
-  );
+    const signIn = useCallback(async () => {
+        try {
+            // Redirect to the sign-in API endpoint
+            window.location.href = '/api/auth/signin?provider=google';
+        } catch (error) {
+            console.error("Error signing in:", error);
+        }
+    }, []);
+
+    const signUp = useCallback(async () => {
+        try {
+            const response = await fetch("/api/auth/signup", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+            });
+
+            if (!response.ok) {
+                throw new Error("Sign up failed");
+            }
+
+            const data = await response.json();
+            setSession(data.session);
+            setUser(data.user);
+            saveAuthState(data.user, data.session);
+        } catch (error) {
+            console.error("Error signing up:", error);
+            throw error;
+        }
+    }, []);
+
+    const signOut = useCallback(async () => {
+        try {
+            await fetch("/api/auth/signout", {
+                method: "POST",
+            });
+
+            setSession(null);
+            setUser(null);
+            localStorage.removeItem(STORAGE_KEY);
+        } catch (error) {
+            console.error("Error signing out:", error);
+            throw error;
+        }
+    }, []);
+
+    return (
+        <AuthContext.Provider
+            value={{
+                user,
+                session,
+                signIn,
+                signUp,
+                signOut,
+                loading,
+            }}
+        >
+            {children}
+        </AuthContext.Provider>
+    );
 }
 
 export function useAuth() {
-  const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error("useAuth must be used within an AuthProvider");
-  }
-  return context;
-} 
+    const context = useContext(AuthContext);
+    if (context === undefined) {
+        throw new Error("useAuth must be used within an AuthProvider");
+    }
+    return context;
+}
