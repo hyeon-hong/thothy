@@ -4,28 +4,7 @@ import { NextResponse } from "next/server";
 
 export async function GET(request: Request) {
     const requestUrl = new URL(request.url);
-    // Get the referer header to determine where the user came from
-    const referer = request.headers.get("referer");
-
-    // Extract the pathname from the referer URL if it exists and is from the same origin
-    let redirectPath = "/";
-    if (referer) {
-        try {
-            const refererUrl = new URL(referer);
-            // Only use the referer if it's from our app
-            if (refererUrl.origin === requestUrl.origin) {
-                redirectPath = refererUrl.pathname;
-            }
-        } catch (e) {
-            console.error("Error parsing referer URL:", e);
-        }
-    }
-
-    // Get the redirect destination, defaulting to the referer path or homepage
-    const redirectTo = redirectPath;
-
-    console.log("Sign-in request with redirect to:", redirectTo);
-
+    
     const supabase = createClient(
         process.env.SUPABASE_API_URL!,
         process.env.SUPABASE_SERVICE_ROLE_KEY!,
@@ -37,26 +16,47 @@ export async function GET(request: Request) {
         }
     );
 
-    // Construct the callback URL without the redirect destination
-    const callbackUrl = new URL(
-        `${process.env.NEXT_PUBLIC_APP_URL}/api/auth/callback`
-    );
-    console.log("Callback URL:", callbackUrl.toString());
+    // Build a fully qualified callback URL
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || requestUrl.origin;
+    const callbackUrl = `${appUrl}/api/auth/callback`;
+    console.log("Callback URL:", callbackUrl);
 
-    const { data, error } = await supabase.auth.signInWithOAuth({
-        provider: "google",
-        options: {
-            redirectTo: callbackUrl.toString(),
-        },
-    });
+    // Create the OAuth sign-in URL
+    try {
+        const { data, error } = await supabase.auth.signInWithOAuth({
+            provider: "google",
+            options: {
+                redirectTo: callbackUrl,
+                // Make sure the scopes include the necessary permissions
+                scopes: "email profile",
+            },
+        });
+        
+        console.log("Google sign in data:", data);
 
-    console.log("Google sign in data:", data);
+        if (error) {
+            console.error("Error signing in with Google:", error);
+            return NextResponse.json({ error: error.message }, { status: 500 });
+        }
 
-    if (error) {
-        console.error("Error signing in with Google:", error);
-        return NextResponse.json({ error: error.message }, { status: 500 });
+        if (!data.url) {
+            console.error("No OAuth URL returned from Supabase");
+            return NextResponse.json({ error: "Authentication failed" }, { status: 500 });
+        }
+
+        // Set a cookie to track that we're in the OAuth flow
+        const response = NextResponse.redirect(data.url);
+        response.cookies.set("supabase_oauth_in_progress", "true", {
+            path: "/",
+            httpOnly: true,
+            maxAge: 60 * 5, // 5 minutes
+            sameSite: "lax",
+        });
+
+        console.log("Redirecting to Google OAuth URL:", data.url);
+        return response;
+    } catch (err) {
+        console.error("Unexpected error during OAuth initialization:", err);
+        return NextResponse.redirect(new URL("/auth/auth-code-error", requestUrl.origin));
     }
-
-    console.log("Redirecting to Google OAuth URL:", data.url);
-    return NextResponse.redirect(data.url);
 }
