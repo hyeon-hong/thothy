@@ -9,9 +9,7 @@ import React, {
     useCallback,
 } from "react";
 import { User, Session } from "@supabase/supabase-js";
-import { api } from "@/lib/api";
 import { createClient } from "@/utils/supabase/client";
-const MAX_RETRIES = 3;
 const STORAGE_KEY = "thothy_auth_state";
 
 interface AuthContextType {
@@ -111,6 +109,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const signIn = useCallback(async () => {
         console.log("Signing in with Google");
+
         const supabase = createClient();
         const { data, error } = await supabase.auth.signInWithOAuth({
             provider: "google",
@@ -123,28 +122,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             console.error("Error signing in:", error);
             throw error;
         }
-
-        console.log("Data:", data);
-
-        // try {
-        //     const response = await fetch("/api/auth/signin", {
-        //         method: "POST",
-        //         headers: { "Content-Type": "application/json" },
-        //         body: JSON.stringify({ email, password }),
-        //     });
-
-        //     if (!response.ok) {
-        //         throw new Error("Sign in failed");
-        //     }
-
-        //     const data = await response.json();
-        //     setSession(data.session);
-        //     setUser(data.user);
-        //     saveAuthState(data.user, data.session);
-        // } catch (error) {
-        //     console.error("Error signing in:", error);
-        //     throw error;
-        // }
     }, []);
 
     const signUp = useCallback(async () => {

@@ -1,3 +1,4 @@
+import { createServerClient } from "@/lib/supabase";
 import { createClient } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
 
@@ -23,14 +24,14 @@ export async function GET(request: Request) {
 
         // Create a Supabase client with the service role key
         const supabase = createClient(
-            process.env.SUPABASE_URL!,
-            process.env.SUPABASE_ANON_KEY!,
-            {
-                auth: {
-                    autoRefreshToken: false,
-                    persistSession: false,
-                },
-            }
+            process.env.NEXT_PUBLIC_SUPABASE_URL!,
+            process.env.SUPABASE_SERVICE_ROLE_KEY!
+            // {
+            //     auth: {
+            //         autoRefreshToken: false,
+            //         persistSession: false,
+            //     },
+            // }
         );
 
         console.log("Calling Supabase auth.signInWithOAuth...");
