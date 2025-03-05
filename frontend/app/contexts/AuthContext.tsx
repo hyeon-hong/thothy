@@ -63,39 +63,34 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const checkSession = async () => {
             try {
                 const response = await fetch("/api/auth/session");
-                console.log("Session response:", response);
-                if (response.ok) {
-                    const data = await response.json();
-                    console.log("Session data:", data);
+                const { session } = await response.json();
 
-                    if (data.session?.user) {
-                        // Extract user metadata from Google OAuth
-                        const userMetadata = data.session.user.user_metadata;
-                        console.log("User metadata:", userMetadata);
+                if (session?.user) {
+                    // Extract user metadata from Google OAuth
+                    const userMetadata = session.user.user_metadata || {};
 
-                        // Update user with Google profile information
-                        const updatedUser = {
-                            ...data.session.user,
-                            user_metadata: {
-                                ...userMetadata,
-                                full_name:
-                                    userMetadata?.full_name ||
-                                    userMetadata?.name ||
-                                    data.session.user.email,
-                                avatar_url:
-                                    userMetadata?.avatar_url ||
-                                    userMetadata?.picture,
-                            },
-                        };
+                    // Update user with Google profile information
+                    const updatedUser = {
+                        ...session.user,
+                        user_metadata: {
+                            ...userMetadata,
+                            full_name:
+                                userMetadata?.full_name ||
+                                userMetadata?.name ||
+                                session.user.email,
+                            avatar_url:
+                                userMetadata?.avatar_url ||
+                                userMetadata?.picture,
+                        },
+                    };
 
-                        setSession(data.session);
-                        setUser(updatedUser);
-                        saveAuthState(updatedUser, data.session);
-                    } else {
-                        setSession(null);
-                        setUser(null);
-                        localStorage.removeItem(STORAGE_KEY);
-                    }
+                    setSession(session);
+                    setUser(updatedUser);
+                    saveAuthState(updatedUser, session);
+                } else {
+                    setSession(null);
+                    setUser(null);
+                    localStorage.removeItem(STORAGE_KEY);
                 }
             } catch (error) {
                 console.error("Error checking session:", error);
@@ -108,19 +103,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }, []);
 
     const signIn = useCallback(async () => {
-        console.log("Signing in with Google");
-
-        const supabase = createClient();
-        const { data, error } = await supabase.auth.signInWithOAuth({
-            provider: "google",
-            options: {
-                redirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/api/auth/callback`,
-            },
-        });
-
-        if (error) {
+        try {
+            // Redirect to the sign-in API endpoint
+            window.location.href = '/api/auth/signin?provider=google';
+        } catch (error) {
             console.error("Error signing in:", error);
-            throw error;
         }
     }, []);
 
@@ -147,13 +134,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const signOut = useCallback(async () => {
         try {
-            const response = await fetch("/api/auth/signout", {
+            await fetch("/api/auth/signout", {
                 method: "POST",
             });
-
-            if (!response.ok) {
-                throw new Error("Sign out failed");
-            }
 
             setSession(null);
             setUser(null);

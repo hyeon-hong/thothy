@@ -7,8 +7,6 @@ export async function GET(request: Request) {
     const cookieStore = await cookies();
     const accessToken = cookieStore.get("sb-access-token")?.value;
     const refreshToken = cookieStore.get("sb-refresh-token")?.value;
-    console.log("accessToken", accessToken);
-    console.log("refreshToken", refreshToken);
 
     if (!accessToken || !refreshToken) {
         return NextResponse.json({ session: null });
@@ -18,7 +16,6 @@ export async function GET(request: Request) {
 
     // Try to get the user with the access token
     const { data, error } = await supabase.auth.getUser(accessToken);
-    console.log("data", data);
 
     if (error || !data?.user) {
         return NextResponse.json({ session: null });

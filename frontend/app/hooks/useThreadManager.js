@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect } from "react";
 import debounce from "lodash/debounce";
 import { useAuth } from "../contexts/AuthContext";
+import { v4 as uuidv4 } from "uuid";
 
 const THREAD_ID_KEY = "langgraph_thread_id";
 const MAX_RETRIES = 3;
@@ -14,8 +15,6 @@ export function useThreadManager(userId, client) {
     const { refreshSession } = useAuth();
     const [shouldFetchMessages, setShouldFetchMessages] = useState(false);
     const [initialLoadComplete, setInitialLoadComplete] = useState(false);
-    console.log("userId", userId);
-    console.log("client", client);
 
     // Helper function to validate client session
     const validateClientSession = useCallback(async () => {
@@ -78,7 +77,6 @@ export function useThreadManager(userId, client) {
                 const userThreads = await client.threads.search({
                     limit: 100,
                 });
-                console.log("userThreads", userThreads);
 
                 // Sort threads by creation time, newest first
                 const sortedThreads = userThreads
@@ -95,7 +93,6 @@ export function useThreadManager(userId, client) {
                 // Auto-select the first thread if no thread is currently selected
                 if (sortedThreads.length > 0 && !currentThreadId) {
                     const firstThread = sortedThreads[0];
-                    console.log("Auto-selecting first thread:", firstThread.thread_id);
                     setCurrentThreadId(firstThread.thread_id);
                     localStorage.setItem(THREAD_ID_KEY, firstThread.thread_id);
                 }
@@ -123,7 +120,6 @@ export function useThreadManager(userId, client) {
     // New effect to handle initial message loading
     useEffect(() => {
         if (initialLoadComplete && currentThreadId && client) {
-            console.log("Initial load complete, fetching messages for thread:", currentThreadId);
             setShouldFetchMessages(true);
         }
     }, [initialLoadComplete, currentThreadId, client]);
@@ -134,13 +130,11 @@ export function useThreadManager(userId, client) {
             if (!currentThreadId || !client || !shouldFetchMessages) return;
 
             try {
-                console.log("Fetching messages for thread:", currentThreadId);
                 await withRetry(
                     async () => {
                         // Use the correct API endpoint structure
                         const response = await client.threads.get(currentThreadId);
                         const messages = response.messages || [];
-                        console.log("Fetched messages:", messages);
                         
                         // Emit a custom event that the Chat component can listen to
                         window.dispatchEvent(new CustomEvent('threadMessagesLoaded', {

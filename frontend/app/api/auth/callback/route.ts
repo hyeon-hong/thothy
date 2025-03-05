@@ -6,14 +6,12 @@ import { cookies } from "next/headers";
 export async function GET(request: Request) {
     const { searchParams, origin } = new URL(request.url);
     const code = searchParams.get("code");
-    console.log("code", code);
     // if "next" is in param, use it as the redirect URL
     const next = searchParams.get("next") ?? "/";
 
     if (code) {
         const supabase = await createClient();
         const { data, error } = await supabase.auth.exchangeCodeForSession(code);
-        console.log("error", error);
         
         if (!error && data?.session) {
             // Manually set cookies for sb-access-token and sb-refresh-token
