@@ -24,7 +24,7 @@ export async function GET(request: Request) {
         // Create a Supabase client with the service role key
         const supabase = createClient(
             process.env.SUPABASE_API_URL!,
-            process.env.SUPABASE_SERVICE_ROLE_KEY!,
+            process.env.SUPABASE_ANON_KEY!,
             {
                 auth: {
                     autoRefreshToken: false,

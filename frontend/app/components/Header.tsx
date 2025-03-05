@@ -29,7 +29,7 @@ interface HeaderProps {
 }
 
 export default function Header({ currentView, onViewChange }: HeaderProps) {
-  const { user, signInWithGoogle, signOut } = useAuth();
+  const { user, signIn, signOut } = useAuth();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const router = useRouter();
@@ -70,7 +70,7 @@ export default function Header({ currentView, onViewChange }: HeaderProps) {
 
   // Get current path for redirect after login
   const handleSignIn = () => {
-    signInWithGoogle();
+    signIn();
   };
 
   return (
