@@ -13,7 +13,7 @@ export async function GET(request: Request) {
   }
   
   const supabase = createClient(
-    process.env.SUPABASE_API_URL!,
+    process.env.SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!,
     {
       auth: {

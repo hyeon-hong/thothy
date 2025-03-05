@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 
 // Initialize Supabase client on the server side
 const supabase = createClient(
-    process.env.SUPABASE_API_URL!,
+    process.env.SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 

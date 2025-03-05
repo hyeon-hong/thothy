@@ -5,7 +5,7 @@ import { cookies } from 'next/headers';
 // For server components and route handlers
 export function createServerClient() {
   return _createServerClient(
-    process.env.SUPABASE_API_URL!,
+    process.env.SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!,
     {
       cookies: {

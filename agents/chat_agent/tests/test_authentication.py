@@ -8,12 +8,12 @@ from dotenv import load_dotenv
 # Load environment variables from .env file
 load_dotenv()
 
-SUPABASE_API_URL = os.environ.get("SUPABASE_API_URL")
-SUPABASE_ANON_KEY = os.environ.get("SUPABASE_ANON_KEY")
+SUPABASE_URL = os.environ.get("SUPABASE_URL")
+SUPABASE_SERVICE_ROLE_KEY = os.environ.get("SUPABASE_SERVICE_ROLE_KEY")
 
-if not SUPABASE_API_URL or not SUPABASE_ANON_KEY:
+if not SUPABASE_URL or not SUPABASE_SERVICE_ROLE_KEY:
     raise ValueError(
-        "SUPABASE_API_URL and SUPABASE_ANON_KEY must be set in .env file"
+        "SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY must be set in .env file"
     )
 
 
