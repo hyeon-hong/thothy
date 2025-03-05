@@ -20,7 +20,6 @@ import { useAuth } from '../contexts/AuthContext';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import AccountCircle from '@mui/icons-material/AccountCircle';
-import Settings from '@mui/icons-material/Settings';
 import Logout from '@mui/icons-material/Logout';
 
 interface HeaderProps {
@@ -61,11 +60,6 @@ export default function Header({ currentView, onViewChange }: HeaderProps) {
   const handleSignOut = () => {
     handleMenuClose();
     signOut();
-  };
-
-  const handleSettings = () => {
-    handleMenuClose();
-    onViewChange('settings');
   };
 
   // Get current path for redirect after login
@@ -164,10 +158,6 @@ export default function Header({ currentView, onViewChange }: HeaderProps) {
                     </Box>
                   </MenuItem>
                   <Divider />
-                  <MenuItem onClick={handleSettings}>
-                    <Settings sx={{ mr: 1 }} />
-                    Settings
-                  </MenuItem>
                   <MenuItem onClick={handleSignOut}>
                     <Logout sx={{ mr: 1 }} />
                     Sign Out
