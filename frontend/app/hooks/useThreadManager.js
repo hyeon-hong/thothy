@@ -64,57 +64,61 @@ export function useThreadManager(userId, client) {
                 }
             }
         }
-    }, [validateClientSession, MAX_RETRIES, RETRY_DELAY]);
+    }, [validateClientSession]);
 
     // Debounced version of thread fetching with retry logic
     const debouncedFetchThreads = useCallback(
-        debounce(async (retry = false) => {
-            if (!userId || !client) return;
-
-            setIsLoading(true);
-            try {
-                await validateClientSession();
-                const userThreads = await client.threads.search({
-                    limit: 100,
-                });
-
-                // Sort threads by creation time, newest first
-                const sortedThreads = userThreads
-                    .filter((thread) => thread?.metadata?.created_at)
-                    .sort(
-                        (a, b) =>
-                            new Date(b.metadata.created_at) -
-                            new Date(a.metadata.created_at)
-                    );
-
-                setThreads(sortedThreads);
-                setRetryCount(0); // Reset retry count on success
-
-                // Auto-select the first thread if no thread is currently selected
-                if (sortedThreads.length > 0 && !currentThreadId) {
-                    const firstThread = sortedThreads[0];
-                    setCurrentThreadId(firstThread.thread_id);
-                    localStorage.setItem(THREAD_ID_KEY, firstThread.thread_id);
+        (retry = false) => {
+            const fetchThreadsWithDebounce = debounce(async () => {
+                if (!userId || !client) return;
+    
+                setIsLoading(true);
+                try {
+                    await validateClientSession();
+                    const userThreads = await client.threads.search({
+                        limit: 100,
+                    });
+    
+                    // Sort threads by creation time, newest first
+                    const sortedThreads = userThreads
+                        .filter((thread) => thread?.metadata?.created_at)
+                        .sort(
+                            (a, b) =>
+                                new Date(b.metadata.created_at) -
+                                new Date(a.metadata.created_at)
+                        );
+    
+                    setThreads(sortedThreads);
+                    setRetryCount(0); // Reset retry count on success
+    
+                    // Auto-select the first thread if no thread is currently selected
+                    if (sortedThreads.length > 0 && !currentThreadId) {
+                        const firstThread = sortedThreads[0];
+                        setCurrentThreadId(firstThread.thread_id);
+                        localStorage.setItem(THREAD_ID_KEY, firstThread.thread_id);
+                    }
+                    
+                    // Mark initial load as complete
+                    setInitialLoadComplete(true);
+                } catch (error) {
+                    console.error("Error fetching threads:", error);
+                    if ((error.status === 401 || error.status === 403) && retry && retryCount < MAX_RETRIES) {
+                        console.log(
+                            `Retrying fetch threads in ${RETRY_DELAY}ms... (Attempt ${
+                                retryCount + 1
+                            }/${MAX_RETRIES})`
+                        );
+                        setRetryCount((prev) => prev + 1);
+                        setTimeout(() => debouncedFetchThreads(true), RETRY_DELAY);
+                    }
+                } finally {
+                    setIsLoading(false);
                 }
-                
-                // Mark initial load as complete
-                setInitialLoadComplete(true);
-            } catch (error) {
-                console.error("Error fetching threads:", error);
-                if ((error.status === 401 || error.status === 403) && retry && retryCount < MAX_RETRIES) {
-                    console.log(
-                        `Retrying fetch threads in ${RETRY_DELAY}ms... (Attempt ${
-                            retryCount + 1
-                        }/${MAX_RETRIES})`
-                    );
-                    setRetryCount((prev) => prev + 1);
-                    setTimeout(() => debouncedFetchThreads(true), RETRY_DELAY);
-                }
-            } finally {
-                setIsLoading(false);
-            }
-        }, 300),
-        [userId, client, retryCount, refreshSession, currentThreadId, validateClientSession, setThreads, setCurrentThreadId, setInitialLoadComplete, setRetryCount, setIsLoading]
+            }, 300);
+
+            fetchThreadsWithDebounce();
+        },
+        [userId, client, retryCount, currentThreadId, validateClientSession, setThreads, setCurrentThreadId, setInitialLoadComplete, setRetryCount, setIsLoading]
     );
 
     // New effect to handle initial message loading

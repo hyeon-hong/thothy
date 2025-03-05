@@ -7,9 +7,21 @@ const supabase = createClient(
     process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
+// Define interface for the request body
+interface SupabaseRequest {
+    action: 'select' | 'insert' | 'update' | 'delete';
+    table: string;
+    query?: {
+        select?: string;
+        data?: Record<string, any>;
+        column?: string;
+        value?: any;
+    };
+}
+
 export async function POST(request: Request) {
     try {
-        const { action, table, query } = await request.json();
+        const { action, table, query } = await request.json() as SupabaseRequest;
 
         if (!action || !table) {
             return NextResponse.json(
@@ -18,7 +30,7 @@ export async function POST(request: Request) {
             );
         }
 
-        let result;
+        let result: any;
         switch (action) {
             case "select":
                 result = await supabase
@@ -28,19 +40,19 @@ export async function POST(request: Request) {
             case "insert":
                 result = await supabase
                     .from(table)
-                    .insert(query?.data);
+                    .insert(query?.data || {});
                 break;
             case "update":
                 result = await supabase
                     .from(table)
-                    .update(query?.data)
-                    .eq(query?.column, query?.value);
+                    .update(query?.data || {})
+                    .eq(query?.column || '', query?.value);
                 break;
             case "delete":
                 result = await supabase
                     .from(table)
                     .delete()
-                    .eq(query?.column, query?.value);
+                    .eq(query?.column || '', query?.value);
                 break;
             default:
                 return NextResponse.json(

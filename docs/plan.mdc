@@ -1,0 +1,62 @@
+---
+description: Help to make a plan for a project
+globs: *.md
+alwaysApply: false
+---
+**Implementation Plan Sample**
+
+**Phase 1: Patient Management UI Components**
+
+**Step 1: Create Patient Types**
+* Create a simplified patient interface with name and details
+* Update existing patient service functions to work with the simplified model
+
+**Step 2: Patient List Component**
+* Create a table-based patient list view
+* Include columns for patient name, creation date, and action buttons
+* Add functionality to view, edit, and delete patients
+* Implement search/filter functionality
+
+**Step 3: Patient Detail View**
+* Create a patient detail view component
+* Display patient information
+* Include a section for assigned documents
+* Add edit functionality
+
+**Step 4: Create/Edit Patient Forms**
+* Create a reusable form component for adding/editing patients
+* Implement form validation
+* Connect to patient service for saving data
+
+**Phase 2: Document Assignment Implementation**
+
+**Step 5: Document List Component**
+* Create a table-based document list view
+* Include columns for document title, type, creation date, patient assignment, and actions
+* Add functionality to view, edit, and delete documents
+
+**Step 6: Document Assignment Functionality**
+* Add patient assignment dropdown to document creator
+* Create UI for assigning existing documents to patients
+* Implement the service functions needed for document-patient association
+
+**Step 7: Patient Document Management**
+* Add document creation directly from patient detail view
+* Implement document list within patient detail view
+* Add ability to unassign documents from patients
+
+**Phase 3: Integration and Admin Features**
+
+**Step 8: Update Navigation and Routes**
+* Update application navigation to include new patient management sections
+* Ensure proper routing between patient list, detail, and document views
+
+**Step 9: Super Admin Implementation**
+* Create super admin role/flag in user table
+* Implement admin functionality without access to user data
+* Add admin dashboard with usage statistics (not individual user data)
+
+**Step 10: Testing and Refinement**
+* Test all new functionality
+* Ensure proper data isolation between users
+* Optimize UI/UX for efficiency
