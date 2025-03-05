@@ -40,7 +40,7 @@ export async function POST(request: Request) {
             }
         );
 
-        const redirectUrl = redirectTo || `${process.env.NEXT_PUBLIC_APP_URL}/auth/callback`;
+        const redirectUrl = redirectTo || `${process.env.NEXT_PUBLIC_APP_URL}/api/auth/callback`;
 
         const { data, error } = await supabaseClient.auth.signInWithOAuth({
             provider: 'google',
@@ -57,7 +57,12 @@ export async function POST(request: Request) {
 
         if (error) throw error;
 
-        return NextResponse.json(data);
+        if (!data?.url) {
+            throw new Error('No URL returned from Google sign in');
+        }
+
+        // Return the URL instead of redirecting
+        return NextResponse.json({ url: data.url });
     } catch (error) {
         console.error("Error initiating Google sign in:", error);
         return NextResponse.json(

@@ -1,10 +1,10 @@
 "use client";
 
-
 import React from "react";
 import { ThemeProvider, createTheme } from "@mui/material/styles";
 import CssBaseline from "@mui/material/CssBaseline";
 import { AuthProvider } from "./contexts/AuthContext";
+import AuthButtons from "./components/AuthButtons";
 
 const theme = createTheme({
     palette: {
@@ -53,7 +53,15 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 <AuthProvider>
                     <ThemeProvider theme={theme}>
                         <CssBaseline />
-                        {children}
+                        <header className="fixed top-0 left-0 right-0 z-50 bg-white border-b border-gray-200">
+                            <div className="container mx-auto px-4 h-16 flex items-center justify-between">
+                                <h1 className="text-xl font-bold">Thothy</h1>
+                                <AuthButtons />
+                            </div>
+                        </header>
+                        <main className="pt-16">
+                            {children}
+                        </main>
                     </ThemeProvider>
                 </AuthProvider>
             </body>

@@ -59,11 +59,34 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const checkSession = async () => {
             try {
                 const response = await fetch('/api/auth/session');
+                console.log('Session response:', response);
                 if (response.ok) {
                     const data = await response.json();
-                    setSession(data.session);
-                    setUser(data.user);
-                    saveAuthState(data.user, data.session);
+                    console.log('Session data:', data);
+                    
+                    if (data.session?.user) {
+                        // Extract user metadata from Google OAuth
+                        const userMetadata = data.session.user.user_metadata;
+                        console.log('User metadata:', userMetadata);
+                        
+                        // Update user with Google profile information
+                        const updatedUser = {
+                            ...data.session.user,
+                            user_metadata: {
+                                ...userMetadata,
+                                full_name: userMetadata?.full_name || userMetadata?.name || data.session.user.email,
+                                avatar_url: userMetadata?.avatar_url || userMetadata?.picture,
+                            }
+                        };
+                        
+                        setSession(data.session);
+                        setUser(updatedUser);
+                        saveAuthState(updatedUser, data.session);
+                    } else {
+                        setSession(null);
+                        setUser(null);
+                        localStorage.removeItem(STORAGE_KEY);
+                    }
                 }
             } catch (error) {
                 console.error('Error checking session:', error);
@@ -120,12 +143,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }, []);
 
     const signInWithGoogle = useCallback(async () => {
+        console.log('Signing in with Google');
         try {
             const response = await fetch('/api/auth/google', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    redirectTo: `${window.location.origin}/auth/callback`,
+                    redirectTo: `${window.location.origin}/api/auth/callback`,
                 }),
             });
             console.log('Google sign in response:', response);
@@ -135,8 +159,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             }
 
             const data = await response.json();
-            // Redirect to the Google OAuth URL
-            window.location.href = data.url;
+            console.log('Google sign in data:', data);
+
+            if (data.url) {
+                // Redirect to the Google OAuth URL using window.location
+                window.location.href = data.url;
+            } else {
+                throw new Error('No URL returned from Google sign in');
+            }
         } catch (error) {
             console.error('Error signing in with Google:', error);
             throw error;

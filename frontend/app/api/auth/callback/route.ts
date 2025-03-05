@@ -1,86 +1,54 @@
-import { NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
-
-if (!process.env.SUPABASE_API_URL) {
-    throw new Error('Missing environment variable: SUPABASE_API_URL');
-}
-
-if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
-    throw new Error('Missing environment variable: SUPABASE_SERVICE_ROLE_KEY');
-}
-
-const supabase = createClient(
-    process.env.SUPABASE_API_URL,
-    process.env.SUPABASE_SERVICE_ROLE_KEY
-);
+import { NextResponse } from 'next/server';
+import { createClient } from '@supabase/supabase-js';
 
 export async function GET(request: Request) {
-    console.log('GET request received');
-    try {
-        console.log('request.url:', request.url);
-        const { searchParams } = new URL(request.url);
-        console.log('searchParams:', searchParams);
-        const next = searchParams.get('next') ?? '/';
-        console.log('next:', next);
+  const requestUrl = new URL(request.url);
+  const code = requestUrl.searchParams.get('code');
 
-        // Redirect to the next URL directly
-        return NextResponse.redirect(new URL(next, request.url));
-    } catch (error) {
-        console.error("Error handling OAuth callback:", error);
-        return NextResponse.redirect(new URL('/auth/auth-code-error', request.url));
+  if (code) {
+    // Create a Supabase client without session handling
+    const supabase = createClient(
+      process.env.SUPABASE_API_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+      {
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false
+        }
+      }
+    );
+
+    // Exchange the code for a session
+    const { data, error } = await supabase.auth.exchangeCodeForSession(code);
+    
+    if (error) {
+      console.error('Error exchanging code for session:', error);
+      return NextResponse.redirect(
+        new URL('/auth/error', requestUrl.origin)
+      );
     }
-}
 
-export async function POST(request: Request) {
-    try {
-        const body = await request.json();
-        const { access_token, refresh_token } = body;
+    // Create a response with the redirected URL
+    const response = NextResponse.redirect(new URL('/', requestUrl.origin));
 
-        if (!access_token || !refresh_token) {
-            console.error('Missing required tokens:', { 
-                hasAccessToken: !!access_token,
-                hasRefreshToken: !!refresh_token 
-            });
-            return NextResponse.json(
-                { error: "Missing required tokens" },
-                { status: 400 }
-            );
-        }
+    // Set auth cookies
+    response.cookies.set('sb-access-token', data.session.access_token, {
+      path: '/',
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      maxAge: 60 * 60 * 24 * 7, // 1 week
+    });
 
-        // Set the session using the tokens
-        const { data, error } = await supabase.auth.setSession({
-            access_token,
-            refresh_token,
-        });
+    response.cookies.set('sb-refresh-token', data.session.refresh_token, {
+      path: '/',
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production', 
+      maxAge: 60 * 60 * 24 * 7, // 1 week
+    });
 
-        if (error) {
-            console.error('Error setting session:', error);
-            return NextResponse.json(
-                { error: error.message },
-                { status: 500 }
-            );
-        }
+    return response;
+  }
 
-        // Get the user data
-        const { data: { user }, error: userError } = await supabase.auth.getUser(access_token);
-        
-        if (userError) {
-            console.error('Error getting user:', userError);
-            return NextResponse.json(
-                { error: userError.message },
-                { status: 500 }
-            );
-        }
-
-        return NextResponse.json({ 
-            session: data.session,
-            user 
-        });
-    } catch (error) {
-        console.error("Error in POST /api/auth/callback:", error);
-        return NextResponse.json(
-            { error: error instanceof Error ? error.message : "Failed to set session" },
-            { status: 500 }
-        );
-    }
+  // URL to redirect to if there's no code
+  return NextResponse.redirect(new URL('/', requestUrl.origin));
 } 

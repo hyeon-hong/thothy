@@ -1,31 +1,20 @@
-import { NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
+import { NextResponse } from 'next/server';
+import { createClient } from '@supabase/supabase-js';
 
-if (!process.env.SUPABASE_API_URL) {
-    throw new Error('Missing environment variable: SUPABASE_API_URL');
-}
+export async function POST() {
+  // Create a response that we'll use to clear the cookies
+  const response = NextResponse.json({ message: 'Signed out successfully' });
 
-if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
-    throw new Error('Missing environment variable: SUPABASE_SERVICE_ROLE_KEY');
-}
+  // Clear the Supabase cookies
+  response.cookies.set('sb-access-token', '', {
+    path: '/',
+    maxAge: 0,
+  });
 
-const supabase = createClient(
-    process.env.SUPABASE_API_URL,
-    process.env.SUPABASE_SERVICE_ROLE_KEY
-);
+  response.cookies.set('sb-refresh-token', '', {
+    path: '/',
+    maxAge: 0,
+  });
 
-export async function POST(request: Request) {
-    try {
-        const { error } = await supabase.auth.signOut();
-
-        if (error) throw error;
-
-        return NextResponse.json({ success: true });
-    } catch (error) {
-        console.error("Error signing out:", error);
-        return NextResponse.json(
-            { error: "Failed to sign out" },
-            { status: 500 }
-        );
-    }
+  return response;
 } 

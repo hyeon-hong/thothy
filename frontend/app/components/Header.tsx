@@ -35,6 +35,10 @@ export default function Header({ currentView, onViewChange }: HeaderProps) {
   const router = useRouter();
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
 
+  // Get user's display name and avatar
+  const displayName = user?.user_metadata?.full_name || user?.email;
+  const avatarUrl = user?.user_metadata?.avatar_url;
+
   const navButtonStyle = {
     textTransform: 'none',
     fontSize: '1rem',
@@ -119,10 +123,16 @@ export default function Header({ currentView, onViewChange }: HeaderProps) {
                   color="inherit"
                 >
                   <Avatar
-                    src={user.user_metadata?.avatar_url || user.user_metadata?.picture}
-                    alt={user.user_metadata?.full_name || user.email}
-                    sx={{ width: 32, height: 32 }}
-                  />
+                    src={avatarUrl}
+                    alt={displayName}
+                    sx={{ 
+                      width: 32, 
+                      height: 32,
+                      bgcolor: theme.palette.primary.main,
+                    }}
+                  >
+                    {!avatarUrl && displayName?.charAt(0).toUpperCase()}
+                  </Avatar>
                 </IconButton>
                 <Menu
                   anchorEl={anchorEl}
@@ -139,9 +149,14 @@ export default function Header({ currentView, onViewChange }: HeaderProps) {
                   onClose={handleMenuClose}
                 >
                   <MenuItem disabled>
-                    <Typography variant="body2" color="text.secondary">
-                      {user.user_metadata?.full_name || user.email}
-                    </Typography>
+                    <Box sx={{ display: 'flex', flexDirection: 'column' }}>
+                      <Typography variant="body1" sx={{ fontWeight: 600 }}>
+                        {displayName}
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        {user.email}
+                      </Typography>
+                    </Box>
                   </MenuItem>
                   <Divider />
                   <MenuItem onClick={handleSettings}>
