@@ -20,7 +20,6 @@ import { useAuth } from '../contexts/AuthContext';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import AccountCircle from '@mui/icons-material/AccountCircle';
-import Settings from '@mui/icons-material/Settings';
 import Logout from '@mui/icons-material/Logout';
 
 interface HeaderProps {
@@ -29,11 +28,15 @@ interface HeaderProps {
 }
 
 export default function Header({ currentView, onViewChange }: HeaderProps) {
-  const { user, signInWithGoogle, signOut } = useAuth();
+  const { user, signIn, signOut } = useAuth();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const router = useRouter();
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+
+  // Get user's display name and avatar
+  const displayName = user?.user_metadata?.full_name || user?.email;
+  const avatarUrl = user?.user_metadata?.avatar_url;
 
   const navButtonStyle = {
     textTransform: 'none',
@@ -59,9 +62,9 @@ export default function Header({ currentView, onViewChange }: HeaderProps) {
     signOut();
   };
 
-  const handleSettings = () => {
-    handleMenuClose();
-    onViewChange('settings');
+  // Get current path for redirect after login
+  const handleSignIn = () => {
+    signIn();
   };
 
   return (
@@ -103,7 +106,7 @@ export default function Header({ currentView, onViewChange }: HeaderProps) {
                   fontWeight: currentView === 'myAgents' ? 700 : 400,
                 }}
               >
-                My Agents
+                Playground
               </Button>
             )}
 
@@ -119,10 +122,16 @@ export default function Header({ currentView, onViewChange }: HeaderProps) {
                   color="inherit"
                 >
                   <Avatar
-                    src={user.user_metadata?.avatar_url || user.user_metadata?.picture}
-                    alt={user.user_metadata?.full_name || user.email}
-                    sx={{ width: 32, height: 32 }}
-                  />
+                    src={avatarUrl}
+                    alt={displayName}
+                    sx={{ 
+                      width: 32, 
+                      height: 32,
+                      bgcolor: theme.palette.primary.main,
+                    }}
+                  >
+                    {!avatarUrl && displayName?.charAt(0).toUpperCase()}
+                  </Avatar>
                 </IconButton>
                 <Menu
                   anchorEl={anchorEl}
@@ -139,15 +148,16 @@ export default function Header({ currentView, onViewChange }: HeaderProps) {
                   onClose={handleMenuClose}
                 >
                   <MenuItem disabled>
-                    <Typography variant="body2" color="text.secondary">
-                      {user.user_metadata?.full_name || user.email}
-                    </Typography>
+                    <Box sx={{ display: 'flex', flexDirection: 'column' }}>
+                      <Typography variant="body1" sx={{ fontWeight: 600 }}>
+                        {displayName}
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        {user.email}
+                      </Typography>
+                    </Box>
                   </MenuItem>
                   <Divider />
-                  <MenuItem onClick={handleSettings}>
-                    <Settings sx={{ mr: 1 }} />
-                    Settings
-                  </MenuItem>
                   <MenuItem onClick={handleSignOut}>
                     <Logout sx={{ mr: 1 }} />
                     Sign Out
@@ -158,7 +168,7 @@ export default function Header({ currentView, onViewChange }: HeaderProps) {
               <Button
                 variant="contained"
                 color="primary"
-                onClick={signInWithGoogle}
+                onClick={handleSignIn}
                 sx={{ ml: 2 }}
               >
                 Sign in with Google

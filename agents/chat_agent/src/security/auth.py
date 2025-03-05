@@ -7,7 +7,7 @@ from jwt.exceptions import InvalidTokenError
 from langgraph_sdk import Auth
 from datetime import timedelta
 
-SUPABASE_API_URL = os.environ["SUPABASE_API_URL"]
+SUPABASE_URL = os.environ["SUPABASE_URL"]
 SUPABASE_SERVICE_ROLE_KEY = os.environ["SUPABASE_SERVICE_ROLE_KEY"]
 SUPABASE_JWT_SECRET = os.environ["SUPABASE_JWT_SECRET"]
 ALGORITHM = "HS256"
@@ -43,7 +43,7 @@ async def get_current_user(
 
         async with httpx.AsyncClient() as client:
             response = await client.get(
-                f"{SUPABASE_API_URL}/auth/v1/user",
+                f"{SUPABASE_URL}/auth/v1/user",
                 headers={
                     "Authorization": f"Bearer {token}",
                     "apiKey": SUPABASE_SERVICE_ROLE_KEY,

@@ -1,18 +1,22 @@
 "use client";
 
-import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from "react";
+import React, {
+    createContext,
+    useContext,
+    useState,
+    useEffect,
+    ReactNode,
+    useCallback,
+} from "react";
 import { User, Session } from "@supabase/supabase-js";
-import { api } from "@/lib/api";
-
-const MAX_RETRIES = 3;
-const STORAGE_KEY = 'thothy_auth_state';
+import { createClient } from "@/utils/supabase/client";
+const STORAGE_KEY = "thothy_auth_state";
 
 interface AuthContextType {
     user: User | null;
     session: Session | null;
-    signIn: (email: string, password: string) => Promise<void>;
-    signUp: (email: string, password: string) => Promise<void>;
-    signInWithGoogle: () => Promise<void>;
+    signIn: () => Promise<void>;
+    signUp: () => Promise<void>;
     signOut: () => Promise<void>;
     loading: boolean;
 }
@@ -21,20 +25,20 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 // Helper function to save auth state to localStorage
 const saveAuthState = (user: User | null, session: Session | null) => {
-    if (typeof window !== 'undefined') {
+    if (typeof window !== "undefined") {
         localStorage.setItem(STORAGE_KEY, JSON.stringify({ user, session }));
     }
 };
 
 // Helper function to load auth state from localStorage
 const loadAuthState = () => {
-    if (typeof window !== 'undefined') {
+    if (typeof window !== "undefined") {
         const stored = localStorage.getItem(STORAGE_KEY);
         if (stored) {
             try {
                 return JSON.parse(stored);
             } catch (error) {
-                console.error('Error parsing stored auth state:', error);
+                console.error("Error parsing stored auth state:", error);
                 return null;
             }
         }
@@ -58,15 +62,38 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         // Check active sessions and sets the user
         const checkSession = async () => {
             try {
-                const response = await fetch('/api/auth/session');
-                if (response.ok) {
-                    const data = await response.json();
-                    setSession(data.session);
-                    setUser(data.user);
-                    saveAuthState(data.user, data.session);
+                const response = await fetch("/api/auth/session");
+                const { session } = await response.json();
+
+                if (session?.user) {
+                    // Extract user metadata from Google OAuth
+                    const userMetadata = session.user.user_metadata || {};
+
+                    // Update user with Google profile information
+                    const updatedUser = {
+                        ...session.user,
+                        user_metadata: {
+                            ...userMetadata,
+                            full_name:
+                                userMetadata?.full_name ||
+                                userMetadata?.name ||
+                                session.user.email,
+                            avatar_url:
+                                userMetadata?.avatar_url ||
+                                userMetadata?.picture,
+                        },
+                    };
+
+                    setSession(session);
+                    setUser(updatedUser);
+                    saveAuthState(updatedUser, session);
+                } else {
+                    setSession(null);
+                    setUser(null);
+                    localStorage.removeItem(STORAGE_KEY);
                 }
             } catch (error) {
-                console.error('Error checking session:', error);
+                console.error("Error checking session:", error);
             } finally {
                 setLoading(false);
             }
@@ -75,16 +102,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         checkSession();
     }, []);
 
-    const signIn = useCallback(async (email: string, password: string) => {
+    const signIn = useCallback(async () => {
         try {
-            const response = await fetch('/api/auth/signin', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email, password }),
+            // Redirect to the sign-in API endpoint
+            window.location.href = '/api/auth/signin?provider=google';
+        } catch (error) {
+            console.error("Error signing in:", error);
+        }
+    }, []);
+
+    const signUp = useCallback(async () => {
+        try {
+            const response = await fetch("/api/auth/signup", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
             });
 
             if (!response.ok) {
-                throw new Error('Sign in failed');
+                throw new Error("Sign up failed");
             }
 
             const data = await response.json();
@@ -92,78 +127,37 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             setUser(data.user);
             saveAuthState(data.user, data.session);
         } catch (error) {
-            console.error('Error signing in:', error);
-            throw error;
-        }
-    }, []);
-
-    const signUp = useCallback(async (email: string, password: string) => {
-        try {
-            const response = await fetch('/api/auth/signup', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email, password }),
-            });
-
-            if (!response.ok) {
-                throw new Error('Sign up failed');
-            }
-
-            const data = await response.json();
-            setSession(data.session);
-            setUser(data.user);
-            saveAuthState(data.user, data.session);
-        } catch (error) {
-            console.error('Error signing up:', error);
-            throw error;
-        }
-    }, []);
-
-    const signInWithGoogle = useCallback(async () => {
-        try {
-            const response = await fetch('/api/auth/google', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    redirectTo: `${window.location.origin}/auth/callback`,
-                }),
-            });
-            console.log('Google sign in response:', response);
-
-            if (!response.ok) {
-                throw new Error('Google sign in failed');
-            }
-
-            const data = await response.json();
-            // Redirect to the Google OAuth URL
-            window.location.href = data.url;
-        } catch (error) {
-            console.error('Error signing in with Google:', error);
+            console.error("Error signing up:", error);
             throw error;
         }
     }, []);
 
     const signOut = useCallback(async () => {
         try {
-            const response = await fetch('/api/auth/signout', {
-                method: 'POST',
+            await fetch("/api/auth/signout", {
+                method: "POST",
             });
-
-            if (!response.ok) {
-                throw new Error('Sign out failed');
-            }
 
             setSession(null);
             setUser(null);
             localStorage.removeItem(STORAGE_KEY);
         } catch (error) {
-            console.error('Error signing out:', error);
+            console.error("Error signing out:", error);
             throw error;
         }
     }, []);
 
     return (
-        <AuthContext.Provider value={{ user, session, signIn, signUp, signInWithGoogle, signOut, loading }}>
+        <AuthContext.Provider
+            value={{
+                user,
+                session,
+                signIn,
+                signUp,
+                signOut,
+                loading,
+            }}
+        >
             {children}
         </AuthContext.Provider>
     );
@@ -172,7 +166,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 export function useAuth() {
     const context = useContext(AuthContext);
     if (context === undefined) {
-        throw new Error('useAuth must be used within an AuthProvider');
+        throw new Error("useAuth must be used within an AuthProvider");
     }
     return context;
-} 
+}

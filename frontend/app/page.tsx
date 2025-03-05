@@ -10,7 +10,7 @@ import MyAgents from "./components/MyAgents";
 
 export default function Home() {
     const router = useRouter();
-    const { user } = useAuth();
+    const { user, signIn} = useAuth();
     const [currentView, setCurrentView] = useState("landing"); // "landing", "home", or "myAgents"
     const [openSnackbar, setOpenSnackbar] = useState(false);
 
@@ -26,7 +26,7 @@ export default function Home() {
         if (user) {
             setCurrentView("home");
         } else {
-            router.push("/auth/signin");
+            signIn();
         }
     };
 

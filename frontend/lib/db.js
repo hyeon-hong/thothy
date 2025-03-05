@@ -1,4 +1,6 @@
-import { supabase } from './supabase';
+import { createClient } from '@/utils/supabase/client';
+
+const supabase = createClient();
 
 export async function saveUserAgent(userId, agentId) {
     const { data, error } = await supabase

@@ -1,43 +1,52 @@
+import { createClient } from "@/utils/supabase/server";
 import { NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
 
-if (!process.env.SUPABASE_API_URL) {
-    throw new Error('Missing environment variable: SUPABASE_API_URL');
-}
-
-if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
-    throw new Error('Missing environment variable: SUPABASE_SERVICE_ROLE_KEY');
-}
-
-const supabase = createClient(
-    process.env.SUPABASE_API_URL,
-    process.env.SUPABASE_SERVICE_ROLE_KEY
-);
-
-export async function POST(request: Request) {
-    try {
-        const { email, password } = await request.json();
-
-        if (!email || !password) {
-            return NextResponse.json(
-                { error: "Email and password are required" },
-                { status: 400 }
-            );
-        }
-
-        const { data, error } = await supabase.auth.signInWithPassword({
-            email,
-            password,
-        });
-
-        if (error) throw error;
-
-        return NextResponse.json(data);
-    } catch (error) {
-        console.error("Error signing in:", error);
-        return NextResponse.json(
-            { error: "Failed to sign in" },
-            { status: 500 }
+export async function GET(request: Request) {
+    const requestUrl = new URL(request.url);
+    
+    // Check if this is a localhost development environment
+    const isLocalEnv = process.env.NODE_ENV === "development";
+    const forwardedHost = request.headers.get("x-forwarded-host"); // original host before load balancer
+    
+    // Determine the callback URL
+    let callbackUrl;
+    if (isLocalEnv) {
+        callbackUrl = `${requestUrl.origin}/auth/callback`;
+    } else if (forwardedHost) {
+        callbackUrl = `https://${forwardedHost}/auth/callback`;
+    } else {
+        callbackUrl = `${requestUrl.origin}/auth/callback`;
+    }
+    
+    // Get provider from query string and ensure it's a valid provider
+    const providerParam = requestUrl.searchParams.get("provider") || "google";
+    
+    // Get the redirect URL from query string or default to "/"
+    const redirectTo = requestUrl.searchParams.get("redirectTo") || "/";
+    
+    const supabase = await createClient();
+    
+    // Start the sign in process
+    const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: providerParam as any, // Type assertion to avoid Provider type issues
+        options: {
+            redirectTo: callbackUrl,
+            queryParams: {
+                access_type: "offline",
+                prompt: "consent",
+                next: redirectTo,
+            },
+        },
+    });
+    
+    if (error) {
+        return NextResponse.redirect(
+            `${requestUrl.origin}/auth/auth-code-error?error=${encodeURIComponent(
+                error.message
+            )}`
         );
     }
-} 
+    
+    // Redirect to the OAuth URL
+    return NextResponse.redirect(data.url);
+}

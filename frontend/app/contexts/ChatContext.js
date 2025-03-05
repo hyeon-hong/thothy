@@ -1,17 +1,14 @@
-import { createContext, useContext, useState, useMemo } from "react";
+import React, { createContext, useContext, useState, useMemo } from "react";
 import { Client } from "@langchain/langgraph-sdk";
 import { useThreadManager } from "../hooks/useThreadManager";
 import { useAuth } from "./AuthContext";
 
 const ChatContext = createContext();
 const ASSISTANT_ID = process.env.NEXT_PUBLIC_ASSISTANT_ID ?? "chat_graph";
-const DEPLOYMENT_URL =
-  process.env.NEXT_PUBLIC_DEPLOYMENT_URL ?? "http://localhost:2024";
-console.log("DEPLOYMENT_URL", DEPLOYMENT_URL);
+const DEPLOYMENT_URL = process.env.NEXT_PUBLIC_DEPLOYMENT_URL || "";
 
 export function ChatProvider({ children }) {
   const { session } = useAuth();
-  console.log("session", session);
 
   const client = useMemo(() => {
     return new Client({
@@ -21,7 +18,6 @@ export function ChatProvider({ children }) {
       },
     });
   }, [session?.access_token]);
-  console.log("client", client);
 
   const {
     threads,
@@ -35,6 +31,7 @@ export function ChatProvider({ children }) {
 
   const [messages, setMessages] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState(null);
 
   const handleCreateNewThread = async () => {
     const thread = await createNewThread();
@@ -44,84 +41,51 @@ export function ChatProvider({ children }) {
     }
   };
 
-  const sendMessage = async (content) => {
-    if (!currentThreadId) {
-      console.error("No thread ID available");
+  const sendMessage = async (threadId, message) => {
+    if (!threadId || !message) {
       return;
     }
-
+    
     setIsLoading(true);
+    setError(null);
+    
     try {
-      // Add user message immediately
-      const newMessage = { role: "user", content };
-      setMessages((prev) => [...prev, newMessage]);
-
-      const input = {
-        messages: [{ role: "human", content }],
+      const { text, role } = message;
+      
+      // Prepare headers
+      const headers = {
+        "Content-Type": "application/json",
       };
-
-      const config = {
-        configurable: { model_name: "openai" },
-      };
-
-      const streamResponse = client.runs.stream(currentThreadId, ASSISTANT_ID, {
-        input,
-        config,
-        streamMode: ["messages-tuple", "updates"],
-      });
-      console.log("streamResponse", streamResponse);
-
-      let assistantMessage = "";
-
-      for await (const chunk of streamResponse) {
-        if (chunk.event === "messages") {
-          const messages = chunk.data;
-          const [messageChunk, metadata] = messages;
-
-          if (
-            messageChunk?.content !== undefined &&
-            messageChunk.type === "AIMessageChunk" &&
-            metadata?.langgraph_node === "chatbot"
-          ) {
-            assistantMessage += messageChunk.content;
-            setMessages((prev) => {
-              const lastMessage = prev[prev.length - 1];
-              if (lastMessage?.role === "assistant") {
-                return [
-                  ...prev.slice(0, -1),
-                  { role: "assistant", content: assistantMessage },
-                ];
-              } else {
-                return [
-                  ...prev,
-                  { role: "assistant", content: assistantMessage },
-                ];
-              }
-            });
-          }
-        } else if (chunk.event === "updates" && chunk.data?.generate_title) {
-          setThreads((prevThreads) =>
-            prevThreads.map((thread) =>
-              thread.thread_id === currentThreadId
-                ? {
-                    ...thread,
-                    values: {
-                      ...thread.values,
-                      title: chunk.data.generate_title.title,
-                      description: chunk.data.generate_title.description,
-                    },
-                    metadata: {
-                      ...thread.metadata,
-                      ...chunk.data.generate_title,
-                    },
-                  }
-                : thread
-            )
-          );
-        }
+      
+      if (session?.access_token) {
+        headers["Authorization"] = `Bearer ${session.access_token}`;
       }
-    } catch (error) {
-      console.error("Error sending message:", error);
+      
+      // Send the message
+      const response = await fetch(`${DEPLOYMENT_URL}/api/chat`, {
+        method: "POST",
+        headers,
+        body: JSON.stringify({
+          threadId,
+          message: {
+            content: text,
+            role: role || "user",
+          },
+        }),
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Error: ${response.status} ${await response.text()}`);
+      }
+      
+      // Handle streaming response
+      const streamResponse = await response.json();
+      
+      return streamResponse;
+    } catch (err) {
+      setError(err.message);
+      console.error("Error sending message:", err);
+      return null;
     } finally {
       setIsLoading(false);
     }
@@ -164,20 +128,22 @@ export function ChatProvider({ children }) {
     }
   };
 
+  const contextValue = {
+    messages,
+    sendMessage,
+    isLoading,
+    threads,
+    currentThreadId,
+    createNewThread: handleCreateNewThread,
+    switchThread,
+    deleteThread,
+    isThreadsLoading,
+    error,
+    client,
+  };
+
   return (
-    <ChatContext.Provider
-      value={{
-        messages,
-        sendMessage,
-        isLoading,
-        threads,
-        currentThreadId,
-        createNewThread: handleCreateNewThread,
-        switchThread,
-        deleteThread,
-        isThreadsLoading,
-      }}
-    >
+    <ChatContext.Provider value={contextValue}>
       {children}
     </ChatContext.Provider>
   );

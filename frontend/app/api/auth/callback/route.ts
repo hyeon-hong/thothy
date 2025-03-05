@@ -1,86 +1,52 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
-
-if (!process.env.SUPABASE_API_URL) {
-    throw new Error('Missing environment variable: SUPABASE_API_URL');
-}
-
-if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
-    throw new Error('Missing environment variable: SUPABASE_SERVICE_ROLE_KEY');
-}
-
-const supabase = createClient(
-    process.env.SUPABASE_API_URL,
-    process.env.SUPABASE_SERVICE_ROLE_KEY
-);
+// The client you created from the Server-Side Auth instructions
+import { createClient } from "@/utils/supabase/server";
+import { cookies } from "next/headers";
 
 export async function GET(request: Request) {
-    console.log('GET request received');
-    try {
-        console.log('request.url:', request.url);
-        const { searchParams } = new URL(request.url);
-        console.log('searchParams:', searchParams);
-        const next = searchParams.get('next') ?? '/';
-        console.log('next:', next);
+    const { searchParams, origin } = new URL(request.url);
+    const code = searchParams.get("code");
+    // if "next" is in param, use it as the redirect URL
+    const next = searchParams.get("next") ?? "/";
 
-        // Redirect to the next URL directly
-        return NextResponse.redirect(new URL(next, request.url));
-    } catch (error) {
-        console.error("Error handling OAuth callback:", error);
-        return NextResponse.redirect(new URL('/auth/auth-code-error', request.url));
-    }
-}
-
-export async function POST(request: Request) {
-    try {
-        const body = await request.json();
-        const { access_token, refresh_token } = body;
-
-        if (!access_token || !refresh_token) {
-            console.error('Missing required tokens:', { 
-                hasAccessToken: !!access_token,
-                hasRefreshToken: !!refresh_token 
-            });
-            return NextResponse.json(
-                { error: "Missing required tokens" },
-                { status: 400 }
-            );
-        }
-
-        // Set the session using the tokens
-        const { data, error } = await supabase.auth.setSession({
-            access_token,
-            refresh_token,
-        });
-
-        if (error) {
-            console.error('Error setting session:', error);
-            return NextResponse.json(
-                { error: error.message },
-                { status: 500 }
-            );
-        }
-
-        // Get the user data
-        const { data: { user }, error: userError } = await supabase.auth.getUser(access_token);
+    if (code) {
+        const supabase = await createClient();
+        const { data, error } = await supabase.auth.exchangeCodeForSession(code);
         
-        if (userError) {
-            console.error('Error getting user:', userError);
-            return NextResponse.json(
-                { error: userError.message },
-                { status: 500 }
-            );
-        }
+        if (!error && data?.session) {
+            // Manually set cookies for sb-access-token and sb-refresh-token
+            const cookieStore = await cookies();
+            
+            // Set access token cookie
+            cookieStore.set("sb-access-token", data.session.access_token, {
+                path: "/",
+                secure: process.env.NODE_ENV !== "development",
+                httpOnly: true,
+                sameSite: "lax",
+                maxAge: 60 * 60 * 24 * 7, // 1 week
+            });
+            
+            // Set refresh token cookie
+            cookieStore.set("sb-refresh-token", data.session.refresh_token, {
+                path: "/",
+                secure: process.env.NODE_ENV !== "development",
+                httpOnly: true,
+                sameSite: "lax",
+                maxAge: 60 * 60 * 24 * 7, // 1 week
+            });
 
-        return NextResponse.json({ 
-            session: data.session,
-            user 
-        });
-    } catch (error) {
-        console.error("Error in POST /api/auth/callback:", error);
-        return NextResponse.json(
-            { error: error instanceof Error ? error.message : "Failed to set session" },
-            { status: 500 }
-        );
+            const forwardedHost = request.headers.get("x-forwarded-host"); // original origin before load balancer
+            const isLocalEnv = process.env.NODE_ENV === "development";
+            if (isLocalEnv) {
+                // we can be sure that there is no load balancer in between, so no need to watch for X-Forwarded-Host
+                return NextResponse.redirect(`${origin}${next}`);
+            } else if (forwardedHost) {
+                return NextResponse.redirect(`https://${forwardedHost}${next}`);
+            } else {
+                return NextResponse.redirect(`${origin}${next}`);
+            }
+        }
     }
-} 
+    // return the user to an error page with instructions
+    return NextResponse.redirect(`${origin}/auth/auth-code-error`);
+}

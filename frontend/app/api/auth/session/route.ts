@@ -1,54 +1,32 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
-import { cookies } from 'next/headers';
-
-if (!process.env.SUPABASE_API_URL) {
-    throw new Error('Missing environment variable: SUPABASE_API_URL');
-}
-
-if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
-    throw new Error('Missing environment variable: SUPABASE_SERVICE_ROLE_KEY');
-}
-
-const supabase = createClient(
-    process.env.SUPABASE_API_URL,
-    process.env.SUPABASE_SERVICE_ROLE_KEY
-);
+import { cookies } from "next/headers";
+import { createClient } from "@/utils/supabase/client";
 
 export async function GET(request: Request) {
-    try {
-        const cookieStore = cookies();
-        const supabaseClient = createClient(
-            process.env.SUPABASE_API_URL!,
-            process.env.SUPABASE_SERVICE_ROLE_KEY!,
-            {
-                cookies: {
-                    get(name: string) {
-                        return cookieStore.get(name)?.value;
-                    },
-                    set(name: string, value: string, options: any) {
-                        cookieStore.set({ name, value, ...options });
-                    },
-                    remove(name: string, options: any) {
-                        cookieStore.set({ name, value: '', ...options });
-                    },
-                },
-            }
-        );
+    // Get cookies from the request - cookies() must be awaited
+    const cookieStore = await cookies();
+    const accessToken = cookieStore.get("sb-access-token")?.value;
+    const refreshToken = cookieStore.get("sb-refresh-token")?.value;
 
-        const { data: { session }, error } = await supabaseClient.auth.getSession();
-        
-        if (error) throw error;
-
-        return NextResponse.json({ 
-            session,
-            user: session?.user ?? null
-        });
-    } catch (error) {
-        console.error("Error getting session:", error);
-        return NextResponse.json(
-            { error: "Failed to get session" },
-            { status: 500 }
-        );
+    if (!accessToken || !refreshToken) {
+        return NextResponse.json({ session: null });
     }
-} 
+
+    const supabase = createClient();
+
+    // Try to get the user with the access token
+    const { data, error } = await supabase.auth.getUser(accessToken);
+
+    if (error || !data?.user) {
+        return NextResponse.json({ session: null });
+    }
+
+    // Create a session object
+    const session = {
+        access_token: accessToken,
+        refresh_token: refreshToken,
+        user: data.user,
+    };
+
+    return NextResponse.json({ session });
+}
