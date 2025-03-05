@@ -12,7 +12,7 @@ interface AuthContextType {
     session: Session | null;
     signIn: (email: string, password: string) => Promise<void>;
     signUp: (email: string, password: string) => Promise<void>;
-    signInWithGoogle: () => Promise<void>;
+    signInWithGoogle: (redirectTo?: string) => Promise<void>;
     signOut: () => Promise<void>;
     loading: boolean;
 }
@@ -142,31 +142,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
     }, []);
 
-    const signInWithGoogle = useCallback(async () => {
-        console.log('Signing in with Google');
+    const signInWithGoogle = useCallback(async (redirectTo?: string) => {
+        console.log('Signing in with Google, redirect to:', redirectTo);
         try {
-            const response = await fetch('/api/auth/google', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    redirectTo: `${window.location.origin}/api/auth/callback`,
-                }),
-            });
-            console.log('Google sign in response:', response);
-
-            if (!response.ok) {
-                throw new Error('Google sign in failed');
+            // Construct the URL with the redirect parameter if provided
+            let url = '/api/auth/signin';
+            if (redirectTo) {
+                url += `?redirect_to=${encodeURIComponent(redirectTo)}`;
             }
-
-            const data = await response.json();
-            console.log('Google sign in data:', data);
-
-            if (data.url) {
-                // Redirect to the Google OAuth URL using window.location
-                window.location.href = data.url;
-            } else {
-                throw new Error('No URL returned from Google sign in');
-            }
+            
+            // Redirect user to the signIn API route, which initiates the Google OAuth flow
+            window.location.href = url;
         } catch (error) {
             console.error('Error signing in with Google:', error);
             throw error;

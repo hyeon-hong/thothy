@@ -3,10 +3,10 @@ import { createClient } from '@supabase/supabase-js';
 import { cookies } from 'next/headers';
 
 export async function GET(request: Request) {
-  // Get cookies from the request
-  const cookiesList = cookies();
-  const accessToken = cookiesList.get('sb-access-token')?.value;
-  const refreshToken = cookiesList.get('sb-refresh-token')?.value;
+  // Get cookies from the request - cookies() must be awaited
+  const cookieStore = await cookies();
+  const accessToken = cookieStore.get('sb-access-token')?.value;
+  const refreshToken = cookieStore.get('sb-refresh-token')?.value;
   
   if (!accessToken || !refreshToken) {
     return NextResponse.json({ session: null });

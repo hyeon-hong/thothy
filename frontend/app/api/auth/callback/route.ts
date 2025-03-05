@@ -4,6 +4,12 @@ import { createClient } from '@supabase/supabase-js';
 export async function GET(request: Request) {
   const requestUrl = new URL(request.url);
   const code = requestUrl.searchParams.get('code');
+  // Get the redirect destination, defaulting to homepage if not specified
+  const redirectTo = requestUrl.searchParams.get('redirect_to') || 
+                     requestUrl.searchParams.get('next') || 
+                     '/';
+  
+  console.log('Auth callback received. Code:', !!code, 'Redirect to:', redirectTo);
 
   if (code) {
     // Create a Supabase client without session handling
@@ -28,8 +34,9 @@ export async function GET(request: Request) {
       );
     }
 
+    console.log('Session created, redirecting to:', redirectTo);
     // Create a response with the redirected URL
-    const response = NextResponse.redirect(new URL('/', requestUrl.origin));
+    const response = NextResponse.redirect(new URL(redirectTo, requestUrl.origin));
 
     // Set auth cookies
     response.cookies.set('sb-access-token', data.session.access_token, {
@@ -50,5 +57,6 @@ export async function GET(request: Request) {
   }
 
   // URL to redirect to if there's no code
+  console.log('No code found, redirecting to homepage');
   return NextResponse.redirect(new URL('/', requestUrl.origin));
 } 

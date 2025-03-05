@@ -9,21 +9,24 @@ export function createServerClient() {
     process.env.SUPABASE_SERVICE_ROLE_KEY!,
     {
       cookies: {
-        get(name: string) {
-          return cookies().get(name)?.value;
+        async get(name: string) {
+          const cookieStore = await cookies();
+          return cookieStore.get(name)?.value;
         },
-        set(name: string, value: string, options: { path?: string; maxAge?: number; domain?: string; secure?: boolean }) {
+        async set(name: string, value: string, options: { path?: string; maxAge?: number; domain?: string; secure?: boolean }) {
           try {
-            cookies().set({ name, value, ...options });
+            const cookieStore = await cookies();
+            cookieStore.set({ name, value, ...options });
           } catch (error) {
             // The `set` method was called from a Server Component.
             // This can be ignored if you have middleware refreshing
             // user sessions.
           }
         },
-        remove(name: string, options: { path?: string; domain?: string; secure?: boolean }) {
+        async remove(name: string, options: { path?: string; domain?: string; secure?: boolean }) {
           try {
-            cookies().set({ name, value: '', ...options });
+            const cookieStore = await cookies();
+            cookieStore.set({ name, value: '', ...options });
           } catch (error) {
             // The `delete` method was called from a Server Component.
             // This can be ignored if you have middleware refreshing

@@ -68,6 +68,13 @@ export default function Header({ currentView, onViewChange }: HeaderProps) {
     onViewChange('settings');
   };
 
+  // Get current path for redirect after login
+  const handleSignIn = () => {
+    // Use the current path as the redirect destination
+    const currentPath = window.location.pathname;
+    signInWithGoogle(currentPath !== '/' ? currentPath : undefined);
+  };
+
   return (
     <AppBar position="static" color="transparent" elevation={0} sx={{ borderBottom: '2px solid rgba(0, 0, 0, 0.12)' }}>
       <Container maxWidth="lg">
@@ -173,7 +180,7 @@ export default function Header({ currentView, onViewChange }: HeaderProps) {
               <Button
                 variant="contained"
                 color="primary"
-                onClick={signInWithGoogle}
+                onClick={handleSignIn}
                 sx={{ ml: 2 }}
               >
                 Sign in with Google

@@ -10,7 +10,7 @@ import MyAgents from "./components/MyAgents";
 
 export default function Home() {
     const router = useRouter();
-    const { user } = useAuth();
+    const { user, signInWithGoogle } = useAuth();
     const [currentView, setCurrentView] = useState("landing"); // "landing", "home", or "myAgents"
     const [openSnackbar, setOpenSnackbar] = useState(false);
 
@@ -26,7 +26,10 @@ export default function Home() {
         if (user) {
             setCurrentView("home");
         } else {
-            router.push("/auth/signin");
+            // Use signInWithGoogle directly with the current path as redirect
+            const currentPath = window.location.pathname;
+            // Only use the currentPath as redirectTo if it's not the homepage
+            signInWithGoogle(currentPath !== '/' ? currentPath : undefined);
         }
     };
 
