@@ -1,62 +1,71 @@
-import { NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { NextResponse } from "next/server";
+import { createClient } from "@supabase/supabase-js";
 
 export async function GET(request: Request) {
-  const requestUrl = new URL(request.url);
-  const code = requestUrl.searchParams.get('code');
-  // Get the redirect destination, defaulting to homepage if not specified
-  const redirectTo = requestUrl.searchParams.get('redirect_to') || 
-                     requestUrl.searchParams.get('next') || 
-                     '/';
-  
-  console.log('Auth callback received. Code:', !!code, 'Redirect to:', redirectTo);
+    console.log("Auth callback received");
+    const requestUrl = new URL(request.url);
+    const code = requestUrl.searchParams.get("code");
+    console.log("code", code);
+    
+    // Always redirect to homepage
+    const redirectTo = "/";
+    console.log("Will redirect to:", redirectTo);
 
-  if (code) {
-    // Create a Supabase client without session handling
-    const supabase = createClient(
-      process.env.SUPABASE_API_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!,
-      {
-        auth: {
-          autoRefreshToken: false,
-          persistSession: false
-        }
-      }
+    console.log(
+        "Auth callback received. Code:",
+        !!code
     );
 
-    // Exchange the code for a session
-    const { data, error } = await supabase.auth.exchangeCodeForSession(code);
-    
-    if (error) {
-      console.error('Error exchanging code for session:', error);
-      return NextResponse.redirect(
-        new URL('/auth/error', requestUrl.origin)
-      );
+    if (code) {
+        // Create a Supabase client without session handling
+        const supabase = createClient(
+            process.env.SUPABASE_API_URL!,
+            process.env.SUPABASE_SERVICE_ROLE_KEY!,
+            {
+                auth: {
+                    autoRefreshToken: false,
+                    persistSession: false,
+                },
+            }
+        );
+
+        // Exchange the code for a session
+        const { data, error } = await supabase.auth.exchangeCodeForSession(
+            code
+        );
+
+        if (error) {
+            console.error("Error exchanging code for session:", error);
+            return NextResponse.redirect(
+                new URL("/auth/error", requestUrl.origin)
+            );
+        }
+
+        console.log("Session created, redirecting to homepage");
+        // Create a response with the redirected URL
+        const response = NextResponse.redirect(
+            new URL(redirectTo, requestUrl.origin)
+        );
+
+        // Set auth cookies
+        response.cookies.set("sb-access-token", data.session.access_token, {
+            path: "/",
+            httpOnly: true,
+            secure: process.env.NODE_ENV === "production",
+            maxAge: 60 * 60 * 24 * 7, // 1 week
+        });
+
+        response.cookies.set("sb-refresh-token", data.session.refresh_token, {
+            path: "/",
+            httpOnly: true,
+            secure: process.env.NODE_ENV === "production",
+            maxAge: 60 * 60 * 24 * 7, // 1 week
+        });
+
+        return response;
     }
 
-    console.log('Session created, redirecting to:', redirectTo);
-    // Create a response with the redirected URL
-    const response = NextResponse.redirect(new URL(redirectTo, requestUrl.origin));
-
-    // Set auth cookies
-    response.cookies.set('sb-access-token', data.session.access_token, {
-      path: '/',
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      maxAge: 60 * 60 * 24 * 7, // 1 week
-    });
-
-    response.cookies.set('sb-refresh-token', data.session.refresh_token, {
-      path: '/',
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production', 
-      maxAge: 60 * 60 * 24 * 7, // 1 week
-    });
-
-    return response;
-  }
-
-  // URL to redirect to if there's no code
-  console.log('No code found, redirecting to homepage');
-  return NextResponse.redirect(new URL('/', requestUrl.origin));
-} 
+    // URL to redirect to if there's no code
+    console.log("No code found, redirecting to homepage");
+    return NextResponse.redirect(new URL("/", requestUrl.origin));
+}

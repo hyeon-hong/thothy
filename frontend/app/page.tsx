@@ -26,10 +26,7 @@ export default function Home() {
         if (user) {
             setCurrentView("home");
         } else {
-            // Use signInWithGoogle directly with the current path as redirect
-            const currentPath = window.location.pathname;
-            // Only use the currentPath as redirectTo if it's not the homepage
-            signInWithGoogle(currentPath !== '/' ? currentPath : undefined);
+            signInWithGoogle();
         }
     };
 

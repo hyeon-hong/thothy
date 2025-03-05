@@ -70,9 +70,7 @@ export default function Header({ currentView, onViewChange }: HeaderProps) {
 
   // Get current path for redirect after login
   const handleSignIn = () => {
-    // Use the current path as the redirect destination
-    const currentPath = window.location.pathname;
-    signInWithGoogle(currentPath !== '/' ? currentPath : undefined);
+    signInWithGoogle();
   };
 
   return (

@@ -12,7 +12,7 @@ interface AuthContextType {
     session: Session | null;
     signIn: (email: string, password: string) => Promise<void>;
     signUp: (email: string, password: string) => Promise<void>;
-    signInWithGoogle: (redirectTo?: string) => Promise<void>;
+    signInWithGoogle: () => Promise<void>;
     signOut: () => Promise<void>;
     loading: boolean;
 }
@@ -142,17 +142,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
     }, []);
 
-    const signInWithGoogle = useCallback(async (redirectTo?: string) => {
-        console.log('Signing in with Google, redirect to:', redirectTo);
+    const signInWithGoogle = useCallback(async () => {
+        console.log('Signing in with Google');
         try {
-            // Construct the URL with the redirect parameter if provided
-            let url = '/api/auth/signin';
-            if (redirectTo) {
-                url += `?redirect_to=${encodeURIComponent(redirectTo)}`;
-            }
-            
             // Redirect user to the signIn API route, which initiates the Google OAuth flow
-            window.location.href = url;
+            window.location.href = '/api/auth/signin';
         } catch (error) {
             console.error('Error signing in with Google:', error);
             throw error;
