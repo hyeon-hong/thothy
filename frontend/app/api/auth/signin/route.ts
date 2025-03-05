@@ -41,7 +41,7 @@ export async function GET(request: Request) {
         const { data, error } = await supabase.auth.signInWithOAuth({
             provider: "google",
             options: {
-                redirectTo: "http://localhost:3000/api/auth/callback",
+                redirectTo: "http://localhost:3000/auth/callback",
                 scopes: "email profile",
             },
         });

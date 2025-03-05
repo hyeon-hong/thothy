@@ -1,8 +1,9 @@
 "use client";
 
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Button, Typography, Container, Box, Paper } from "@mui/material";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 
 type AuthCodeErrorPageProps = {
   searchParams: {
@@ -15,10 +16,15 @@ type AuthCodeErrorPageProps = {
   };
 };
 
-export default function AuthCodeErrorPage({
-  searchParams,
-}: AuthCodeErrorPageProps) {
-  const { error, errorDescription, reason, code, details, url } = searchParams;
+export default function AuthCodeErrorPage() {
+  // Use the useSearchParams hook to access search parameters on the client side
+  const searchParams = useSearchParams();
+  const error = searchParams?.get("error") || undefined;
+  const errorDescription = searchParams?.get("errorDescription") || undefined;
+  const reason = searchParams?.get("reason") || undefined;
+  const code = searchParams?.get("code") || undefined;
+  const details = searchParams?.get("details") || undefined;
+  const url = searchParams?.get("url") || undefined;
 
   // Define error messages based on error codes
   const errorMessages: Record<string, { title: string; message: string; solution: string }> = {
@@ -88,7 +94,7 @@ export default function AuthCodeErrorPage({
       solution: "Please try signing in again. If the problem persists, contact support."
     };
 
-  console.error("Auth Code Error Page Loaded", {
+  console.log("Auth Code Error Page Loaded", {
     error,
     errorDescription,
     reason,
