@@ -7,6 +7,9 @@ export async function GET(request: Request) {
     // Check if this is a localhost development environment
     const isLocalEnv = process.env.NODE_ENV === "development";
     const forwardedHost = request.headers.get("x-forwarded-host"); // original host before load balancer
+    console.log("forwardedHost", forwardedHost);
+    console.log("process.env.NODE_ENV", process.env.NODE_ENV);
+    console.log("isLocalEnv", isLocalEnv);
     
     // Determine the callback URL
     let callbackUrl;
@@ -17,7 +20,8 @@ export async function GET(request: Request) {
     } else {
         callbackUrl = `${requestUrl.origin}/auth/callback`;
     }
-    
+    console.log("callbackUrl", callbackUrl);
+
     // Get provider from query string and ensure it's a valid provider
     const providerParam = requestUrl.searchParams.get("provider") || "google";
     
