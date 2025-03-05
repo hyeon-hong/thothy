@@ -3,7 +3,10 @@ import { NextResponse } from "next/server";
 import { createServerClient } from "../../../lib/supabase";
 
 export async function GET(request: Request) {
+    console.log("\n\n=== AUTH CALLBACK RECEIVED ===");
+    console.log("Request URL:", request.url);
     const { searchParams, origin } = new URL(request.url);
+    console.log("searchParams:", searchParams);
     const code = searchParams.get("code");
     // if "next" is in param, use it as the redirect URL
     const next = searchParams.get("next") ?? "/";
@@ -22,9 +25,11 @@ export async function GET(request: Request) {
             } else {
                 return NextResponse.redirect(`${origin}${next}`);
             }
+        } else {
+            console.error("Error exchanging code for session:", error);
         }
     }
 
     // return the user to an error page with instructions
     return NextResponse.redirect(`${origin}/auth/auth-code-error`);
-} 
+}

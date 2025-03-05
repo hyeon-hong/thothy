@@ -1,6 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
-import crypto from "crypto";
 
 export async function GET(request: Request) {
     console.log("\n\n=== SIGN-IN ROUTE CALLED ===");
@@ -17,10 +16,9 @@ export async function GET(request: Request) {
     );
 
     try {
-        // Determine the callback URL (use environment variable or fallback to request origin)
-        const callbackUrl = `${
-            process.env.NEXT_PUBLIC_APP_URL || requestUrl.origin
-        }/api/auth/callback`;
+        // Determine the callback URL based on environment
+        const baseUrl = process.env.NEXT_PUBLIC_APP_URL || requestUrl.origin;
+        const callbackUrl = `${baseUrl}/auth/callback`;
         console.log("Callback URL:", callbackUrl);
 
         // Create a Supabase client with the service role key
@@ -41,7 +39,7 @@ export async function GET(request: Request) {
         const { data, error } = await supabase.auth.signInWithOAuth({
             provider: "google",
             options: {
-                redirectTo: "http://localhost:3000/auth/callback",
+                redirectTo: callbackUrl,
                 scopes: "email profile",
             },
         });
