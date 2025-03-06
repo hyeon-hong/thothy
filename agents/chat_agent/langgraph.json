@@ -1,6 +1,4 @@
 {
-  "python_version": "3.12",
-  "env": "../../.env",
   "dependencies": [
     "./src/chat_graph"
   ],
@@ -9,5 +7,7 @@
   },
   "auth": {
     "path": "./src/security/auth.py:auth"
-  }
+  },
+  "env": "../../.env",
+  "python_version": "3.12"
 }
