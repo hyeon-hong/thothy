@@ -1,11 +1,13 @@
 {
   "dependencies": [
     "./agents/chat_agent/src/chat_graph",
-    "./agents/research_agent/src/research_graph"
+    "./agents/research_agent/src/research_graph",
+    "./agents/open_deep_research_agent/src/open_deep_research"
   ],
   "graphs": {
     "chat_graph": "./agents/chat_agent/src/chat_graph/graph.py:graph",
-    "research_graph": "./agents/research_agent/src/research_graph/graph.py:graph"
+    "research_graph": "./agents/research_agent/src/research_graph/graph.py:graph",
+    "open_deep_research": "./agents/open_deep_research_agent/src/open_deep_research/graph.py:graph"
   },
   "auth": {
     "path": "./agents/security/auth.py:auth",

@@ -25,7 +25,7 @@ requires = ["setuptools>=73.0.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools]
-packages = ["chat_graph", "research_graph"]
+packages = ["chat_graph", "research_graph", "open_deep_research_graph"]
 
 [tool.setuptools.package-dir]
 # Chat graph
@@ -36,6 +36,9 @@ packages = ["chat_graph", "research_graph"]
 "research_graph" = "agents/research_agent/src/research_graph"
 "thothy.research_graph" = "agents/research_agent/src/research_graph"
 
+# Open deep research graph
+"open_deep_research_graph" = "agents/open_deep_research_agent/src/open_deep_research"
+"thothy.open_deep_research_graph" = "agents/open_deep_research_agent/src/open_deep_research"
 
 [tool.setuptools.package-data]
 "*" = ["py.typed"]
