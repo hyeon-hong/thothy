@@ -27,7 +27,7 @@ build-backend = "setuptools.build_meta"
 packages = ["chat_graph"]
 [tool.setuptools.package-dir]
 "chat_graph" = "src/chat_graph"
-"langgraph.templates.thothy.chat_graph" = "src/chat_graph"
+"thothy.chat_graph" = "src/chat_graph"
 
 
 [tool.setuptools.package-data]

@@ -25,17 +25,16 @@ requires = ["setuptools>=73.0.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools]
-# packages = ["chat_graph", "research_graph"]
-packages = ["chat_graph"]
+packages = ["chat_graph", "research_graph"]
 
 [tool.setuptools.package-dir]
 # Chat graph
 "chat_graph" = "agents/chat_agent/src/chat_graph"
-"langgraph.templates.thothy.chat_graph" = "agents/chat_agent/src/chat_graph"
+"thothy.chat_graph" = "agents/chat_agent/src/chat_graph"
 
 # Research graph
-# "research_graph" = "agents/research_agent/src/research_graph"
-# "langgraph.templates.thothy.research_graph" = "agents/research_agent/src/research_graph"
+"research_graph" = "agents/research_agent/src/research_graph"
+"thothy.research_graph" = "agents/research_agent/src/research_graph"
 
 
 [tool.setuptools.package-data]
