@@ -1,0 +1,49 @@
+[project]
+name = "security"
+version = "0.0.1"
+description = "Authentication and authorization module for agents"
+authors = [
+    { name = "Thothy", email = "ai.thothy@gmail.com" },
+]
+license = { text = "Apache-2.0" }
+requires-python = ">=3.12"
+dependencies = [
+    "langgraph>=0.2.55",
+    "langgraph-sdk>=0.1.32",
+    "httpx>=0.28.1",
+    "PyJWT>=2.10.1",
+]
+
+[project.optional-dependencies]
+dev = ["mypy>=1.11.1", "ruff>=0.6.1", "pytest-asyncio"]
+
+[build-system]
+requires = ["setuptools>=73.0.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = ["security"]
+[tool.setuptools.package-dir]
+"security" = "."
+"thothy.security" = "."
+
+[tool.setuptools.package-data]
+"*" = ["py.typed"]
+
+[tool.ruff]
+lint.select = [
+    "E",    # pycodestyle
+    "F",    # pyflakes
+    "I",    # isort
+    "D",    # pydocstyle
+    "D401", # First line should be in imperative mood
+    "T201",
+    "UP",
+]
+lint.ignore = ["UP006", "UP007", "UP035", "D417", "E501"]
+include = ["*.py", "*.pyi", "*.ipynb"]
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+[tool.mypy]
+ignore_errors = true 
