@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import debounce from "lodash/debounce";
 import { useAuth } from "../contexts/AuthContext";
 import { v4 as uuidv4 } from "uuid";
@@ -15,6 +15,9 @@ export function useThreadManager(userId, client) {
     const { refreshSession } = useAuth();
     const [shouldFetchMessages, setShouldFetchMessages] = useState(false);
     const [initialLoadComplete, setInitialLoadComplete] = useState(false);
+
+    // Create a ref to hold the debounced function
+    const debouncedFetchThreadsRef = useRef(null);
 
     // Helper function to validate client session
     const validateClientSession = useCallback(async () => {
@@ -67,59 +70,74 @@ export function useThreadManager(userId, client) {
     }, [validateClientSession]);
 
     // Debounced version of thread fetching with retry logic
-    const debouncedFetchThreads = useCallback(
-        (retry = false) => {
-            const fetchThreadsWithDebounce = debounce(async () => {
-                if (!userId || !client) return;
+    const fetchThreads = useCallback(
+        async (retry = false) => {
+            if (!userId || !client) return;
     
-                setIsLoading(true);
-                try {
-                    await validateClientSession();
-                    const userThreads = await client.threads.search({
-                        limit: 100,
-                    });
+            setIsLoading(true);
+            try {
+                await validateClientSession();
+                const userThreads = await client.threads.search({
+                    limit: 100,
+                });
     
-                    // Sort threads by creation time, newest first
-                    const sortedThreads = userThreads
-                        .filter((thread) => thread?.metadata?.created_at)
-                        .sort(
-                            (a, b) =>
-                                new Date(b.metadata.created_at) -
-                                new Date(a.metadata.created_at)
-                        );
+                // Sort threads by creation time, newest first
+                const sortedThreads = userThreads
+                    .filter((thread) => thread?.metadata?.created_at)
+                    .sort(
+                        (a, b) =>
+                            new Date(b.metadata.created_at) -
+                            new Date(a.metadata.created_at)
+                    );
     
-                    setThreads(sortedThreads);
-                    setRetryCount(0); // Reset retry count on success
+                setThreads(sortedThreads);
+                setRetryCount(0); // Reset retry count on success
     
-                    // Auto-select the first thread if no thread is currently selected
-                    if (sortedThreads.length > 0 && !currentThreadId) {
-                        const firstThread = sortedThreads[0];
-                        setCurrentThreadId(firstThread.thread_id);
-                        localStorage.setItem(THREAD_ID_KEY, firstThread.thread_id);
-                    }
-                    
-                    // Mark initial load as complete
-                    setInitialLoadComplete(true);
-                } catch (error) {
-                    console.error("Error fetching threads:", error);
-                    if ((error.status === 401 || error.status === 403) && retry && retryCount < MAX_RETRIES) {
-                        console.log(
-                            `Retrying fetch threads in ${RETRY_DELAY}ms... (Attempt ${
-                                retryCount + 1
-                            }/${MAX_RETRIES})`
-                        );
-                        setRetryCount((prev) => prev + 1);
-                        setTimeout(() => debouncedFetchThreads(true), RETRY_DELAY);
-                    }
-                } finally {
-                    setIsLoading(false);
+                // Auto-select the first thread if no thread is currently selected
+                if (sortedThreads.length > 0 && !currentThreadId) {
+                    const firstThread = sortedThreads[0];
+                    setCurrentThreadId(firstThread.thread_id);
+                    localStorage.setItem(THREAD_ID_KEY, firstThread.thread_id);
                 }
-            }, 300);
-
-            fetchThreadsWithDebounce();
+                
+                // Mark initial load as complete
+                setInitialLoadComplete(true);
+            } catch (error) {
+                console.error("Error fetching threads:", error);
+                if ((error.status === 401 || error.status === 403) && retry && retryCount < MAX_RETRIES) {
+                    console.log(
+                        `Retrying fetch threads in ${RETRY_DELAY}ms... (Attempt ${
+                            retryCount + 1
+                        }/${MAX_RETRIES})`
+                    );
+                    setRetryCount((prev) => prev + 1);
+                    // Use the ref to avoid circular dependency
+                    setTimeout(() => {
+                        if (debouncedFetchThreadsRef.current) {
+                            debouncedFetchThreadsRef.current(true);
+                        } else {
+                            // Fallback if ref not set yet
+                            fetchThreads(true);
+                        }
+                    }, RETRY_DELAY);
+                }
+            } finally {
+                setIsLoading(false);
+            }
         },
         [userId, client, retryCount, currentThreadId, validateClientSession, setThreads, setCurrentThreadId, setInitialLoadComplete, setRetryCount, setIsLoading]
     );
+
+    // Create the debounced version of fetchThreads
+    const debouncedFetchThreads = useCallback(
+        debounce((retry = false) => fetchThreads(retry), 300),
+        [fetchThreads]
+    );
+
+    // Update the ref whenever debouncedFetchThreads changes
+    useEffect(() => {
+        debouncedFetchThreadsRef.current = debouncedFetchThreads;
+    }, [debouncedFetchThreads]);
 
     // New effect to handle initial message loading
     useEffect(() => {

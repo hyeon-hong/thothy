@@ -5,7 +5,7 @@ import React, { useEffect, useRef } from "react";
 import { Chat } from "../../components/Chat";
 import { ChatProvider } from "../../contexts/ChatContext";
 
-export default function ChatAgentPage() {
+export default function OpenDeepResearchAgentPage() {
     const inputRef = useRef(null);
 
     useEffect(() => {
