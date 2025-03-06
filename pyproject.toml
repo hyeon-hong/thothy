@@ -37,8 +37,8 @@ packages = ["chat_graph", "research_graph", "open_deep_research_graph"]
 "thothy.research_graph" = "agents/research_agent/src/research_graph"
 
 # Open deep research graph
-"open_deep_research_graph" = "agents/open_deep_research_agent/src/open_deep_research"
-"thothy.open_deep_research_graph" = "agents/open_deep_research_agent/src/open_deep_research"
+"open_deep_research_graph" = "agents/open_deep_research_agent/src/open_deep_research_graph"
+"thothy.open_deep_research_graph" = "agents/open_deep_research_agent/src/open_deep_research_graph"
 
 [tool.setuptools.package-data]
 "*" = ["py.typed"]
