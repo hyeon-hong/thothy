@@ -79,6 +79,28 @@ The main difference between development and production configurations is the `di
 
 Choose the appropriate configuration based on your security requirements and deployment environment.
 
+#### Troubleshooting Common Issues
+
+**Auth File Not Covered by Dependencies**
+
+If you encounter this error:
+```
+ValueError: Auth file '/workspace/thothy/agents/security/auth.py' not covered by dependencies.
+Add its parent directory to the 'dependencies' array in your config.
+```
+
+Make sure to include the security module in your dependencies:
+```json
+"dependencies": [
+  "./agents/chat_agent/src/chat_graph",
+  "./agents/research_agent/src/research_graph",
+  "./agents/open_deep_research_agent/src/open_deep_research_graph",
+  "./agents/security"
+]
+```
+
+Any directory referenced in the configuration must be included in the dependencies array.
+
 ## 📚 Examples
 
 Thothy comes with several example scripts that demonstrate its capabilities:
