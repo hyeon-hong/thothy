@@ -1,11 +1,9 @@
 {
   "dependencies": [
-    "./agents/chat_agent",
-    "./agents/research_agent"
+    "./agents/chat_agent/src/chat_graph"
   ],
   "graphs": {
-    "chat_graph": "./agents/chat_agent/src/chat_graph/graph.py:graph",
-    "research_graph": "./agents/research_agent/src/research_graph/graph.py:graph"
+    "chat_graph": "./agents/chat_agent/src/chat_graph/graph.py:graph"
   },
   "auth": {
     "path": "./agents/security/auth.py:auth"
