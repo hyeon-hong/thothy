@@ -28,7 +28,7 @@ build-backend = "setuptools.build_meta"
 packages = ["research_graph"]
 [tool.setuptools.package-dir]
 "research_graph" = "src/research_graph"
-"langgraph.templates.thothy.research_graph" = "src/research_graph"
+"thothy.research_graph" = "src/research_graph"
 
 
 [tool.setuptools.package-data]

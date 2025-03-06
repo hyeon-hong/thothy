@@ -8,7 +8,7 @@ from langgraph.constants import Send
 from langgraph.graph import START, END, StateGraph
 from langgraph.types import interrupt, Command
 
-from open_deep_research.state import (
+from open_deep_research_graph.state import (
     ReportStateInput,
     ReportStateOutput,
     Sections,
@@ -19,7 +19,7 @@ from open_deep_research.state import (
     Feedback
 )
 
-from open_deep_research.prompts import (
+from open_deep_research_graph.prompts import (
     report_planner_query_writer_instructions,
     report_planner_instructions,
     query_writer_instructions,
@@ -29,8 +29,8 @@ from open_deep_research.prompts import (
     section_writer_inputs
 )
 
-from open_deep_research.configuration import Configuration
-from open_deep_research.utils import (
+from open_deep_research_graph.configuration import Configuration
+from open_deep_research_graph.utils import (
     format_sections,
     get_config_value,
     get_search_params,

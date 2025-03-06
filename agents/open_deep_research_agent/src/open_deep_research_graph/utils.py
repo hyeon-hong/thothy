@@ -11,7 +11,7 @@ from langchain_community.retrievers import ArxivRetriever
 from langchain_community.utilities.pubmed import PubMedAPIWrapper
 from langsmith import traceable
 
-from open_deep_research.state import Section
+from open_deep_research_graph.state import Section
 
 def get_config_value(value):
     """
