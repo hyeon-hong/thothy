@@ -36,7 +36,7 @@ requires = ["setuptools>=73.0.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools]
-packages = ["open_deep_research_graph"]
+packages = ["open_deep_research_graph", "thothy.open_deep_research_graph"]
 
 [tool.setuptools.package-dir]
 "open_deep_research_graph" = "src/open_deep_research_graph"

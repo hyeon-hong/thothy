@@ -29,7 +29,7 @@ requires = ["setuptools>=73.0.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools]
-packages = ["chat_graph"]
+packages = ["chat_graph", "thothy.chat_graph"]
 [tool.setuptools.package-dir]
 "chat_graph" = "src/chat_graph"
 "thothy.chat_graph" = "src/chat_graph"
