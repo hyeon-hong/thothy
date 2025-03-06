@@ -5,6 +5,9 @@
   "graphs": {
     "chat_graph": "./src/chat_graph/graph.py:graph"
   },
+  "auth": {
+    "path": "./src/security/auth.py:auth"
+  },
   "env": "../../.env",
   "python_version": "3.12"
 }

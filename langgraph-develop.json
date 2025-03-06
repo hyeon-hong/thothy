@@ -7,7 +7,7 @@
   },
   "auth": {
     "path": "./agents/security/auth.py:auth",
-    "disable_studio_auth": true
+    "disable_studio_auth": false
   },
   "env": ".env",
   "python_version": "3.12"
