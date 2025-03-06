@@ -1,9 +1,9 @@
 {
   "dependencies": [
-    "./src/chat_graph"
+    "./src/research_graph"
   ],
   "graphs": {
-    "chat_graph": "./src/chat_graph/graph.py:graph"
+    "research_graph": "./src/research_graph/graph.py:graph"
   },
   "auth": {
     "path": "../security/auth.py:auth"
