@@ -2,7 +2,7 @@
 
 import React from "react";
 import { useParams } from "next/navigation";
-import ChatPage from "../chat_agent/page";
+import ChatAgentPage from "../chat_agent/page";
 import OpenDeepResearchAgentPage from "../open_deep_research_agent/page";
 
 export default function AgentPage() {
@@ -13,7 +13,7 @@ export default function AgentPage() {
     const renderAgentComponent = () => {
         switch (agent_name) {
             case "chat_agent":
-                return <ChatPage />;
+                return <ChatAgentPage />;
             case "open_deep_research_agent":
                 return <OpenDeepResearchAgentPage />;
             default:
@@ -30,5 +30,5 @@ export default function AgentPage() {
         }
     };
 
-    return <ChatPage />;
+    return renderAgentComponent();
 }

@@ -5,7 +5,7 @@ import React, { useEffect, useRef } from "react";
 import { Chat } from "../../components/Chat";
 import { ChatProvider } from "../../contexts/ChatContext";
 
-export default function ChatPage() {
+export default function ChatAgentPage() {
     const inputRef = useRef(null);
 
     useEffect(() => {
