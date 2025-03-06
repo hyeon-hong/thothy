@@ -1,8 +1,8 @@
 {
   "dependencies": [
-    "./agents/chat_agent/src/chat_graph",
-    "./agents/research_agent/src/research_graph",
-    "./agents/open_deep_research_agent/src/open_deep_research_graph",
+    "./agents/chat_agent",
+    "./agents/research_agent",
+    "./agents/open_deep_research_agent",
     "./agents/security"
   ],
   "graphs": {
