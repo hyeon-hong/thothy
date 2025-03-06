@@ -67,11 +67,14 @@ async def get_current_user(
 
 
 @auth.on
-async def add_owner(
+async def check_owner(
     ctx: Auth.types.AuthContext,
     value: dict,
 ):
     """Add the owner to the resource metadata and return filters."""
+
+    if isinstance(ctx.user, Auth.types.StudioUser):
+        return None
 
     filters = {"owner": ctx.user.identity}
     metadata = value.setdefault("metadata", {})

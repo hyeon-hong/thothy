@@ -6,7 +6,8 @@
     "chat_graph": "./src/chat_graph/graph.py:graph"
   },
   "auth": {
-    "path": "./src/security/auth.py:auth"
+    "path": "../security/auth.py:auth",
+    "disable_studio_auth": false
   },
   "env": "../../.env",
   "python_version": "3.12"
