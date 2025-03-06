@@ -1,3 +1,4 @@
 [submodule "agents/open_deep_research_agent"]
 	path = agents/open_deep_research_agent
 	url = https://github.com/realbits-lab/open_deep_research.git
+	branch = thothy/develop
