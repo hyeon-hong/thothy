@@ -1,6 +1,6 @@
 {
   "dependencies": [
-    "./src/research_graph"
+    "."
   ],
   "graphs": {
     "research_graph": "./src/research_graph/graph.py:graph"

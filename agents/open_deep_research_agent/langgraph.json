@@ -1,6 +1,6 @@
 {
   "dependencies": [
-    "./src/open_deep_research_graph"
+    "."
   ],
   "graphs": {
     "open_deep_research_graph": "./src/open_deep_research_graph/graph.py:graph"
