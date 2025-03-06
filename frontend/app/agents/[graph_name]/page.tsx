@@ -3,16 +3,19 @@
 import React from "react";
 import { useParams } from "next/navigation";
 import ChatPage from "../chat_agent/page";
+import OpenDeepResearchAgentPage from "../open_deep_research_agent/page";
 
 export default function AgentPage() {
     const params = useParams();
-    const graph_name = params?.graph_name as string || 'chat_graph';
+    const graph_name = (params?.graph_name as string) || "chat_graph";
 
     // Function to render the appropriate agent component
     const renderAgentComponent = () => {
         switch (graph_name) {
             case "chat_graph":
                 return <ChatPage />;
+            case "open_deep_research_agent":
+                return <OpenDeepResearchAgentPage />;
             default:
                 return (
                     <div className="container mx-auto px-4 py-8">
