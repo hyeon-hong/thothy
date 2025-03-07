@@ -50,6 +50,21 @@ export default function Home() {
         };
     }, []);
 
+    // Listen for custom viewchange event
+    useEffect(() => {
+        const handleViewChange = (event: CustomEvent) => {
+            if (event.detail && event.detail.view) {
+                setCurrentView(event.detail.view);
+            }
+        };
+
+        // TypeScript requires this cast for CustomEvent
+        window.addEventListener('viewchange', handleViewChange as EventListener);
+        return () => {
+            window.removeEventListener('viewchange', handleViewChange as EventListener);
+        };
+    }, []);
+
     // Update URL hash when view changes (without page reload)
     useEffect(() => {
         if (currentView === 'landing') {

@@ -50,6 +50,12 @@ export default function Header({ currentView }: HeaderProps) {
       window.dispatchEvent(new HashChangeEvent('hashchange'));
     } else {
       window.history.pushState(null, '', path);
+      // For the landing page (when no hash is provided), we need to 
+      // explicitly dispatch a custom event to signal view change to landing
+      const event = new CustomEvent('viewchange', { 
+        detail: { view: 'landing' } 
+      });
+      window.dispatchEvent(event);
     }
   };
 
@@ -71,6 +77,11 @@ export default function Header({ currentView }: HeaderProps) {
     signIn();
   };
 
+  // Handle Thothy logo click - navigate to landing page
+  const handleTothyClick = () => {
+    navigateTo('/');
+  };
+
   return (
     <AppBar position="static" color="transparent" elevation={0} sx={{ borderBottom: '2px solid rgba(0, 0, 0, 0.12)' }}>
       <Container maxWidth="lg">
@@ -78,7 +89,7 @@ export default function Header({ currentView }: HeaderProps) {
           <Typography
             variant="h5"
             component="div"
-            onClick={() => navigateTo('/')}
+            onClick={handleTothyClick}
             sx={{
               fontFamily: "'Roboto Mono', monospace",
               fontWeight: 700,
