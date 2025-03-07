@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { Card, Typography, Box, Button, CardContent, CircularProgress, IconButton } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
-import { navigateToAgent } from '../../utils/navigation';
+import { useRouter } from 'next/navigation';
 
 export default function AgentCardWithRemove({ agent, onRemove }) {
+    const router = useRouter();
     const [isRemoving, setIsRemoving] = useState(false);
 
     const handleRemove = async (e) => {
@@ -23,7 +24,7 @@ export default function AgentCardWithRemove({ agent, onRemove }) {
 
     const handleCardClick = () => {
         if (agent.graph_name) {
-            navigateToAgent(agent.graph_name);
+            router.push(`/agents/${agent.graph_name}`);
         } else {
             alert("This agent doesn't have a valid configuration");
         }

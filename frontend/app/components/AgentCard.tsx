@@ -17,7 +17,6 @@ import { styled } from "@mui/material/styles";
 import { useRouter } from "next/navigation";
 import { useAuth } from "../contexts/AuthContext";
 import { createClient } from "@/utils/supabase/client";
-import { navigateToAgent } from "../../utils/navigation";
 import AutoStoriesOutlinedIcon from '@mui/icons-material/AutoStoriesOutlined';
 import PsychologyAltOutlinedIcon from '@mui/icons-material/PsychologyAltOutlined';
 import BusinessOutlinedIcon from '@mui/icons-material/BusinessOutlined';
@@ -174,7 +173,11 @@ export default function AgentCard({
     };
 
     const handleCardClick = () => {
-        navigateToAgent(agent.graph_name);
+        if (agent.graph_name) {
+            router.push(`/agents/${agent.graph_name}`);
+        } else {
+            alert("This agent doesn't have a valid configuration");
+        }
     };
 
     return (

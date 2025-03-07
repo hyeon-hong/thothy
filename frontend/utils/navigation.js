@@ -1,37 +1,21 @@
 /**
- * Unified SPA navigation utility for the entire application
- * Uses hash-based navigation and custom events to maintain SPA behavior
+ * Unified navigation utility for the entire application
+ * Uses Next.js router for navigation with URL-based routes
  */
 
 /**
- * Navigate to a different view in the application without page reload
+ * Navigate to a different view in the application
  * @param {string} view - The view to navigate to ('landing', 'find', 'staff', etc.)
- * @param {string} [path='/'] - The base path to navigate to
- * @param {Object} [params={}] - Additional parameters to include in the navigation event
+ * @param {Object} [params={}] - Additional parameters to include in the navigation
  */
-export const navigateTo = (view, path = '/', params = {}) => {
-  // If view is landing, remove hash, otherwise set it
-  if (view === 'landing') {
-    window.history.pushState(null, '', path);
-  } else {
-    window.history.pushState(null, '', `${path}#${view}`);
-  }
-
-  // Create navigation events
-  // 1. Hash change event for components listening to hash changes
-  window.dispatchEvent(new HashChangeEvent('hashchange'));
+export const navigateTo = (view, params = {}) => {
+  // Get the router instance dynamically since we can't use hooks outside components
+  const path = getPathForView(view);
   
-  // 2. Custom view change event with additional data
-  const viewChangeEvent = new CustomEvent('viewchange', {
-    detail: { view, path, ...params }
-  });
-  window.dispatchEvent(viewChangeEvent);
-
-  // 3. Navigation event for path-based navigation
-  const navigationEvent = new CustomEvent('navigation', {
-    detail: { view, path, ...params }
-  });
-  window.dispatchEvent(navigationEvent);
+  // For client-side code, we can use the window.location approach
+  if (typeof window !== 'undefined') {
+    window.location.href = path;
+  }
 };
 
 /**
@@ -39,22 +23,30 @@ export const navigateTo = (view, path = '/', params = {}) => {
  * @param {string} graphName - The graph_name of the agent
  */
 export const navigateToAgent = (graphName) => {
-  // For agent pages, we need to actually change the URL
-  const path = `/agents/${graphName}`;
-  window.history.pushState(null, '', path);
-  
-  // Dispatch both navigation events
-  const viewChangeEvent = new CustomEvent('viewchange', {
-    detail: { view: 'agents', path, graphName }
-  });
-  window.dispatchEvent(viewChangeEvent);
-  
-  // This forces the application to render the new URL without a reload
-  const navigationEvent = new CustomEvent('navigation', {
-    detail: { view: 'agents', path, graphName, forcePathChange: true }
-  });
-  window.dispatchEvent(navigationEvent);
+  if (typeof window !== 'undefined') {
+    window.location.href = `/agents/${graphName}`;
+  }
 };
+
+/**
+ * Get the path for a specific view
+ * @param {string} view - The view name
+ * @returns {string} The path for the view
+ */
+function getPathForView(view) {
+  switch (view) {
+    case 'landing':
+      return '/';
+    case 'find':
+      return '/find';
+    case 'staff':
+      return '/staff';
+    case 'agents':
+      return '/agents';
+    default:
+      return '/';
+  }
+}
 
 /**
  * Listen for navigation events in components

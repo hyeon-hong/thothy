@@ -18,9 +18,11 @@ import {
   CircularProgress,
 } from '@mui/material';
 import { useAuth } from '../contexts/AuthContext';
+import { useRouter } from 'next/navigation';
 import AccountCircle from '@mui/icons-material/AccountCircle';
 import Logout from '@mui/icons-material/Logout';
 import { navigateTo } from '../../utils/navigation';
+import Link from 'next/link';
 
 interface HeaderProps {
   currentView: string;
@@ -28,6 +30,7 @@ interface HeaderProps {
 
 export default function Header({ currentView }: HeaderProps) {
   const { user, signIn, signOut, loading } = useAuth();
+  const router = useRouter();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
@@ -61,9 +64,17 @@ export default function Header({ currentView }: HeaderProps) {
     signIn();
   };
 
-  // Handle Thothy logo click - navigate to landing page
+  // Handle direct navigation
   const handleTothyClick = () => {
-    navigateTo('landing');
+    router.push('/');
+  };
+
+  const handleFindClick = () => {
+    router.push('/find');
+  };
+
+  const handleStaffClick = () => {
+    router.push('/staff');
   };
 
   return (
@@ -87,7 +98,7 @@ export default function Header({ currentView }: HeaderProps) {
           <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
             <Button
               color={currentView === 'find' ? 'primary' : 'inherit'}
-              onClick={() => navigateTo('find')}
+              onClick={handleFindClick}
               sx={{
                 ...navButtonStyle,
                 fontWeight: currentView === 'find' ? 700 : 400,
@@ -99,7 +110,7 @@ export default function Header({ currentView }: HeaderProps) {
             {user && (
               <Button
                 color={currentView === 'staff' ? 'primary' : 'inherit'}
-                onClick={() => navigateTo('staff')}
+                onClick={handleStaffClick}
                 sx={{
                   ...navButtonStyle,
                   fontWeight: currentView === 'staff' ? 700 : 400,
