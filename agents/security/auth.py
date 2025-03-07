@@ -128,7 +128,7 @@ async def auth_on(
     print(f"========== ctx.resource: {ctx.resource}")
     print(f"========== ctx.action: {ctx.action}")
     print(f"========== ctx.permissions: {ctx.permissions}")
-    print(f"========== ctx.user.permissions: {ctx.user.permissions}")
+    print(f"========== ctx.user: {ctx.user}")
     print(f"========== value: {value}")
 
     # Uncomment this only for testing LangGraph Studio
@@ -150,7 +150,7 @@ async def auth_on_threads_create(
     print(f"========== ctx.resource: {ctx.resource}")
     print(f"========== ctx.action: {ctx.action}")
     print(f"========== ctx.permissions: {ctx.permissions}")
-    print(f"========== ctx.user.permissions: {ctx.user.permissions}")
+    print(f"========== ctx.user: {ctx.user}")
     print(f"========== value: {value}")
 
     # Check permission
@@ -173,7 +173,7 @@ async def auth_on_threads_read(
     print(f"========== ctx.resource: {ctx.resource}")
     print(f"========== ctx.action: {ctx.action}")
     print(f"========== ctx.permissions: {ctx.permissions}")
-    print(f"========== ctx.user.permissions: {ctx.user.permissions}")
+    print(f"========== ctx.user: {ctx.user}")
     print(f"========== value: {value}")
 
     # if "threads:read" not in ctx.permissions:
@@ -196,7 +196,7 @@ async def auth_on_threads_update(
     print(f"========== ctx.resource: {ctx.resource}")
     print(f"========== ctx.action: {ctx.action}")
     print(f"========== ctx.permissions: {ctx.permissions}")
-    print(f"========== ctx.user.permissions: {ctx.user.permissions}")
+    print(f"========== ctx.user: {ctx.user}")
     print(f"========== value: {value}")
 
     # Check permission
@@ -220,7 +220,7 @@ async def auth_on_threads_delete(
     print(f"========== ctx.resource: {ctx.resource}")
     print(f"========== ctx.action: {ctx.action}")
     print(f"========== ctx.permissions: {ctx.permissions}")
-    print(f"========== ctx.user.permissions: {ctx.user.permissions}")
+    print(f"========== ctx.user: {ctx.user}")
     print(f"========== value: {value}")
 
     # Check permission
@@ -244,7 +244,7 @@ async def auth_on_threads_search(
     print(f"========== ctx.resource: {ctx.resource}")
     print(f"========== ctx.action: {ctx.action}")
     print(f"========== ctx.permissions: {ctx.permissions}")
-    print(f"========== ctx.user.permissions: {ctx.user.permissions}")
+    print(f"========== ctx.user: {ctx.user}")
     print(f"========== value: {value}")
 
     # if "threads:search" not in ctx.permissions:
@@ -266,7 +266,7 @@ async def auth_on_threads_create_run(
     print(f"========== ctx.resource: {ctx.resource}")
     print(f"========== ctx.action: {ctx.action}")
     print(f"========== ctx.permissions: {ctx.permissions}")
-    print(f"========== ctx.user.permissions: {ctx.user.permissions}")
+    print(f"========== ctx.user: {ctx.user}")
     print(f"========== value: {value}")
 
     # Check permission
@@ -289,7 +289,7 @@ async def auth_on_assistants_create(
     print(f"========== ctx.resource: {ctx.resource}")
     print(f"========== ctx.action: {ctx.action}")
     print(f"========== ctx.permissions: {ctx.permissions}")
-    print(f"========== ctx.user.permissions: {ctx.user.permissions}")
+    print(f"========== ctx.user: {ctx.user}")
     print(f"========== value: {value}")
 
     # if "assistants:create" not in ctx.permissions:
@@ -312,7 +312,7 @@ async def auth_on_assistants_read(
     print(f"========== ctx.resource: {ctx.resource}")
     print(f"========== ctx.action: {ctx.action}")
     print(f"========== ctx.permissions: {ctx.permissions}")
-    print(f"========== ctx.user.permissions: {ctx.user.permissions}")
+    print(f"========== ctx.user: {ctx.user}")
     print(f"========== value: {value}")
 
     # if "assistants:read" not in ctx.permissions:
@@ -334,7 +334,7 @@ async def auth_on_assistants_update(
     print(f"========== ctx.resource: {ctx.resource}")
     print(f"========== ctx.action: {ctx.action}")
     print(f"========== ctx.permissions: {ctx.permissions}")
-    print(f"========== ctx.user.permissions: {ctx.user.permissions}")
+    print(f"========== ctx.user: {ctx.user}")
     print(f"========== value: {value}")
 
     # if "assistants:update" not in ctx.permissions:
@@ -356,7 +356,7 @@ async def auth_on_assistants_delete(
     print(f"========== ctx.resource: {ctx.resource}")
     print(f"========== ctx.action: {ctx.action}")
     print(f"========== ctx.permissions: {ctx.permissions}")
-    print(f"========== ctx.user.permissions: {ctx.user.permissions}")
+    print(f"========== ctx.user: {ctx.user}")
     print(f"========== value: {value}")
 
     # if "assistants:delete" not in ctx.permissions:
@@ -378,7 +378,7 @@ async def auth_on_assistants_search(
     print(f"========== ctx.resource: {ctx.resource}")
     print(f"========== ctx.action: {ctx.action}")
     print(f"========== ctx.permissions: {ctx.permissions}")
-    print(f"========== ctx.user.permissions: {ctx.user.permissions}")
+    print(f"========== ctx.user: {ctx.user}")
     print(f"========== value: {value}")
 
     # if "assistants:search" not in ctx.permissions:

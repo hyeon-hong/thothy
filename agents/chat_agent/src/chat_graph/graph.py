@@ -123,7 +123,7 @@ memory_manager = create_memory_store_manager(
 )
 
 # Wrap memory_manager to handle deferred background processing
-executor = ReflectionExecutor(memory_manager, store=store)
+# executor = ReflectionExecutor(memory_manager, store=store)
 
 
 async def chatbot(
@@ -161,12 +161,12 @@ async def chatbot(
     )
 
     # Submit memory processing task
-    to_process = {
-        "messages": [
-            {"role": "user", "content": state["messages"][-1].content}
-        ] + [response]
-    }
-    executor.submit(to_process, after_seconds=0.5, config=config)
+    # to_process = {
+    #     "messages": [
+    #         {"role": "user", "content": state["messages"][-1].content}
+    #     ] + [response]
+    # }
+    # executor.submit(to_process, after_seconds=0.5, config=config)
 
     return {"messages": response}
 
