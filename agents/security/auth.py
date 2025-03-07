@@ -253,7 +253,6 @@ async def auth_on_threads_search(
     #         detail="User lacks the required permissions: threads:search."
     #     )
 
-    # return value.get("metadata", {}).get("owner") == ctx.user.identity
     return {"owner": ctx.user.identity}
 
 
@@ -277,7 +276,7 @@ async def auth_on_threads_create_run(
     #         detail="User lacks the required permissions: threads:create_run."
     #     )
 
-    return value.get("metadata", {}).get("owner") == ctx.user.identity
+    return {"owner": ctx.user.identity}
 
 
 @auth.on.assistants.create
