@@ -8,11 +8,25 @@ import {
     Typography,
     Button,
     Box,
+    Paper,
+    Chip,
+    Tooltip,
+    Avatar,
 } from "@mui/material";
 import { styled } from "@mui/material/styles";
 import { useRouter } from "next/navigation";
 import { useAuth } from "../contexts/AuthContext";
 import { createClient } from "@/utils/supabase/client";
+import AutoStoriesOutlinedIcon from '@mui/icons-material/AutoStoriesOutlined';
+import PsychologyAltOutlinedIcon from '@mui/icons-material/PsychologyAltOutlined';
+import BusinessOutlinedIcon from '@mui/icons-material/BusinessOutlined';
+import TravelExploreIcon from '@mui/icons-material/TravelExplore';
+import ScienceOutlinedIcon from '@mui/icons-material/ScienceOutlined';
+import CodeIcon from '@mui/icons-material/Code';
+import SentimentSatisfiedAltIcon from '@mui/icons-material/SentimentSatisfiedAlt';
+import SchoolIcon from '@mui/icons-material/School';
+import VideoCameraBackIcon from '@mui/icons-material/VideoCameraBack';
+import RssFeedIcon from '@mui/icons-material/RssFeed';
 
 interface Agent {
     id: string;
@@ -158,18 +172,12 @@ export default function AgentCard({
         }
     };
 
-    const handleRun = () => {
-        if (!user) {
-            alert("Please login to run this agent");
-            return;
+    const handleCardClick = () => {
+        if (agent.graph_name) {
+            router.push(`/agents/${agent.graph_name}`);
+        } else {
+            alert("This agent doesn't have a valid configuration");
         }
-
-        if (!agent.graph_name) {
-            alert("This agent does not have a valid graph name");
-            return;
-        }
-
-        router.push(`/agents/${agent.graph_name}`);
     };
 
     return (
@@ -227,7 +235,7 @@ export default function AgentCard({
                         <RunButton
                             variant="contained"
                             fullWidth
-                            onClick={handleRun}
+                            onClick={handleCardClick}
                         >
                             Run
                         </RunButton>
@@ -246,7 +254,7 @@ export default function AgentCard({
                         <RunButton
                             variant="contained"
                             fullWidth
-                            onClick={handleRun}
+                            onClick={handleCardClick}
                         >
                             Run
                         </RunButton>

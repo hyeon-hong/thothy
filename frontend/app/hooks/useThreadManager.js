@@ -2,17 +2,19 @@ import { useState, useCallback, useEffect, useRef } from "react";
 import debounce from "lodash/debounce";
 import { useAuth } from "../contexts/AuthContext";
 import { v4 as uuidv4 } from "uuid";
+import { logDeep } from "../utils/debugUtils";
+import { createClient } from "@/utils/supabase/client";
 
-const THREAD_ID_KEY = "langgraph_thread_id";
+const THREAD_ID_KEY = "latest_thread";
 const MAX_RETRIES = 3;
 const RETRY_DELAY = 2000; // 2 seconds
 
-export function useThreadManager(userId, client) {
+export function useThreadManager(userId, client, graph_name) {
     const [threads, setThreads] = useState([]);
     const [currentThreadId, setCurrentThreadId] = useState(null);
     const [isLoading, setIsLoading] = useState(false);
     const [retryCount, setRetryCount] = useState(0);
-    const { refreshSession } = useAuth();
+    const { session } = useAuth();
     const [shouldFetchMessages, setShouldFetchMessages] = useState(false);
     const [initialLoadComplete, setInitialLoadComplete] = useState(false);
 
@@ -21,29 +23,32 @@ export function useThreadManager(userId, client) {
 
     // Helper function to validate client session
     const validateClientSession = useCallback(async () => {
-        if (!client) return false;
+        if (!client || !userId) return false;
 
         try {
             // Try a simple operation to test client validity
             const response = await client.threads.search({ limit: 1 });
-            console.log("response", response);
             return true;
         } catch (error) {
             if (error.status === 401 || error.status === 403) {
                 console.log("Client session invalid, attempting to refresh...");
-                const newSession = await refreshSession();
-                if (newSession) {
+
+                // Use Supabase's built-in session refresh
+                const supabase = createClient();
+                const { data } = await supabase.auth.getSession();
+
+                if (data?.session?.access_token) {
                     // Update client headers with new session
                     client.defaultHeaders = {
                         ...client.defaultHeaders,
-                        Authorization: `Bearer ${newSession.access_token}`,
+                        Authorization: `Bearer ${data.session.access_token}`,
                     };
                     return true;
                 }
             }
             return false;
         }
-    }, [client, refreshSession]);
+    }, [client, userId]);
 
     // Enhanced withRetry to include session validation
     const withRetry = useCallback(
@@ -86,9 +91,23 @@ export function useThreadManager(userId, client) {
             setIsLoading(true);
             try {
                 await validateClientSession();
-                const userThreads = await client.threads.search({
+
+                // Search criteria including user ID and assistant_id (graph_name)
+                const searchCriteria = {
                     limit: 100,
-                });
+                    metadata: {
+                        assistant_id: graph_name,
+                        user_id: userId,
+                    },
+                };
+
+                // Add assistant_id filter if graph_name is provided
+                if (graph_name) {
+                    searchCriteria.assistant_id = graph_name;
+                }
+
+                const userThreads = await client.threads.search(searchCriteria);
+
                 console.log("userThreads", userThreads);
                 // Sort threads by creation time, newest first
                 const sortedThreads = userThreads
@@ -149,6 +168,7 @@ export function useThreadManager(userId, client) {
             setInitialLoadComplete,
             setRetryCount,
             setIsLoading,
+            graph_name,
         ]
     );
 
@@ -206,7 +226,7 @@ export function useThreadManager(userId, client) {
 
     // Load threads on mount and when userId or client changes
     useEffect(() => {
-        if (client) {
+        if (client && userId) {
             debouncedFetchThreads(true); // Enable retry on initial load
             return () => debouncedFetchThreads.cancel();
         }
@@ -216,13 +236,16 @@ export function useThreadManager(userId, client) {
         async (threadId) => {
             if (
                 !client ||
+                !userId ||
                 !threadId ||
                 typeof threadId !== "string" ||
                 !threadId.match(
                     /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
                 )
             ) {
-                console.error("Invalid thread ID format or missing client");
+                console.error(
+                    "Invalid thread ID format or missing client or userId"
+                );
                 return null;
             }
 
@@ -236,12 +259,12 @@ export function useThreadManager(userId, client) {
                 return null;
             }
         },
-        [client, withRetry]
+        [client, withRetry, userId]
     );
 
     const createNewThread = useCallback(async () => {
         console.log("Creating new thread");
-        if (!client) return null;
+        if (!client || !userId) return null;
 
         try {
             const thread = await withRetry(
@@ -251,6 +274,7 @@ export function useThreadManager(userId, client) {
                             user_id: userId,
                             created_at: new Date().toISOString(),
                             title: "New Chat",
+                            assistant_id: graph_name,
                         },
                     }),
                 "Create thread"
@@ -271,11 +295,11 @@ export function useThreadManager(userId, client) {
             console.error("Error creating thread:", error);
             return null;
         }
-    }, [client, userId, withRetry, setThreads]);
+    }, [client, userId, withRetry, setThreads, graph_name]);
 
     // Initialize or restore current thread with retry logic
     useEffect(() => {
-        if (!client) return;
+        if (!client || !userId) return;
 
         const initializeThread = async () => {
             try {
@@ -288,6 +312,7 @@ export function useThreadManager(userId, client) {
                 }
 
                 const storedThreadId = localStorage.getItem(THREAD_ID_KEY);
+                console.log("storedThreadId", storedThreadId);
                 if (storedThreadId) {
                     try {
                         const thread = await getThreadById(storedThreadId);
@@ -305,6 +330,9 @@ export function useThreadManager(userId, client) {
                             return;
                         }
                         console.error("Error restoring thread:", error);
+
+                        // If we get an error, remove the thread ID from local storage
+                        localStorage.removeItem(THREAD_ID_KEY);
                     }
                 }
 
@@ -320,6 +348,7 @@ export function useThreadManager(userId, client) {
                 const newThread = await createNewThread();
                 if (newThread) {
                     setCurrentThreadId(newThread.thread_id);
+                    localStorage.setItem(THREAD_ID_KEY, newThread.thread_id);
                     setShouldFetchMessages(true); // Trigger message fetch for new thread
                 }
             } catch (error) {
@@ -343,6 +372,7 @@ export function useThreadManager(userId, client) {
         initializeThread();
     }, [
         client,
+        userId,
         currentThreadId,
         threads,
         retryCount,
@@ -357,7 +387,7 @@ export function useThreadManager(userId, client) {
         console.log("Deleting thread:", threadId);
         console.log("currentThreadId", currentThreadId);
         console.log("client", client);
-        if (!client) return;
+        if (!client || !userId) return null;
 
         // Check if client has valid access token
         const hasValidToken =
@@ -368,16 +398,20 @@ export function useThreadManager(userId, client) {
             console.log(
                 "No valid access token found, attempting to refresh session..."
             );
-            const newSession = await refreshSession();
-            if (newSession?.access_token) {
+
+            // Use Supabase's built-in session refresh
+            const supabase = createClient();
+            const { data } = await supabase.auth.getSession();
+
+            if (data?.session?.access_token) {
                 client.defaultHeaders = {
                     ...client.defaultHeaders,
-                    Authorization: `Bearer ${newSession.access_token}`,
+                    Authorization: `Bearer ${data.session.access_token}`,
                 };
                 console.log("Session refreshed successfully");
             } else {
                 console.error("Failed to refresh session");
-                return;
+                return null;
             }
         }
 
@@ -426,7 +460,7 @@ export function useThreadManager(userId, client) {
     };
 
     const updateThreadMetadata = async (threadId, metadata) => {
-        if (!client) return;
+        if (!client || !userId) return null;
 
         try {
             await withRetry(

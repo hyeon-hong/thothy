@@ -15,23 +15,24 @@ import {
   MenuItem,
   IconButton,
   Divider,
+  CircularProgress,
 } from '@mui/material';
 import { useAuth } from '../contexts/AuthContext';
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import AccountCircle from '@mui/icons-material/AccountCircle';
 import Logout from '@mui/icons-material/Logout';
+import { navigateTo } from '../../utils/navigation';
+import Link from 'next/link';
 
 interface HeaderProps {
   currentView: string;
-  onViewChange: (view: string) => void;
 }
 
-export default function Header({ currentView, onViewChange }: HeaderProps) {
-  const { user, signIn, signOut } = useAuth();
+export default function Header({ currentView }: HeaderProps) {
+  const { user, signIn, signOut, loading } = useAuth();
+  const router = useRouter();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
-  const router = useRouter();
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
 
   // Get user's display name and avatar
@@ -43,10 +44,6 @@ export default function Header({ currentView, onViewChange }: HeaderProps) {
     fontSize: '1rem',
     minWidth: 'auto',
     px: 2,
-  };
-
-  const handleTothyClick = () => {
-    onViewChange('landing');
   };
 
   const handleProfileMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
@@ -65,6 +62,19 @@ export default function Header({ currentView, onViewChange }: HeaderProps) {
   // Get current path for redirect after login
   const handleSignIn = () => {
     signIn();
+  };
+
+  // Handle direct navigation
+  const handleTothyClick = () => {
+    router.push('/');
+  };
+
+  const handleFindClick = () => {
+    router.push('/find');
+  };
+
+  const handleStaffClick = () => {
+    router.push('/staff');
   };
 
   return (
@@ -87,26 +97,26 @@ export default function Header({ currentView, onViewChange }: HeaderProps) {
 
           <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
             <Button
-              color={currentView === 'home' ? 'primary' : 'inherit'}
-              onClick={() => onViewChange('home')}
+              color={currentView === 'find' ? 'primary' : 'inherit'}
+              onClick={handleFindClick}
               sx={{
                 ...navButtonStyle,
-                fontWeight: currentView === 'home' ? 700 : 400,
+                fontWeight: currentView === 'find' ? 700 : 400,
               }}
             >
-              Explore
+              Find
             </Button>
 
             {user && (
               <Button
-                color={currentView === 'myAgents' ? 'primary' : 'inherit'}
-                onClick={() => onViewChange('myAgents')}
+                color={currentView === 'staff' ? 'primary' : 'inherit'}
+                onClick={handleStaffClick}
                 sx={{
                   ...navButtonStyle,
-                  fontWeight: currentView === 'myAgents' ? 700 : 400,
+                  fontWeight: currentView === 'staff' ? 700 : 400,
                 }}
               >
-                Playground
+                Staff
               </Button>
             )}
 
@@ -164,6 +174,13 @@ export default function Header({ currentView, onViewChange }: HeaderProps) {
                   </MenuItem>
                 </Menu>
               </>
+            ) : loading ? (
+              <Box sx={{ display: 'flex', alignItems: 'center', ml: 2 }}>
+                <CircularProgress size={24} color="primary" sx={{ mr: 1 }} />
+                <Typography variant="body2" color="text.secondary">
+                  Checking login...
+                </Typography>
+              </Box>
             ) : (
               <Button
                 variant="contained"

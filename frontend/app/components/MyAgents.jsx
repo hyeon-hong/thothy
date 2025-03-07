@@ -99,11 +99,11 @@ export default function MyAgents() {
                         letterSpacing: "-0.02em",
                     }}
                 >
-                    Playground
+                    Your Staff
                 </Typography>
                 <Box sx={{ textAlign: "center", mt: 4 }}>
                     <Typography variant="h6" color="text.secondary">
-                        You haven&apos;t selected any agents yet.
+                        You haven&apos;t selected any staff yet.
                     </Typography>
                 </Box>
             </Container>
@@ -123,7 +123,7 @@ export default function MyAgents() {
                     letterSpacing: "-0.02em",
                 }}
             >
-                Playground
+                Your Staff
             </Typography>
             <Grid container spacing={4} sx={{ mt: 2 }}>
                 {myAgents.map((agent) => (
