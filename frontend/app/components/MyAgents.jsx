@@ -103,7 +103,7 @@ export default function MyAgents() {
                 </Typography>
                 <Box sx={{ textAlign: "center", mt: 4 }}>
                     <Typography variant="h6" color="text.secondary">
-                        You haven&apos;t selected any agents yet.
+                        You haven&apos;t selected any staff yet.
                     </Typography>
                 </Box>
             </Container>
