@@ -30,7 +30,7 @@ export function ChatProvider({ children, graph_name }) {
         deleteThread,
         setCurrentThreadId,
         setThreads,
-    } = useThreadManager(session?.user?.id, client);
+    } = useThreadManager(session?.user?.id, client, assistantId);
 
     const [messages, setMessages] = useState([]);
     const [isLoading, setIsLoading] = useState(false);

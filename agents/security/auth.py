@@ -137,7 +137,6 @@ async def auth_on(
     #     return True
 
     # Reject all requests by default
-    print(f"========== Request to {ctx.path} by {ctx.user.identity}")
     return False
 
 
@@ -245,8 +244,6 @@ async def auth_on_threads_search(
     print(f"========== ctx.resource: {ctx.resource}")
     print(f"========== ctx.action: {ctx.action}")
     print(f"========== ctx.permissions: {ctx.permissions}")
-    print("========== ctx.user")
-    print_all_attributes(ctx.user._user)
     print(f"========== value: {value}")
 
     # if "threads:search" not in ctx.permissions:
