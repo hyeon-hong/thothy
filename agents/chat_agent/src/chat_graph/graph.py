@@ -1,6 +1,7 @@
 """Simple chat agent using LangGraph."""
 
 import os
+import logging
 from dotenv import load_dotenv
 from pydantic import BaseModel
 from psycopg import Connection, OperationalError
@@ -13,8 +14,16 @@ from langgraph.graph import MessagesState, StateGraph, START, END
 from langgraph.store.base import BaseStore
 from langgraph.store.postgres import PostgresStore
 
+# We're using create_memory_store_manager but not ReflectionExecutor
 from langmem import ReflectionExecutor, create_memory_store_manager
 from chat_graph.configuration import ChatConfigurable
+
+# Configure logging to hide INFO messages
+logging.basicConfig(level=logging.WARNING)
+# Set specific loggers for langgraph and related libraries to WARNING level
+logging.getLogger("langgraph").setLevel(logging.WARNING)
+logging.getLogger("langchain").setLevel(logging.WARNING)
+logging.getLogger("langmem").setLevel(logging.WARNING)
 
 
 class ReconnectingPostgresStore:

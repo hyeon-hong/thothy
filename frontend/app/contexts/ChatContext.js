@@ -42,16 +42,22 @@ export function ChatProvider({ children }) {
   };
 
   const sendMessage = async (threadId, message) => {
-    if (!threadId || !message) {
-      return;
-    }
+    console.log("sendMessage");
+    
+    if (!threadId || !message) return;
+    
+    const { text, role } = message;
+    
+    // Add user message immediately
+    setMessages(prev => [...prev, { role: "user", content: text }]);
+    
+    // Add initial assistant placeholder (this will be our only assistant message)
+    setMessages(prev => [...prev, { role: "assistant", content: "...", isPartial: true }]);
     
     setIsLoading(true);
     setError(null);
     
     try {
-      const { text, role } = message;
-      
       // Prepare headers
       const headers = {
         "Content-Type": "application/json",
@@ -61,31 +67,116 @@ export function ChatProvider({ children }) {
         headers["Authorization"] = `Bearer ${session.access_token}`;
       }
       
-      // Send the message
-      const response = await fetch(`${DEPLOYMENT_URL}/api/chat`, {
+      // Make streaming request
+      const response = await fetch(`${DEPLOYMENT_URL}/threads/${threadId}/runs/stream`, {
         method: "POST",
         headers,
         body: JSON.stringify({
-          threadId,
-          message: {
-            content: text,
-            role: role || "user",
-          },
+          assistant_id: ASSISTANT_ID,
+          input: { messages: [{ role: role || "user", content: text }] },
+          stream_mode: ["values"]
         }),
       });
       
-      if (!response.ok) {
-        throw new Error(`Error: ${response.status} ${await response.text()}`);
+      if (!response.ok) throw new Error(`Error: ${response.status}`);
+      
+      // Process the stream
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      
+      let latestMessageId = null; // Track the latest message ID to prevent duplicates
+      
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        
+        // Decode chunk
+        const chunk = decoder.decode(value, { stream: true });
+        
+        // Look for AI messages in values events
+        if (chunk.includes('event: values') && chunk.includes('data:')) {
+          try {
+            // Extract data
+            const dataMatch = chunk.match(/data: ({.*})/);
+            if (dataMatch) {
+              const data = JSON.parse(dataMatch[1]);
+              
+              // Find AI message - look for the latest one
+              if (data.messages && Array.isArray(data.messages)) {
+                // Filter for AI messages with content
+                const aiMessages = data.messages.filter(msg => 
+                  msg.type === 'ai' && msg.content && typeof msg.content === 'string'
+                );
+                
+                // If we have AI messages, take the latest one
+                if (aiMessages.length > 0) {
+                  const latestAI = aiMessages[aiMessages.length - 1];
+                  
+                  // Check if this is a new message (by ID if available or content)
+                  const messageId = latestAI.id || latestAI.content;
+                  if (messageId !== latestMessageId) {
+                    latestMessageId = messageId;
+                    
+                    // Only update the last message in our messages array
+                    setMessages(prev => {
+                      const newMessages = [...prev];
+                      const lastIndex = newMessages.length - 1;
+                      
+                      if (lastIndex >= 0 && newMessages[lastIndex].isPartial) {
+                        newMessages[lastIndex] = {
+                          role: "assistant", 
+                          content: latestAI.content,
+                          isPartial: true
+                        };
+                      }
+                      
+                      return newMessages;
+                    });
+                  }
+                }
+              }
+            }
+          } catch (e) {
+            console.error("Error parsing chunk:", e);
+          }
+        }
       }
       
-      // Handle streaming response
-      const streamResponse = await response.json();
+      // Finalize the message - make sure it's not partial anymore
+      setMessages(prev => {
+        const newMessages = [...prev];
+        const lastIndex = newMessages.length - 1;
+        
+        if (lastIndex >= 0 && newMessages[lastIndex].isPartial) {
+          newMessages[lastIndex] = {
+            ...newMessages[lastIndex],
+            isPartial: false
+          };
+        }
+        
+        return newMessages;
+      });
       
-      return streamResponse;
     } catch (err) {
+      console.error("Error:", err.message);
       setError(err.message);
-      console.error("Error sending message:", err);
-      return null;
+      
+      // Update placeholder with error
+      setMessages(prev => {
+        const newMessages = [...prev];
+        const lastIdx = newMessages.length - 1;
+        
+        if (lastIdx >= 0 && newMessages[lastIdx].isPartial) {
+          newMessages[lastIdx] = {
+            role: "assistant",
+            content: `Error: ${err.message}`,
+            isError: true,
+            isPartial: false
+          };
+        }
+        
+        return newMessages;
+      });
     } finally {
       setIsLoading(false);
     }

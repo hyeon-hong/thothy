@@ -10,12 +10,11 @@ const INPUT_HEIGHT = 88; // Input area height including padding
 
 export function Chat({ inputRef }) {
   const [input, setInput] = useState("");
-  const { messages, sendMessage, isLoading } = useChat();
+  const { messages, sendMessage, isLoading, currentThreadId } = useChat();
   const messagesEndRef = useRef(null);
   const defaultInputRef = useRef(null);
   const actualInputRef = inputRef || defaultInputRef;
   const [isSpeaking, setIsSpeaking] = useState(false);
-  const [threadMessages, setThreadMessages] = useState([]);
   const [currentWordIndex, setCurrentWordIndex] = useState(-1);
   const [currentMessageIndex, setCurrentMessageIndex] = useState(-1);
   const speechQueue = useRef([]);
@@ -24,31 +23,13 @@ export function Chat({ inputRef }) {
   const voicesLoaded = useRef(false);
   const OVERLAP_TIME = 100;
 
-  // Add effect to handle thread messages loaded event
+  // Use messages directly from context
+  const allMessages = messages;
+
+  // Scroll to bottom whenever messages change
   useEffect(() => {
-    const handleThreadMessagesLoaded = (event) => {
-      const { messages: loadedMessages } = event.detail;
-      if (Array.isArray(loadedMessages)) {
-        // Convert the messages to the expected format
-        const formattedMessages = loadedMessages.map(msg => ({
-          role: msg.role,
-          content: msg.content[0]?.text?.value || msg.content
-        }));
-        setThreadMessages(formattedMessages);
-      }
-    };
-
-    // Add event listener
-    window.addEventListener('threadMessagesLoaded', handleThreadMessagesLoaded);
-
-    // Cleanup
-    return () => {
-      window.removeEventListener('threadMessagesLoaded', handleThreadMessagesLoaded);
-    };
-  }, []);
-
-  // Combine thread messages with new messages
-  const allMessages = [...threadMessages, ...messages];
+    scrollToBottom();
+  }, [messages]);
 
   // Split text into smaller, more manageable chunks
   const splitTextIntoChunks = (text) => {
@@ -299,10 +280,6 @@ export function Chat({ inputRef }) {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
-  useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
-
   // Focus input on component mount
   useEffect(() => {
     actualInputRef.current?.focus();
@@ -312,6 +289,12 @@ export function Chat({ inputRef }) {
     e.preventDefault();
     if (!input.trim()) return;
 
+    // Save input before clearing it
+    const messageText = input;
+    
+    // Clear input immediately for better UX
+    setInput("");
+
     try {
       // Stop any ongoing speech when sending a new message
       if (window.speechSynthesis) {
@@ -319,9 +302,15 @@ export function Chat({ inputRef }) {
         speechQueue.current = [];
         currentUtterance.current = null;
       }
-      await sendMessage(input);
-      setInput("");
+      
+      // Call sendMessage with the input
+      sendMessage(currentThreadId, {
+        text: messageText,
+        role: "user"
+      });
+      
     } finally {
+      // Focus the input field again
       setTimeout(() => {
         actualInputRef.current?.focus();
       }, 0);
@@ -365,16 +354,25 @@ export function Chat({ inputRef }) {
                   className={`max-w-[80%] p-4 rounded-lg shadow-sm ${
                     message.role === "user"
                       ? "bg-blue-500 text-white ml-4"
-                      : "bg-white text-gray-800 mr-4"
+                      : message.isError 
+                        ? "bg-red-50 text-red-700 border border-red-300 mr-4"
+                        : "bg-white text-gray-800 mr-4"
                   } ${
-                    isLoading &&
-                    index === allMessages.length - 1 &&
-                    message.role === "assistant"
-                      ? "animate-pulse"
+                    (message.isPartial || (isLoading && index === allMessages.length - 1 && message.role === "assistant"))
+                      ? "border-l-4 border-green-500"
                       : ""
                   }`}
                 >
-                  {renderMessageContent(message.content, index === currentMessageIndex)}
+                  {message.content ? renderMessageContent(message.content, index === currentMessageIndex) : ""}
+                  
+                  {/* Typing indicator for streaming messages */}
+                  {message.isPartial && (
+                    <div className="flex mt-2 space-x-1">
+                      <div className="w-2 h-2 rounded-full bg-gray-400 animate-bounce" style={{ animationDelay: "0ms" }}></div>
+                      <div className="w-2 h-2 rounded-full bg-gray-400 animate-bounce" style={{ animationDelay: "150ms" }}></div>
+                      <div className="w-2 h-2 rounded-full bg-gray-400 animate-bounce" style={{ animationDelay: "300ms" }}></div>
+                    </div>
+                  )}
                 </div>
               </div>
             ))}
