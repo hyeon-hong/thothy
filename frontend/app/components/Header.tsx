@@ -18,9 +18,9 @@ import {
   CircularProgress,
 } from '@mui/material';
 import { useAuth } from '../contexts/AuthContext';
-import { useRouter } from 'next/navigation';
 import AccountCircle from '@mui/icons-material/AccountCircle';
 import Logout from '@mui/icons-material/Logout';
+import { navigateTo } from '../../utils/navigation';
 
 interface HeaderProps {
   currentView: string;
@@ -41,23 +41,6 @@ export default function Header({ currentView }: HeaderProps) {
     fontSize: '1rem',
     minWidth: 'auto',
     px: 2,
-  };
-  
-  // Navigation without page reload
-  const navigateTo = (path: string, hash?: string) => {
-    if (hash) {
-      window.history.pushState(null, '', `${path}#${hash}`);
-      // Dispatch a custom event so other components can react
-      window.dispatchEvent(new HashChangeEvent('hashchange'));
-    } else {
-      window.history.pushState(null, '', path);
-      // For the landing page (when no hash is provided), we need to 
-      // explicitly dispatch a custom event to signal view change to landing
-      const event = new CustomEvent('viewchange', { 
-        detail: { view: 'landing' } 
-      });
-      window.dispatchEvent(event);
-    }
   };
 
   const handleProfileMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
@@ -80,7 +63,7 @@ export default function Header({ currentView }: HeaderProps) {
 
   // Handle Thothy logo click - navigate to landing page
   const handleTothyClick = () => {
-    navigateTo('/');
+    navigateTo('landing');
   };
 
   return (
@@ -104,7 +87,7 @@ export default function Header({ currentView }: HeaderProps) {
           <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
             <Button
               color={currentView === 'find' ? 'primary' : 'inherit'}
-              onClick={() => navigateTo('/', 'find')}
+              onClick={() => navigateTo('find')}
               sx={{
                 ...navButtonStyle,
                 fontWeight: currentView === 'find' ? 700 : 400,
@@ -116,7 +99,7 @@ export default function Header({ currentView }: HeaderProps) {
             {user && (
               <Button
                 color={currentView === 'staff' ? 'primary' : 'inherit'}
-                onClick={() => navigateTo('/', 'staff')}
+                onClick={() => navigateTo('staff')}
                 sx={{
                   ...navButtonStyle,
                   fontWeight: currentView === 'staff' ? 700 : 400,

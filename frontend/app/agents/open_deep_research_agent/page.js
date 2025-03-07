@@ -14,15 +14,22 @@ export default function OpenDeepResearchAgentPage() {
 
         const handleKeyPress = (e) => {
             // Check if the pressed key is "/" and no input/textarea is focused
+            // Also don't handle key events if they occurred on navigation elements (buttons, links)
+            const isNavElement = e.target.closest('button, a, [role="button"]');
+            if (isNavElement) return;
+            
             if (e.key === "/" && !["INPUT", "TEXTAREA"].includes(document.activeElement.tagName)) {
                 e.preventDefault(); // Prevent "/" from being typed
                 inputRef.current?.focus();
             }
         };
 
-        // Focus input when window gains focus
+        // Focus input when window gains focus but check if active element is not a navigation element
         const handleWindowFocus = () => {
-            inputRef.current?.focus();
+            const isNavElement = document.activeElement?.closest('button, a, [role="button"]');
+            if (!isNavElement) {
+                inputRef.current?.focus();
+            }
         };
 
         document.addEventListener("keydown", handleKeyPress);

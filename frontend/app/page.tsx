@@ -7,6 +7,7 @@ import { useAuth } from "./contexts/AuthContext";
 import Header from "./components/Header";
 import AgentHub from "./components/AgentHub";
 import MyAgents from "./components/MyAgents";
+import { navigateTo } from "../utils/navigation";
 
 export default function Home() {
     const pathname = usePathname();
@@ -50,7 +51,7 @@ export default function Home() {
         };
     }, []);
 
-    // Listen for custom viewchange event
+    // Listen for custom viewchange events
     useEffect(() => {
         const handleViewChange = (event: CustomEvent) => {
             if (event.detail && event.detail.view) {
@@ -62,6 +63,21 @@ export default function Home() {
         window.addEventListener('viewchange', handleViewChange as EventListener);
         return () => {
             window.removeEventListener('viewchange', handleViewChange as EventListener);
+        };
+    }, []);
+
+    // Listen for navigation events from agent layouts
+    useEffect(() => {
+        const handleNavigation = (event: CustomEvent) => {
+            if (event.detail && event.detail.view) {
+                setCurrentView(event.detail.view);
+            }
+        };
+
+        // TypeScript requires this cast for CustomEvent
+        window.addEventListener('navigation', handleNavigation as EventListener);
+        return () => {
+            window.removeEventListener('navigation', handleNavigation as EventListener);
         };
     }, []);
 
@@ -87,9 +103,8 @@ export default function Home() {
 
     const handleGetStarted = () => {
         if (user) {
-            // Use hash-based navigation instead of direct state change
-            window.history.pushState(null, '', '#find');
-            window.dispatchEvent(new HashChangeEvent('hashchange'));
+            // Use the unified navigation function
+            navigateTo('find');
         } else {
             signIn();
         }
