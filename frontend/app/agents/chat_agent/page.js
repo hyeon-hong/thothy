@@ -43,7 +43,7 @@ export default function ChatAgentPage({ graph_name }) {
 
     return (
         <ChatProvider graph_name={graph_name}>
-            <Chat inputRef={inputRef} />
+            <Chat inputRef={inputRef} graph_name={graph_name} />
         </ChatProvider>
     );
 }
