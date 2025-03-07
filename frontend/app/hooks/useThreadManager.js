@@ -22,10 +22,11 @@ export function useThreadManager(userId, client) {
     // Helper function to validate client session
     const validateClientSession = useCallback(async () => {
         if (!client) return false;
-        
+
         try {
             // Try a simple operation to test client validity
-            await client.threads.search({ limit: 1 });
+            const response = await client.threads.search({ limit: 1 });
+            console.log("response", response);
             return true;
         } catch (error) {
             if (error.status === 401 || error.status === 403) {
@@ -45,42 +46,50 @@ export function useThreadManager(userId, client) {
     }, [client, refreshSession]);
 
     // Enhanced withRetry to include session validation
-    const withRetry = useCallback(async (operation, operationName) => {
-        let attempts = 0;
-        while (attempts < MAX_RETRIES) {
-            try {
-                // Validate session before each attempt
-                const isValid = await validateClientSession();
-                if (!isValid) {
-                    throw new Error("Failed to validate client session");
-                }
-                return await operation();
-            } catch (error) {
-                attempts++;
-                if ((error.status === 401 || error.status === 403) && attempts < MAX_RETRIES) {
-                    console.log(
-                        `${operationName} failed with auth error, retrying in ${RETRY_DELAY}ms... (Attempt ${attempts}/${MAX_RETRIES})`
-                    );
-                    await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY));
-                } else {
-                    throw error;
+    const withRetry = useCallback(
+        async (operation, operationName) => {
+            let attempts = 0;
+            while (attempts < MAX_RETRIES) {
+                try {
+                    // Validate session before each attempt
+                    const isValid = await validateClientSession();
+                    if (!isValid) {
+                        throw new Error("Failed to validate client session");
+                    }
+                    return await operation();
+                } catch (error) {
+                    attempts++;
+                    if (
+                        (error.status === 401 || error.status === 403) &&
+                        attempts < MAX_RETRIES
+                    ) {
+                        console.log(
+                            `${operationName} failed with auth error, retrying in ${RETRY_DELAY}ms... (Attempt ${attempts}/${MAX_RETRIES})`
+                        );
+                        await new Promise((resolve) =>
+                            setTimeout(resolve, RETRY_DELAY)
+                        );
+                    } else {
+                        throw error;
+                    }
                 }
             }
-        }
-    }, [validateClientSession]);
+        },
+        [validateClientSession]
+    );
 
     // Debounced version of thread fetching with retry logic
     const fetchThreads = useCallback(
         async (retry = false) => {
             if (!userId || !client) return;
-    
+
             setIsLoading(true);
             try {
                 await validateClientSession();
                 const userThreads = await client.threads.search({
                     limit: 100,
                 });
-    
+                console.log("userThreads", userThreads);
                 // Sort threads by creation time, newest first
                 const sortedThreads = userThreads
                     .filter((thread) => thread?.metadata?.created_at)
@@ -89,22 +98,26 @@ export function useThreadManager(userId, client) {
                             new Date(b.metadata.created_at) -
                             new Date(a.metadata.created_at)
                     );
-    
+
                 setThreads(sortedThreads);
                 setRetryCount(0); // Reset retry count on success
-    
+
                 // Auto-select the first thread if no thread is currently selected
                 if (sortedThreads.length > 0 && !currentThreadId) {
                     const firstThread = sortedThreads[0];
                     setCurrentThreadId(firstThread.thread_id);
                     localStorage.setItem(THREAD_ID_KEY, firstThread.thread_id);
                 }
-                
+
                 // Mark initial load as complete
                 setInitialLoadComplete(true);
             } catch (error) {
                 console.error("Error fetching threads:", error);
-                if ((error.status === 401 || error.status === 403) && retry && retryCount < MAX_RETRIES) {
+                if (
+                    (error.status === 401 || error.status === 403) &&
+                    retry &&
+                    retryCount < MAX_RETRIES
+                ) {
                     console.log(
                         `Retrying fetch threads in ${RETRY_DELAY}ms... (Attempt ${
                             retryCount + 1
@@ -125,7 +138,18 @@ export function useThreadManager(userId, client) {
                 setIsLoading(false);
             }
         },
-        [userId, client, retryCount, currentThreadId, validateClientSession, setThreads, setCurrentThreadId, setInitialLoadComplete, setRetryCount, setIsLoading]
+        [
+            userId,
+            client,
+            retryCount,
+            currentThreadId,
+            validateClientSession,
+            setThreads,
+            setCurrentThreadId,
+            setInitialLoadComplete,
+            setRetryCount,
+            setIsLoading,
+        ]
     );
 
     // Create the debounced version of fetchThreads
@@ -152,19 +176,18 @@ export function useThreadManager(userId, client) {
             if (!currentThreadId || !client || !shouldFetchMessages) return;
 
             try {
-                await withRetry(
-                    async () => {
-                        // Use the correct API endpoint structure
-                        const response = await client.threads.get(currentThreadId);
-                        const messages = response.messages || [];
-                        
-                        // Emit a custom event that the Chat component can listen to
-                        window.dispatchEvent(new CustomEvent('threadMessagesLoaded', {
-                            detail: { messages, threadId: currentThreadId }
-                        }));
-                    },
-                    "Fetch messages"
-                );
+                await withRetry(async () => {
+                    // Use the correct API endpoint structure
+                    const response = await client.threads.get(currentThreadId);
+                    const messages = response.messages || [];
+
+                    // Emit a custom event that the Chat component can listen to
+                    window.dispatchEvent(
+                        new CustomEvent("threadMessagesLoaded", {
+                            detail: { messages, threadId: currentThreadId },
+                        })
+                    );
+                }, "Fetch messages");
             } catch (error) {
                 console.error("Error fetching messages:", error);
             } finally {
@@ -189,29 +212,32 @@ export function useThreadManager(userId, client) {
         }
     }, [userId, client, debouncedFetchThreads]);
 
-    const getThreadById = useCallback(async (threadId) => {
-        if (
-            !client ||
-            !threadId ||
-            typeof threadId !== "string" ||
-            !threadId.match(
-                /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
-            )
-        ) {
-            console.error("Invalid thread ID format or missing client");
-            return null;
-        }
+    const getThreadById = useCallback(
+        async (threadId) => {
+            if (
+                !client ||
+                !threadId ||
+                typeof threadId !== "string" ||
+                !threadId.match(
+                    /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+                )
+            ) {
+                console.error("Invalid thread ID format or missing client");
+                return null;
+            }
 
-        try {
-            return await withRetry(
-                () => client.threads.get(threadId),
-                "Get thread"
-            );
-        } catch (error) {
-            console.error("Error getting thread:", error);
-            return null;
-        }
-    }, [client, withRetry]);
+            try {
+                return await withRetry(
+                    () => client.threads.get(threadId),
+                    "Get thread"
+                );
+            } catch (error) {
+                console.error("Error getting thread:", error);
+                return null;
+            }
+        },
+        [client, withRetry]
+    );
 
     const createNewThread = useCallback(async () => {
         console.log("Creating new thread");
@@ -315,7 +341,17 @@ export function useThreadManager(userId, client) {
         };
 
         initializeThread();
-    }, [client, currentThreadId, threads, retryCount, createNewThread, getThreadById, setCurrentThreadId, setShouldFetchMessages, setRetryCount]);
+    }, [
+        client,
+        currentThreadId,
+        threads,
+        retryCount,
+        createNewThread,
+        getThreadById,
+        setCurrentThreadId,
+        setShouldFetchMessages,
+        setRetryCount,
+    ]);
 
     const deleteThread = async (threadId) => {
         console.log("Deleting thread:", threadId);
@@ -324,11 +360,14 @@ export function useThreadManager(userId, client) {
         if (!client) return;
 
         // Check if client has valid access token
-        const hasValidToken = client?.defaultHeaders?.Authorization?.includes('Bearer') && 
-            !client.defaultHeaders.Authorization.includes('undefined');
-            
+        const hasValidToken =
+            client?.defaultHeaders?.Authorization?.includes("Bearer") &&
+            !client.defaultHeaders.Authorization.includes("undefined");
+
         if (!hasValidToken) {
-            console.log("No valid access token found, attempting to refresh session...");
+            console.log(
+                "No valid access token found, attempting to refresh session..."
+            );
             const newSession = await refreshSession();
             if (newSession?.access_token) {
                 client.defaultHeaders = {
