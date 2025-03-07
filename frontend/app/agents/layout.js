@@ -16,7 +16,6 @@ export default function AgentsLayout({ children }) {
 
   return (
     <>
-      <Header currentView={currentView} />
       <main>
         {children}
       </main>

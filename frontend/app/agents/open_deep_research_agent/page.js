@@ -3,21 +3,40 @@
 import "./index.css";
 import React, { useEffect, useRef, useState } from "react";
 import { useStream } from "@langchain/langgraph-sdk/react";
-import { Box, Typography, TextField, Button, Paper, CircularProgress, Avatar } from "@mui/material";
+import {
+    Box,
+    Typography,
+    TextField,
+    Button,
+    Paper,
+    CircularProgress,
+    Avatar,
+} from "@mui/material";
+import { useAuth } from "../../contexts/AuthContext";
 
 export default function OpenDeepResearchAgentPage({ graph_name }) {
     const inputRef = useRef(null);
-    
+    const { session } = useAuth();
+
     // Environment-aware deployment URL
-    const deploymentUrl = process.env.NODE_ENV === "development"
-        ? "http://localhost:2024"
-        : (process.env.NEXT_PUBLIC_DEPLOYMENT_URL || "");
-    
+    const deploymentUrl =
+        process.env.NODE_ENV === "development"
+            ? "http://localhost:2024"
+            : process.env.NEXT_PUBLIC_DEPLOYMENT_URL || "";
+    const langSmithApiKey = process.env.NEXT_PUBLIC_LANGCHAIN_API_KEY || "";
+
     // Initialize useStream with the graph_name as assistantId
     const thread = useStream({
         apiUrl: deploymentUrl,
         assistantId: graph_name || "open_deep_research_graph",
         messagesKey: "messages",
+        apiKey: langSmithApiKey,
+        defaultHeaders: {
+            // Include authentication token from the session
+            Authorization: session?.access_token
+                ? `Bearer ${session.access_token}`
+                : undefined,
+        },
     });
 
     useEffect(() => {
@@ -29,8 +48,11 @@ export default function OpenDeepResearchAgentPage({ graph_name }) {
             // Also don't handle key events if they occurred on navigation elements (buttons, links)
             const isNavElement = e.target.closest('button, a, [role="button"]');
             if (isNavElement) return;
-            
-            if (e.key === "/" && !["INPUT", "TEXTAREA"].includes(document.activeElement.tagName)) {
+
+            if (
+                e.key === "/" &&
+                !["INPUT", "TEXTAREA"].includes(document.activeElement.tagName)
+            ) {
                 e.preventDefault(); // Prevent "/" from being typed
                 inputRef.current?.focus();
             }
@@ -38,7 +60,9 @@ export default function OpenDeepResearchAgentPage({ graph_name }) {
 
         // Focus input when window gains focus but check if active element is not a navigation element
         const handleWindowFocus = () => {
-            const isNavElement = document.activeElement?.closest('button, a, [role="button"]');
+            const isNavElement = document.activeElement?.closest(
+                'button, a, [role="button"]'
+            );
             if (!isNavElement) {
                 inputRef.current?.focus();
             }
@@ -46,7 +70,7 @@ export default function OpenDeepResearchAgentPage({ graph_name }) {
 
         document.addEventListener("keydown", handleKeyPress);
         window.addEventListener("focus", handleWindowFocus);
-        
+
         return () => {
             document.removeEventListener("keydown", handleKeyPress);
             window.removeEventListener("focus", handleWindowFocus);
@@ -58,87 +82,127 @@ export default function OpenDeepResearchAgentPage({ graph_name }) {
         e.preventDefault();
         const formData = new FormData(e.target);
         const message = formData.get("message");
-        
+
         if (!message || message.trim() === "") return;
-        
+
         // Submit the message to the thread
-        thread.submit({ 
-            messages: [{ type: "human", content: message }] 
+        thread.submit({
+            topic: message,
         });
-        
+
         // Reset the form
         e.target.reset();
         inputRef.current?.focus();
     };
 
     return (
-        <Box sx={{ 
-            display: 'flex', 
-            flexDirection: 'column', 
-            height: 'calc(100vh - 64px)', 
-            bgcolor: '#f5f5f5' 
-        }}>
+        <Box
+            sx={{
+                display: "flex",
+                flexDirection: "column",
+                height: "calc(100vh - 64px)",
+                bgcolor: "#f5f5f5",
+            }}
+        >
             {/* Header */}
-            <Box sx={{ 
-                p: 2, 
-                bgcolor: 'white', 
-                borderBottom: '1px solid #e0e0e0',
-                boxShadow: '0 2px 4px rgba(0,0,0,0.05)'
-            }}>
+            <Box
+                sx={{
+                    p: 2,
+                    bgcolor: "white",
+                    borderBottom: "1px solid #e0e0e0",
+                    boxShadow: "0 2px 4px rgba(0,0,0,0.05)",
+                }}
+            >
                 <Typography variant="h6">
                     {graph_name || "Deep Research Agent"}
                 </Typography>
             </Box>
-            
+
             {/* Messages Area */}
-            <Box sx={{ 
-                flexGrow: 1, 
-                overflowY: 'auto', 
-                p: 3,
-                display: 'flex',
-                flexDirection: 'column',
-                gap: 2
-            }}>
+            <Box
+                sx={{
+                    flexGrow: 1,
+                    overflowY: "auto",
+                    p: 3,
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: 2,
+                }}
+            >
                 {thread.messages.map((message, index) => (
-                    <Paper 
-                        key={message.id || index} 
-                        elevation={0} 
-                        sx={{ 
-                            p: 2, 
-                            maxWidth: '80%', 
-                            alignSelf: message.type === 'human' ? 'flex-end' : 'flex-start',
-                            bgcolor: message.type === 'human' ? '#e3f2fd' : 'white',
-                            borderRadius: 2
+                    <Paper
+                        key={message.id || index}
+                        elevation={0}
+                        sx={{
+                            p: 2,
+                            maxWidth: "80%",
+                            alignSelf:
+                                message.type === "human"
+                                    ? "flex-end"
+                                    : "flex-start",
+                            bgcolor:
+                                message.type === "human" ? "#e3f2fd" : "white",
+                            borderRadius: 2,
                         }}
                     >
-                        <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1.5 }}>
-                            {message.type !== 'human' && (
-                                <Avatar sx={{ bgcolor: 'primary.main', width: 32, height: 32 }}>AI</Avatar>
+                        <Box
+                            sx={{
+                                display: "flex",
+                                alignItems: "flex-start",
+                                gap: 1.5,
+                            }}
+                        >
+                            {message.type !== "human" && (
+                                <Avatar
+                                    sx={{
+                                        bgcolor: "primary.main",
+                                        width: 32,
+                                        height: 32,
+                                    }}
+                                >
+                                    AI
+                                </Avatar>
                             )}
                             <Box>
                                 <Typography variant="body1">
                                     {message.content}
                                 </Typography>
                             </Box>
-                            {message.type === 'human' && (
-                                <Avatar sx={{ bgcolor: 'secondary.main', width: 32, height: 32 }}>You</Avatar>
+                            {message.type === "human" && (
+                                <Avatar
+                                    sx={{
+                                        bgcolor: "secondary.main",
+                                        width: 32,
+                                        height: 32,
+                                    }}
+                                >
+                                    You
+                                </Avatar>
                             )}
                         </Box>
                     </Paper>
                 ))}
-                
+
                 {/* Loading indicator */}
                 {thread.isLoading && (
-                    <Box sx={{ display: 'flex', justifyContent: 'center', my: 2 }}>
+                    <Box
+                        sx={{
+                            display: "flex",
+                            justifyContent: "center",
+                            my: 2,
+                        }}
+                    >
                         <CircularProgress size={24} />
                     </Box>
                 )}
             </Box>
-            
+
             {/* Input Area */}
-            <Box sx={{ p: 2, bgcolor: 'white', borderTop: '1px solid #e0e0e0' }}>
+            <Box
+                sx={{ p: 2, bgcolor: "white", borderTop: "1px solid #e0e0e0" }}
+            >
                 <form onSubmit={handleSubmit}>
-                    <Box sx={{ display: 'flex', gap: 1 }}>
+                    <Box sx={{ display: "flex", gap: 1 }}>
                         <TextField
                             fullWidth
                             name="message"
@@ -148,19 +212,19 @@ export default function OpenDeepResearchAgentPage({ graph_name }) {
                             inputRef={inputRef}
                             disabled={thread.isLoading}
                         />
-                        
+
                         {thread.isLoading ? (
-                            <Button 
-                                variant="contained" 
-                                color="secondary" 
+                            <Button
+                                variant="contained"
+                                color="secondary"
                                 onClick={() => thread.stop()}
                             >
                                 Stop
                             </Button>
                         ) : (
-                            <Button 
-                                type="submit" 
-                                variant="contained" 
+                            <Button
+                                type="submit"
+                                variant="contained"
                                 color="primary"
                                 disabled={thread.isLoading}
                             >
@@ -170,41 +234,56 @@ export default function OpenDeepResearchAgentPage({ graph_name }) {
                     </Box>
                 </form>
             </Box>
-            
+
             {/* Handle interrupts */}
             {thread.interrupt && (
-                <Box sx={{ 
-                    position: 'absolute', 
-                    bottom: 100, 
-                    left: '50%', 
-                    transform: 'translateX(-50%)',
-                    bgcolor: 'white',
-                    p: 3,
-                    borderRadius: 2,
-                    boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
-                    width: '80%',
-                    maxWidth: 600,
-                    zIndex: 10
-                }}>
+                <Box
+                    sx={{
+                        position: "absolute",
+                        bottom: 100,
+                        left: "50%",
+                        transform: "translateX(-50%)",
+                        bgcolor: "white",
+                        p: 3,
+                        borderRadius: 2,
+                        boxShadow: "0 4px 20px rgba(0,0,0,0.1)",
+                        width: "80%",
+                        maxWidth: 600,
+                        zIndex: 10,
+                    }}
+                >
                     <Typography variant="h6" gutterBottom>
                         Agent needs your input
                     </Typography>
                     <Typography variant="body1" paragraph>
-                        {typeof thread.interrupt.value === 'string' 
-                            ? thread.interrupt.value 
-                            : JSON.stringify(thread.interrupt.value)
-                        }
+                        {typeof thread.interrupt.value === "string"
+                            ? thread.interrupt.value
+                            : JSON.stringify(thread.interrupt.value)}
                     </Typography>
-                    <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1 }}>
-                        <Button 
+                    <Box
+                        sx={{
+                            display: "flex",
+                            justifyContent: "flex-end",
+                            gap: 1,
+                        }}
+                    >
+                        <Button
                             variant="outlined"
-                            onClick={() => thread.submit(undefined, { command: { resume: false } })}
+                            onClick={() =>
+                                thread.submit(undefined, {
+                                    command: { resume: false },
+                                })
+                            }
                         >
                             Cancel
                         </Button>
-                        <Button 
+                        <Button
                             variant="contained"
-                            onClick={() => thread.submit(undefined, { command: { resume: true } })}
+                            onClick={() =>
+                                thread.submit(undefined, {
+                                    command: { resume: true },
+                                })
+                            }
                         >
                             Continue
                         </Button>
