@@ -27,7 +27,6 @@ export function useThreadManager(userId, client) {
         try {
             // Try a simple operation to test client validity
             const response = await client.threads.search({ limit: 1 });
-            console.log("simple operation response", response);
             return true;
         } catch (error) {
             if (error.status === 401 || error.status === 403) {

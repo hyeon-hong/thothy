@@ -108,7 +108,7 @@ store = ReconnectingPostgresStore(
     }
 )
 
-llm = init_chat_model("gpt-4o-mini", model_provider="openai", temperature=0)
+llm = init_chat_model("gpt-4o-mini", model_provider="openai", temperature=0.8)
 
 
 # Create memory manager to extract memories from conversations
