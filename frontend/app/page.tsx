@@ -47,7 +47,7 @@ export default function Home() {
     if (currentView === "landing") {
         return (
             <Box>
-                <Header onViewChange={setCurrentView} currentView={currentView} />
+                <Header currentView={currentView} />
                 {/* Hero Section */}
                 <Box
                     sx={{
@@ -300,12 +300,19 @@ export default function Home() {
                 </Snackbar>
             </Box>
         );
+    } else if (currentView === "home") {
+        return (
+            <Box>
+                <Header currentView={currentView} />
+                <AgentHub />
+            </Box>
+        );
+    } else if (currentView === "myAgents") {
+        return (
+            <Box>
+                <Header currentView={currentView} />
+                <MyAgents />
+            </Box>
+        );
     }
-
-    return (
-        <>
-            <Header onViewChange={setCurrentView} currentView={currentView} />
-            {currentView === "home" ? <AgentHub /> : <MyAgents />}
-        </>
-    );
 }

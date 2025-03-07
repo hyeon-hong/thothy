@@ -24,10 +24,9 @@ import Logout from '@mui/icons-material/Logout';
 
 interface HeaderProps {
   currentView: string;
-  onViewChange: (view: string) => void;
 }
 
-export default function Header({ currentView, onViewChange }: HeaderProps) {
+export default function Header({ currentView }: HeaderProps) {
   const { user, signIn, signOut } = useAuth();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
@@ -46,7 +45,7 @@ export default function Header({ currentView, onViewChange }: HeaderProps) {
   };
 
   const handleTothyClick = () => {
-    onViewChange('landing');
+    router.push('/');
   };
 
   const handleProfileMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
@@ -88,7 +87,7 @@ export default function Header({ currentView, onViewChange }: HeaderProps) {
           <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
             <Button
               color={currentView === 'home' ? 'primary' : 'inherit'}
-              onClick={() => onViewChange('home')}
+              onClick={() => router.push('/home')}
               sx={{
                 ...navButtonStyle,
                 fontWeight: currentView === 'home' ? 700 : 400,
@@ -100,7 +99,7 @@ export default function Header({ currentView, onViewChange }: HeaderProps) {
             {user && (
               <Button
                 color={currentView === 'myAgents' ? 'primary' : 'inherit'}
-                onClick={() => onViewChange('myAgents')}
+                onClick={() => router.push('/playground')}
                 sx={{
                   ...navButtonStyle,
                   fontWeight: currentView === 'myAgents' ? 700 : 400,

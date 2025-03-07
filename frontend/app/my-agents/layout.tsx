@@ -9,7 +9,7 @@ export default function MyAgentsLayout({
 }) {
   return (
     <div className="min-h-screen bg-gray-50">
-      <Header currentView="myAgents" onViewChange={() => {}} />
+      <Header currentView="myAgents" />
       <main>{children}</main>
     </div>
   );

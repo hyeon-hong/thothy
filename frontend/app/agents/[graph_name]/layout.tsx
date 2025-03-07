@@ -10,7 +10,7 @@ interface AgentLayoutProps {
 export default function AgentLayout({ children }: AgentLayoutProps) {
   return (
     <>
-      <Header currentView="home" onViewChange={() => {}} />
+      <Header currentView="home" />
       {children}
     </>
   );

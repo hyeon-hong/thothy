@@ -15,22 +15,9 @@ export default function AgentsLayout({ children }) {
     return 'home';
   });
 
-  const handleViewChange = (view) => {
-    setCurrentView(view);
-    
-    // Handle navigation based on view
-    if (view === 'home') {
-      router.push('/');
-    } else if (view === 'myAgents') {
-      router.push('/my-agents');
-    } else if (view === 'landing') {
-      router.push('/');
-    }
-  };
-
   return (
     <>
-      <Header currentView={currentView} onViewChange={handleViewChange} />
+      <Header currentView={currentView} />
       <main>
         {children}
       </main>
