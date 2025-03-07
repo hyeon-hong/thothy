@@ -12,7 +12,7 @@ export default function AgentsLayout({ children }) {
     if (pathname.includes('/agents/')) {
       return 'agents';
     }
-    return 'home';
+    return 'find';
   });
 
   return (

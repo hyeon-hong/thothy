@@ -11,23 +11,23 @@ import MyAgents from "./components/MyAgents";
 export default function Home() {
     const pathname = usePathname();
     const { user, signIn} = useAuth();
-    const [currentView, setCurrentView] = useState("landing"); // "landing", "home", or "myAgents"
+    const [currentView, setCurrentView] = useState("landing"); // "landing", "find", or "staff"
     const [openSnackbar, setOpenSnackbar] = useState(false);
 
     // Determine initial view based on hash in URL or pathname
     useEffect(() => {
         const hash = window.location.hash.replace('#', '');
         
-        if (hash === 'home') {
-            setCurrentView('home');
-        } else if (hash === 'myAgents') {
-            setCurrentView('myAgents');
+        if (hash === 'find') {
+            setCurrentView('find');
+        } else if (hash === 'staff') {
+            setCurrentView('staff');
         } else if (pathname === '/' || pathname === '') {
             setCurrentView('landing');
-        } else if (pathname.includes('/home')) {
-            setCurrentView('home');
-        } else if (pathname.includes('/playground')) {
-            setCurrentView('myAgents');
+        } else if (pathname.includes('/find')) {
+            setCurrentView('find');
+        } else if (pathname.includes('/staff')) {
+            setCurrentView('staff');
         }
     }, [pathname]);
 
@@ -35,10 +35,10 @@ export default function Home() {
     useEffect(() => {
         const handleHashChange = () => {
             const hash = window.location.hash.replace('#', '');
-            if (hash === 'home') {
-                setCurrentView('home');
-            } else if (hash === 'myAgents') {
-                setCurrentView('myAgents');
+            if (hash === 'find') {
+                setCurrentView('find');
+            } else if (hash === 'staff') {
+                setCurrentView('staff');
             } else if (hash === '') {
                 setCurrentView('landing');
             }
@@ -55,8 +55,10 @@ export default function Home() {
         if (currentView === 'landing') {
             // Remove hash for landing page
             window.history.replaceState(null, '', window.location.pathname);
-        } else {
-            window.history.replaceState(null, '', `#${currentView}`);
+        } else if (currentView === 'find') {
+            window.history.replaceState(null, '', `#find`);
+        } else if (currentView === 'staff') {
+            window.history.replaceState(null, '', `#staff`);
         }
     }, [currentView]);
 
@@ -71,7 +73,7 @@ export default function Home() {
     const handleGetStarted = () => {
         if (user) {
             // Use hash-based navigation instead of direct state change
-            window.history.pushState(null, '', '#home');
+            window.history.pushState(null, '', '#find');
             window.dispatchEvent(new HashChangeEvent('hashchange'));
         } else {
             signIn();
@@ -348,14 +350,14 @@ export default function Home() {
                 </Snackbar>
             </Box>
         );
-    } else if (currentView === "home") {
+    } else if (currentView === "find") {
         return (
             <Box>
                 <Header currentView={currentView} />
                 <AgentHub />
             </Box>
         );
-    } else if (currentView === "myAgents") {
+    } else if (currentView === "staff") {
         return (
             <Box>
                 <Header currentView={currentView} />

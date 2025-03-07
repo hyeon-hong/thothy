@@ -91,26 +91,26 @@ export default function Header({ currentView }: HeaderProps) {
 
           <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
             <Button
-              color={currentView === 'home' ? 'primary' : 'inherit'}
-              onClick={() => navigateTo('/', 'home')}
+              color={currentView === 'find' ? 'primary' : 'inherit'}
+              onClick={() => navigateTo('/', 'find')}
               sx={{
                 ...navButtonStyle,
-                fontWeight: currentView === 'home' ? 700 : 400,
+                fontWeight: currentView === 'find' ? 700 : 400,
               }}
             >
-              Explore
+              Find
             </Button>
 
             {user && (
               <Button
-                color={currentView === 'myAgents' ? 'primary' : 'inherit'}
-                onClick={() => navigateTo('/', 'myAgents')}
+                color={currentView === 'staff' ? 'primary' : 'inherit'}
+                onClick={() => navigateTo('/', 'staff')}
                 sx={{
                   ...navButtonStyle,
-                  fontWeight: currentView === 'myAgents' ? 700 : 400,
+                  fontWeight: currentView === 'staff' ? 700 : 400,
                 }}
               >
-                Playground
+                Staff
               </Button>
             )}
 

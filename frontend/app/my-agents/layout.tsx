@@ -9,7 +9,7 @@ export default function MyAgentsLayout({
 }) {
   return (
     <div className="min-h-screen bg-gray-50">
-      <Header currentView="myAgents" />
+      <Header currentView="staff" />
       <main>{children}</main>
     </div>
   );
