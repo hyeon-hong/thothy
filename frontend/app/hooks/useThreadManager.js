@@ -214,6 +214,7 @@ export function useThreadManager(userId, client) {
     }, [client, withRetry]);
 
     const createNewThread = useCallback(async () => {
+        console.log("Creating new thread");
         if (!client) return null;
 
         try {
@@ -228,7 +229,7 @@ export function useThreadManager(userId, client) {
                     }),
                 "Create thread"
             );
-
+            console.log("Thread created:", thread);
             localStorage.setItem(THREAD_ID_KEY, thread.thread_id);
 
             setThreads((prev) => [

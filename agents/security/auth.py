@@ -61,8 +61,8 @@ async def auth_authenticate(
     authorization: str | None,
 ) -> tuple[list[str], Auth.types.MinimalUserDict]:
     """Validate JWT tokens and extract user information."""
-    print("========== Function: auth_authenticate")
-    print(f"========== authorization: {authorization}")
+    # print("========== Function: auth_authenticate")
+    # print(f"========== authorization: {authorization}")
 
     assert authorization
 
@@ -77,7 +77,7 @@ async def auth_authenticate(
             audience="authenticated",
             leeway=timedelta(seconds=60),
         )
-        print(f"========== payload: {payload}")
+        # print(f"========== payload: {payload}")
 
         async with httpx.AsyncClient() as client:
             response = await client.get(
@@ -94,8 +94,8 @@ async def auth_authenticate(
 
     user_data = response.json()
     scopes = [payload["role"]]
-    print(f"========== user_data: {user_data}")
-    print(f"========== scopes: {scopes}")
+    # print(f"========== user_data: {user_data}")
+    # print(f"========== scopes: {scopes}")
 
     # TODO: Add permissions to the user
     # "permissions": user_data.get("permissions", []),
@@ -183,7 +183,7 @@ async def auth_on_threads_read(
     #     )
 
     # Check if the user is the owner of the thread
-    return value.get("metadata", {}).get("owner") == ctx.user.identity
+    return {"owner": ctx.user.identity}
 
 
 @auth.on.threads.update
@@ -207,7 +207,7 @@ async def auth_on_threads_update(
     #     )
 
     # Check if the user is the owner of the thread
-    return value.get("metadata", {}).get("owner") == ctx.user.identity
+    return {"owner": ctx.user.identity}
 
 
 @auth.on.threads.delete
@@ -231,7 +231,7 @@ async def auth_on_threads_delete(
     #     )
 
     # Check if the user is the owner of the thread
-    return value.get("metadata", {}).get("owner") == ctx.user.identity
+    return {"owner": ctx.user.identity}
 
 
 @auth.on.threads.search
@@ -253,7 +253,8 @@ async def auth_on_threads_search(
     #         detail="User lacks the required permissions: threads:search."
     #     )
 
-    return value.get("metadata", {}).get("owner") == ctx.user.identity
+    # return value.get("metadata", {}).get("owner") == ctx.user.identity
+    return {"owner": ctx.user.identity}
 
 
 @auth.on.threads.create_run
