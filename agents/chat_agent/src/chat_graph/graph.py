@@ -1,6 +1,7 @@
 """Simple chat agent using LangGraph."""
 
 import os
+import logging
 from dotenv import load_dotenv
 from pydantic import BaseModel
 from psycopg import Connection, OperationalError
@@ -13,8 +14,16 @@ from langgraph.graph import MessagesState, StateGraph, START, END
 from langgraph.store.base import BaseStore
 from langgraph.store.postgres import PostgresStore
 
+# We're using create_memory_store_manager but not ReflectionExecutor
 from langmem import ReflectionExecutor, create_memory_store_manager
 from chat_graph.configuration import ChatConfigurable
+
+# Configure logging to hide INFO messages
+logging.basicConfig(level=logging.WARNING)
+# Set specific loggers for langgraph and related libraries to WARNING level
+logging.getLogger("langgraph").setLevel(logging.WARNING)
+logging.getLogger("langchain").setLevel(logging.WARNING)
+logging.getLogger("langmem").setLevel(logging.WARNING)
 
 
 class ReconnectingPostgresStore:
@@ -123,7 +132,7 @@ memory_manager = create_memory_store_manager(
 )
 
 # Wrap memory_manager to handle deferred background processing
-# executor = ReflectionExecutor(memory_manager, store=store)
+executor = ReflectionExecutor(memory_manager, store=store)
 
 
 async def chatbot(
@@ -161,12 +170,12 @@ async def chatbot(
     )
 
     # Submit memory processing task
-    # to_process = {
-    #     "messages": [
-    #         {"role": "user", "content": state["messages"][-1].content}
-    #     ] + [response]
-    # }
-    # executor.submit(to_process, after_seconds=0.5, config=config)
+    to_process = {
+        "messages": [
+            {"role": "user", "content": state["messages"][-1].content}
+        ] + [response]
+    }
+    executor.submit(to_process, after_seconds=0.5, config=config)
 
     return {"messages": response}
 
