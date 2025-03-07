@@ -1,12 +1,24 @@
 "use client";
 
 import "./index.css";
-import React, { useEffect, useRef } from "react";
-import { Chat } from "../../components/Chat";
-import { ChatProvider } from "../../contexts/ChatContext";
+import React, { useEffect, useRef, useState } from "react";
+import { useStream } from "@langchain/langgraph-sdk/react";
+import { Box, Typography, TextField, Button, Paper, CircularProgress, Avatar } from "@mui/material";
 
 export default function OpenDeepResearchAgentPage({ graph_name }) {
     const inputRef = useRef(null);
+    
+    // Environment-aware deployment URL
+    const deploymentUrl = process.env.NODE_ENV === "development"
+        ? "http://localhost:2024"
+        : (process.env.NEXT_PUBLIC_DEPLOYMENT_URL || "");
+    
+    // Initialize useStream with the graph_name as assistantId
+    const thread = useStream({
+        apiUrl: deploymentUrl,
+        assistantId: graph_name || "open_deep_research_graph",
+        messagesKey: "messages",
+    });
 
     useEffect(() => {
         // Focus input when page mounts
@@ -41,9 +53,164 @@ export default function OpenDeepResearchAgentPage({ graph_name }) {
         };
     }, []);
 
+    // Form submission handler
+    const handleSubmit = (e) => {
+        e.preventDefault();
+        const formData = new FormData(e.target);
+        const message = formData.get("message");
+        
+        if (!message || message.trim() === "") return;
+        
+        // Submit the message to the thread
+        thread.submit({ 
+            messages: [{ type: "human", content: message }] 
+        });
+        
+        // Reset the form
+        e.target.reset();
+        inputRef.current?.focus();
+    };
+
     return (
-        <ChatProvider graph_name={graph_name}>
-            <Chat inputRef={inputRef} graph_name={graph_name} />
-        </ChatProvider>
+        <Box sx={{ 
+            display: 'flex', 
+            flexDirection: 'column', 
+            height: 'calc(100vh - 64px)', 
+            bgcolor: '#f5f5f5' 
+        }}>
+            {/* Header */}
+            <Box sx={{ 
+                p: 2, 
+                bgcolor: 'white', 
+                borderBottom: '1px solid #e0e0e0',
+                boxShadow: '0 2px 4px rgba(0,0,0,0.05)'
+            }}>
+                <Typography variant="h6">
+                    {graph_name || "Deep Research Agent"}
+                </Typography>
+            </Box>
+            
+            {/* Messages Area */}
+            <Box sx={{ 
+                flexGrow: 1, 
+                overflowY: 'auto', 
+                p: 3,
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 2
+            }}>
+                {thread.messages.map((message, index) => (
+                    <Paper 
+                        key={message.id || index} 
+                        elevation={0} 
+                        sx={{ 
+                            p: 2, 
+                            maxWidth: '80%', 
+                            alignSelf: message.type === 'human' ? 'flex-end' : 'flex-start',
+                            bgcolor: message.type === 'human' ? '#e3f2fd' : 'white',
+                            borderRadius: 2
+                        }}
+                    >
+                        <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1.5 }}>
+                            {message.type !== 'human' && (
+                                <Avatar sx={{ bgcolor: 'primary.main', width: 32, height: 32 }}>AI</Avatar>
+                            )}
+                            <Box>
+                                <Typography variant="body1">
+                                    {message.content}
+                                </Typography>
+                            </Box>
+                            {message.type === 'human' && (
+                                <Avatar sx={{ bgcolor: 'secondary.main', width: 32, height: 32 }}>You</Avatar>
+                            )}
+                        </Box>
+                    </Paper>
+                ))}
+                
+                {/* Loading indicator */}
+                {thread.isLoading && (
+                    <Box sx={{ display: 'flex', justifyContent: 'center', my: 2 }}>
+                        <CircularProgress size={24} />
+                    </Box>
+                )}
+            </Box>
+            
+            {/* Input Area */}
+            <Box sx={{ p: 2, bgcolor: 'white', borderTop: '1px solid #e0e0e0' }}>
+                <form onSubmit={handleSubmit}>
+                    <Box sx={{ display: 'flex', gap: 1 }}>
+                        <TextField
+                            fullWidth
+                            name="message"
+                            placeholder="Type your message... (or press / to focus)"
+                            variant="outlined"
+                            size="medium"
+                            inputRef={inputRef}
+                            disabled={thread.isLoading}
+                        />
+                        
+                        {thread.isLoading ? (
+                            <Button 
+                                variant="contained" 
+                                color="secondary" 
+                                onClick={() => thread.stop()}
+                            >
+                                Stop
+                            </Button>
+                        ) : (
+                            <Button 
+                                type="submit" 
+                                variant="contained" 
+                                color="primary"
+                                disabled={thread.isLoading}
+                            >
+                                Send
+                            </Button>
+                        )}
+                    </Box>
+                </form>
+            </Box>
+            
+            {/* Handle interrupts */}
+            {thread.interrupt && (
+                <Box sx={{ 
+                    position: 'absolute', 
+                    bottom: 100, 
+                    left: '50%', 
+                    transform: 'translateX(-50%)',
+                    bgcolor: 'white',
+                    p: 3,
+                    borderRadius: 2,
+                    boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
+                    width: '80%',
+                    maxWidth: 600,
+                    zIndex: 10
+                }}>
+                    <Typography variant="h6" gutterBottom>
+                        Agent needs your input
+                    </Typography>
+                    <Typography variant="body1" paragraph>
+                        {typeof thread.interrupt.value === 'string' 
+                            ? thread.interrupt.value 
+                            : JSON.stringify(thread.interrupt.value)
+                        }
+                    </Typography>
+                    <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1 }}>
+                        <Button 
+                            variant="outlined"
+                            onClick={() => thread.submit(undefined, { command: { resume: false } })}
+                        >
+                            Cancel
+                        </Button>
+                        <Button 
+                            variant="contained"
+                            onClick={() => thread.submit(undefined, { command: { resume: true } })}
+                        >
+                            Continue
+                        </Button>
+                    </Box>
+                </Box>
+            )}
+        </Box>
     );
 }
