@@ -4,11 +4,13 @@ import { useThreadManager } from "../hooks/useThreadManager";
 import { useAuth } from "./AuthContext";
 
 const ChatContext = createContext();
-const ASSISTANT_ID = process.env.NEXT_PUBLIC_ASSISTANT_ID ?? "chat_graph";
-const DEPLOYMENT_URL = process.env.NEXT_PUBLIC_DEPLOYMENT_URL || "";
+// Use localhost in development, environment variable in production
+const DEPLOYMENT_URL = process.env.NODE_ENV === "development"
+  ? "http://localhost:2024"
+  : (process.env.NEXT_PUBLIC_DEPLOYMENT_URL || "");
 
 export function ChatProvider({ children, graph_name }) {
-    const assistantId = graph_name || ASSISTANT_ID;
+    const assistantId = graph_name || "chat_graph";
     const { session } = useAuth();
 
     const client = useMemo(() => {

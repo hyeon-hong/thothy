@@ -15,7 +15,7 @@ export default function AgentPage() {
         switch (graph_name) {
             case "chat_graph":
                 return <ChatAgentPage graph_name={graph_name} />;
-            case "open_deep_research_agent":
+            case "open_deep_research_graph":
                 return <OpenDeepResearchAgentPage graph_name={graph_name} />;
             default:
                 return (
