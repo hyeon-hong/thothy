@@ -15,6 +15,7 @@ import {
   MenuItem,
   IconButton,
   Divider,
+  CircularProgress,
 } from '@mui/material';
 import { useAuth } from '../contexts/AuthContext';
 import { useRouter } from 'next/navigation';
@@ -26,7 +27,7 @@ interface HeaderProps {
 }
 
 export default function Header({ currentView }: HeaderProps) {
-  const { user, signIn, signOut } = useAuth();
+  const { user, signIn, signOut, loading } = useAuth();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
@@ -179,6 +180,13 @@ export default function Header({ currentView }: HeaderProps) {
                   </MenuItem>
                 </Menu>
               </>
+            ) : loading ? (
+              <Box sx={{ display: 'flex', alignItems: 'center', ml: 2 }}>
+                <CircularProgress size={24} color="primary" sx={{ mr: 1 }} />
+                <Typography variant="body2" color="text.secondary">
+                  Checking login...
+                </Typography>
+              </Box>
             ) : (
               <Button
                 variant="contained"

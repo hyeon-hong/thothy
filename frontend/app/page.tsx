@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Container, Typography, Button, Box, Grid, Paper, Snackbar, Alert } from "@mui/material";
+import { Container, Typography, Button, Box, Grid, Paper, Snackbar, Alert, CircularProgress } from "@mui/material";
 import { usePathname } from "next/navigation";
 import { useAuth } from "./contexts/AuthContext";
 import Header from "./components/Header";
@@ -10,7 +10,7 @@ import MyAgents from "./components/MyAgents";
 
 export default function Home() {
     const pathname = usePathname();
-    const { user, signIn} = useAuth();
+    const { user, signIn, loading } = useAuth();
     const [currentView, setCurrentView] = useState("landing"); // "landing", "find", or "staff"
     const [openSnackbar, setOpenSnackbar] = useState(false);
 
@@ -151,6 +151,7 @@ export default function Home() {
                                     variant="contained"
                                     size="large"
                                     onClick={handleGetStarted}
+                                    disabled={loading}
                                     sx={{
                                         bgcolor: "white",
                                         color: "#764ba2",
@@ -162,7 +163,14 @@ export default function Home() {
                                         fontSize: "1.1rem",
                                     }}
                                 >
-                                    Get Started
+                                    {loading ? (
+                                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                                            <CircularProgress size={20} color="inherit" sx={{ mr: 1 }} />
+                                            Checking...
+                                        </Box>
+                                    ) : (
+                                        "Get Started"
+                                    )}
                                 </Button>
                             </Grid>
                             <Grid item xs={12} md={6}>
@@ -274,6 +282,7 @@ export default function Home() {
                                 variant="contained"
                                 size="large"
                                 onClick={handleGetStarted}
+                                disabled={loading}
                                 sx={{
                                     bgcolor: "#764ba2",
                                     "&:hover": {
@@ -284,7 +293,14 @@ export default function Home() {
                                     fontSize: "1.1rem",
                                 }}
                             >
-                                Try Thothy Now
+                                {loading ? (
+                                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                                        <CircularProgress size={20} color="inherit" sx={{ mr: 1 }} />
+                                        Checking...
+                                    </Box>
+                                ) : (
+                                    "Try Thothy Now"
+                                )}
                             </Button>
                         </Box>
                     </Container>
