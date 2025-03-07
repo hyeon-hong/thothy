@@ -226,7 +226,7 @@ export function useThreadManager(userId, client, graph_name) {
 
     // Load threads on mount and when userId or client changes
     useEffect(() => {
-        if (client) {
+        if (client && userId) {
             debouncedFetchThreads(true); // Enable retry on initial load
             return () => debouncedFetchThreads.cancel();
         }
@@ -348,6 +348,7 @@ export function useThreadManager(userId, client, graph_name) {
                 const newThread = await createNewThread();
                 if (newThread) {
                     setCurrentThreadId(newThread.thread_id);
+                    localStorage.setItem(THREAD_ID_KEY, newThread.thread_id);
                     setShouldFetchMessages(true); // Trigger message fetch for new thread
                 }
             } catch (error) {
