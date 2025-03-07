@@ -5,7 +5,7 @@ import React, { useEffect, useRef } from "react";
 import { Chat } from "../../components/Chat";
 import { ChatProvider } from "../../contexts/ChatContext";
 
-export default function OpenDeepResearchAgentPage() {
+export default function OpenDeepResearchAgentPage({ graph_name }) {
     const inputRef = useRef(null);
 
     useEffect(() => {
@@ -42,7 +42,7 @@ export default function OpenDeepResearchAgentPage() {
     }, []);
 
     return (
-        <ChatProvider>
+        <ChatProvider graph_name={graph_name}>
             <Chat inputRef={inputRef} />
         </ChatProvider>
     );

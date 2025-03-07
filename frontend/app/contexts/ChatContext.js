@@ -7,7 +7,8 @@ const ChatContext = createContext();
 const ASSISTANT_ID = process.env.NEXT_PUBLIC_ASSISTANT_ID ?? "chat_graph";
 const DEPLOYMENT_URL = process.env.NEXT_PUBLIC_DEPLOYMENT_URL || "";
 
-export function ChatProvider({ children }) {
+export function ChatProvider({ children, graph_name }) {
+    const assistantId = graph_name || ASSISTANT_ID;
     const { session } = useAuth();
 
     const client = useMemo(() => {
@@ -41,8 +42,10 @@ export function ChatProvider({ children }) {
         }
     };
 
-    const sendMessage = async (threadId, message) => {
-        console.log("sendMessage");
+    const sendMessage = async (threadId, message, customAssistantId) => {
+        // Use the component-level assistantId if no custom one is provided
+        const effectiveAssistantId = customAssistantId || assistantId;
+        console.log("sendMessage", { threadId, assistantId: effectiveAssistantId });
 
         if (!threadId || !message) return;
 
@@ -77,7 +80,7 @@ export function ChatProvider({ children }) {
                     method: "POST",
                     headers,
                     body: JSON.stringify({
-                        assistant_id: ASSISTANT_ID,
+                        assistant_id: effectiveAssistantId,
                         input: {
                             messages: [{ role: role || "user", content: text }],
                         },
