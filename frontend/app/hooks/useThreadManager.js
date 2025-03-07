@@ -2,6 +2,7 @@ import { useState, useCallback, useEffect, useRef } from "react";
 import debounce from "lodash/debounce";
 import { useAuth } from "../contexts/AuthContext";
 import { v4 as uuidv4 } from "uuid";
+import { logDeep } from "../utils/debugUtils";
 
 const THREAD_ID_KEY = "latest_thread";
 const MAX_RETRIES = 3;
@@ -26,7 +27,7 @@ export function useThreadManager(userId, client) {
         try {
             // Try a simple operation to test client validity
             const response = await client.threads.search({ limit: 1 });
-            console.log("response", response);
+            console.log("simple operation response", response);
             return true;
         } catch (error) {
             if (error.status === 401 || error.status === 403) {

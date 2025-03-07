@@ -7,6 +7,7 @@ from jwt.exceptions import InvalidTokenError
 from langgraph_sdk import Auth
 from datetime import timedelta
 from typing import Any
+import pprint
 
 """
 Threads
@@ -244,7 +245,7 @@ async def auth_on_threads_search(
     print(f"========== ctx.resource: {ctx.resource}")
     print(f"========== ctx.action: {ctx.action}")
     print(f"========== ctx.permissions: {ctx.permissions}")
-    print(f"========== ctx.user: {ctx.user}")
+    print(f"========== ctx.user: {print_all_attributes(ctx.user._user)}")
     print(f"========== value: {value}")
 
     # if "threads:search" not in ctx.permissions:
@@ -390,3 +391,38 @@ async def auth_on_assistants_search(
     return True
 
 # TODO: Add crons handlers of authentication
+
+
+def deep_inspect(obj, max_depth=5, _current_depth=0):
+    """Recursively inspect an object up to a maximum depth"""
+    if _current_depth >= max_depth:
+        return "[Max Depth Reached]"
+
+    if obj is None or isinstance(obj, (bool, int, float, str, bytes)):
+        return obj
+
+    if isinstance(obj, (list, tuple)):
+        return [deep_inspect(item, max_depth, _current_depth + 1) for item in obj]
+
+    if isinstance(obj, dict):
+        return {k: deep_inspect(v, max_depth, _current_depth + 1) for k, v in obj.items()}
+
+    # For custom objects, get all attributes
+    result = {}
+    for attr in dir(obj):
+        if not attr.startswith('__') and not callable(getattr(obj, attr)):
+            try:
+                result[attr] = deep_inspect(
+                    getattr(obj, attr), max_depth, _current_depth + 1)
+            except Exception as e:
+                result[attr] = f"[Error accessing: {str(e)}]"
+
+    return result
+
+
+def print_all_attributes(obj, max_depth=3):
+    """Print all attributes of an object with pretty formatting"""
+    pp = pprint.PrettyPrinter(indent=2)
+    print(f"=== Deep inspection of {type(obj).__name__} object ===")
+    pp.pprint(deep_inspect(obj, max_depth))
+    print("=" * 50)
