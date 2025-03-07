@@ -3,7 +3,7 @@ import debounce from "lodash/debounce";
 import { useAuth } from "../contexts/AuthContext";
 import { v4 as uuidv4 } from "uuid";
 
-const THREAD_ID_KEY = "langgraph_thread_id";
+const THREAD_ID_KEY = "latest_thread";
 const MAX_RETRIES = 3;
 const RETRY_DELAY = 2000; // 2 seconds
 
@@ -305,6 +305,9 @@ export function useThreadManager(userId, client) {
                             return;
                         }
                         console.error("Error restoring thread:", error);
+
+                        // If we get an error, remove the thread ID from local storage
+                        localStorage.removeItem(THREAD_ID_KEY);
                     }
                 }
 
