@@ -22,6 +22,7 @@ export function Chat({ inputRef }) {
   const nextUtterance = useRef(null);
   const voicesLoaded = useRef(false);
   const OVERLAP_TIME = 100;
+  const [speakingMessageId, setSpeakingMessageId] = useState(null);
 
   // Use messages directly from context
   const allMessages = messages;
@@ -178,12 +179,17 @@ export function Chat({ inputRef }) {
         setTimeout(() => {
           processSpeechQueue();
         }, 50);
+      } else {
+        // Reset speaking message ID when all speech is finished
+        setSpeakingMessageId(null);
       }
     };
 
     utterance.onerror = (event) => {
       setIsSpeaking(false);
       currentUtterance.current = null;
+      // Reset speaking message ID on error
+      setSpeakingMessageId(null);
       
       // Try to recover from error
       if (speechQueue.current.length > 0) {
@@ -264,17 +270,35 @@ export function Chat({ inputRef }) {
         speechQueue.current = [];
         currentUtterance.current = null;
         nextUtterance.current = null;
+        // Reset speaking state when unmounting
+        setIsSpeaking(false);
+        setSpeakingMessageId(null);
       }
     };
   }, [initSpeechSynthesis]);
 
-  // Effect to speak new AI messages
+  // Effect to speak new AI messages - REMOVING AUTO-SPEAKING
   useEffect(() => {
-    const lastMessage = messages[messages.length - 1];
-    if (lastMessage?.role === 'assistant' && !isLoading) {
-      speakMessage(lastMessage.content, messages.length - 1);
-    }
+    // No longer auto-speaking new messages
+    // Instead, the user will click the speaker icon to play
   }, [messages, isLoading, speakMessage]);
+
+  const handleSpeakerClick = (message, index) => {
+    if (isSpeaking && speakingMessageId === index) {
+      // Stop speaking if this message is currently being spoken
+      if (window.speechSynthesis) {
+        window.speechSynthesis.cancel();
+        speechQueue.current = [];
+        currentUtterance.current = null;
+        setIsSpeaking(false);
+        setSpeakingMessageId(null);
+      }
+    } else {
+      // Start speaking this message
+      setSpeakingMessageId(index);
+      speakMessage(message.content, index);
+    }
+  };
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -332,7 +356,7 @@ export function Chat({ inputRef }) {
             {isSpeaking && (
               <div className="flex items-center text-blue-500">
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 animate-pulse" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M9.383 3.076A1 1 0 0110 4v12a1 1 0 01-1.707.707L4.586 13H2a1 1 0 01-1-1V8a1 1 0 011-1h2.586l3.707-3.707a1 1 0 011.09-.217zM14.657 2.929a1 1 0 011.414 0A9.972 9.972 0 0119 10a9.972 9.972 0 01-2.929 7.071 1 1 0 01-1.414-1.414A7.971 7.971 0 0017 10c0-2.21-.894-4.208-2.343-5.657a1 1 0 010-1.414zm-2.829 2.828a1 1 0 011.415 0A5.983 5.983 0 0115 10a5.984 5.984 0 01-1.757 4.243 1 1 0 01-1.415-1.415A3.984 3.984 0 0013 10a3.983 3.983 0 00-1.172-2.828 1 1 0 010-1.415z" clipRule="evenodd" />
+                  <path fillRule="evenodd" d="M9.383 3.076A1 1 0 0110 4v12a1 1 0 01-1.707.707L4.586 13H2a1 1 0 01-1-1V8a1 1 0 011-1h2.586l3.707-3.707a1 1 0 011.09-.217zM14.657 2.929a1 1 0 011.414 0A9.972 9.972 0 0119 10a9.972 9.972 0 01-2.929 7.071 1 1 0 01-1.414-1.414A7.971 7.971 0 0017 10c0-2.21-.894-4.208-2.343-5.657a1 1 0 010-1.414zm-2.829 2.828a1 1 0 011.415 0A5.983 5.983 0 0115 10a5.984 5.984 0 01-1.757 4.243 1 1 0 01-1.415-1.415A3.984 3.984 0 0013 10a3.983 3.983 0 00-1.172-2.828a1 1 0 010-1.415z" clipRule="evenodd" />
                 </svg>
               </div>
             )}
@@ -342,7 +366,7 @@ export function Chat({ inputRef }) {
           <div className="h-[2px] bg-gray-300" />
 
           {/* Messages area - fills remaining space */}
-          <div className="flex-1 overflow-y-auto p-4 space-y-4">
+          <div className="flex-1 overflow-y-auto p-4 space-y-4" style={{ paddingBottom: `${INPUT_HEIGHT + 16}px` }}>
             {allMessages.map((message, index) => (
               <div
                 key={index}
@@ -361,6 +385,8 @@ export function Chat({ inputRef }) {
                     (message.isPartial || (isLoading && index === allMessages.length - 1 && message.role === "assistant"))
                       ? "border-l-4 border-green-500"
                       : ""
+                  } ${
+                    message.role === "assistant" ? "relative" : ""
                   }`}
                 >
                   {message.content ? renderMessageContent(message.content, index === currentMessageIndex) : ""}
@@ -372,6 +398,25 @@ export function Chat({ inputRef }) {
                       <div className="w-2 h-2 rounded-full bg-gray-400 animate-bounce" style={{ animationDelay: "150ms" }}></div>
                       <div className="w-2 h-2 rounded-full bg-gray-400 animate-bounce" style={{ animationDelay: "300ms" }}></div>
                     </div>
+                  )}
+                  
+                  {/* Speaker icon for assistant messages */}
+                  {message.role === "assistant" && !message.isPartial && message.content && (
+                    <button 
+                      onClick={() => handleSpeakerClick(message, index)}
+                      className="absolute bottom-2 right-2 p-1 text-gray-500 hover:text-blue-500 transition-colors focus:outline-none"
+                      aria-label={isSpeaking && speakingMessageId === index ? "Stop speaking" : "Speak message"}
+                    >
+                      {isSpeaking && speakingMessageId === index ? (
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-blue-500 animate-pulse" viewBox="0 0 20 20" fill="currentColor">
+                          <path fillRule="evenodd" d="M9.383 3.076A1 1 0 0110 4v12a1 1 0 01-1.707.707L4.586 13H2a1 1 0 01-1-1V8a1 1 0 011-1h2.586l3.707-3.707a1 1 0 011.09-.217zM14.657 2.929a1 1 0 011.414 0A9.972 9.972 0 0119 10a9.972 9.972 0 01-2.929 7.071 1 1 0 01-1.414-1.414A7.971 7.971 0 0017 10c0-2.21-.894-4.208-2.343-5.657a1 1 0 010-1.414zm-2.829 2.828a1 1 0 011.415 0A5.983 5.983 0 0115 10a5.984 5.984 0 01-1.757 4.243 1 1 0 01-1.415-1.415A3.984 3.984 0 0013 10a3.983 3.983 0 00-1.172-2.828a1 1 0 010-1.415z" clipRule="evenodd" />
+                        </svg>
+                      ) : (
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                          <path fillRule="evenodd" d="M9.383 3.076A1 1 0 0110 4v12a1 1 0 01-1.707.707L4.586 13H2a1 1 0 01-1-1V8a1 1 0 011-1h2.586l3.707-3.707a1 1 0 011.09-.217z" clipRule="evenodd" />
+                        </svg>
+                      )}
+                    </button>
                   )}
                 </div>
               </div>
