@@ -1,6 +1,7 @@
-from typing import Annotated, List, TypedDict, Literal
-from pydantic import BaseModel, Field
 import operator
+from typing import Annotated, List, Literal, TypedDict
+
+from pydantic import BaseModel, Field
 
 
 class Section(BaseModel):

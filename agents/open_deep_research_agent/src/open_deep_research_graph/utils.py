@@ -1,27 +1,25 @@
-import os
 import asyncio
+import os
+from typing import Any, Dict, List, Optional
+
 import requests
-from typing import List, Optional, Dict, Any
-
 from exa_py import Exa
-from linkup import LinkupClient
-from tavily import AsyncTavilyClient
-
 from langchain_community.retrievers import ArxivRetriever
 from langchain_community.utilities.pubmed import PubMedAPIWrapper
 from langsmith import traceable
+from linkup import LinkupClient
+from tavily import AsyncTavilyClient
 
 from open_deep_research_graph.state import Section
 
+
 def get_config_value(value):
-    """
-    Helper function to handle both string and enum cases of configuration values
+    """Helper function to handle both string and enum cases of configuration values
     """
     return value if isinstance(value, str) else value.value
 
 def get_search_params(search_api: str, search_api_config: Optional[Dict[str, Any]]) -> Dict[str, Any]:
-    """
-    Filters the search_api_config dictionary to include only parameters accepted by the specified search API.
+    """Filters the search_api_config dictionary to include only parameters accepted by the specified search API.
 
     Args:
         search_api (str): The search API identifier (e.g., "exa", "tavily").
@@ -51,8 +49,7 @@ def get_search_params(search_api: str, search_api_config: Optional[Dict[str, Any
     return {k: v for k, v in search_api_config.items() if k in accepted_params}
 
 def deduplicate_and_format_sources(search_response, max_tokens_per_source, include_raw_content=True):
-    """
-    Takes a list of search responses and formats them into a readable string.
+    """Takes a list of search responses and formats them into a readable string.
     Limits the raw_content to approximately max_tokens_per_source tokens.
  
     Args:
@@ -102,7 +99,7 @@ def deduplicate_and_format_sources(search_response, max_tokens_per_source, inclu
     return formatted_text.strip()
 
 def format_sections(sections: list[Section]) -> str:
-    """ Format a list of sections into a string """
+    """Format a list of sections into a string"""
     formatted_str = ""
     for idx, section in enumerate(sections, 1):
         formatted_str += f"""
@@ -122,8 +119,7 @@ Content:
 
 @traceable
 async def tavily_search_async(search_queries):
-    """
-    Performs concurrent web searches using the Tavily API.
+    """Performs concurrent web searches using the Tavily API.
 
     Args:
         search_queries (List[SearchQuery]): List of search queries to process
@@ -190,7 +186,6 @@ def perplexity_search(search_queries):
                 ]
             }
     """
-
     headers = {
         "accept": "application/json",
         "content-type": "application/json",
@@ -231,7 +226,7 @@ def perplexity_search(search_queries):
         
         # First citation gets the full content
         results.append({
-            "title": f"Perplexity Search, Source 1",
+            "title": "Perplexity Search, Source 1",
             "url": citations[0],
             "content": content,
             "raw_content": content,
@@ -464,8 +459,7 @@ async def exa_search(search_queries, max_characters: Optional[int] = None, num_r
 
 @traceable
 async def arxiv_search_async(search_queries, load_max_docs=5, get_full_documents=True, load_all_available_meta=True):
-    """
-    Performs concurrent searches on arXiv using the ArxivRetriever.
+    """Performs concurrent searches on arXiv using the ArxivRetriever.
 
     Args:
         search_queries (List[str]): List of search queries or article IDs
@@ -621,8 +615,7 @@ async def arxiv_search_async(search_queries, load_max_docs=5, get_full_documents
 
 @traceable
 async def pubmed_search_async(search_queries, top_k_results=5, email=None, api_key=None, doc_content_chars_max=4000):
-    """
-    Performs concurrent searches on PubMed using the PubMedAPIWrapper.
+    """Performs concurrent searches on PubMed using the PubMedAPIWrapper.
 
     Args:
         search_queries (List[str]): List of search queries
@@ -769,8 +762,7 @@ async def pubmed_search_async(search_queries, top_k_results=5, email=None, api_k
 
 @traceable
 async def linkup_search(search_queries, depth: Optional[str] = "standard"):
-    """
-    Performs concurrent web searches using the Linkup API.
+    """Performs concurrent web searches using the Linkup API.
 
     Args:
         search_queries (List[SearchQuery]): List of search queries to process
