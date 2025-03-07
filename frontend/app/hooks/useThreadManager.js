@@ -22,7 +22,7 @@ export function useThreadManager(userId, client) {
 
     // Helper function to validate client session
     const validateClientSession = useCallback(async () => {
-        if (!client) return false;
+        if (!client || !userId) return false;
 
         try {
             // Try a simple operation to test client validity
@@ -44,7 +44,7 @@ export function useThreadManager(userId, client) {
             }
             return false;
         }
-    }, [client, refreshSession]);
+    }, [client, refreshSession, userId]);
 
     // Enhanced withRetry to include session validation
     const withRetry = useCallback(
@@ -217,13 +217,16 @@ export function useThreadManager(userId, client) {
         async (threadId) => {
             if (
                 !client ||
+                !userId ||
                 !threadId ||
                 typeof threadId !== "string" ||
                 !threadId.match(
                     /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
                 )
             ) {
-                console.error("Invalid thread ID format or missing client");
+                console.error(
+                    "Invalid thread ID format or missing client or userId"
+                );
                 return null;
             }
 
@@ -237,12 +240,12 @@ export function useThreadManager(userId, client) {
                 return null;
             }
         },
-        [client, withRetry]
+        [client, withRetry, userId]
     );
 
     const createNewThread = useCallback(async () => {
         console.log("Creating new thread");
-        if (!client) return null;
+        if (!client || !userId) return null;
 
         try {
             const thread = await withRetry(
@@ -276,7 +279,7 @@ export function useThreadManager(userId, client) {
 
     // Initialize or restore current thread with retry logic
     useEffect(() => {
-        if (!client) return;
+        if (!client || !userId) return;
 
         const initializeThread = async () => {
             try {
@@ -289,6 +292,7 @@ export function useThreadManager(userId, client) {
                 }
 
                 const storedThreadId = localStorage.getItem(THREAD_ID_KEY);
+                console.log("storedThreadId", storedThreadId);
                 if (storedThreadId) {
                     try {
                         const thread = await getThreadById(storedThreadId);
@@ -347,6 +351,7 @@ export function useThreadManager(userId, client) {
         initializeThread();
     }, [
         client,
+        userId,
         currentThreadId,
         threads,
         retryCount,
@@ -361,7 +366,7 @@ export function useThreadManager(userId, client) {
         console.log("Deleting thread:", threadId);
         console.log("currentThreadId", currentThreadId);
         console.log("client", client);
-        if (!client) return;
+        if (!client || !userId) return null;
 
         // Check if client has valid access token
         const hasValidToken =
@@ -381,7 +386,7 @@ export function useThreadManager(userId, client) {
                 console.log("Session refreshed successfully");
             } else {
                 console.error("Failed to refresh session");
-                return;
+                return null;
             }
         }
 
@@ -430,7 +435,7 @@ export function useThreadManager(userId, client) {
     };
 
     const updateThreadMetadata = async (threadId, metadata) => {
-        if (!client) return;
+        if (!client || !userId) return null;
 
         try {
             await withRetry(
