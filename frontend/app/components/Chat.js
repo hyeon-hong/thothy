@@ -25,7 +25,45 @@ export function Chat({ inputRef }) {
   const [speakingMessageId, setSpeakingMessageId] = useState(null);
 
   // Use messages directly from context
-  const allMessages = messages;
+  const allMessages = React.useMemo(() => {
+    if (isLoading) {
+      // Create a new array to store the filtered messages
+      const filteredMessages = [];
+      let foundLastUserMessage = false;
+      
+      // Go through messages in reverse order
+      for (let i = messages.length - 1; i >= 0; i--) {
+        const message = messages[i];
+        
+        // If we haven't found the last user message yet
+        if (!foundLastUserMessage) {
+          // If this is a user message, mark that we found it
+          if (message.role === 'user') {
+            foundLastUserMessage = true;
+            // Add this user message to our filtered list
+            filteredMessages.unshift(message);
+          }
+          // Skip any assistant messages after the last user message
+          continue;
+        }
+        
+        // Once we've found the last user message, include all previous messages
+        filteredMessages.unshift(message);
+      }
+      
+      // Add a loading indicator as the last message
+      filteredMessages.push({
+        role: 'assistant',
+        content: '',
+        isPartial: true
+      });
+      
+      return filteredMessages;
+    }
+    
+    // If not loading, return all messages
+    return messages;
+  }, [messages, isLoading]);
 
   // Scroll to bottom whenever messages change
   useEffect(() => {
@@ -393,10 +431,13 @@ export function Chat({ inputRef }) {
                   
                   {/* Typing indicator for streaming messages */}
                   {message.isPartial && (
-                    <div className="flex mt-2 space-x-1">
-                      <div className="w-2 h-2 rounded-full bg-gray-400 animate-bounce" style={{ animationDelay: "0ms" }}></div>
-                      <div className="w-2 h-2 rounded-full bg-gray-400 animate-bounce" style={{ animationDelay: "150ms" }}></div>
-                      <div className="w-2 h-2 rounded-full bg-gray-400 animate-bounce" style={{ animationDelay: "300ms" }}></div>
+                    <div className="flex items-center">
+                      <div className="mr-2 text-gray-600">AI is thinking</div>
+                      <div className="flex space-x-1">
+                        <div className="w-2 h-2 rounded-full bg-gray-500 animate-bounce" style={{ animationDelay: "0ms" }}></div>
+                        <div className="w-2 h-2 rounded-full bg-gray-500 animate-bounce" style={{ animationDelay: "150ms" }}></div>
+                        <div className="w-2 h-2 rounded-full bg-gray-500 animate-bounce" style={{ animationDelay: "300ms" }}></div>
+                      </div>
                     </div>
                   )}
                   
