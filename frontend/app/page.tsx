@@ -2,17 +2,63 @@
 
 import React, { useState, useEffect } from "react";
 import { Container, Typography, Button, Box, Grid, Paper, Snackbar, Alert } from "@mui/material";
-import { useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { useAuth } from "./contexts/AuthContext";
 import Header from "./components/Header";
 import AgentHub from "./components/AgentHub";
 import MyAgents from "./components/MyAgents";
 
 export default function Home() {
-    const router = useRouter();
+    const pathname = usePathname();
     const { user, signIn} = useAuth();
     const [currentView, setCurrentView] = useState("landing"); // "landing", "home", or "myAgents"
     const [openSnackbar, setOpenSnackbar] = useState(false);
+
+    // Determine initial view based on hash in URL or pathname
+    useEffect(() => {
+        const hash = window.location.hash.replace('#', '');
+        
+        if (hash === 'home') {
+            setCurrentView('home');
+        } else if (hash === 'myAgents') {
+            setCurrentView('myAgents');
+        } else if (pathname === '/' || pathname === '') {
+            setCurrentView('landing');
+        } else if (pathname.includes('/home')) {
+            setCurrentView('home');
+        } else if (pathname.includes('/playground')) {
+            setCurrentView('myAgents');
+        }
+    }, [pathname]);
+
+    // Listen for hash changes
+    useEffect(() => {
+        const handleHashChange = () => {
+            const hash = window.location.hash.replace('#', '');
+            if (hash === 'home') {
+                setCurrentView('home');
+            } else if (hash === 'myAgents') {
+                setCurrentView('myAgents');
+            } else if (hash === '') {
+                setCurrentView('landing');
+            }
+        };
+
+        window.addEventListener('hashchange', handleHashChange);
+        return () => {
+            window.removeEventListener('hashchange', handleHashChange);
+        };
+    }, []);
+
+    // Update URL hash when view changes (without page reload)
+    useEffect(() => {
+        if (currentView === 'landing') {
+            // Remove hash for landing page
+            window.history.replaceState(null, '', window.location.pathname);
+        } else {
+            window.history.replaceState(null, '', `#${currentView}`);
+        }
+    }, [currentView]);
 
     useEffect(() => {
         // Check if user has previously acknowledged the notice
@@ -24,7 +70,9 @@ export default function Home() {
 
     const handleGetStarted = () => {
         if (user) {
-            setCurrentView("home");
+            // Use hash-based navigation instead of direct state change
+            window.history.pushState(null, '', '#home');
+            window.dispatchEvent(new HashChangeEvent('hashchange'));
         } else {
             signIn();
         }
@@ -315,4 +363,14 @@ export default function Home() {
             </Box>
         );
     }
+    
+    // Default return
+    return (
+        <Box>
+            <Header currentView={currentView} />
+            <Container maxWidth="lg" sx={{ mt: 4 }}>
+                <Typography variant="h4">Loading content...</Typography>
+            </Container>
+        </Box>
+    );
 }

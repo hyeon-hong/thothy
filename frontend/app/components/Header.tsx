@@ -17,7 +17,6 @@ import {
   Divider,
 } from '@mui/material';
 import { useAuth } from '../contexts/AuthContext';
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import AccountCircle from '@mui/icons-material/AccountCircle';
 import Logout from '@mui/icons-material/Logout';
@@ -30,7 +29,6 @@ export default function Header({ currentView }: HeaderProps) {
   const { user, signIn, signOut } = useAuth();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
-  const router = useRouter();
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
 
   // Get user's display name and avatar
@@ -43,9 +41,16 @@ export default function Header({ currentView }: HeaderProps) {
     minWidth: 'auto',
     px: 2,
   };
-
-  const handleTothyClick = () => {
-    router.push('/');
+  
+  // Navigation without page reload
+  const navigateTo = (path: string, hash?: string) => {
+    if (hash) {
+      window.history.pushState(null, '', `${path}#${hash}`);
+      // Dispatch a custom event so other components can react
+      window.dispatchEvent(new HashChangeEvent('hashchange'));
+    } else {
+      window.history.pushState(null, '', path);
+    }
   };
 
   const handleProfileMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
@@ -73,7 +78,7 @@ export default function Header({ currentView }: HeaderProps) {
           <Typography
             variant="h5"
             component="div"
-            onClick={handleTothyClick}
+            onClick={() => navigateTo('/')}
             sx={{
               fontFamily: "'Roboto Mono', monospace",
               fontWeight: 700,
@@ -87,7 +92,7 @@ export default function Header({ currentView }: HeaderProps) {
           <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
             <Button
               color={currentView === 'home' ? 'primary' : 'inherit'}
-              onClick={() => router.push('/home')}
+              onClick={() => navigateTo('/', 'home')}
               sx={{
                 ...navButtonStyle,
                 fontWeight: currentView === 'home' ? 700 : 400,
@@ -99,7 +104,7 @@ export default function Header({ currentView }: HeaderProps) {
             {user && (
               <Button
                 color={currentView === 'myAgents' ? 'primary' : 'inherit'}
-                onClick={() => router.push('/playground')}
+                onClick={() => navigateTo('/', 'myAgents')}
                 sx={{
                   ...navButtonStyle,
                   fontWeight: currentView === 'myAgents' ? 700 : 400,
