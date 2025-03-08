@@ -17,7 +17,7 @@ import { useAuth } from "../../contexts/AuthContext";
 export default function OpenDeepResearchAgentPage({ graph_name }) {
     const inputRef = useRef(null);
     const { session } = useAuth();
-    const [testReport, setTestReport] = useState(false);
+    console.log("session", session);
 
     // Environment-aware deployment URL
     const deploymentUrl =
@@ -36,19 +36,14 @@ export default function OpenDeepResearchAgentPage({ graph_name }) {
             // Include authentication token from the session
             Authorization: session?.access_token
                 ? `Bearer ${session.access_token}`
-                : undefined,
+                : "",
+            "Content-Type": "application/json",
         },
     });
 
     useEffect(() => {
         // Focus input when page mounts
         inputRef.current?.focus();
-
-        // Add test functionality to display a sample final_report message
-        // This is for development/testing only
-        if (process.env.NODE_ENV === "development") {
-            setTestReport(true);
-        }
 
         const handleKeyPress = (e) => {
             // Check if the pressed key is "/" and no input/textarea is focused
@@ -92,14 +87,26 @@ export default function OpenDeepResearchAgentPage({ graph_name }) {
 
         if (!message || message.trim() === "") return;
 
-        // Submit the message to the thread
-        thread.submit({
-            topic: message,
-        });
+        // Check for authentication
+        if (!session?.access_token) {
+            console.error("Authentication error: No access token available");
+            // You could add UI feedback here about authentication issues
+            return;
+        }
 
-        // Reset the form
-        e.target.reset();
-        inputRef.current?.focus();
+        try {
+            // Submit the message to the thread
+            thread.submit({
+                topic: message,
+            });
+
+            // Reset the form
+            e.target.reset();
+            inputRef.current?.focus();
+        } catch (error) {
+            console.error("Error submitting message:", error);
+            // You could add UI feedback here about the error
+        }
     };
 
     return (
@@ -136,131 +143,77 @@ export default function OpenDeepResearchAgentPage({ graph_name }) {
                     gap: 2,
                 }}
             >
-                {thread.messages.map((message, index) => (
-                    <Paper
-                        key={message.id || index}
-                        elevation={0}
-                        sx={{
-                            p: 2,
-                            maxWidth: message.type === "final_report" ? "95%" : "80%",
-                            alignSelf: "flex-start",
-                            bgcolor: 
-                                message.type === "final_report"
-                                    ? "#f0f8ff" // Light blue background for final report
-                                    : "white",  // Default background for other messages
-                            borderRadius: 2,
-                            border: message.type === "final_report" ? "1px solid #b3e5fc" : "none",
-                        }}
-                    >
-                        <Box
+                {thread.messages.map((message, index) => {
+                    // Debug logging for message data
+                    // console.log(`Message ${index}:`, message);
+                    // console.log(`Message ${index} type:`, message.type);
+                    
+                    return (
+                        <Paper
+                            key={message.id || index}
+                            elevation={0}
                             sx={{
-                                display: "flex",
-                                alignItems: "flex-start",
-                                gap: 1.5,
+                                p: 2,
+                                maxWidth: message.type === "final_report" ? "95%" : "80%",
+                                alignSelf: "flex-start",
+                                bgcolor: 
+                                    message.type === "final_report"
+                                        ? "#f0f8ff" // Light blue background for final report
+                                        : "white",  // Default background for other messages
+                                borderRadius: 2,
+                                border: message.type === "final_report" ? "1px solid #b3e5fc" : "none",
                             }}
                         >
-                            <Avatar
+                            <Box
                                 sx={{
-                                    bgcolor: message.type === "final_report" ? "#1e88e5" : "primary.main",
-                                    width: 32,
-                                    height: 32,
+                                    display: "flex",
+                                    alignItems: "flex-start",
+                                    gap: 1.5,
                                 }}
                             >
-                                {message.type === "final_report" ? "📄" : "AI"}
-                            </Avatar>
-                            <Box sx={{ width: "100%" }}>
-                                {message.type === "final_report" && (
+                                <Avatar
+                                    sx={{
+                                        bgcolor: message.type === "final_report" ? "#1e88e5" : "primary.main",
+                                        width: 32,
+                                        height: 32,
+                                    }}
+                                >
+                                    {message.type === "final_report" ? "📄" : "AI"}
+                                </Avatar>
+                                <Box sx={{ width: "100%" }}>
+                                    {message.type === "final_report" && (
+                                        <Typography 
+                                            variant="subtitle1" 
+                                            sx={{ 
+                                                fontWeight: "bold", 
+                                                color: "#1976d2",
+                                                mb: 1 
+                                            }}
+                                        >
+                                            Research Report
+                                        </Typography>
+                                    )}
                                     <Typography 
-                                        variant="subtitle1" 
-                                        sx={{ 
-                                            fontWeight: "bold", 
-                                            color: "#1976d2",
-                                            mb: 1 
+                                        variant="body1"
+                                        sx={{
+                                            whiteSpace: message.type === "final_report" ? "pre-wrap" : "normal",
+                                            fontFamily: message.type === "final_report" ? "'Georgia', serif" : "inherit",
                                         }}
                                     >
-                                        Research Report
+                                        {typeof message.content === 'string' 
+                                            ? message.content
+                                            : `[Content type: ${typeof message.content}] ${
+                                                  typeof message.content === 'object' 
+                                                    ? JSON.stringify(message.content, null, 2) 
+                                                    : String(message.content)
+                                              }`
+                                        }
                                     </Typography>
-                                )}
-                                <Typography 
-                                    variant="body1"
-                                    sx={{
-                                        whiteSpace: message.type === "final_report" ? "pre-wrap" : "normal",
-                                        fontFamily: message.type === "final_report" ? "'Georgia', serif" : "inherit",
-                                    }}
-                                >
-                                    {message.content}
-                                </Typography>
+                                </Box>
                             </Box>
-                        </Box>
-                    </Paper>
-                ))}
-
-                {/* Test Final Report (for development only) */}
-                {testReport && (
-                    <Paper
-                        elevation={0}
-                        sx={{
-                            p: 2,
-                            maxWidth: "95%",
-                            alignSelf: "flex-start",
-                            bgcolor: "#f0f8ff", // Light blue background for final report
-                            borderRadius: 2,
-                            border: "1px solid #b3e5fc",
-                            mt: 2
-                        }}
-                    >
-                        <Box
-                            sx={{
-                                display: "flex",
-                                alignItems: "flex-start",
-                                gap: 1.5,
-                            }}
-                        >
-                            <Avatar
-                                sx={{
-                                    bgcolor: "#1e88e5",
-                                    width: 32,
-                                    height: 32,
-                                }}
-                            >
-                                📄
-                            </Avatar>
-                            <Box sx={{ width: "100%" }}>
-                                <Typography 
-                                    variant="subtitle1" 
-                                    sx={{ 
-                                        fontWeight: "bold", 
-                                        color: "#1976d2",
-                                        mb: 1 
-                                    }}
-                                >
-                                    Research Report (Test)
-                                </Typography>
-                                <Typography 
-                                    variant="body1"
-                                    sx={{
-                                        whiteSpace: "pre-wrap",
-                                        fontFamily: "'Georgia', serif",
-                                    }}
-                                >
-                                    {`# Sample Research Report
-                                    
-## Introduction
-This is a sample test report to verify the styling of the final_report message type.
-
-## Key Findings
-- The styling includes a distinct background color
-- Special typography settings for better readability
-- Proper formatting with pre-wrap for maintaining structure
-- A dedicated icon in the avatar
-
-## Conclusions
-This test report helps confirm that the UI will correctly display research reports generated by the open_deep_research_graph.`}
-                                </Typography>
-                            </Box>
-                        </Box>
-                    </Paper>
-                )}
+                        </Paper>
+                    );
+                })}
 
                 {/* Loading indicator */}
                 {thread.isLoading && (

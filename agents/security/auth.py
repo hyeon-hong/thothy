@@ -62,8 +62,8 @@ async def auth_authenticate(
     authorization: str | None,
 ) -> tuple[list[str], Auth.types.MinimalUserDict]:
     """Validate JWT tokens and extract user information."""
-    # print("========== Function: auth_authenticate")
-    # print(f"========== authorization: {authorization}")
+    print("========== Function: auth_authenticate")
+    print(f"========== authorization: {authorization}")
 
     assert authorization
 
@@ -138,6 +138,22 @@ async def auth_on(
 
     # Reject all requests by default
     return False
+
+
+@auth.on.threads
+async def auth_on_threads(
+    ctx: Auth.types.AuthContext,
+    value: Any,
+) -> Any:
+    """Thread creation. This will match only on thread create actions"""
+    print("========== Function: auth_on_threads")
+    print(f"========== ctx.resource: {ctx.resource}")
+    print(f"========== ctx.action: {ctx.action}")
+    print(f"========== ctx.permissions: {ctx.permissions}")
+    print(f"========== ctx.user: {ctx.user}")
+    print(f"========== value: {value}")
+
+    return {"owner": ctx.user.identity}
 
 
 @auth.on.threads.create

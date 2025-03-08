@@ -8,7 +8,7 @@ import OpenDeepResearchAgentPage from "../open_deep_research_agent/page";
 export default function AgentPage() {
     const params = useParams();
     const graph_name = (params?.graph_name as string) || "chat_graph";
-    console.log("graph_name", graph_name);
+    // console.log("graph_name", graph_name);
 
     // Function to render the appropriate agent component
     const renderAgentComponent = () => {
