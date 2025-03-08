@@ -270,7 +270,7 @@ export default function Home() {
                                 Dismiss
                             </Button>
                             <Button color="inherit" size="small" onClick={() => handleAcknowledgeNotice(true)}>
-                                Don't show again
+                                Don&apos;t show again
                             </Button>
                         </>
                     }

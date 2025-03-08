@@ -135,7 +135,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                     setSession(currentSession);
                     setUser(updatedUser);
                     saveAuthState(updatedUser, currentSession);
-                } else if (event === 'SIGNED_OUT' || event === 'USER_DELETED') {
+                } else if (event === 'SIGNED_OUT') {
                     setSession(null);
                     setUser(null);
                     localStorage.removeItem(STORAGE_KEY);

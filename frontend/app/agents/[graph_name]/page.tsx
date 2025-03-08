@@ -14,9 +14,9 @@ export default function AgentPage() {
     const renderAgentComponent = () => {
         switch (graph_name) {
             case "chat_graph":
-                return <ChatAgentPage graph_name={graph_name} />;
+                return <ChatAgentPage />;
             case "open_deep_research_graph":
-                return <OpenDeepResearchAgentPage graph_name={graph_name} />;
+                return <OpenDeepResearchAgentPage />;
             default:
                 return (
                     <div className="container mx-auto px-4 py-8">

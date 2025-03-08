@@ -57,8 +57,9 @@ const MarkdownComponents = {
 const HEADER_HEIGHT = 64; // Height of main header (blue bar)
 const THREAD_BUTTON_HEIGHT = 84; // Increased from 72 to 84
 
-export default function OpenDeepResearchAgentPage({ graph_name }) {
+export default function OpenDeepResearchAgentPage() {
     const inputRef = useRef(null);
+    const graph_name = "open_deep_research_graph"; // Default value or extract from URL if needed
     const { session } = useAuth();
     const [formattedMessages, setFormattedMessages] = useState([]);
     const [expandedMessages, setExpandedMessages] = useState({});
