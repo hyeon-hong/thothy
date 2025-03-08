@@ -21,7 +21,6 @@ import {
 } from "@mui/material";
 import { useAuth } from "../../contexts/AuthContext";
 import { Client } from "@langchain/langgraph-sdk";
-import { useStream } from "@langchain/langgraph-sdk/react";
 import DeleteIcon from "@mui/icons-material/Delete";
 import AddIcon from "@mui/icons-material/Add";
 
@@ -41,6 +40,7 @@ export default function OpenDeepResearchAgentPage({ graph_name }) {
     const [threadId, setThreadId] = useState(null);
     const messagesEndRef = useRef(null);
     const [isThreadListLoading, setIsThreadListLoading] = useState(false);
+    const [isStreaming, setIsStreaming] = useState(false);
 
     // Environment-aware deployment URL
     const deploymentUrl =
@@ -77,25 +77,61 @@ export default function OpenDeepResearchAgentPage({ graph_name }) {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     };
 
-    // Get a single thread object from useStream instead of destructuring
-    const thread = useStream({
-        apiUrl: deploymentUrl,
-        apiKey: session?.access_token,
-        assistantId: graph_name || "open_deep_research_agent",
-        threadId: threadId,
-        onThreadId: setThreadId,
-        defaultHeaders: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${session?.access_token}`,
-        },
-    });
+    // Fetch thread messages and start streaming
+    const streamMessages = async (threadIdToStream) => {
+        if (!client.current || !threadIdToStream) return;
 
-    // Update messages when streaming provides new ones
-    useEffect(() => {
-        if (thread.messages && thread.messages.length > 0) {
-            setMessages(thread.messages);
+        try {
+            // First get current thread state
+            const threadState = await client.current.threads.getState(
+                threadIdToStream
+            );
+
+            // If thread state exists, load its messages
+            if (
+                threadState &&
+                threadState.values &&
+                Array.isArray(threadState.values.messages)
+            ) {
+                setMessages(threadState.values.messages);
+            }
+
+            // Set up streaming for new messages
+            setIsStreaming(true);
+
+            // Create a streaming connection for this thread
+            const stream = await client.current.runs.stream(
+                threadIdToStream,
+                graph_name || "open_deep_research_agent",
+                {
+                    streamMode: "values",
+                }
+            );
+
+            // Handle streaming updates
+            for await (const chunk of stream) {
+                if (
+                    chunk.event === "values" &&
+                    chunk.data &&
+                    Array.isArray(chunk.data.messages)
+                ) {
+                    setMessages(chunk.data.messages);
+                    setIsLoading(false);
+                } else if (chunk.event === "values" && chunk.data) {
+                    // Handle potential different formats
+                    console.log("Received values data:", chunk.data);
+                }
+            }
+
+            return stream;
+        } catch (err) {
+            console.error("Error setting up stream:", err);
+            setError("Failed to connect to message stream");
+            setIsLoading(false);
+            setIsStreaming(false);
+            return null;
         }
-    }, [thread.messages]);
+    };
 
     // Scroll to bottom when messages change
     useEffect(() => {
@@ -139,11 +175,15 @@ export default function OpenDeepResearchAgentPage({ graph_name }) {
 
         try {
             setIsLoading(true);
+            const graphId = graph_name || "open_deep_research_agent";
+
             const thread = await client.current.threads.create({
                 metadata: {
                     userId: session.user?.id,
-                    graphName: graph_name || "open_deep_research_agent",
+                    graphName: graphId,
+                    title: "New Thread", // Add a default title
                 },
+                graph_id: graphId, // Add the required graph_id parameter
             });
 
             // Set as current thread
@@ -159,6 +199,17 @@ export default function OpenDeepResearchAgentPage({ graph_name }) {
                         "Welcome to the Open Deep Research Agent. How can I help you today?",
                 },
             ]);
+
+            // Add initial message to thread state
+            await client.current.threads.updateState(thread.thread_id, {
+                messages: [
+                    {
+                        role: "assistant",
+                        content:
+                            "Welcome to the Open Deep Research Agent. How can I help you today?",
+                    },
+                ],
+            });
 
             // Refresh thread list
             console.log("Refreshing thread list after creating new thread");
@@ -245,9 +296,16 @@ export default function OpenDeepResearchAgentPage({ graph_name }) {
                                 "Welcome to the Open Deep Research Agent. How can I help you today?",
                         },
                     ];
+
+                    // Update thread state with welcome message
+                    await client.current.threads.updateState(newThreadId, {
+                        messages: threadMessages,
+                    });
                 }
                 setMessages(threadMessages);
             }
+
+            // The streamMessages useEffect will automatically set up streaming for this thread
         } catch (err) {
             console.error("Error switching thread:", err);
             setError("Failed to switch thread. Please try again.");
@@ -257,7 +315,6 @@ export default function OpenDeepResearchAgentPage({ graph_name }) {
     };
 
     // Load existing thread or create a new one
-    // TODO: Twice called, why? Because of the useStream?
     useEffect(() => {
         if (!session?.access_token || !client.current) return;
 
@@ -286,7 +343,7 @@ export default function OpenDeepResearchAgentPage({ graph_name }) {
                                 },
                             ]);
                         }
-                        return; // Exit if we loaded the thread successfully
+                        // No need to return, we'll still set up streaming via the useEffect
                     }
                 } catch (err) {
                     console.error("Error loading saved thread:", err);
@@ -336,15 +393,35 @@ export default function OpenDeepResearchAgentPage({ graph_name }) {
                         },
                     ]);
                 }
-            } else {
-                // No threads exist, create a new one
-                console.log("Creating new thread");
-                await createNewThread();
             }
         };
 
         initializeThread();
     }, [session?.access_token, client.current]);
+
+    // Send a message using the client
+    const sendMessage = async (userInput) => {
+        if (!client.current || !threadId) return;
+
+        try {
+            setIsLoading(true);
+
+            // Add message to thread
+            await client.current.threads.run({
+                threadId: threadId,
+                assistantId: graph_name || "open_deep_research_agent",
+                input: {
+                    topic: userInput,
+                },
+            });
+
+            // The streaming connection will update messages automatically
+        } catch (err) {
+            console.error("Error sending message:", err);
+            setError("Failed to send message. Please try again.");
+            setIsLoading(false);
+        }
+    };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -358,11 +435,8 @@ export default function OpenDeepResearchAgentPage({ graph_name }) {
         setIsLoading(true);
 
         try {
-            // Send message using the thread.sendMessage method
-            thread.submit({
-                // messages: [{ type: "human", content: userInput }],
-                topic: userInput,
-            });
+            // Send message using the client
+            await sendMessage(userInput);
         } catch (err) {
             console.error("Error sending message:", err);
             setError("Failed to send message. Please try again.");
@@ -423,7 +497,8 @@ export default function OpenDeepResearchAgentPage({ graph_name }) {
         console.log("Session:", session);
         console.log("Number of threads:", threads.length);
         console.log("Messages:", messages);
-        console.log("Thread object:", thread);
+        console.log("Is Streaming:", isStreaming);
+        console.log("Is Loading:", isLoading);
         console.groupEnd();
     };
 
@@ -660,7 +735,7 @@ export default function OpenDeepResearchAgentPage({ graph_name }) {
                         <div ref={messagesEndRef} />
 
                         {/* Loading indicator */}
-                        {(isLoading || thread.isLoading) && (
+                        {(isLoading || isStreaming) && (
                             <Box
                                 sx={{
                                     display: "flex",
@@ -691,9 +766,7 @@ export default function OpenDeepResearchAgentPage({ graph_name }) {
                             fullWidth
                             placeholder="Ask a question..."
                             variant="outlined"
-                            disabled={
-                                isLoading || thread.isLoading || !threadId
-                            }
+                            disabled={isLoading || isStreaming || !threadId}
                             onKeyPress={handleKeyPress}
                             multiline
                             maxRows={4}
@@ -703,9 +776,7 @@ export default function OpenDeepResearchAgentPage({ graph_name }) {
                             color="primary"
                             sx={{ ml: 2 }}
                             type="submit"
-                            disabled={
-                                isLoading || thread.isLoading || !threadId
-                            }
+                            disabled={isLoading || isStreaming || !threadId}
                         >
                             Send
                         </Button>
