@@ -142,9 +142,10 @@ export default function OpenDeepResearchAgentPage({ graph_name }) {
             // Reset UI state for new thread
             setFormattedMessages([
                 {
-                    role: "assistant", 
-                    content: "Welcome! Ask me a research question, and I'll help you find information."
-                }
+                    role: "assistant",
+                    content:
+                        "Welcome! Ask me a research question, and I'll help you find information.",
+                },
             ]);
 
             // Add initial message to thread state
@@ -152,7 +153,8 @@ export default function OpenDeepResearchAgentPage({ graph_name }) {
                 values: [
                     {
                         role: "assistant",
-                        content: "Welcome! Ask me a research question, and I'll help you find information."
+                        content:
+                            "Welcome! Ask me a research question, and I'll help you find information.",
                     },
                 ],
             });
@@ -221,9 +223,11 @@ export default function OpenDeepResearchAgentPage({ graph_name }) {
 
         try {
             setIsLoading(true);
-            
-            const threadState = await client.current.threads.getState(newThreadId);
-            
+
+            const threadState = await client.current.threads.getState(
+                newThreadId
+            );
+
             // Load thread messages
             const threadMessages = threadState.values.messages || [];
             if (threadMessages && Array.isArray(threadMessages)) {
@@ -232,11 +236,12 @@ export default function OpenDeepResearchAgentPage({ graph_name }) {
                 setFormattedMessages([
                     {
                         role: "assistant",
-                        content: "Welcome! Ask me a research question, and I'll help you find information."
-                    }
+                        content:
+                            "Welcome! Ask me a research question, and I'll help you find information.",
+                    },
                 ]);
             }
-            
+
             // Update the current thread ID
             setThreadId(newThreadId);
             // Save to local storage
@@ -246,7 +251,7 @@ export default function OpenDeepResearchAgentPage({ graph_name }) {
         } catch (err) {
             console.error("Error switching thread:", err);
             setError("Failed to switch thread. Please try again.");
-            
+
             // Reset UI
             setFormattedMessages([]);
             setIsLoading(false);
@@ -277,7 +282,8 @@ export default function OpenDeepResearchAgentPage({ graph_name }) {
                             setFormattedMessages([
                                 {
                                     role: "assistant",
-                                    content: "Welcome! Ask me a research question, and I'll help you find information."
+                                    content:
+                                        "Welcome! Ask me a research question, and I'll help you find information.",
                                 },
                             ]);
                         }
@@ -316,7 +322,8 @@ export default function OpenDeepResearchAgentPage({ graph_name }) {
                         setFormattedMessages([
                             {
                                 role: "assistant",
-                                content: "Welcome! Ask me a research question, and I'll help you find information."
+                                content:
+                                    "Welcome! Ask me a research question, and I'll help you find information.",
                             },
                         ]);
                     }
@@ -325,7 +332,8 @@ export default function OpenDeepResearchAgentPage({ graph_name }) {
                     setFormattedMessages([
                         {
                             role: "assistant",
-                            content: "Welcome! Ask me a research question, and I'll help you find information."
+                            content:
+                                "Welcome! Ask me a research question, and I'll help you find information.",
                         },
                     ]);
                 }
@@ -336,87 +344,107 @@ export default function OpenDeepResearchAgentPage({ graph_name }) {
     }, [session?.access_token, client.current]);
 
     // Fetch thread messages and start streaming
-    const streamMessages = async (threadIdToStream) => {
+    const streamMessages = async (threadIdToStream, userInput) => {
         if (!client.current || !threadIdToStream) return;
-        
+
         try {
             // First get current thread state
-            const threadState = await client.current.threads.getState(threadIdToStream);
-            
+            const threadState = await client.current.threads.getState(
+                threadIdToStream
+            );
+
             // If thread state exists, load its messages
-            if (threadState && threadState.values && Array.isArray(threadState.values.messages)) {
+            if (
+                threadState &&
+                threadState.values &&
+                Array.isArray(threadState.values.messages)
+            ) {
                 setFormattedMessages(threadState.values.messages);
             }
-            
+
             // Set up streaming for new messages
             setIsStreaming(true);
-            
+
             // Create a streaming connection for this thread
             const stream = await client.current.runs.stream(
-                threadIdToStream, 
+                threadIdToStream,
                 graph_name || "open_deep_research_agent",
                 {
-                    streamMode: "values"
+                    input: {
+                        topic: userInput,
+                    },
+                    streamMode: "values",
                 }
             );
-            
+
             // Handle streaming updates
             for await (const chunk of stream) {
                 console.log("chunk", chunk);
-                
+
                 if (chunk.event === "values" && chunk.data) {
                     // Process research data from the chunk
-                    if (chunk.data.completed_sections && Array.isArray(chunk.data.completed_sections)) {
+                    if (
+                        chunk.data.completed_sections &&
+                        Array.isArray(chunk.data.completed_sections)
+                    ) {
                         const formattedMessages = [];
-                        
+
                         // Add assistant welcome message if it's the first message
                         formattedMessages.push({
                             role: "assistant",
-                            content: "I'm researching information for you. Here's what I've found so far:"
+                            content:
+                                "I'm researching information for you. Here's what I've found so far:",
                         });
-                        
+
                         // Add each completed section as a message
-                        chunk.data.completed_sections.forEach(section => {
+                        chunk.data.completed_sections.forEach((section) => {
                             if (section.content) {
                                 formattedMessages.push({
                                     role: "assistant",
-                                    content: section.content
+                                    content: section.content,
                                 });
                             }
                         });
-                        
+
                         // Add sections information if available
-                        if (chunk.data.sections && Array.isArray(chunk.data.sections)) {
+                        if (
+                            chunk.data.sections &&
+                            Array.isArray(chunk.data.sections)
+                        ) {
                             formattedMessages.push({
                                 role: "assistant",
-                                content: `## All Sections (${chunk.data.sections.length} total)\n\n${chunk.data.sections.map(s => `- ${s.name}: ${s.description}`).join('\n')}`
+                                content: `## All Sections (${
+                                    chunk.data.sections.length
+                                } total)\n\n${chunk.data.sections
+                                    .map((s) => `- ${s.name}: ${s.description}`)
+                                    .join("\n")}`,
                             });
                         }
-                        
+
                         // Add report sections from research if available
                         if (chunk.data.report_sections_from_research) {
                             formattedMessages.push({
                                 role: "assistant",
-                                content: `## Report Sections From Research\n\n${chunk.data.report_sections_from_research}`
+                                content: `## Report Sections From Research\n\n${chunk.data.report_sections_from_research}`,
                             });
                         }
-                        
+
                         // If there's a final report, add it
                         if (chunk.data.final_report) {
                             formattedMessages.push({
                                 role: "assistant",
-                                content: `# Final Report\n\n${chunk.data.final_report}`
+                                content: `# Final Report\n\n${chunk.data.final_report}`,
                             });
                         }
-                        
+
                         // If there's a topic, show it
                         if (chunk.data.topic) {
                             formattedMessages.push({
                                 role: "assistant",
-                                content: `Research topic: ${chunk.data.topic}`
+                                content: `Research topic: ${chunk.data.topic}`,
                             });
                         }
-                        
+
                         // Only update messages if we have content
                         if (formattedMessages.length > 0) {
                             setFormattedMessages(formattedMessages);
@@ -431,7 +459,7 @@ export default function OpenDeepResearchAgentPage({ graph_name }) {
                     }
                 }
             }
-            
+
             return stream;
         } catch (err) {
             console.error("Error setting up stream:", err);
@@ -448,17 +476,19 @@ export default function OpenDeepResearchAgentPage({ graph_name }) {
         if (!userInput || !threadId || !client.current) return;
 
         // Add user message to UI immediately
-        setFormattedMessages((prev) => [...prev, { role: "user", content: userInput }]);
+        setFormattedMessages((prev) => [
+            ...prev,
+            { role: "user", content: userInput },
+        ]);
 
         inputRef.current.value = "";
         setIsLoading(true);
 
         try {
             // Set up streaming for this thread only when Send is clicked
-            streamMessages(threadId)
-                .catch(err => {
-                    console.error("Error in stream setup:", err);
-                });
+            streamMessages(threadId, userInput).catch((err) => {
+                console.error("Error in stream setup:", err);
+            });
         } catch (err) {
             console.error("Error sending message:", err);
             setError("Failed to send message. Please try again.");
@@ -541,9 +571,9 @@ export default function OpenDeepResearchAgentPage({ graph_name }) {
     }, [threadId, client.current]);
 
     const toggleMessageExpansion = (index) => {
-        setExpandedMessages(prev => ({
+        setExpandedMessages((prev) => ({
             ...prev,
-            [index]: !prev[index]
+            [index]: !prev[index],
         }));
     };
 
@@ -587,6 +617,9 @@ export default function OpenDeepResearchAgentPage({ graph_name }) {
                 <Box
                     sx={{
                         width: 280,
+                        minWidth: 280,
+                        maxWidth: 280,
+                        flexShrink: 0,
                         borderRight: "1px solid #e0e0e0",
                         bgcolor: "white",
                         display: "flex",
@@ -736,6 +769,7 @@ export default function OpenDeepResearchAgentPage({ graph_name }) {
                         flexDirection: "column",
                         height: "100%",
                         overflow: "hidden",
+                        width: "calc(100% - 280px)", // Ensure it takes remaining width
                     }}
                 >
                     {/* Messages Container */}
@@ -766,34 +800,42 @@ export default function OpenDeepResearchAgentPage({ graph_name }) {
                                             : "white",
                                 }}
                             >
-                                <Box sx={{ position: 'relative' }}>
-                                    <Typography 
+                                <Box sx={{ position: "relative" }}>
+                                    <Typography
                                         variant="body1"
                                         sx={{
-                                            overflow: 'hidden',
-                                            textOverflow: 'ellipsis',
-                                            display: '-webkit-box',
-                                            WebkitLineClamp: expandedMessages[index] ? 'unset' : 2,
-                                            WebkitBoxOrient: 'vertical',
-                                            whiteSpace: 'pre-wrap'
+                                            overflow: "hidden",
+                                            textOverflow: "ellipsis",
+                                            display: "-webkit-box",
+                                            WebkitLineClamp: expandedMessages[
+                                                index
+                                            ]
+                                                ? "unset"
+                                                : 2,
+                                            WebkitBoxOrient: "vertical",
+                                            whiteSpace: "pre-wrap",
                                         }}
                                     >
                                         {message.content}
                                     </Typography>
-                                    
+
                                     {/* Only show expand button if content is long enough to need it */}
-                                    {message.content.split('\n').length > 2 || message.content.length > 150 ? (
-                                        <IconButton 
-                                            size="small" 
-                                            onClick={() => toggleMessageExpansion(index)}
-                                            sx={{ 
-                                                position: 'absolute', 
-                                                bottom: -8, 
+                                    {message.content.split("\n").length > 2 ||
+                                    message.content.length > 150 ? (
+                                        <IconButton
+                                            size="small"
+                                            onClick={() =>
+                                                toggleMessageExpansion(index)
+                                            }
+                                            sx={{
+                                                position: "absolute",
+                                                bottom: -8,
                                                 right: -8,
-                                                bgcolor: 'background.paper',
-                                                border: '1px solid #e0e0e0',
-                                                '&:hover': {
-                                                    bgcolor: 'background.default',
+                                                bgcolor: "background.paper",
+                                                border: "1px solid #e0e0e0",
+                                                "&:hover": {
+                                                    bgcolor:
+                                                        "background.default",
                                                 },
                                             }}
                                         >
