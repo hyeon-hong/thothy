@@ -14,7 +14,6 @@ import {
     CardContent,
 } from "@mui/material";
 import { styled } from "@mui/material/styles";
-import Header from "./Header";
 import { useSearchParams } from 'next/navigation';
 
 const StyledContainer = styled(Container)(({ theme }) => ({

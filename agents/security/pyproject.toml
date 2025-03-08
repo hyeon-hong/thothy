@@ -1,7 +1,7 @@
 [project]
-name = "chat_agent"
+name = "security"
 version = "0.0.1"
-description = "An agent that can chat with a user."
+description = "Authentication and authorization module for agents"
 authors = [
     { name = "Thothy", email = "ai.thothy@gmail.com" },
 ]
@@ -9,16 +9,9 @@ license = { text = "Apache-2.0" }
 requires-python = ">=3.12"
 dependencies = [
     "langgraph>=0.2.55",
-    "langgraph-checkpoint>=2.0.16",
     "langgraph-sdk>=0.1.32",
-    "langchain>=0.3.9",
-    "langchain-core>=0.3.9",
-    "langchain-openai>=0.3.7",
-    "langchain-anthropic>=0.3.9",
-    "langmem>=0.0.15",
-    "psycopg[binary,pool]>=3.2.5",
-    "pydantic>=2.0.0",
-    "python-dotenv>=1.0.0",
+    "httpx>=0.28.1",
+    "PyJWT>=2.10.1",
 ]
 
 [project.optional-dependencies]
@@ -29,11 +22,10 @@ requires = ["setuptools>=73.0.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools]
-packages = ["chat_graph", "thothy.chat_graph"]
+packages = ["security", "thothy.security"]
 [tool.setuptools.package-dir]
-"chat_graph" = "src/chat_graph"
-"thothy.chat_graph" = "src/chat_graph"
-
+"security" = "."
+"thothy.security" = "."
 
 [tool.setuptools.package-data]
 "*" = ["py.typed"]
@@ -54,4 +46,4 @@ include = ["*.py", "*.pyi", "*.ipynb"]
 convention = "google"
 
 [tool.mypy]
-ignore_errors = true
+ignore_errors = true 

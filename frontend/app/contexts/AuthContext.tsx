@@ -50,56 +50,103 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const [user, setUser] = useState<User | null>(null);
     const [session, setSession] = useState<Session | null>(null);
     const [loading, setLoading] = useState(true);
+    const supabase = createClient();
 
     useEffect(() => {
-        // Load initial state from localStorage
+        // Initialize session from localStorage to prevent flash of unauthenticated state
         const storedState = loadAuthState();
         if (storedState) {
             setUser(storedState.user);
             setSession(storedState.session);
         }
 
-        // Check active sessions and sets the user
-        const checkSession = async () => {
+        // Check for active session and get user
+        const initializeAuth = async () => {
             try {
-                const response = await fetch("/api/auth/session");
-                const { session } = await response.json();
-
-                if (session?.user) {
+                // This will use the existing session and refresh the token if needed
+                const { data: { session: currentSession }, error } = await supabase.auth.getSession();
+                
+                if (error) throw error;
+                
+                if (currentSession?.user) {
                     // Extract user metadata from Google OAuth
-                    const userMetadata = session.user.user_metadata || {};
+                    const userMetadata = currentSession.user.user_metadata || {};
 
                     // Update user with Google profile information
                     const updatedUser = {
-                        ...session.user,
+                        ...currentSession.user,
                         user_metadata: {
                             ...userMetadata,
                             full_name:
                                 userMetadata?.full_name ||
                                 userMetadata?.name ||
-                                session.user.email,
+                                currentSession.user.email,
                             avatar_url:
                                 userMetadata?.avatar_url ||
                                 userMetadata?.picture,
                         },
                     };
 
-                    setSession(session);
+                    setSession(currentSession);
                     setUser(updatedUser);
-                    saveAuthState(updatedUser, session);
+                    saveAuthState(updatedUser, currentSession);
                 } else {
                     setSession(null);
                     setUser(null);
                     localStorage.removeItem(STORAGE_KEY);
                 }
             } catch (error) {
-                console.error("Error checking session:", error);
+                console.error("Error initializing auth:", error);
+                setSession(null);
+                setUser(null);
+                localStorage.removeItem(STORAGE_KEY);
             } finally {
                 setLoading(false);
             }
         };
 
-        checkSession();
+        initializeAuth();
+
+        // Set up auth state change listener (this handles token refreshes)
+        const { data: { subscription } } = supabase.auth.onAuthStateChange(
+            async (event, currentSession) => {
+                console.log("Auth state changed:", event);
+                console.log("Current session:", currentSession);
+                
+                if (currentSession?.user) {
+                    // Extract user metadata from Google OAuth
+                    const userMetadata = currentSession.user.user_metadata || {};
+
+                    // Update user with Google profile information
+                    const updatedUser = {
+                        ...currentSession.user,
+                        user_metadata: {
+                            ...userMetadata,
+                            full_name:
+                                userMetadata?.full_name ||
+                                userMetadata?.name ||
+                                currentSession.user.email,
+                            avatar_url:
+                                userMetadata?.avatar_url ||
+                                userMetadata?.picture,
+                        },
+                    };
+
+                    setSession(currentSession);
+                    setUser(updatedUser);
+                    saveAuthState(updatedUser, currentSession);
+                } else if (event === 'SIGNED_OUT') {
+                    setSession(null);
+                    setUser(null);
+                    localStorage.removeItem(STORAGE_KEY);
+                }
+            }
+        );
+
+        // Clean up subscription when component unmounts
+        return () => {
+            subscription.unsubscribe();
+        };
     }, []);
 
     const signIn = useCallback(async () => {
@@ -134,6 +181,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const signOut = useCallback(async () => {
         try {
+            // Use Supabase's signOut method which properly handles tokens
+            const { error } = await supabase.auth.signOut();
+            if (error) throw error;
+            
+            // Also call the API to clear server-side cookies
             await fetch("/api/auth/signout", {
                 method: "POST",
             });
