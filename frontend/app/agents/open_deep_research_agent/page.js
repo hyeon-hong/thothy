@@ -345,21 +345,23 @@ export default function OpenDeepResearchAgentPage({ graph_name }) {
 
     // Fetch thread messages and start streaming
     const streamMessages = async (threadIdToStream, userInput) => {
-        if (!client.current || !threadIdToStream) return;
+        if (!client.current) return;
 
         try {
-            // First get current thread state
-            const threadState = await client.current.threads.getState(
-                threadIdToStream
-            );
+            // Show loading indicator
+            setIsLoading(true);
 
-            // If thread state exists, load its messages
-            if (
-                threadState &&
-                threadState.values &&
-                Array.isArray(threadState.values.messages)
-            ) {
-                setFormattedMessages(threadState.values.messages);
+            // Fetch thread state
+            let threadState;
+            try {
+                threadState = await client.current.threads.getState(threadIdToStream);
+
+                // If thread state exists, load its messages
+                if (threadState && threadState.values && Array.isArray(threadState.values.messages)) {
+                    setFormattedMessages(threadState.values.messages);
+                }
+            } catch (err) {
+                console.error("Error loading thread state:", err);
             }
 
             // Set up streaming for new messages
@@ -377,6 +379,14 @@ export default function OpenDeepResearchAgentPage({ graph_name }) {
                 }
             );
 
+            // Add assistant welcome message if it's the first message
+            setFormattedMessages([
+                {
+                    role: "assistant",
+                    content: `I'm researching information: ${userInput}`,
+                },
+            ]);
+
             // Handle streaming updates
             for await (const chunk of stream) {
                 console.log("chunk", chunk);
@@ -387,69 +397,66 @@ export default function OpenDeepResearchAgentPage({ graph_name }) {
                         chunk.data.completed_sections &&
                         Array.isArray(chunk.data.completed_sections)
                     ) {
-                        const formattedMessages = [];
+                        // Create a new messages array instead of pushing to existing one
+                        setFormattedMessages(prevMessages => {
+                            // Start with current messages
+                            const newMessages = [...prevMessages];
+                            
+                            // Add each completed section as a message
+                            chunk.data.completed_sections.forEach((section) => {
+                                if (section.content) {
+                                    newMessages.push({
+                                        role: "assistant",
+                                        content: section.content,
+                                    });
+                                }
+                            });
 
-                        // Add assistant welcome message if it's the first message
-                        formattedMessages.push({
-                            role: "assistant",
-                            content:
-                                "I'm researching information for you. Here's what I've found so far:",
-                        });
-
-                        // Add each completed section as a message
-                        chunk.data.completed_sections.forEach((section) => {
-                            if (section.content) {
-                                formattedMessages.push({
+                            // Add sections information if available
+                            if (
+                                chunk.data.sections &&
+                                Array.isArray(chunk.data.sections)
+                            ) {
+                                newMessages.push({
                                     role: "assistant",
-                                    content: section.content,
+                                    content: `## All Sections (${
+                                        chunk.data.sections.length
+                                    } total)\n\n${chunk.data.sections
+                                        .map((s) => `- ${s.name}: ${s.description}`)
+                                        .join("\n")}`,
                                 });
                             }
+
+                            // Add report sections from research if available
+                            if (chunk.data.report_sections_from_research) {
+                                newMessages.push({
+                                    role: "assistant",
+                                    content: `## Report Sections From Research\n\n${chunk.data.report_sections_from_research}`,
+                                });
+                            }
+
+                            // If there's a final report, add it
+                            if (chunk.data.final_report) {
+                                newMessages.push({
+                                    role: "assistant",
+                                    content: `# Final Report\n\n${chunk.data.final_report}`,
+                                });
+                            }
+
+                            // If there's a topic, show it
+                            if (chunk.data.topic) {
+                                newMessages.push({
+                                    role: "assistant",
+                                    content: `Research topic: ${chunk.data.topic}`,
+                                });
+                            }
+
+                            // Return the new messages array
+                            return newMessages;
                         });
-
-                        // Add sections information if available
-                        if (
-                            chunk.data.sections &&
-                            Array.isArray(chunk.data.sections)
-                        ) {
-                            formattedMessages.push({
-                                role: "assistant",
-                                content: `## All Sections (${
-                                    chunk.data.sections.length
-                                } total)\n\n${chunk.data.sections
-                                    .map((s) => `- ${s.name}: ${s.description}`)
-                                    .join("\n")}`,
-                            });
-                        }
-
-                        // Add report sections from research if available
-                        if (chunk.data.report_sections_from_research) {
-                            formattedMessages.push({
-                                role: "assistant",
-                                content: `## Report Sections From Research\n\n${chunk.data.report_sections_from_research}`,
-                            });
-                        }
-
-                        // If there's a final report, add it
-                        if (chunk.data.final_report) {
-                            formattedMessages.push({
-                                role: "assistant",
-                                content: `# Final Report\n\n${chunk.data.final_report}`,
-                            });
-                        }
-
-                        // If there's a topic, show it
-                        if (chunk.data.topic) {
-                            formattedMessages.push({
-                                role: "assistant",
-                                content: `Research topic: ${chunk.data.topic}`,
-                            });
-                        }
-
-                        // Only update messages if we have content
-                        if (formattedMessages.length > 0) {
-                            setFormattedMessages(formattedMessages);
-                            setIsLoading(false);
-                        }
+                        
+                        // Update loading state
+                        setIsLoading(false);
                     } else if (Array.isArray(chunk.data.messages)) {
                         // Handle standard message format if available
                         setFormattedMessages(chunk.data.messages);
@@ -459,14 +466,28 @@ export default function OpenDeepResearchAgentPage({ graph_name }) {
                     }
                 }
             }
+            console.log("chunk loop is done");
 
-            return stream;
+            // If the stream is empty, add a welcome message
+            setFormattedMessages(prevMessages => {
+                if (prevMessages.length === 0) {
+                    return [
+                        {
+                            role: "assistant",
+                            content:
+                                "Welcome! Ask me a research question, and I'll help you find information.",
+                        },
+                    ];
+                }
+                return prevMessages;
+            });
         } catch (err) {
             console.error("Error setting up stream:", err);
             setError("Failed to connect to message stream");
+        } finally {
+            // Stop the progress circle
             setIsLoading(false);
             setIsStreaming(false);
-            return null;
         }
     };
 
