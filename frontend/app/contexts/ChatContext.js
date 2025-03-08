@@ -5,12 +5,15 @@ import { useAuth } from "./AuthContext";
 
 const ChatContext = createContext();
 // Use localhost in development, environment variable in production
-const DEPLOYMENT_URL =
-    process.env.NODE_ENV === "development"
-        ? process.env.NEXT_PUBLIC_DEPLOYMENT_URL || ""
-        : process.env.NEXT_PUBLIC_DEPLOYMENT_URL || "";
-
 export function ChatProvider({ children, graph_name }) {
+    const DEPLOYMENT_URL =
+        process.env.NODE_ENV === "development"
+            ? "http://localhost:2024"
+            : process.env.NEXT_PUBLIC_DEPLOYMENT_URL || "";
+    console.log("DEPLOYMENT_URL", DEPLOYMENT_URL);
+    console.log("process.env.NODE_ENV", process.env.NODE_ENV);
+    console.log("process.env.NEXT_PUBLIC_DEPLOYMENT_URL", process.env.NEXT_PUBLIC_DEPLOYMENT_URL);
+
     const assistantId = graph_name || "chat_graph";
     const { session } = useAuth();
 
@@ -290,7 +293,7 @@ export function ChatProvider({ children, graph_name }) {
                     body: JSON.stringify({
                         assistant_id: effectiveAssistantId,
                         input: {
-                            "topic": topicText,
+                            topic: topicText,
                         },
                         stream_mode: ["values"],
                     }),
