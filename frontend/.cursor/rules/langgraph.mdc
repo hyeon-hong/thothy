@@ -1,0 +1,6 @@
+---
+description: Rule for langgraph sdk.
+globs: 
+alwaysApply: false
+---
+Don't use useStream hook for UI.

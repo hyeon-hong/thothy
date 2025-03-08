@@ -2,7 +2,6 @@
 
 import "./index.css";
 import React, { useEffect, useRef, useState } from "react";
-import { useStream } from "@langchain/langgraph-sdk/react";
 import {
     Box,
     Typography,
@@ -11,61 +10,231 @@ import {
     Paper,
     CircularProgress,
     Avatar,
+    Alert,
+    Snackbar,
 } from "@mui/material";
 import { useAuth } from "../../contexts/AuthContext";
 
 export default function OpenDeepResearchAgentPage({ graph_name }) {
     const inputRef = useRef(null);
     const { session } = useAuth();
-    console.log("session", session);
+    const [messages, setMessages] = useState([]);
+    const [isLoading, setIsLoading] = useState(false);
+    const [error, setError] = useState(null);
+    const [threadId, setThreadId] = useState(null);
+    const eventSourceRef = useRef(null);
+    const messagesEndRef = useRef(null);
 
     // Environment-aware deployment URL
     const deploymentUrl =
         process.env.NODE_ENV === "development"
             ? "http://localhost:2024"
             : process.env.NEXT_PUBLIC_DEPLOYMENT_URL || "";
-    const langSmithApiKey = process.env.NEXT_PUBLIC_LANGCHAIN_API_KEY || "";
 
-    // Initialize useStream with the graph_name as assistantId
-    const thread = useStream({
-        apiUrl: deploymentUrl,
-        assistantId: graph_name || "open_deep_research_graph",
-        messagesKey: "messages",
-        apiKey: langSmithApiKey,
-        defaultHeaders: {
-            // Include authentication token from the session
-            Authorization: session?.access_token
-                ? `Bearer ${session.access_token}`
-                : "",
-            "Content-Type": "application/json",
-        },
+    // Authentication headers
+    const getHeaders = () => ({
+        "Content-Type": "application/json",
+        Authorization: session?.access_token
+            ? `Bearer ${session.access_token}`
+            : "",
     });
 
+    // Scroll to bottom of messages
+    const scrollToBottom = () => {
+        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    };
+
+    // Create a new thread or use existing one
     useEffect(() => {
-        // Focus input when page mounts
+        const createThread = async () => {
+            if (!session?.access_token) {
+                console.warn("No access token available, skipping thread creation");
+                return;
+            }
+
+            try {
+                const response = await fetch(`${deploymentUrl}/threads`, {
+                    method: "POST",
+                    headers: getHeaders(),
+                    body: JSON.stringify({
+                        metadata: {
+                            assistant_id: graph_name || "open_deep_research_graph"
+                        }
+                    }),
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Error creating thread: ${response.statusText}`);
+                }
+
+                const data = await response.json();
+                console.log("Thread created:", data);
+                setThreadId(data.thread_id);
+            } catch (err) {
+                console.error("Error creating thread:", err);
+                setError("Failed to create thread. Please try again.");
+            }
+        };
+
+        if (!threadId) {
+            createThread();
+        }
+
+        return () => {
+            // Cleanup event source on unmount
+            if (eventSourceRef.current) {
+                eventSourceRef.current.close();
+            }
+        };
+    }, [session, deploymentUrl, graph_name, threadId]);
+
+    // Handle event source message
+    const handleSSEMessage = (event) => {
+        if (event.data === "[DONE]") {
+            setIsLoading(false);
+            return;
+        }
+
+        try {
+            const data = JSON.parse(event.data);
+            console.log("SSE data:", data);
+            
+            // Handle different types of events
+            if (data.type === "final_report") {
+                // Handle final report
+                setMessages(prev => [...prev, {
+                    id: Date.now(),
+                    type: "final_report",
+                    content: data.content || data.value || "Report generated successfully",
+                }]);
+            } else if (data.type) {
+                // Handle any message with a type
+                setMessages(prev => [...prev, {
+                    id: Date.now(),
+                    type: data.type,
+                    content: data.content || data.value || "Response received",
+                }]);
+            } else if (data.value) {
+                // Handle generic message
+                setMessages(prev => [...prev, {
+                    id: Date.now(),
+                    type: "ai",
+                    content: data.value,
+                }]);
+            }
+            
+            scrollToBottom();
+        } catch (err) {
+            console.error("Error parsing SSE data:", err);
+        }
+    };
+
+    // Submit a message
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        const formData = new FormData(e.target);
+        const message = formData.get("message");
+
+        if (!message || message.trim() === "") return;
+
+        if (!session?.access_token) {
+            setError("Authentication required. Please log in.");
+            return;
+        }
+
+        if (!threadId) {
+            setError("Thread not created. Please try again.");
+            return;
+        }
+
+        // Close existing event source
+        if (eventSourceRef.current) {
+            eventSourceRef.current.close();
+        }
+
+        setIsLoading(true);
+        
+        try {
+            // Create a new EventSource for streaming response
+            const url = new URL(`${deploymentUrl}/threads/${threadId}/runs/stream`);
+            
+            // Prepare the request with the message
+            const runRequest = {
+                assistant_id: graph_name || "open_deep_research_graph",
+                input: {
+                    topic: message,
+                },
+                stream_mode: ["values", "events"],
+            };
+            
+            // Make the POST request to start the stream
+            const response = await fetch(url, {
+                method: "POST",
+                headers: getHeaders(),
+                body: JSON.stringify(runRequest),
+            });
+            
+            if (!response.ok) {
+                throw new Error(`Error creating run: ${response.statusText}`);
+            }
+            
+            // Create EventSource for SSE
+            const eventSource = new EventSource(url.toString());
+            eventSourceRef.current = eventSource;
+            
+            eventSource.onmessage = handleSSEMessage;
+            
+            eventSource.onerror = (err) => {
+                console.error("EventSource error:", err);
+                eventSource.close();
+                setIsLoading(false);
+                setError("Error receiving responses. Please try again.");
+            };
+            
+            // Add user message to messages
+            setMessages(prev => [...prev, {
+                id: Date.now(),
+                type: "ai", // Using "ai" because you mentioned there's no "human" type
+                content: message,
+            }]);
+            
+            // Reset the form
+            e.target.reset();
+            inputRef.current?.focus();
+            scrollToBottom();
+        } catch (err) {
+            console.error("Error submitting message:", err);
+            setIsLoading(false);
+            setError(`Error: ${err.message}`);
+        }
+    };
+
+    // Focus input when page loads
+    useEffect(() => {
         inputRef.current?.focus();
 
         const handleKeyPress = (e) => {
             // Check if the pressed key is "/" and no input/textarea is focused
-            // Also don't handle key events if they occurred on navigation elements (buttons, links)
             const isNavElement = e.target.closest('button, a, [role="button"]');
             if (isNavElement) return;
 
-            if (
-                e.key === "/" &&
-                !["INPUT", "TEXTAREA"].includes(document.activeElement.tagName)
-            ) {
-                e.preventDefault(); // Prevent "/" from being typed
+            const activeElement = document.activeElement;
+            const isInputFocused = activeElement instanceof HTMLInputElement ||
+                                   activeElement instanceof HTMLTextAreaElement;
+            
+            if (e.key === "/" && !isInputFocused) {
+                e.preventDefault();
                 inputRef.current?.focus();
             }
         };
 
-        // Focus input when window gains focus but check if active element is not a navigation element
         const handleWindowFocus = () => {
-            const isNavElement = document.activeElement?.closest(
-                'button, a, [role="button"]'
-            );
-            if (!isNavElement) {
+            // Focus the input when the window gains focus, if no other input is focused
+            const activeElement = document.activeElement;
+            const isInputFocused = activeElement instanceof HTMLInputElement ||
+                                   activeElement instanceof HTMLTextAreaElement;
+            
+            if (!isInputFocused) {
                 inputRef.current?.focus();
             }
         };
@@ -79,42 +248,22 @@ export default function OpenDeepResearchAgentPage({ graph_name }) {
         };
     }, []);
 
-    // Form submission handler
-    const handleSubmit = (e) => {
-        e.preventDefault();
-        const formData = new FormData(e.target);
-        const message = formData.get("message");
+    // Scroll to bottom when messages change
+    useEffect(() => {
+        scrollToBottom();
+    }, [messages]);
 
-        if (!message || message.trim() === "") return;
-
-        // Check for authentication
-        if (!session?.access_token) {
-            console.error("Authentication error: No access token available");
-            // You could add UI feedback here about authentication issues
-            return;
-        }
-
-        try {
-            // Submit the message to the thread
-            thread.submit({
-                topic: message,
-            });
-
-            // Reset the form
-            e.target.reset();
-            inputRef.current?.focus();
-        } catch (error) {
-            console.error("Error submitting message:", error);
-            // You could add UI feedback here about the error
-        }
+    // Close error snackbar
+    const handleCloseError = () => {
+        setError(null);
     };
 
     return (
         <Box
             sx={{
+                height: "100vh",
                 display: "flex",
                 flexDirection: "column",
-                height: "calc(100vh - 64px)",
                 bgcolor: "#f5f5f5",
             }}
         >
@@ -143,10 +292,10 @@ export default function OpenDeepResearchAgentPage({ graph_name }) {
                     gap: 2,
                 }}
             >
-                {thread.messages.map((message, index) => {
+                {messages.map((message, index) => {
                     // Debug logging for message data
-                    // console.log(`Message ${index}:`, message);
-                    // console.log(`Message ${index} type:`, message.type);
+                    console.log(`Message ${index}:`, message);
+                    console.log(`Message ${index} type:`, message.type);
                     
                     return (
                         <Paper
@@ -215,8 +364,11 @@ export default function OpenDeepResearchAgentPage({ graph_name }) {
                     );
                 })}
 
+                {/* Invisible element for scrolling to bottom */}
+                <div ref={messagesEndRef} />
+
                 {/* Loading indicator */}
-                {thread.isLoading && (
+                {isLoading && (
                     <Box
                         sx={{
                             display: "flex",
@@ -236,92 +388,39 @@ export default function OpenDeepResearchAgentPage({ graph_name }) {
                 <form onSubmit={handleSubmit}>
                     <Box sx={{ display: "flex", gap: 1 }}>
                         <TextField
-                            fullWidth
                             name="message"
-                            placeholder="Type your message... (or press / to focus)"
+                            placeholder="Type your research topic..."
+                            fullWidth
                             variant="outlined"
-                            size="medium"
                             inputRef={inputRef}
-                            disabled={thread.isLoading}
+                            disabled={isLoading || !threadId}
+                            InputProps={{
+                                sx: { borderRadius: 2 },
+                            }}
                         />
-
-                        {thread.isLoading ? (
-                            <Button
-                                variant="contained"
-                                color="secondary"
-                                onClick={() => thread.stop()}
-                            >
-                                Stop
-                            </Button>
-                        ) : (
-                            <Button
-                                type="submit"
-                                variant="contained"
-                                color="primary"
-                                disabled={thread.isLoading}
-                            >
-                                Send
-                            </Button>
-                        )}
+                        <Button
+                            type="submit"
+                            variant="contained"
+                            disabled={isLoading || !threadId}
+                            sx={{ borderRadius: 2 }}
+                        >
+                            {isLoading ? <CircularProgress size={24} /> : "Submit"}
+                        </Button>
                     </Box>
                 </form>
             </Box>
 
-            {/* Handle interrupts */}
-            {thread.interrupt && (
-                <Box
-                    sx={{
-                        position: "absolute",
-                        bottom: 100,
-                        left: "50%",
-                        transform: "translateX(-50%)",
-                        bgcolor: "white",
-                        p: 3,
-                        borderRadius: 2,
-                        boxShadow: "0 4px 20px rgba(0,0,0,0.1)",
-                        width: "80%",
-                        maxWidth: 600,
-                        zIndex: 10,
-                    }}
-                >
-                    <Typography variant="h6" gutterBottom>
-                        Agent needs your input
-                    </Typography>
-                    <Typography variant="body1" paragraph>
-                        {typeof thread.interrupt.value === "string"
-                            ? thread.interrupt.value
-                            : JSON.stringify(thread.interrupt.value)}
-                    </Typography>
-                    <Box
-                        sx={{
-                            display: "flex",
-                            justifyContent: "flex-end",
-                            gap: 1,
-                        }}
-                    >
-                        <Button
-                            variant="outlined"
-                            onClick={() =>
-                                thread.submit(undefined, {
-                                    command: { resume: false },
-                                })
-                            }
-                        >
-                            Cancel
-                        </Button>
-                        <Button
-                            variant="contained"
-                            onClick={() =>
-                                thread.submit(undefined, {
-                                    command: { resume: true },
-                                })
-                            }
-                        >
-                            Continue
-                        </Button>
-                    </Box>
-                </Box>
-            )}
+            {/* Error message */}
+            <Snackbar
+                open={!!error}
+                autoHideDuration={6000}
+                onClose={handleCloseError}
+                anchorOrigin={{ vertical: "top", horizontal: "center" }}
+            >
+                <Alert onClose={handleCloseError} severity="error" sx={{ width: "100%" }}>
+                    {error}
+                </Alert>
+            </Snackbar>
         </Box>
     );
 }
