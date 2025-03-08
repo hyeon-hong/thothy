@@ -5,9 +5,10 @@ import { useAuth } from "./AuthContext";
 
 const ChatContext = createContext();
 // Use localhost in development, environment variable in production
-const DEPLOYMENT_URL = process.env.NODE_ENV === "development"
-  ? "http://localhost:2024"
-  : (process.env.NEXT_PUBLIC_DEPLOYMENT_URL || "");
+const DEPLOYMENT_URL =
+    process.env.NODE_ENV === "development"
+        ? "http://localhost:2024"
+        : process.env.NEXT_PUBLIC_DEPLOYMENT_URL || "";
 
 export function ChatProvider({ children, graph_name }) {
     const assistantId = graph_name || "chat_graph";
@@ -47,7 +48,10 @@ export function ChatProvider({ children, graph_name }) {
     const sendMessage = async (threadId, message, customAssistantId) => {
         // Use the component-level assistantId if no custom one is provided
         const effectiveAssistantId = customAssistantId || assistantId;
-        console.log("sendMessage", { threadId, assistantId: effectiveAssistantId });
+        console.log("sendMessage", {
+            threadId,
+            assistantId: effectiveAssistantId,
+        });
 
         if (!threadId || !message) return;
 
@@ -119,22 +123,32 @@ export function ChatProvider({ children, graph_name }) {
 
                             // Find AI message - look for the latest one
                             if (data.messages && Array.isArray(data.messages)) {
-                                // Filter for AI messages with content
-                                const aiMessages = data.messages.filter(
+                                // Filter for all messages with content, not just AI
+                                const validMessages = data.messages.filter(
                                     (msg) =>
-                                        msg.type === "ai" &&
                                         msg.content &&
                                         typeof msg.content === "string"
                                 );
 
-                                // If we have AI messages, take the latest one
-                                if (aiMessages.length > 0) {
-                                    const latestAI =
-                                        aiMessages[aiMessages.length - 1];
+                                // Process all valid messages
+                                if (validMessages.length > 0) {
+                                    // Get the latest message
+                                    const latestMessage =
+                                        validMessages[validMessages.length - 1];
+
+                                    // Convert non-AI messages to AI format but preserve original type
+                                    const processedMessage = {
+                                        ...latestMessage,
+                                        originalType:
+                                            latestMessage.type !== "ai"
+                                                ? latestMessage.type
+                                                : undefined,
+                                    };
 
                                     // Check if this is a new message (by ID if available or content)
                                     const messageId =
-                                        latestAI.id || latestAI.content;
+                                        processedMessage.id ||
+                                        processedMessage.content;
                                     if (messageId !== latestMessageId) {
                                         latestMessageId = messageId;
 
@@ -148,9 +162,22 @@ export function ChatProvider({ children, graph_name }) {
                                                 lastIndex >= 0 &&
                                                 newMessages[lastIndex].isPartial
                                             ) {
+                                                // Create the proper message structure based on type
+                                                let messageContent =
+                                                    processedMessage.content;
+
+                                                // If there's an original type, prepend it to the content for clarity
+                                                if (
+                                                    processedMessage.originalType
+                                                ) {
+                                                    messageContent = `[${processedMessage.originalType}] ${messageContent}`;
+                                                }
+
                                                 newMessages[lastIndex] = {
                                                     role: "assistant",
-                                                    content: latestAI.content,
+                                                    content: messageContent,
+                                                    originalType:
+                                                        processedMessage.originalType,
                                                     isPartial: true,
                                                 };
                                             }
@@ -173,9 +200,12 @@ export function ChatProvider({ children, graph_name }) {
                 const lastIndex = newMessages.length - 1;
 
                 if (lastIndex >= 0 && newMessages[lastIndex].isPartial) {
+                    // Make sure we preserve the originalType when finalizing the message
                     newMessages[lastIndex] = {
                         ...newMessages[lastIndex],
                         isPartial: false,
+                        // Ensure originalType is preserved (this is redundant but explicit)
+                        originalType: newMessages[lastIndex].originalType,
                     };
                 }
 
@@ -201,6 +231,195 @@ export function ChatProvider({ children, graph_name }) {
 
                 return newMessages;
             });
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    // Send a message specifically formatted as a topic message
+    const sendTopicMessage = async (threadId, topicText, customAssistantId) => {
+        console.log("======== call sendTopicMessage");
+        // Use the component-level assistantId if no custom one is provided
+        const effectiveAssistantId = customAssistantId || assistantId;
+        console.log("sendTopicMessage", {
+            threadId,
+            assistantId: effectiveAssistantId,
+        });
+
+        if (!threadId || !topicText) return;
+
+        // Add user message immediately with topic formatting
+        setMessages((prev) => [
+            ...prev,
+            {
+                role: "user",
+                content: `Topic: ${topicText}`,
+                isTopic: true,
+            },
+        ]);
+
+        // Add initial assistant placeholder (this will be our only assistant message)
+        setMessages((prev) => [
+            ...prev,
+            { role: "assistant", content: "...", isPartial: true },
+        ]);
+
+        setIsLoading(true);
+        setError(null);
+
+        try {
+            // Prepare headers
+            const headers = {
+                "Content-Type": "application/json",
+            };
+
+            if (session?.access_token) {
+                headers["Authorization"] = `Bearer ${session.access_token}`;
+            }
+
+            // Make streaming request with topic format
+            console.log("topicText", topicText);
+            console.log("effectiveAssistantId", effectiveAssistantId);
+            console.log("threadId", threadId);
+            console.log("DEPLOYMENT_URL", DEPLOYMENT_URL);
+            const response = await fetch(
+                `${DEPLOYMENT_URL}/threads/${threadId}/runs/stream`,
+                {
+                    method: "POST",
+                    headers,
+                    body: JSON.stringify({
+                        assistant_id: effectiveAssistantId,
+                        input: {
+                            "topic": topicText,
+                        },
+                        stream_mode: ["values"],
+                    }),
+                }
+            );
+            console.log("response", response);
+
+            if (!response.ok) throw new Error(`Error: ${response.status}`);
+
+            // Process the stream - same as sendMessage
+            const reader = response.body.getReader();
+            const decoder = new TextDecoder();
+
+            let latestMessageId = null; // Track the latest message ID to prevent duplicates
+
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+
+                // Decode chunk
+                const chunk = decoder.decode(value, { stream: true });
+
+                // Look for AI messages in values events
+                if (
+                    chunk.includes("event: values") &&
+                    chunk.includes("data:")
+                ) {
+                    try {
+                        // Extract data
+                        const dataMatch = chunk.match(/data: ({.*})/);
+                        if (dataMatch) {
+                            const data = JSON.parse(dataMatch[1]);
+
+                            // Find AI message - look for the latest one
+                            if (data.messages && Array.isArray(data.messages)) {
+                                // Filter for all messages with content, not just AI
+                                const validMessages = data.messages.filter(
+                                    (msg) =>
+                                        msg.content &&
+                                        typeof msg.content === "string"
+                                );
+
+                                // Process all valid messages
+                                if (validMessages.length > 0) {
+                                    // Get the latest message
+                                    const latestMessage =
+                                        validMessages[validMessages.length - 1];
+
+                                    // Convert non-AI messages to AI format but preserve original type
+                                    const processedMessage = {
+                                        ...latestMessage,
+                                        originalType:
+                                            latestMessage.type !== "ai"
+                                                ? latestMessage.type
+                                                : undefined,
+                                    };
+
+                                    // Check if this is a new message (by ID if available or content)
+                                    const messageId =
+                                        processedMessage.id ||
+                                        processedMessage.content;
+                                    if (messageId !== latestMessageId) {
+                                        latestMessageId = messageId;
+
+                                        // Only update the last message in our messages array
+                                        setMessages((prev) => {
+                                            const newMessages = [...prev];
+                                            const lastIndex =
+                                                newMessages.length - 1;
+
+                                            if (
+                                                lastIndex >= 0 &&
+                                                newMessages[lastIndex].isPartial
+                                            ) {
+                                                // Create the proper message structure based on type
+                                                let messageContent =
+                                                    processedMessage.content;
+
+                                                // If there's an original type, prepend it to the content for clarity
+                                                if (
+                                                    processedMessage.originalType
+                                                ) {
+                                                    messageContent = `[${processedMessage.originalType}] ${messageContent}`;
+                                                }
+
+                                                newMessages[lastIndex] = {
+                                                    role: "assistant",
+                                                    content: messageContent,
+                                                    originalType:
+                                                        processedMessage.originalType,
+                                                    isPartial: true,
+                                                    inResponseToTopic: true, // Mark that this is a response to a topic
+                                                };
+                                            }
+
+                                            return newMessages;
+                                        });
+                                    }
+                                }
+                            }
+                        }
+                    } catch (e) {
+                        console.error("Error parsing chunk:", e);
+                    }
+                }
+            }
+
+            // Finalize the message - make sure it's not partial anymore
+            setMessages((prev) => {
+                const newMessages = [...prev];
+                const lastIndex = newMessages.length - 1;
+
+                if (lastIndex >= 0 && newMessages[lastIndex].isPartial) {
+                    // Make sure we preserve the originalType when finalizing the message
+                    newMessages[lastIndex] = {
+                        ...newMessages[lastIndex],
+                        isPartial: false,
+                        // Ensure originalType and inResponseToTopic are preserved
+                        originalType: newMessages[lastIndex].originalType,
+                        inResponseToTopic:
+                            newMessages[lastIndex].inResponseToTopic,
+                    };
+                }
+
+                return newMessages;
+            });
+        } catch (err) {
+            console.error("Error:", err.message);
+            setError(err.message);
         } finally {
             setIsLoading(false);
         }
@@ -255,6 +474,7 @@ export function ChatProvider({ children, graph_name }) {
         isThreadsLoading,
         error,
         client,
+        sendTopicMessage,
     };
 
     return (

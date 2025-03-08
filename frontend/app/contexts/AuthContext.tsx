@@ -111,6 +111,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const { data: { subscription } } = supabase.auth.onAuthStateChange(
             async (event, currentSession) => {
                 console.log("Auth state changed:", event);
+                console.log("Current session:", currentSession);
                 
                 if (currentSession?.user) {
                     // Extract user metadata from Google OAuth
