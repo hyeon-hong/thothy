@@ -25,8 +25,33 @@ import DeleteIcon from "@mui/icons-material/Delete";
 import AddIcon from "@mui/icons-material/Add";
 import KeyboardArrowUpIcon from "@mui/icons-material/KeyboardArrowUp";
 import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
+import ReactMarkdown from "react-markdown";
 
 const CURRENT_THREAD_ID_KEY = "openDeepResearchCurrentThreadId";
+
+// Custom components for ReactMarkdown
+const MarkdownComponents = {
+    code({ node, inline, className, children, ...props }) {
+        return (
+            <code className={className} {...props}>
+                {children}
+            </code>
+        );
+    },
+    a({ node, className, children, href, ...props }) {
+        return (
+            <a
+                className={className}
+                href={href}
+                target="_blank"
+                rel="noopener noreferrer"
+                {...props}
+            >
+                {children}
+            </a>
+        );
+    },
+};
 
 // Add constants for layout measurements at the top of the component
 const HEADER_HEIGHT = 64; // Height of main header (blue bar)
@@ -200,6 +225,7 @@ export default function OpenDeepResearchAgentPage({ graph_name }) {
             const threadState = await client.current.threads.getState(
                 newThreadId
             );
+            console.log("threadState in switchThread: ", threadState);
 
             // Load thread messages
             const threadMessages = threadState.values.messages || [];
@@ -251,7 +277,10 @@ export default function OpenDeepResearchAgentPage({ graph_name }) {
                     const threadState = await client.current.threads.getState(
                         savedThreadId
                     );
-                    console.log("threadState", threadState);
+                    console.log(
+                        "threadState in initializeThread: ",
+                        threadState
+                    );
                     // If thread state exists, load its messages
                     if (
                         threadState &&
@@ -304,6 +333,10 @@ export default function OpenDeepResearchAgentPage({ graph_name }) {
                     const threadState = await client.current.threads.getState(
                         firstThread.thread_id
                     );
+                    console.log(
+                        "threadState in initializeThread other: ",
+                        threadState
+                    );
                     if (
                         threadState &&
                         threadState.values &&
@@ -347,27 +380,29 @@ export default function OpenDeepResearchAgentPage({ graph_name }) {
             setIsLoading(true);
 
             // Fetch thread state
-            let threadState;
-            try {
-                threadState = await client.current.threads.getState(
-                    threadIdToStream
-                );
-                console.log("threadState", threadState);
-                // If thread state exists, load its messages
-                if (
-                    threadState &&
-                    threadState.values &&
-                    Array.isArray(threadState.values.messages)
-                ) {
-                    console.log("call setFormattedMessages in streamMessages");
-                    setFormattedMessages(threadState.values.messages);
-                }
-            } catch (err) {
-                console.error("Error loading thread state:", err);
-            }
+            // TODO: This is a temporary fix to load the thread state
+            // let threadState;
+            // try {
+            //     threadState = await client.current.threads.getState(
+            //         threadIdToStream
+            //     );
+            //     console.log("threadState in streamMessages: ", threadState);
+            //     // If thread state exists, load its messages
+            //     if (
+            //         threadState &&
+            //         threadState.values &&
+            //         Array.isArray(threadState.values.messages)
+            //     ) {
+            //         console.log("call setFormattedMessages in streamMessages");
+            //         setFormattedMessages(threadState.values.messages);
+            //     }
+            // } catch (err) {
+            //     console.error("Error loading thread state:", err);
+            // }
 
             // Set up streaming for new messages
             setIsStreaming(true);
+            setFormattedMessages([]);
 
             // Create a streaming connection for this thread
             const stream = await client.current.runs.stream(
@@ -601,6 +636,11 @@ export default function OpenDeepResearchAgentPage({ graph_name }) {
             ...prev,
             [index]: !prev[index],
         }));
+
+        // Delay scrolling to allow DOM to update
+        setTimeout(() => {
+            scrollToBottom();
+        }, 100);
     };
 
     return (
@@ -827,12 +867,13 @@ export default function OpenDeepResearchAgentPage({ graph_name }) {
                                 }}
                             >
                                 <Box sx={{ position: "relative" }}>
-                                    <Typography
-                                        variant="body1"
-                                        sx={{
+                                    <div
+                                        style={{
                                             overflow: "hidden",
                                             textOverflow: "ellipsis",
-                                            display: "-webkit-box",
+                                            display: expandedMessages[index]
+                                                ? "block"
+                                                : "-webkit-box",
                                             WebkitLineClamp: expandedMessages[
                                                 index
                                             ]
@@ -840,14 +881,26 @@ export default function OpenDeepResearchAgentPage({ graph_name }) {
                                                 : 2,
                                             WebkitBoxOrient: "vertical",
                                             whiteSpace: "pre-wrap",
+                                            fontSize: "1rem",
+                                            fontFamily:
+                                                "'Roboto', 'Arial', sans-serif",
+                                            lineHeight: 1.5,
+                                            letterSpacing: "0.00938em",
                                         }}
+                                        className="markdown-content"
                                     >
-                                        {message.content}
-                                    </Typography>
+                                        <ReactMarkdown
+                                            components={MarkdownComponents}
+                                        >
+                                            {message.content}
+                                        </ReactMarkdown>
+                                    </div>
 
                                     {/* Only show expand button if content is long enough to need it */}
                                     {message.content.split("\n").length > 2 ||
-                                    message.content.length > 150 ? (
+                                    message.content.length > 150 ||
+                                    message.content.includes("```") ||
+                                    message.content.includes("#") ? (
                                         <IconButton
                                             size="small"
                                             onClick={() =>
