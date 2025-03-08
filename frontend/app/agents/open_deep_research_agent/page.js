@@ -203,7 +203,7 @@ export default function OpenDeepResearchAgentPage({ graph_name }) {
 
             // Add initial message to thread state
             await client.current.threads.updateState(thread.thread_id, {
-                messages: [
+                values: [
                     {
                         role: "assistant",
                         content:
