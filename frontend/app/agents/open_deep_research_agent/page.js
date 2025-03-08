@@ -132,28 +132,6 @@ export default function OpenDeepResearchAgentPage({ graph_name }) {
             // Save to local storage
             localStorage.setItem(CURRENT_THREAD_ID_KEY, thread.thread_id);
 
-            // Reset UI state for new thread
-            setFormattedMessages([
-                {
-                    role: "assistant",
-                    content:
-                        "Welcome! Ask me a research question, and I'll help you find information.",
-                },
-            ]);
-
-            // Add initial message to thread state
-            await client.current.threads.updateState(thread.thread_id, {
-                values: {
-                    messages: [
-                        {
-                            role: "assistant",
-                            content:
-                                "Welcome! Ask me a research question, and I'll help you find information.",
-                        },
-                    ],
-                },
-            });
-
             // Refresh thread list
             console.log("Refreshing thread list after creating new thread");
             await fetchThreads();
