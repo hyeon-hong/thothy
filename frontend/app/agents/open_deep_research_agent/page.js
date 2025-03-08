@@ -150,6 +150,7 @@ export default function OpenDeepResearchAgentPage({ graph_name }) {
             });
 
             const threadList = await client.current.threads.search({
+                limit: 100,
                 metadata: {
                     // Match both fields we set when creating threads
                     graphName: graph_name || "open_deep_research_agent",
@@ -227,10 +228,14 @@ export default function OpenDeepResearchAgentPage({ graph_name }) {
 
     // Delete a thread
     const deleteThread = async (threadIdToDelete) => {
+        console.log("Deleting thread:", threadIdToDelete);
         if (!client.current) return;
 
         try {
-            await client.current.threads.delete(threadIdToDelete);
+            const response = await client.current.threads.delete(
+                threadIdToDelete
+            );
+            console.log("Thread deletion response:", response);
 
             // If the deleted thread is the current one
             if (threadIdToDelete === threadId) {
