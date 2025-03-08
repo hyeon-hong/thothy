@@ -1,29 +1,46 @@
 "use client";
 
 import "./index.css";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState, useMemo } from "react";
 import {
     Box,
     Typography,
     TextField,
     Button,
     Paper,
+    Divider,
     CircularProgress,
     Avatar,
     Alert,
     Snackbar,
+    IconButton,
+    List,
+    ListItem,
+    ListItemText,
+    ListItemSecondaryAction,
 } from "@mui/material";
 import { useAuth } from "../../contexts/AuthContext";
+import { Client } from "@langchain/langgraph-sdk";
+import { useStream } from "@langchain/langgraph-sdk/react";
+import DeleteIcon from "@mui/icons-material/Delete";
+import AddIcon from "@mui/icons-material/Add";
+
+const CURRENT_THREAD_ID_KEY = "openDeepResearchCurrentThreadId";
+
+// Add constants for layout measurements at the top of the component
+const HEADER_HEIGHT = 64; // Height of main header (blue bar)
+const THREAD_BUTTON_HEIGHT = 84; // Increased from 72 to 84
 
 export default function OpenDeepResearchAgentPage({ graph_name }) {
     const inputRef = useRef(null);
     const { session } = useAuth();
     const [messages, setMessages] = useState([]);
+    const [threads, setThreads] = useState([]);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState(null);
     const [threadId, setThreadId] = useState(null);
-    const eventSourceRef = useRef(null);
     const messagesEndRef = useRef(null);
+    const [isThreadListLoading, setIsThreadListLoading] = useState(false);
 
     // Environment-aware deployment URL
     const deploymentUrl =
@@ -31,258 +48,392 @@ export default function OpenDeepResearchAgentPage({ graph_name }) {
             ? "http://localhost:2024"
             : process.env.NEXT_PUBLIC_DEPLOYMENT_URL || "";
 
-    // Authentication headers
-    const getHeaders = () => ({
-        "Content-Type": "application/json",
-        Authorization: session?.access_token
-            ? `Bearer ${session.access_token}`
-            : "",
-    });
+    // Initialize LangGraph client
+    const client = useRef(null);
+
+    useEffect(() => {
+        if (!session) return;
+
+        if (session?.access_token) {
+            client.current = new Client({
+                apiUrl: deploymentUrl,
+                defaultHeaders: {
+                    Authorization: `Bearer ${session.access_token}`,
+                },
+            });
+        }
+    }, [session?.access_token, deploymentUrl]);
+
+    // Load current thread ID from local storage
+    useEffect(() => {
+        const savedThreadId = localStorage.getItem(CURRENT_THREAD_ID_KEY);
+        if (savedThreadId) {
+            setThreadId(savedThreadId);
+        }
+    }, []);
 
     // Scroll to bottom of messages
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     };
 
-    // Create a new thread or use existing one
-    useEffect(() => {
-        const createThread = async () => {
-            if (!session?.access_token) {
-                console.warn(
-                    "No access token available, skipping thread creation"
+    // Setup streaming with useStream hook
+    const streamConfig = useMemo(() => {
+        return {
+            client: client.current,
+            threadId,
+            assistantId: graph_name || "open_deep_research_agent",
+            onError: (error) => {
+                console.error("Streaming error:", error);
+                setError(
+                    "An error occurred while processing your request. Please try again."
                 );
-                return;
-            } else {
-                console.log("Access token: ", session.access_token);
-            }
-
-            try {
-                const response = await fetch(`${deploymentUrl}/threads`, {
-                    method: "POST",
-                    headers: getHeaders(),
-                    body: JSON.stringify({
-                        metadata: {
-                            assistant_id:
-                                graph_name || "open_deep_research_graph",
-                        },
-                    }),
-                });
-
-                if (!response.ok) {
-                    throw new Error(
-                        `Error creating thread: ${response.statusText}`
-                    );
-                }
-
-                const data = await response.json();
-                console.log("Thread created:", data);
-                setThreadId(data.thread_id);
-            } catch (err) {
-                console.error("Error creating thread:", err);
-                setError("Failed to create thread. Please try again.");
-            }
-        };
-
-        if (!threadId) {
-            createThread();
-        }
-
-        return () => {
-            // Cleanup event source on unmount
-            if (eventSourceRef.current) {
-                eventSourceRef.current.close();
-            }
-        };
-    }, [session?.access_token, deploymentUrl, graph_name, threadId]);
-
-    // Handle event source message
-    const handleSSEMessage = (event) => {
-        if (event.data === "[DONE]") {
-            setIsLoading(false);
-            return;
-        }
-
-        try {
-            const data = JSON.parse(event.data);
-            console.log("SSE data:", data);
-
-            // Handle different types of events
-            if (data.type === "final_report") {
-                // Handle final report
-                setMessages((prev) => [
-                    ...prev,
-                    {
-                        id: Date.now(),
-                        type: "final_report",
-                        content:
-                            data.content ||
-                            data.value ||
-                            "Report generated successfully",
-                    },
-                ]);
-            } else if (data.type) {
-                // Handle any message with a type
-                setMessages((prev) => [
-                    ...prev,
-                    {
-                        id: Date.now(),
-                        type: data.type,
-                        content:
-                            data.content || data.value || "Response received",
-                    },
-                ]);
-            } else if (data.value) {
-                // Handle generic message
-                setMessages((prev) => [
-                    ...prev,
-                    {
-                        id: Date.now(),
-                        type: "ai",
-                        content: data.value,
-                    },
-                ]);
-            }
-
-            scrollToBottom();
-        } catch (err) {
-            console.error("Error parsing SSE data:", err);
-        }
-    };
-
-    // Submit a message
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        const formData = new FormData(e.target);
-        const message = formData.get("message");
-
-        if (!message || message.trim() === "") return;
-
-        if (!session?.access_token) {
-            setError("Authentication required. Please log in.");
-            return;
-        }
-
-        if (!threadId) {
-            setError("Thread not created. Please try again.");
-            return;
-        }
-
-        // Close existing event source
-        if (eventSourceRef.current) {
-            eventSourceRef.current.close();
-        }
-
-        setIsLoading(true);
-
-        try {
-            // Create a new EventSource for streaming response
-            const url = new URL(
-                `${deploymentUrl}/threads/${threadId}/runs/stream`
-            );
-
-            // Prepare the request with the message
-            const runRequest = {
-                assistant_id: graph_name || "open_deep_research_graph",
-                input: {
-                    topic: message,
-                },
-                stream_mode: ["values", "events"],
-            };
-
-            // Make the POST request to start the stream
-            const response = await fetch(url, {
-                method: "POST",
-                headers: getHeaders(),
-                body: JSON.stringify(runRequest),
-            });
-
-            if (!response.ok) {
-                throw new Error(`Error creating run: ${response.statusText}`);
-            }
-
-            // Create EventSource for SSE
-            const eventSource = new EventSource(url.toString());
-            eventSourceRef.current = eventSource;
-
-            eventSource.onmessage = handleSSEMessage;
-
-            eventSource.onerror = (err) => {
-                console.error("EventSource error:", err);
-                eventSource.close();
                 setIsLoading(false);
-                setError("Error receiving responses. Please try again.");
-            };
+            },
+        };
+    }, [client.current, threadId, graph_name]);
 
-            // Add user message to messages
-            setMessages((prev) => [
-                ...prev,
-                {
-                    id: Date.now(),
-                    type: "ai", // Using "ai" because you mentioned there's no "human" type
-                    content: message,
-                },
-            ]);
+    // Get a single thread object from useStream instead of destructuring
+    const thread = useStream(streamConfig);
 
-            // Reset the form
-            e.target.reset();
-            inputRef.current?.focus();
-            scrollToBottom();
-        } catch (err) {
-            console.error("Error submitting message:", err);
-            setIsLoading(false);
-            setError(`Error: ${err.message}`);
-        }
-    };
-
-    // Focus input when page loads
+    // Update messages when streaming provides new ones
     useEffect(() => {
-        inputRef.current?.focus();
-
-        const handleKeyPress = (e) => {
-            // Check if the pressed key is "/" and no input/textarea is focused
-            const isNavElement = e.target.closest('button, a, [role="button"]');
-            if (isNavElement) return;
-
-            const activeElement = document.activeElement;
-            const isInputFocused =
-                activeElement instanceof HTMLInputElement ||
-                activeElement instanceof HTMLTextAreaElement;
-
-            if (e.key === "/" && !isInputFocused) {
-                e.preventDefault();
-                inputRef.current?.focus();
-            }
-        };
-
-        const handleWindowFocus = () => {
-            // Focus the input when the window gains focus, if no other input is focused
-            const activeElement = document.activeElement;
-            const isInputFocused =
-                activeElement instanceof HTMLInputElement ||
-                activeElement instanceof HTMLTextAreaElement;
-
-            if (!isInputFocused) {
-                inputRef.current?.focus();
-            }
-        };
-
-        document.addEventListener("keydown", handleKeyPress);
-        window.addEventListener("focus", handleWindowFocus);
-
-        return () => {
-            document.removeEventListener("keydown", handleKeyPress);
-            window.removeEventListener("focus", handleWindowFocus);
-        };
-    }, []);
+        if (thread.messages && thread.messages.length > 0) {
+            setMessages(thread.messages);
+        }
+    }, [thread.messages]);
 
     // Scroll to bottom when messages change
     useEffect(() => {
         scrollToBottom();
     }, [messages]);
 
-    // Close error snackbar
+    // Fetch thread list
+    const fetchThreads = async () => {
+        if (!client.current) return;
+
+        try {
+            setIsThreadListLoading(true);
+            console.log("Fetching threads with metadata filter:", {
+                graphName: graph_name || "open_deep_research_agent",
+                userId: session?.user?.id,
+            });
+
+            const threadList = await client.current.threads.search({
+                metadata: {
+                    // Match both fields we set when creating threads
+                    graphName: graph_name || "open_deep_research_agent",
+                    userId: session?.user?.id,
+                },
+            });
+            console.log("Found threads:", threadList);
+            setThreads(threadList);
+        } catch (err) {
+            console.error("Error fetching threads:", err);
+            setError("Failed to load thread list");
+        } finally {
+            setIsThreadListLoading(false);
+        }
+    };
+
+    // Create a new thread
+    const createNewThread = async () => {
+        if (!session?.access_token || !client.current) {
+            console.warn("No access token or client available");
+            return;
+        }
+
+        try {
+            setIsLoading(true);
+            const thread = await client.current.threads.create({
+                metadata: {
+                    userId: session.user?.id,
+                    graphName: graph_name || "open_deep_research_agent",
+                },
+            });
+
+            // Set as current thread
+            setThreadId(thread.thread_id);
+            // Save to local storage
+            localStorage.setItem(CURRENT_THREAD_ID_KEY, thread.thread_id);
+
+            // Clear messages for new thread
+            setMessages([
+                {
+                    role: "assistant",
+                    content:
+                        "Welcome to the Open Deep Research Agent. How can I help you today?",
+                },
+            ]);
+
+            // Refresh thread list
+            await fetchThreads();
+
+            // Focus input
+            inputRef.current?.focus();
+        } catch (err) {
+            console.error("Error creating thread:", err);
+            setError("Failed to create a new thread. Please try again.");
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    // Delete a thread
+    const deleteThread = async (threadIdToDelete) => {
+        if (!client.current) return;
+
+        try {
+            await client.current.threads.delete(threadIdToDelete);
+
+            // If the deleted thread is the current one
+            if (threadIdToDelete === threadId) {
+                // Remove from local storage
+                localStorage.removeItem(CURRENT_THREAD_ID_KEY);
+
+                // Clear current thread and messages
+                setThreadId(null);
+                setMessages([]);
+
+                // If there are other threads, select the first one
+                if (threads.length > 1) {
+                    const remainingThread = threads.find(
+                        (t) => t.thread_id !== threadIdToDelete
+                    );
+                    if (remainingThread) {
+                        setThreadId(remainingThread.thread_id);
+                        localStorage.setItem(
+                            CURRENT_THREAD_ID_KEY,
+                            remainingThread.thread_id
+                        );
+                    }
+                }
+            }
+
+            // Refresh thread list
+            await fetchThreads();
+        } catch (err) {
+            console.error("Error deleting thread:", err);
+            setError("Failed to delete thread. Please try again.");
+        }
+    };
+
+    // Switch to a different thread
+    const switchThread = async (newThreadId) => {
+        if (newThreadId === threadId) return;
+
+        try {
+            setIsLoading(true);
+            // Get thread state to load messages
+            const threadState = await client.current.threads.getState(
+                newThreadId
+            );
+
+            // Update the current thread ID
+            setThreadId(newThreadId);
+            // Save to local storage
+            localStorage.setItem(CURRENT_THREAD_ID_KEY, newThreadId);
+
+            // Update messages from thread state if available
+            if (threadState && threadState.values) {
+                let threadMessages = [];
+                // Extract messages from thread state
+                if (Array.isArray(threadState.values.messages)) {
+                    threadMessages = threadState.values.messages;
+                } else {
+                    // If no messages yet, add welcome message
+                    threadMessages = [
+                        {
+                            role: "assistant",
+                            content:
+                                "Welcome to the Open Deep Research Agent. How can I help you today?",
+                        },
+                    ];
+                }
+                setMessages(threadMessages);
+            }
+        } catch (err) {
+            console.error("Error switching thread:", err);
+            setError("Failed to switch thread. Please try again.");
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    // Load existing thread or create a new one
+    useEffect(() => {
+        const initializeThread = async () => {
+            if (!session?.access_token || !client.current) return;
+
+            // First fetch the thread list
+            await fetchThreads();
+
+            // If we have a threadId from localStorage, try to load it
+            if (threadId) {
+                try {
+                    const threadState = await client.current.threads.getState(
+                        threadId
+                    );
+                    // If thread state exists, load its messages
+                    if (threadState && threadState.values) {
+                        if (Array.isArray(threadState.values.messages)) {
+                            setMessages(threadState.values.messages);
+                        } else {
+                            // Add welcome message if no messages yet
+                            setMessages([
+                                {
+                                    role: "assistant",
+                                    content:
+                                        "Welcome to the Open Deep Research Agent. How can I help you today?",
+                                },
+                            ]);
+                        }
+                        return; // Exit if we loaded the thread successfully
+                    }
+                } catch (err) {
+                    console.error("Error loading saved thread:", err);
+                    // Clear invalid thread ID
+                    localStorage.removeItem(CURRENT_THREAD_ID_KEY);
+                    setThreadId(null);
+                }
+            }
+
+            // If we don't have a valid thread ID or couldn't load it, check if we have any threads
+            if (threads.length > 0) {
+                // Use the first thread
+                const firstThread = threads[0];
+                setThreadId(firstThread.thread_id);
+                localStorage.setItem(
+                    CURRENT_THREAD_ID_KEY,
+                    firstThread.thread_id
+                );
+
+                // Load its messages
+                try {
+                    const threadState = await client.current.threads.getState(
+                        firstThread.thread_id
+                    );
+                    if (
+                        threadState &&
+                        threadState.values &&
+                        Array.isArray(threadState.values.messages)
+                    ) {
+                        setMessages(threadState.values.messages);
+                    } else {
+                        setMessages([
+                            {
+                                role: "assistant",
+                                content:
+                                    "Welcome to the Open Deep Research Agent. How can I help you today?",
+                            },
+                        ]);
+                    }
+                } catch (err) {
+                    console.error("Error loading thread state:", err);
+                    setMessages([
+                        {
+                            role: "assistant",
+                            content:
+                                "Welcome to the Open Deep Research Agent. How can I help you today?",
+                        },
+                    ]);
+                }
+            } else {
+                // No threads exist, create a new one
+                await createNewThread();
+            }
+        };
+
+        if (session?.access_token && client.current) {
+            initializeThread();
+        }
+    }, [session?.access_token, client.current]);
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        const userInput = inputRef.current.value.trim();
+        if (!userInput || !threadId || !client.current) return;
+
+        // Add user message to UI immediately
+        setMessages((prev) => [...prev, { role: "user", content: userInput }]);
+
+        inputRef.current.value = "";
+        setIsLoading(true);
+
+        try {
+            // Send message using the thread.sendMessage method
+            thread.submit({
+                messages: [{ type: "human", content: userInput }],
+            });
+        } catch (err) {
+            console.error("Error sending message:", err);
+            setError("Failed to send message. Please try again.");
+            setIsLoading(false);
+        }
+    };
+
+    const handleKeyPress = (e) => {
+        if (e.key === "Enter" && !e.shiftKey) {
+            e.preventDefault();
+            handleSubmit(e);
+        }
+    };
+
+    const handleWindowFocus = () => {
+        if (inputRef.current) {
+            inputRef.current.focus();
+        }
+    };
+
+    useEffect(() => {
+        window.addEventListener("focus", handleWindowFocus);
+        return () => {
+            window.removeEventListener("focus", handleWindowFocus);
+        };
+    }, []);
+
     const handleCloseError = () => {
         setError(null);
+    };
+
+    // Format timestamp for thread list
+    const formatTimestamp = (timestamp) => {
+        if (!timestamp) return "";
+
+        const date = new Date(timestamp);
+        const now = new Date();
+        const isToday = date.toDateString() === now.toDateString();
+
+        if (isToday) {
+            return date.toLocaleTimeString([], {
+                hour: "2-digit",
+                minute: "2-digit",
+            });
+        } else {
+            return date.toLocaleDateString([], {
+                month: "short",
+                day: "numeric",
+            });
+        }
+    };
+
+    // Debug function to help troubleshoot issues
+    const logDebugInfo = () => {
+        console.group("Debug Information");
+        console.log("Current Thread ID:", threadId);
+        console.log("Client initialized:", !!client.current);
+        console.log("Session:", session);
+        console.log("Number of threads:", threads.length);
+        console.log("Messages:", messages);
+        console.log("Stream config:", streamConfig);
+        console.log("Thread object:", thread);
+        console.groupEnd();
+    };
+
+    // Add debug button to UI
+    const handleDebugClick = () => {
+        logDebugInfo();
+        setError("Debug information logged to console. Press F12 to view.");
     };
 
     return (
@@ -290,184 +441,288 @@ export default function OpenDeepResearchAgentPage({ graph_name }) {
             sx={{
                 height: "100vh",
                 display: "flex",
-                flexDirection: "column",
+                flexDirection: "column", // Change to column for proper header placement
                 bgcolor: "#f5f5f5",
+                overflow: "hidden",
             }}
         >
-            {/* Header */}
-            <Box
+            {/* Main Header - Now properly positioned at the top level */}
+            <Paper
+                elevation={2}
                 sx={{
                     p: 2,
-                    bgcolor: "white",
-                    borderBottom: "1px solid #e0e0e0",
-                    boxShadow: "0 2px 4px rgba(0,0,0,0.05)",
+                    borderRadius: 0,
+                    bgcolor: "#1976d2",
+                    height: `${HEADER_HEIGHT}px`,
+                    zIndex: 20, // Highest z-index to stay on top
                 }}
             >
-                <Typography variant="h6">
-                    {graph_name || "Deep Research Agent"}
+                <Typography variant="h5" sx={{ color: "white" }}>
+                    Open Deep Research Agent
                 </Typography>
-            </Box>
+            </Paper>
 
-            {/* Messages Area */}
+            {/* Content area - row layout with sidebar and chat */}
             <Box
                 sx={{
-                    flexGrow: 1,
-                    overflowY: "auto",
-                    p: 3,
                     display: "flex",
-                    flexDirection: "column",
-                    gap: 2,
+                    flexDirection: "row",
+                    flexGrow: 1,
+                    height: `calc(100vh - ${HEADER_HEIGHT}px)`,
+                    overflow: "hidden",
                 }}
             >
-                {messages.map((message, index) => {
-                    // Debug logging for message data
-                    console.log(`Message ${index}:`, message);
-                    console.log(`Message ${index} type:`, message.type);
-
-                    return (
-                        <Paper
-                            key={message.id || index}
-                            elevation={0}
+                {/* Thread List Sidebar */}
+                <Box
+                    sx={{
+                        width: 280,
+                        borderRight: "1px solid #e0e0e0",
+                        bgcolor: "white",
+                        display: "flex",
+                        flexDirection: "column",
+                        position: "relative",
+                        zIndex: 10,
+                        height: "100%", // Full height of the content area
+                        overflow: "hidden",
+                    }}
+                >
+                    {/* New Thread button area */}
+                    <Box
+                        sx={{
+                            p: 2,
+                            borderBottom: "1px solid #e0e0e0",
+                            display: "flex",
+                            gap: 1,
+                            position: "sticky",
+                            top: 0,
+                            backgroundColor: "white",
+                            zIndex: 11,
+                            height: `${THREAD_BUTTON_HEIGHT - 24}px`, // Adjusted padding calculation
+                        }}
+                    >
+                        <Button
+                            fullWidth
+                            variant="contained"
+                            color="primary"
+                            startIcon={<AddIcon />}
+                            onClick={createNewThread}
+                            disabled={isLoading || isThreadListLoading}
                             sx={{
-                                p: 2,
-                                maxWidth:
-                                    message.type === "final_report"
-                                        ? "95%"
-                                        : "80%",
-                                alignSelf: "flex-start",
-                                bgcolor:
-                                    message.type === "final_report"
-                                        ? "#f0f8ff" // Light blue background for final report
-                                        : "white", // Default background for other messages
-                                borderRadius: 2,
-                                border:
-                                    message.type === "final_report"
-                                        ? "1px solid #b3e5fc"
-                                        : "none",
+                                height: "100%", // Fill container height
+                                fontSize: "0.95rem", // Slightly larger text
+                                fontWeight: 500, // Medium weight for better visibility
                             }}
                         >
+                            New Thread
+                        </Button>
+                        <Button
+                            variant="outlined"
+                            color="secondary"
+                            onClick={handleDebugClick}
+                            size="small"
+                            sx={{
+                                height: "100%", // Fill container height
+                                minWidth: "80px", // Ensure minimum width for better visibility
+                            }}
+                        >
+                            Debug
+                        </Button>
+                    </Box>
+
+                    {/* Thread List - Properly calculated height */}
+                    <List
+                        sx={{
+                            flexGrow: 1,
+                            overflow: "auto",
+                            p: 0,
+                            height: `calc(100% - ${THREAD_BUTTON_HEIGHT}px)`,
+                        }}
+                    >
+                        {isThreadListLoading ? (
                             <Box
                                 sx={{
                                     display: "flex",
-                                    alignItems: "flex-start",
-                                    gap: 1.5,
+                                    justifyContent: "center",
+                                    p: 2,
                                 }}
                             >
-                                <Avatar
+                                <CircularProgress size={24} />
+                            </Box>
+                        ) : threads.length > 0 ? (
+                            threads.map((thread) => (
+                                <ListItem
+                                    key={thread.thread_id}
+                                    selected={thread.thread_id === threadId}
+                                    onClick={() =>
+                                        switchThread(thread.thread_id)
+                                    }
                                     sx={{
+                                        borderBottom: "1px solid #f0f0f0",
                                         bgcolor:
-                                            message.type === "final_report"
-                                                ? "#1e88e5"
-                                                : "primary.main",
-                                        width: 32,
-                                        height: 32,
+                                            thread.thread_id === threadId
+                                                ? "#f0f7ff"
+                                                : "inherit",
+                                        "&:hover": {
+                                            bgcolor:
+                                                thread.thread_id === threadId
+                                                    ? "#e3f2fd"
+                                                    : "#f5f5f5",
+                                        },
                                     }}
                                 >
-                                    {message.type === "final_report"
-                                        ? "📄"
-                                        : "AI"}
-                                </Avatar>
-                                <Box sx={{ width: "100%" }}>
-                                    {message.type === "final_report" && (
-                                        <Typography
-                                            variant="subtitle1"
-                                            sx={{
-                                                fontWeight: "bold",
-                                                color: "#1976d2",
-                                                mb: 1,
-                                            }}
-                                        >
-                                            Research Report
-                                        </Typography>
-                                    )}
-                                    <Typography
-                                        variant="body1"
-                                        sx={{
-                                            whiteSpace:
-                                                message.type === "final_report"
-                                                    ? "pre-wrap"
-                                                    : "normal",
-                                            fontFamily:
-                                                message.type === "final_report"
-                                                    ? "'Georgia', serif"
-                                                    : "inherit",
+                                    <ListItemText
+                                        primary={
+                                            thread.metadata?.title ||
+                                            `Thread ${thread.thread_id.substring(
+                                                0,
+                                                8
+                                            )}...`
+                                        }
+                                        secondary={formatTimestamp(
+                                            thread.created_at
+                                        )}
+                                        primaryTypographyProps={{
+                                            noWrap: true,
+                                            fontWeight:
+                                                thread.thread_id === threadId
+                                                    ? 600
+                                                    : 400,
                                         }}
-                                    >
-                                        {typeof message.content === "string"
-                                            ? message.content
-                                            : `[Content type: ${typeof message.content}] ${
-                                                  typeof message.content ===
-                                                  "object"
-                                                      ? JSON.stringify(
-                                                            message.content,
-                                                            null,
-                                                            2
-                                                        )
-                                                      : String(message.content)
-                                              }`}
-                                    </Typography>
-                                </Box>
+                                    />
+                                    <ListItemSecondaryAction>
+                                        <IconButton
+                                            edge="end"
+                                            aria-label="delete"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                deleteThread(thread.thread_id);
+                                            }}
+                                            size="small"
+                                        >
+                                            <DeleteIcon fontSize="small" />
+                                        </IconButton>
+                                    </ListItemSecondaryAction>
+                                </ListItem>
+                            ))
+                        ) : (
+                            <Box sx={{ p: 2, textAlign: "center" }}>
+                                <Typography
+                                    variant="body2"
+                                    color="text.secondary"
+                                >
+                                    No threads yet
+                                </Typography>
                             </Box>
-                        </Paper>
-                    );
-                })}
+                        )}
+                    </List>
+                </Box>
 
-                {/* Invisible element for scrolling to bottom */}
-                <div ref={messagesEndRef} />
-
-                {/* Loading indicator */}
-                {isLoading && (
+                {/* Main Chat Area */}
+                <Box
+                    sx={{
+                        flexGrow: 1,
+                        display: "flex",
+                        flexDirection: "column",
+                        height: "100%",
+                        overflow: "hidden",
+                    }}
+                >
+                    {/* Messages Container */}
                     <Box
                         sx={{
+                            flexGrow: 1,
+                            overflow: "auto",
+                            p: 2,
                             display: "flex",
-                            justifyContent: "center",
-                            my: 2,
+                            flexDirection: "column",
                         }}
                     >
-                        <CircularProgress size={24} />
-                    </Box>
-                )}
-            </Box>
+                        {messages.map((message, index) => (
+                            <Paper
+                                key={index}
+                                elevation={1}
+                                sx={{
+                                    p: 2,
+                                    mb: 2,
+                                    maxWidth: "80%",
+                                    alignSelf:
+                                        message.role === "user"
+                                            ? "flex-end"
+                                            : "flex-start",
+                                    bgcolor:
+                                        message.role === "user"
+                                            ? "#e3f2fd"
+                                            : "white",
+                                }}
+                            >
+                                <Typography variant="body1">
+                                    {message.content}
+                                </Typography>
+                            </Paper>
+                        ))}
+                        <div ref={messagesEndRef} />
 
-            {/* Input Area */}
-            <Box
-                sx={{ p: 2, bgcolor: "white", borderTop: "1px solid #e0e0e0" }}
-            >
-                <form onSubmit={handleSubmit}>
-                    <Box sx={{ display: "flex", gap: 1 }}>
+                        {/* Loading indicator */}
+                        {(isLoading || thread.isLoading) && (
+                            <Box
+                                sx={{
+                                    display: "flex",
+                                    justifyContent: "center",
+                                    mt: 2,
+                                }}
+                            >
+                                <CircularProgress size={24} />
+                            </Box>
+                        )}
+                    </Box>
+
+                    {/* Input Area */}
+                    <Paper
+                        component="form"
+                        onSubmit={handleSubmit}
+                        sx={{
+                            p: 2,
+                            display: "flex",
+                            alignItems: "center",
+                            borderTop: "1px solid #e0e0e0",
+                            position: "relative",
+                            zIndex: 5,
+                        }}
+                    >
                         <TextField
-                            name="message"
-                            placeholder="Type your research topic..."
-                            fullWidth
-                            variant="outlined"
                             inputRef={inputRef}
-                            disabled={isLoading || !threadId}
-                            InputProps={{
-                                sx: { borderRadius: 2 },
-                            }}
+                            fullWidth
+                            placeholder="Ask a question..."
+                            variant="outlined"
+                            disabled={
+                                isLoading || thread.isLoading || !threadId
+                            }
+                            onKeyPress={handleKeyPress}
+                            multiline
+                            maxRows={4}
                         />
                         <Button
-                            type="submit"
                             variant="contained"
-                            disabled={isLoading || !threadId}
-                            sx={{ borderRadius: 2 }}
+                            color="primary"
+                            sx={{ ml: 2 }}
+                            type="submit"
+                            disabled={
+                                isLoading || thread.isLoading || !threadId
+                            }
                         >
-                            {isLoading ? (
-                                <CircularProgress size={24} />
-                            ) : (
-                                "Submit"
-                            )}
+                            Send
                         </Button>
-                    </Box>
-                </form>
+                    </Paper>
+                </Box>
             </Box>
 
-            {/* Error message */}
+            {/* Error Snackbar */}
             <Snackbar
-                open={!!error}
+                open={error !== null}
                 autoHideDuration={6000}
                 onClose={handleCloseError}
-                anchorOrigin={{ vertical: "top", horizontal: "center" }}
+                anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+                sx={{ zIndex: 25 }} // Ensure it's above everything
             >
                 <Alert
                     onClose={handleCloseError}
