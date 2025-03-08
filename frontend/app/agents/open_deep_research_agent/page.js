@@ -77,24 +77,18 @@ export default function OpenDeepResearchAgentPage({ graph_name }) {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     };
 
-    // Setup streaming with useStream hook
-    const streamConfig = useMemo(() => {
-        return {
-            client: client.current,
-            threadId,
-            assistantId: graph_name || "open_deep_research_agent",
-            onError: (error) => {
-                console.error("Streaming error:", error);
-                setError(
-                    "An error occurred while processing your request. Please try again."
-                );
-                setIsLoading(false);
-            },
-        };
-    }, [client.current, threadId, graph_name]);
-
     // Get a single thread object from useStream instead of destructuring
-    const thread = useStream(streamConfig);
+    const thread = useStream({
+        apiUrl: deploymentUrl,
+        apiKey: session?.access_token,
+        assistantId: graph_name || "open_deep_research_agent",
+        threadId: threadId,
+        onThreadId: setThreadId,
+        defaultHeaders: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${session?.access_token}`,
+        },
+    });
 
     // Update messages when streaming provides new ones
     useEffect(() => {
@@ -114,7 +108,7 @@ export default function OpenDeepResearchAgentPage({ graph_name }) {
 
         try {
             setIsThreadListLoading(true);
-            console.log("Fetching threads with metadata filter:", {
+            console.log("Searching for threads with metadata filter:", {
                 graphName: graph_name || "open_deep_research_agent",
                 userId: session?.user?.id,
             });
@@ -167,6 +161,7 @@ export default function OpenDeepResearchAgentPage({ graph_name }) {
             ]);
 
             // Refresh thread list
+            console.log("Refreshing thread list after creating new thread");
             await fetchThreads();
 
             // Focus input
@@ -211,6 +206,7 @@ export default function OpenDeepResearchAgentPage({ graph_name }) {
             }
 
             // Refresh thread list
+            console.log("Refreshing thread list after deleting thread");
             await fetchThreads();
         } catch (err) {
             console.error("Error deleting thread:", err);
@@ -261,11 +257,13 @@ export default function OpenDeepResearchAgentPage({ graph_name }) {
     };
 
     // Load existing thread or create a new one
+    // TODO: Twice called, why? Because of the useStream?
     useEffect(() => {
-        const initializeThread = async () => {
-            if (!session?.access_token || !client.current) return;
+        if (!session?.access_token || !client.current) return;
 
+        const initializeThread = async () => {
             // First fetch the thread list
+            console.log("Fetching threads in initializeThread");
             await fetchThreads();
 
             // If we have a threadId from localStorage, try to load it
@@ -340,13 +338,12 @@ export default function OpenDeepResearchAgentPage({ graph_name }) {
                 }
             } else {
                 // No threads exist, create a new one
+                console.log("Creating new thread");
                 await createNewThread();
             }
         };
 
-        if (session?.access_token && client.current) {
-            initializeThread();
-        }
+        initializeThread();
     }, [session?.access_token, client.current]);
 
     const handleSubmit = async (e) => {
@@ -363,7 +360,8 @@ export default function OpenDeepResearchAgentPage({ graph_name }) {
         try {
             // Send message using the thread.sendMessage method
             thread.submit({
-                messages: [{ type: "human", content: userInput }],
+                // messages: [{ type: "human", content: userInput }],
+                topic: userInput,
             });
         } catch (err) {
             console.error("Error sending message:", err);
@@ -425,7 +423,6 @@ export default function OpenDeepResearchAgentPage({ graph_name }) {
         console.log("Session:", session);
         console.log("Number of threads:", threads.length);
         console.log("Messages:", messages);
-        console.log("Stream config:", streamConfig);
         console.log("Thread object:", thread);
         console.groupEnd();
     };
