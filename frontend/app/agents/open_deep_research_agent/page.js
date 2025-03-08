@@ -67,14 +67,6 @@ export default function OpenDeepResearchAgentPage({ graph_name }) {
         }
     }, [session?.access_token, deploymentUrl]);
 
-    // Load current thread ID from local storage
-    useEffect(() => {
-        const savedThreadId = localStorage.getItem(CURRENT_THREAD_ID_KEY);
-        if (savedThreadId) {
-            setThreadId(savedThreadId);
-        }
-    }, []);
-
     // Scroll to bottom of messages
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -133,6 +125,7 @@ export default function OpenDeepResearchAgentPage({ graph_name }) {
                 },
                 graph_id: graphId, // Add the required graph_id parameter
             });
+            console.log("thread", thread);
 
             // Set as current thread
             setThreadId(thread.thread_id);
@@ -150,13 +143,15 @@ export default function OpenDeepResearchAgentPage({ graph_name }) {
 
             // Add initial message to thread state
             await client.current.threads.updateState(thread.thread_id, {
-                values: [
-                    {
-                        role: "assistant",
-                        content:
-                            "Welcome! Ask me a research question, and I'll help you find information.",
-                    },
-                ],
+                values: {
+                    messages: [
+                        {
+                            role: "assistant",
+                            content:
+                                "Welcome! Ask me a research question, and I'll help you find information.",
+                        },
+                    ],
+                },
             });
 
             // Refresh thread list
@@ -231,6 +226,7 @@ export default function OpenDeepResearchAgentPage({ graph_name }) {
             // Load thread messages
             const threadMessages = threadState.values.messages || [];
             if (threadMessages && Array.isArray(threadMessages)) {
+                console.log("call setFormattedMessages in switchThread");
                 setFormattedMessages(threadMessages);
             } else {
                 setFormattedMessages([
@@ -254,6 +250,7 @@ export default function OpenDeepResearchAgentPage({ graph_name }) {
 
             // Reset UI
             setFormattedMessages([]);
+        } finally {
             setIsLoading(false);
         }
     };
@@ -268,14 +265,25 @@ export default function OpenDeepResearchAgentPage({ graph_name }) {
             await fetchThreads();
 
             // If we have a threadId from localStorage, try to load it
-            if (threadId) {
+            const savedThreadId = localStorage.getItem(CURRENT_THREAD_ID_KEY);
+            console.log("savedThreadId", savedThreadId);
+            if (savedThreadId) {
+                setThreadId(savedThreadId);
                 try {
                     const threadState = await client.current.threads.getState(
-                        threadId
+                        savedThreadId
                     );
+                    console.log("threadState", threadState);
                     // If thread state exists, load its messages
-                    if (threadState && threadState.values) {
+                    if (
+                        threadState &&
+                        threadState.values &&
+                        threadState.values.metadata
+                    ) {
                         if (Array.isArray(threadState.values.messages)) {
+                            console.log(
+                                "call setFormattedMessages in initializeThread from localStorage"
+                            );
                             setFormattedMessages(threadState.values.messages);
                         } else {
                             // Add welcome message if no messages yet
@@ -288,6 +296,10 @@ export default function OpenDeepResearchAgentPage({ graph_name }) {
                             ]);
                         }
                         // No need to return, we'll still set up streaming via the useEffect
+                    } else {
+                        console.log("No threadId found in localStorage");
+                        localStorage.removeItem(CURRENT_THREAD_ID_KEY);
+                        setThreadId(null);
                     }
                 } catch (err) {
                     console.error("Error loading saved thread:", err);
@@ -298,6 +310,7 @@ export default function OpenDeepResearchAgentPage({ graph_name }) {
             }
 
             // If we don't have a valid thread ID or couldn't load it, check if we have any threads
+            console.log("threads.length", threads.length);
             if (threads.length > 0) {
                 // Use the first thread
                 const firstThread = threads[0];
@@ -308,6 +321,7 @@ export default function OpenDeepResearchAgentPage({ graph_name }) {
                 );
 
                 // Load its messages
+                console.log("firstThread.thread_id", firstThread.thread_id);
                 try {
                     const threadState = await client.current.threads.getState(
                         firstThread.thread_id
@@ -317,6 +331,9 @@ export default function OpenDeepResearchAgentPage({ graph_name }) {
                         threadState.values &&
                         Array.isArray(threadState.values.messages)
                     ) {
+                        console.log(
+                            "call setFormattedMessages in initializeThread"
+                        );
                         setFormattedMessages(threadState.values.messages);
                     } else {
                         setFormattedMessages([
@@ -354,10 +371,17 @@ export default function OpenDeepResearchAgentPage({ graph_name }) {
             // Fetch thread state
             let threadState;
             try {
-                threadState = await client.current.threads.getState(threadIdToStream);
-
+                threadState = await client.current.threads.getState(
+                    threadIdToStream
+                );
+                console.log("threadState", threadState);
                 // If thread state exists, load its messages
-                if (threadState && threadState.values && Array.isArray(threadState.values.messages)) {
+                if (
+                    threadState &&
+                    threadState.values &&
+                    Array.isArray(threadState.values.messages)
+                ) {
+                    console.log("call setFormattedMessages in streamMessages");
                     setFormattedMessages(threadState.values.messages);
                 }
             } catch (err) {
@@ -398,10 +422,10 @@ export default function OpenDeepResearchAgentPage({ graph_name }) {
                         Array.isArray(chunk.data.completed_sections)
                     ) {
                         // Create a new messages array instead of pushing to existing one
-                        setFormattedMessages(prevMessages => {
+                        setFormattedMessages((prevMessages) => {
                             // Start with current messages
                             const newMessages = [...prevMessages];
-                            
+
                             // Add each completed section as a message
                             chunk.data.completed_sections.forEach((section) => {
                                 if (section.content) {
@@ -422,7 +446,10 @@ export default function OpenDeepResearchAgentPage({ graph_name }) {
                                     content: `## All Sections (${
                                         chunk.data.sections.length
                                     } total)\n\n${chunk.data.sections
-                                        .map((s) => `- ${s.name}: ${s.description}`)
+                                        .map(
+                                            (s) =>
+                                                `- ${s.name}: ${s.description}`
+                                        )
                                         .join("\n")}`,
                                 });
                             }
@@ -454,7 +481,7 @@ export default function OpenDeepResearchAgentPage({ graph_name }) {
                             // Return the new messages array
                             return newMessages;
                         });
-                        
+
                         // Update loading state
                         setIsLoading(false);
                     } else if (Array.isArray(chunk.data.messages)) {
@@ -469,7 +496,7 @@ export default function OpenDeepResearchAgentPage({ graph_name }) {
             console.log("chunk loop is done");
 
             // If the stream is empty, add a welcome message
-            setFormattedMessages(prevMessages => {
+            setFormattedMessages((prevMessages) => {
                 if (prevMessages.length === 0) {
                     return [
                         {
