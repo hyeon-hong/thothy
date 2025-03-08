@@ -74,7 +74,7 @@ export default function OpenDeepResearchAgentPage() {
     // Environment-aware deployment URL
     const deploymentUrl =
         process.env.NODE_ENV === "development"
-            ? "http://localhost:2024"
+            ? process.env.NEXT_PUBLIC_DEPLOYMENT_URL || ""
             : process.env.NEXT_PUBLIC_DEPLOYMENT_URL || "";
 
     // Initialize LangGraph client

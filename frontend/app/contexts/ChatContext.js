@@ -7,7 +7,7 @@ const ChatContext = createContext();
 // Use localhost in development, environment variable in production
 const DEPLOYMENT_URL =
     process.env.NODE_ENV === "development"
-        ? "http://localhost:2024"
+        ? process.env.NEXT_PUBLIC_DEPLOYMENT_URL || ""
         : process.env.NEXT_PUBLIC_DEPLOYMENT_URL || "";
 
 export function ChatProvider({ children, graph_name }) {
