@@ -77,62 +77,6 @@ export default function OpenDeepResearchAgentPage({ graph_name }) {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     };
 
-    // Fetch thread messages and start streaming
-    const streamMessages = async (threadIdToStream) => {
-        if (!client.current || !threadIdToStream) return;
-
-        try {
-            // First get current thread state
-            const threadState = await client.current.threads.getState(
-                threadIdToStream
-            );
-
-            // If thread state exists, load its messages
-            if (
-                threadState &&
-                threadState.values &&
-                Array.isArray(threadState.values.messages)
-            ) {
-                setMessages(threadState.values.messages);
-            }
-
-            // Set up streaming for new messages
-            setIsStreaming(true);
-
-            // Create a streaming connection for this thread
-            const stream = await client.current.runs.stream(
-                threadIdToStream,
-                graph_name || "open_deep_research_agent",
-                {
-                    streamMode: "values",
-                }
-            );
-
-            // Handle streaming updates
-            for await (const chunk of stream) {
-                if (
-                    chunk.event === "values" &&
-                    chunk.data &&
-                    Array.isArray(chunk.data.messages)
-                ) {
-                    setMessages(chunk.data.messages);
-                    setIsLoading(false);
-                } else if (chunk.event === "values" && chunk.data) {
-                    // Handle potential different formats
-                    console.log("Received values data:", chunk.data);
-                }
-            }
-
-            return stream;
-        } catch (err) {
-            console.error("Error setting up stream:", err);
-            setError("Failed to connect to message stream");
-            setIsLoading(false);
-            setIsStreaming(false);
-            return null;
-        }
-    };
-
     // Scroll to bottom when messages change
     useEffect(() => {
         scrollToBottom();
@@ -404,6 +348,113 @@ export default function OpenDeepResearchAgentPage({ graph_name }) {
         initializeThread();
     }, [session?.access_token, client.current]);
 
+    // Fetch thread messages and start streaming
+    const streamMessages = async (threadIdToStream) => {
+        if (!client.current || !threadIdToStream) return;
+        
+        try {
+            // First get current thread state
+            const threadState = await client.current.threads.getState(threadIdToStream);
+            
+            // If thread state exists, load its messages
+            if (threadState && threadState.values && Array.isArray(threadState.values.messages)) {
+                setMessages(threadState.values.messages);
+            }
+            
+            // Set up streaming for new messages
+            setIsStreaming(true);
+            
+            // Create a streaming connection for this thread
+            const stream = await client.current.runs.stream(
+                threadIdToStream, 
+                graph_name || "open_deep_research_agent",
+                {
+                    streamMode: "values"
+                }
+            );
+            
+            // Handle streaming updates
+            for await (const chunk of stream) {
+                console.log("chunk", chunk);
+                
+                if (chunk.event === "values" && chunk.data) {
+                    // Process research data from the chunk
+                    if (chunk.data.completed_sections && Array.isArray(chunk.data.completed_sections)) {
+                        const formattedMessages = [];
+                        
+                        // Add assistant welcome message if it's the first message
+                        formattedMessages.push({
+                            role: "assistant",
+                            content: "I'm researching information for you. Here's what I've found so far:"
+                        });
+                        
+                        // Add each completed section as a message
+                        chunk.data.completed_sections.forEach(section => {
+                            if (section.content) {
+                                formattedMessages.push({
+                                    role: "assistant",
+                                    content: section.content
+                                });
+                            }
+                        });
+                        
+                        // Add sections information if available
+                        if (chunk.data.sections && Array.isArray(chunk.data.sections)) {
+                            formattedMessages.push({
+                                role: "assistant",
+                                content: `## All Sections (${chunk.data.sections.length} total)\n\n${chunk.data.sections.map(s => `- ${s.name}: ${s.description}`).join('\n')}`
+                            });
+                        }
+                        
+                        // Add report sections from research if available
+                        if (chunk.data.report_sections_from_research) {
+                            formattedMessages.push({
+                                role: "assistant",
+                                content: `## Report Sections From Research\n\n${chunk.data.report_sections_from_research}`
+                            });
+                        }
+                        
+                        // If there's a final report, add it
+                        if (chunk.data.final_report) {
+                            formattedMessages.push({
+                                role: "assistant",
+                                content: `# Final Report\n\n${chunk.data.final_report}`
+                            });
+                        }
+                        
+                        // If there's a topic, show it
+                        if (chunk.data.topic) {
+                            formattedMessages.push({
+                                role: "assistant",
+                                content: `Research topic: ${chunk.data.topic}`
+                            });
+                        }
+                        
+                        // Only update messages if we have content
+                        if (formattedMessages.length > 0) {
+                            setMessages(formattedMessages);
+                            setIsLoading(false);
+                        }
+                    } else if (Array.isArray(chunk.data.messages)) {
+                        // Handle standard message format if available
+                        setMessages(chunk.data.messages);
+                        setIsLoading(false);
+                    } else {
+                        console.log("Received values data:", chunk.data);
+                    }
+                }
+            }
+            
+            return stream;
+        } catch (err) {
+            console.error("Error setting up stream:", err);
+            setError("Failed to connect to message stream");
+            setIsLoading(false);
+            setIsStreaming(false);
+            return null;
+        }
+    };
+
     // Send a message using the client
     const sendMessage = async (userInput) => {
         if (!client.current || !threadId) return;
@@ -412,13 +463,34 @@ export default function OpenDeepResearchAgentPage({ graph_name }) {
             setIsLoading(true);
 
             // Add message to thread
-            await client.current.threads.run({
-                threadId: threadId,
-                assistantId: graph_name || "open_deep_research_agent",
-                input: {
-                    topic: userInput,
-                },
-            });
+            console.log("client.current", client.current);
+            console.log("threadId", threadId);
+            console.log("graph_name", graph_name);
+            console.log("userInput", userInput);
+            const stream = await client.current.runs.stream(
+                threadId,
+                graph_name || "open_deep_research_agent",
+                {
+                    input: {
+                        topic: userInput,
+                    },
+                    streamMode: ["values"],
+                }
+            );
+
+            // Handle streaming updates
+            for await (const chunk of stream) {
+                console.log("chunk", chunk);
+                if (chunk.event === "values" && chunk.data) {
+                    setMessages(chunk.data.final_report);
+                    setIsLoading(false);
+                } else if (chunk.event === "values" && chunk.data) {
+                    // Handle potential different formats
+                    console.log("Received values data:", chunk.data);
+                }
+            }
+
+            return stream;
 
             // The streaming connection will update messages automatically
         } catch (err) {
@@ -512,6 +584,29 @@ export default function OpenDeepResearchAgentPage({ graph_name }) {
         logDebugInfo();
         setError("Debug information logged to console. Press F12 to view.");
     };
+
+    // Set up streaming when thread ID changes
+    useEffect(() => {
+        if (!threadId || !client.current) return;
+
+        let streamCleanup = null;
+
+        // Start streaming for this thread
+        streamMessages(threadId)
+            .then(stream => {
+                streamCleanup = () => {
+                    setIsStreaming(false);
+                };
+            })
+            .catch(err => {
+                console.error("Error in stream setup:", err);
+            });
+
+        // Cleanup function to close stream when component unmounts or threadId changes
+        return () => {
+            if (streamCleanup) streamCleanup();
+        };
+    }, [threadId, client.current]);
 
     return (
         <Box
