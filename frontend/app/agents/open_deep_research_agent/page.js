@@ -23,6 +23,8 @@ import { useAuth } from "../../contexts/AuthContext";
 import { Client } from "@langchain/langgraph-sdk";
 import DeleteIcon from "@mui/icons-material/Delete";
 import AddIcon from "@mui/icons-material/Add";
+import KeyboardArrowUpIcon from "@mui/icons-material/KeyboardArrowUp";
+import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
 
 const CURRENT_THREAD_ID_KEY = "openDeepResearchCurrentThreadId";
 
@@ -34,6 +36,7 @@ export default function OpenDeepResearchAgentPage({ graph_name }) {
     const inputRef = useRef(null);
     const { session } = useAuth();
     const [formattedMessages, setFormattedMessages] = useState([]);
+    const [expandedMessages, setExpandedMessages] = useState({});
     const [threads, setThreads] = useState([]);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState(null);
@@ -537,6 +540,13 @@ export default function OpenDeepResearchAgentPage({ graph_name }) {
         };
     }, [threadId, client.current]);
 
+    const toggleMessageExpansion = (index) => {
+        setExpandedMessages(prev => ({
+            ...prev,
+            [index]: !prev[index]
+        }));
+    };
+
     return (
         <Box
             sx={{
@@ -756,9 +766,45 @@ export default function OpenDeepResearchAgentPage({ graph_name }) {
                                             : "white",
                                 }}
                             >
-                                <Typography variant="body1">
-                                    {message.content}
-                                </Typography>
+                                <Box sx={{ position: 'relative' }}>
+                                    <Typography 
+                                        variant="body1"
+                                        sx={{
+                                            overflow: 'hidden',
+                                            textOverflow: 'ellipsis',
+                                            display: '-webkit-box',
+                                            WebkitLineClamp: expandedMessages[index] ? 'unset' : 2,
+                                            WebkitBoxOrient: 'vertical',
+                                            whiteSpace: 'pre-wrap'
+                                        }}
+                                    >
+                                        {message.content}
+                                    </Typography>
+                                    
+                                    {/* Only show expand button if content is long enough to need it */}
+                                    {message.content.split('\n').length > 2 || message.content.length > 150 ? (
+                                        <IconButton 
+                                            size="small" 
+                                            onClick={() => toggleMessageExpansion(index)}
+                                            sx={{ 
+                                                position: 'absolute', 
+                                                bottom: -8, 
+                                                right: -8,
+                                                bgcolor: 'background.paper',
+                                                border: '1px solid #e0e0e0',
+                                                '&:hover': {
+                                                    bgcolor: 'background.default',
+                                                },
+                                            }}
+                                        >
+                                            {expandedMessages[index] ? (
+                                                <KeyboardArrowUpIcon fontSize="small" />
+                                            ) : (
+                                                <KeyboardArrowDownIcon fontSize="small" />
+                                            )}
+                                        </IconButton>
+                                    ) : null}
+                                </Box>
                             </Paper>
                         ))}
                         <div ref={messagesEndRef} />
