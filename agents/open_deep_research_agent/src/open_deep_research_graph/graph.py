@@ -57,7 +57,6 @@ async def generate_report_plan(state: ReportState, config: RunnableConfig):
     """
     # Inputs
     topic = state["topic"]
-    print("================== topic: ", topic)
     feedback = state.get("feedback_on_report_plan", None)
 
     # Get configuration
