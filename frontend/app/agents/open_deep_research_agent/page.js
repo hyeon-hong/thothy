@@ -48,8 +48,12 @@ export default function OpenDeepResearchAgentPage({ graph_name }) {
     useEffect(() => {
         const createThread = async () => {
             if (!session?.access_token) {
-                console.warn("No access token available, skipping thread creation");
+                console.warn(
+                    "No access token available, skipping thread creation"
+                );
                 return;
+            } else {
+                console.log("Access token: ", session.access_token);
             }
 
             try {
@@ -58,13 +62,16 @@ export default function OpenDeepResearchAgentPage({ graph_name }) {
                     headers: getHeaders(),
                     body: JSON.stringify({
                         metadata: {
-                            assistant_id: graph_name || "open_deep_research_graph"
-                        }
+                            assistant_id:
+                                graph_name || "open_deep_research_graph",
+                        },
                     }),
                 });
 
                 if (!response.ok) {
-                    throw new Error(`Error creating thread: ${response.statusText}`);
+                    throw new Error(
+                        `Error creating thread: ${response.statusText}`
+                    );
                 }
 
                 const data = await response.json();
@@ -86,7 +93,7 @@ export default function OpenDeepResearchAgentPage({ graph_name }) {
                 eventSourceRef.current.close();
             }
         };
-    }, [session, deploymentUrl, graph_name, threadId]);
+    }, [session?.access_token, deploymentUrl, graph_name, threadId]);
 
     // Handle event source message
     const handleSSEMessage = (event) => {
@@ -98,31 +105,44 @@ export default function OpenDeepResearchAgentPage({ graph_name }) {
         try {
             const data = JSON.parse(event.data);
             console.log("SSE data:", data);
-            
+
             // Handle different types of events
             if (data.type === "final_report") {
                 // Handle final report
-                setMessages(prev => [...prev, {
-                    id: Date.now(),
-                    type: "final_report",
-                    content: data.content || data.value || "Report generated successfully",
-                }]);
+                setMessages((prev) => [
+                    ...prev,
+                    {
+                        id: Date.now(),
+                        type: "final_report",
+                        content:
+                            data.content ||
+                            data.value ||
+                            "Report generated successfully",
+                    },
+                ]);
             } else if (data.type) {
                 // Handle any message with a type
-                setMessages(prev => [...prev, {
-                    id: Date.now(),
-                    type: data.type,
-                    content: data.content || data.value || "Response received",
-                }]);
+                setMessages((prev) => [
+                    ...prev,
+                    {
+                        id: Date.now(),
+                        type: data.type,
+                        content:
+                            data.content || data.value || "Response received",
+                    },
+                ]);
             } else if (data.value) {
                 // Handle generic message
-                setMessages(prev => [...prev, {
-                    id: Date.now(),
-                    type: "ai",
-                    content: data.value,
-                }]);
+                setMessages((prev) => [
+                    ...prev,
+                    {
+                        id: Date.now(),
+                        type: "ai",
+                        content: data.value,
+                    },
+                ]);
             }
-            
+
             scrollToBottom();
         } catch (err) {
             console.error("Error parsing SSE data:", err);
@@ -153,11 +173,13 @@ export default function OpenDeepResearchAgentPage({ graph_name }) {
         }
 
         setIsLoading(true);
-        
+
         try {
             // Create a new EventSource for streaming response
-            const url = new URL(`${deploymentUrl}/threads/${threadId}/runs/stream`);
-            
+            const url = new URL(
+                `${deploymentUrl}/threads/${threadId}/runs/stream`
+            );
+
             // Prepare the request with the message
             const runRequest = {
                 assistant_id: graph_name || "open_deep_research_graph",
@@ -166,38 +188,41 @@ export default function OpenDeepResearchAgentPage({ graph_name }) {
                 },
                 stream_mode: ["values", "events"],
             };
-            
+
             // Make the POST request to start the stream
             const response = await fetch(url, {
                 method: "POST",
                 headers: getHeaders(),
                 body: JSON.stringify(runRequest),
             });
-            
+
             if (!response.ok) {
                 throw new Error(`Error creating run: ${response.statusText}`);
             }
-            
+
             // Create EventSource for SSE
             const eventSource = new EventSource(url.toString());
             eventSourceRef.current = eventSource;
-            
+
             eventSource.onmessage = handleSSEMessage;
-            
+
             eventSource.onerror = (err) => {
                 console.error("EventSource error:", err);
                 eventSource.close();
                 setIsLoading(false);
                 setError("Error receiving responses. Please try again.");
             };
-            
+
             // Add user message to messages
-            setMessages(prev => [...prev, {
-                id: Date.now(),
-                type: "ai", // Using "ai" because you mentioned there's no "human" type
-                content: message,
-            }]);
-            
+            setMessages((prev) => [
+                ...prev,
+                {
+                    id: Date.now(),
+                    type: "ai", // Using "ai" because you mentioned there's no "human" type
+                    content: message,
+                },
+            ]);
+
             // Reset the form
             e.target.reset();
             inputRef.current?.focus();
@@ -219,9 +244,10 @@ export default function OpenDeepResearchAgentPage({ graph_name }) {
             if (isNavElement) return;
 
             const activeElement = document.activeElement;
-            const isInputFocused = activeElement instanceof HTMLInputElement ||
-                                   activeElement instanceof HTMLTextAreaElement;
-            
+            const isInputFocused =
+                activeElement instanceof HTMLInputElement ||
+                activeElement instanceof HTMLTextAreaElement;
+
             if (e.key === "/" && !isInputFocused) {
                 e.preventDefault();
                 inputRef.current?.focus();
@@ -231,9 +257,10 @@ export default function OpenDeepResearchAgentPage({ graph_name }) {
         const handleWindowFocus = () => {
             // Focus the input when the window gains focus, if no other input is focused
             const activeElement = document.activeElement;
-            const isInputFocused = activeElement instanceof HTMLInputElement ||
-                                   activeElement instanceof HTMLTextAreaElement;
-            
+            const isInputFocused =
+                activeElement instanceof HTMLInputElement ||
+                activeElement instanceof HTMLTextAreaElement;
+
             if (!isInputFocused) {
                 inputRef.current?.focus();
             }
@@ -296,21 +323,27 @@ export default function OpenDeepResearchAgentPage({ graph_name }) {
                     // Debug logging for message data
                     console.log(`Message ${index}:`, message);
                     console.log(`Message ${index} type:`, message.type);
-                    
+
                     return (
                         <Paper
                             key={message.id || index}
                             elevation={0}
                             sx={{
                                 p: 2,
-                                maxWidth: message.type === "final_report" ? "95%" : "80%",
+                                maxWidth:
+                                    message.type === "final_report"
+                                        ? "95%"
+                                        : "80%",
                                 alignSelf: "flex-start",
-                                bgcolor: 
+                                bgcolor:
                                     message.type === "final_report"
                                         ? "#f0f8ff" // Light blue background for final report
-                                        : "white",  // Default background for other messages
+                                        : "white", // Default background for other messages
                                 borderRadius: 2,
-                                border: message.type === "final_report" ? "1px solid #b3e5fc" : "none",
+                                border:
+                                    message.type === "final_report"
+                                        ? "1px solid #b3e5fc"
+                                        : "none",
                             }}
                         >
                             <Box
@@ -322,41 +355,56 @@ export default function OpenDeepResearchAgentPage({ graph_name }) {
                             >
                                 <Avatar
                                     sx={{
-                                        bgcolor: message.type === "final_report" ? "#1e88e5" : "primary.main",
+                                        bgcolor:
+                                            message.type === "final_report"
+                                                ? "#1e88e5"
+                                                : "primary.main",
                                         width: 32,
                                         height: 32,
                                     }}
                                 >
-                                    {message.type === "final_report" ? "📄" : "AI"}
+                                    {message.type === "final_report"
+                                        ? "📄"
+                                        : "AI"}
                                 </Avatar>
                                 <Box sx={{ width: "100%" }}>
                                     {message.type === "final_report" && (
-                                        <Typography 
-                                            variant="subtitle1" 
-                                            sx={{ 
-                                                fontWeight: "bold", 
+                                        <Typography
+                                            variant="subtitle1"
+                                            sx={{
+                                                fontWeight: "bold",
                                                 color: "#1976d2",
-                                                mb: 1 
+                                                mb: 1,
                                             }}
                                         >
                                             Research Report
                                         </Typography>
                                     )}
-                                    <Typography 
+                                    <Typography
                                         variant="body1"
                                         sx={{
-                                            whiteSpace: message.type === "final_report" ? "pre-wrap" : "normal",
-                                            fontFamily: message.type === "final_report" ? "'Georgia', serif" : "inherit",
+                                            whiteSpace:
+                                                message.type === "final_report"
+                                                    ? "pre-wrap"
+                                                    : "normal",
+                                            fontFamily:
+                                                message.type === "final_report"
+                                                    ? "'Georgia', serif"
+                                                    : "inherit",
                                         }}
                                     >
-                                        {typeof message.content === 'string' 
+                                        {typeof message.content === "string"
                                             ? message.content
                                             : `[Content type: ${typeof message.content}] ${
-                                                  typeof message.content === 'object' 
-                                                    ? JSON.stringify(message.content, null, 2) 
-                                                    : String(message.content)
-                                              }`
-                                        }
+                                                  typeof message.content ===
+                                                  "object"
+                                                      ? JSON.stringify(
+                                                            message.content,
+                                                            null,
+                                                            2
+                                                        )
+                                                      : String(message.content)
+                                              }`}
                                     </Typography>
                                 </Box>
                             </Box>
@@ -404,7 +452,11 @@ export default function OpenDeepResearchAgentPage({ graph_name }) {
                             disabled={isLoading || !threadId}
                             sx={{ borderRadius: 2 }}
                         >
-                            {isLoading ? <CircularProgress size={24} /> : "Submit"}
+                            {isLoading ? (
+                                <CircularProgress size={24} />
+                            ) : (
+                                "Submit"
+                            )}
                         </Button>
                     </Box>
                 </form>
@@ -417,7 +469,11 @@ export default function OpenDeepResearchAgentPage({ graph_name }) {
                 onClose={handleCloseError}
                 anchorOrigin={{ vertical: "top", horizontal: "center" }}
             >
-                <Alert onClose={handleCloseError} severity="error" sx={{ width: "100%" }}>
+                <Alert
+                    onClose={handleCloseError}
+                    severity="error"
+                    sx={{ width: "100%" }}
+                >
                     {error}
                 </Alert>
             </Snackbar>
