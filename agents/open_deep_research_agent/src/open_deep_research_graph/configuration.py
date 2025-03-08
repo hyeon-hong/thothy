@@ -1,10 +1,9 @@
 import os
-from enum import Enum
 from dataclasses import dataclass, fields
-from typing import Any, Optional, Dict
+from enum import Enum
+from typing import Any, Dict, Optional
 
 from langchain_core.runnables import RunnableConfig
-from dataclasses import dataclass
 
 DEFAULT_REPORT_STRUCTURE = """Use this structure to create a report on the user-provided topic:
 
@@ -44,22 +43,20 @@ class WriterProvider(Enum):
 class Configuration:
     """The configurable fields for the chatbot."""
     report_structure: str = DEFAULT_REPORT_STRUCTURE  # Defaults to the default report structure
-    number_of_queries: int = 2  # Number of search queries to generate per iteration
-    max_search_depth: int = 2  # Maximum number of reflection + search iterations
+    number_of_queries: int = 1  # Number of search queries to generate per iteration
+    max_search_depth: int = 1  # Maximum number of reflection + search iterations
 
     # Anthropic
-    # planner_provider: PlannerProvider = PlannerProvider.ANTHROPIC  # Defaults to Anthropic as provider
-    # planner_model: str = "claude-3-7-sonnet-latest" # Defaults to claude-3-7-sonnet-latest
+    # planner_provider: PlannerProvider = PlannerProvider.ANTHROPIC
+    # planner_model: str = "claude-3-7-sonnet-latest"
     # writer_provider: WriterProvider = WriterProvider.ANTHROPIC # Defaults to Anthropic as provider
     # writer_model: str = "claude-3-5-sonnet-latest" # Defaults to claude-3-5-sonnet-latest
 
     # OpenAI
-    # Defaults to OpenAI as provider
     planner_provider: PlannerProvider = PlannerProvider.OPENAI
-    planner_model: str = "gpt-4o-mini"  # Defaults to gpt-4o-mini
-    # Defaults to OpenAI as provider
+    planner_model: str = "gpt-4o-mini"
     writer_provider: WriterProvider = WriterProvider.OPENAI
-    writer_model: str = "gpt-4o-mini"  # Defaults to gpt-4o-mini
+    writer_model: str = "gpt-4o-mini"
 
     search_api: SearchAPI = SearchAPI.TAVILY  # Default to TAVILY
     search_api_config: Optional[Dict[str, Any]] = None
