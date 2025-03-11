@@ -46,7 +46,7 @@ export function CanvasComponent() {
       if (chatCollapsedSearchParam) {
         setChatCollapsed(JSON.parse(chatCollapsedSearchParam));
       }
-    } catch (e) {
+    } catch (_e) {
       setChatCollapsed(false);
       const queryParams = new URLSearchParams(searchParams.toString());
       queryParams.delete(CHAT_COLLAPSED_QUERY_PARAM);

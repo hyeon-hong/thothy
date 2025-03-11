@@ -12,7 +12,6 @@ import { useShallow } from "zustand/shallow";
 import {
   AttachmentPrimitive,
   useAttachment,
-  useThreadRuntime,
 } from "@assistant-ui/react";
 import {
   TooltipIconButton,
