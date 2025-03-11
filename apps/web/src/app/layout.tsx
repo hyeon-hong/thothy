@@ -20,6 +20,12 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className="h-screen">
+      <head>
+        <meta charSet="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        {/* <link href="/dist/styles.css" rel="stylesheet" /> */}
+      </head>
+
       <body className={cn("min-h-full", inter.className)}>
         <NuqsAdapter>{children}</NuqsAdapter>
       </body>
