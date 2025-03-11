@@ -1,19 +1,14 @@
 {
+  "node_version": "20",
   "dependencies": [
-    "./agents/chat_agent",
-    "./agents/research_agent",
-    "./agents/open_deep_research_agent",
-    "./agents/security"
+    "."
   ],
   "graphs": {
-    "chat_graph": "./agents/chat_agent/src/chat_graph/graph.py:graph",
-    "research_graph": "./agents/research_agent/src/research_graph/graph.py:graph",
-    "open_deep_research_graph": "./agents/open_deep_research_agent/src/open_deep_research_graph/graph.py:graph"
+    "agent": "./apps/agents/src/open-canvas/index.ts:graph",
+    "reflection": "./apps/agents/src/reflection/index.ts:graph",
+    "thread_title": "./apps/agents/src/thread-title/index.ts:graph",
+    "summarizer": "./apps/agents/src/summarizer/index.ts:graph",
+    "web_search": "./apps/agents/src/web-search/index.ts:graph"
   },
-  "auth": {
-    "path": "./agents/security/auth.py:auth",
-    "disable_studio_auth": true
-  },
-  "env": "./.env",
-  "python_version": "3.12"
+  "env": ".env"
 }

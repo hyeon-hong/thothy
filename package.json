@@ -1,0 +1,36 @@
+{
+  "name": "open_canvas",
+  "author": "Brace Sproul",
+  "homepage": "https://opencanvas.langchain.com",
+  "repository": "https://github.com/langchain-ai/open-canvas",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "turbo build",
+    "turbo:command": "turbo",
+    "format": "turbo format",
+    "lint": "turbo lint",
+    "lint:fix": "turbo lint:fix"
+  },
+  "packageManager": "yarn@1.22.22",
+  "devDependencies": {
+    "@eslint/eslintrc": "^3.3.0",
+    "@typescript-eslint/eslint-plugin": "^8.26.1",
+    "@typescript-eslint/parser": "^8.26.1",
+    "eslint": "^9.22.0",
+    "eslint-config-prettier": "^10.1.1",
+    "eslint-plugin-import": "^2.31.0",
+    "eslint-plugin-no-instanceof": "^1.0.1",
+    "eslint-plugin-prettier": "^5.2.3",
+    "prettier": "^3.5.3",
+    "tsx": "^4.19.3",
+    "turbo": "latest",
+    "typescript": "^5"
+  },
+  "resolutions": {
+    "@langchain/core": "^0.3.38"
+  }
+}

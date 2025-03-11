@@ -1,0 +1,6 @@
+---
+description: This tool performs shell commands.
+globs:
+alwaysApply: false
+---
+When you execute a shell command, always use the absolute path to the command.
