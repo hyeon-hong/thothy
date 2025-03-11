@@ -127,7 +127,7 @@ const builder = new StateGraph(OpenCanvasGraphAnnotation)
   .addNode("routePostWebSearch", routePostWebSearch)
   // Initial router
   .addConditionalEdges("generatePath", routeNode, [
-    "updateArtifacupdateArtifactt",
+    "updateArtifact",
     "rewriteArtifactTheme",
     "rewriteCodeArtifactTheme",
     "replyToGeneralInput",
