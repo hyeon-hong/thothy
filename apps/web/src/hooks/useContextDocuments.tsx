@@ -12,7 +12,7 @@ export function useContextDocuments(userId: string) {
   const [documents, setDocuments] = useState<FileList>();
   const [urls, setUrls] = useState<string[]>([]);
   const [loadingDocuments, setLoadingDocuments] = useState(false);
-  const messageRef = useRef<HTMLDivElement>(null);
+  const messageRef = useRef<HTMLDivElement>(null) as React.RefObject<HTMLDivElement>;
   const ffmpegRef = useRef(new FFmpeg());
 
   useEffect(() => {

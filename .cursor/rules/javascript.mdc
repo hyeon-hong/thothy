@@ -1,0 +1,6 @@
+---
+description: This tool performs node commands.
+globs:
+alwaysApply: false
+---
+Use "yarn" instead of "npm" command

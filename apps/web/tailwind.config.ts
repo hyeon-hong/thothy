@@ -1,7 +1,7 @@
 import type { Config } from "tailwindcss";
 
 const config: Config = {
-    darkMode: ["class"],
+    darkMode: "class",
     content: [
     "./src/pages/**/*.{js,ts,jsx,tsx,mdx}",
     "./src/components/**/*.{js,ts,jsx,tsx,mdx}",
@@ -105,9 +105,37 @@ const config: Config = {
   				'5': 'hsl(var(--chart-5))'
   			}
   		},
-  		borderColor: {
-  			DEFAULT: 'hsl(var(--border))'
-  		},
+      borderColor: {
+        DEFAULT: 'hsl(var(--border))',
+        border: 'hsl(var(--border))'
+      },
+      backgroundColor: {
+        background: 'hsl(var(--background))',
+        primary: 'hsl(var(--primary))',
+        secondary: 'hsl(var(--secondary))',
+        muted: 'hsl(var(--muted))',
+        accent: 'hsl(var(--accent))',
+        destructive: 'hsl(var(--destructive))'
+      },
+      textColor: {
+        foreground: 'hsl(var(--foreground))',
+        primary: 'hsl(var(--primary))',
+        'primary-foreground': 'hsl(var(--primary-foreground))',
+        secondary: 'hsl(var(--secondary))',
+        'secondary-foreground': 'hsl(var(--secondary-foreground))',
+        muted: 'hsl(var(--muted))',
+        'muted-foreground': 'hsl(var(--muted-foreground))',
+        accent: 'hsl(var(--accent))',
+        'accent-foreground': 'hsl(var(--accent-foreground))',
+        destructive: 'hsl(var(--destructive))',
+        'destructive-foreground': 'hsl(var(--destructive-foreground))'
+      },
+      ringColor: {
+        ring: 'hsl(var(--ring))'
+      },
+      ringOffsetColor: {
+        background: 'hsl(var(--background))'
+      },
   		fontFamily: {
   			mono: [
   				'`"Fira Code"`',

@@ -1,5 +1,5 @@
 ---
-description: Thistool performs debugging steps for applications
+description: This tool performs debugging steps for applications.
 globs: **/*.tsx, **/*.ts, **/*.js, **/*.jsx
 alwaysApply: false
 ---

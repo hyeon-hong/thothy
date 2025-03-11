@@ -12,7 +12,7 @@ import { useShallow } from "zustand/shallow";
 import {
   AttachmentPrimitive,
   useAttachment,
-  useThreadConfig,
+  useThreadRuntime,
 } from "@assistant-ui/react";
 import {
   TooltipIconButton,
@@ -184,11 +184,13 @@ const AttachmentRemove = forwardRef<
   AttachmentRemoveTypes["Element"],
   AttachmentRemoveTypes["Props"]
 >((props, ref) => {
-  const {
-    strings: {
-      composer: { removeAttachment: { tooltip = "Remove file" } = {} } = {},
-    } = {},
-  } = useThreadConfig();
+  // Use a hardcoded tooltip value since useThreadRuntime doesn't provide strings
+  const tooltip = "Remove file";
+  const { file } = useAttachment();
+
+  if (!file) {
+    return null;
+  }
 
   return (
     <AttachmentPrimitive.Remove asChild>

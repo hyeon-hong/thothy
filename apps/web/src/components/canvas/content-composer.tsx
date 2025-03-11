@@ -61,7 +61,7 @@ export function ContentComposerChatInterfaceComponent(
   } = graphData;
   const { getUserThreads } = useThreadContext();
   const [isRunning, setIsRunning] = useState(false);
-  const messageRef = useRef<HTMLDivElement>(null);
+  const messageRef = useRef<HTMLDivElement>(null) as React.RefObject<HTMLDivElement>;
   const ffmpegRef = useRef(new FFmpeg());
 
   async function onNew(message: AppendMessage): Promise<void> {
