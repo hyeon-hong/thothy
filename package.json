@@ -5,8 +5,10 @@
   "repository": "https://github.com/langchain-ai/open-canvas",
   "private": true,
   "workspaces": [
-    "apps/*",
-    "packages/*"
+    "apps/web",
+    "agents/data_agent",
+    "packages/evals",
+    "packages/shared"
   ],
   "scripts": {
     "build": "turbo build",
