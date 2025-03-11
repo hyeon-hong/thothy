@@ -11,6 +11,7 @@
     "packages/shared"
   ],
   "scripts": {
+    "dev": "npx @langchain/langgraph-cli dev --port 54367 --config ./langgraph.json",
     "build": "turbo build",
     "turbo:command": "turbo",
     "format": "turbo format",
