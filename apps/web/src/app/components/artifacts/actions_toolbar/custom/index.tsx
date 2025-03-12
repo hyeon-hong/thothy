@@ -5,7 +5,7 @@ import {
   LoaderCircle,
   Pencil,
 } from "lucide-react";
-import { TooltipIconButton } from "../../../../../components/ui/assistant-ui/tooltip-icon-button";
+import { TooltipIconButton } from "../../../../components/ui/assistant-ui/tooltip-icon-button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -13,14 +13,14 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "../../../../../components/ui/dropdown-menu";
+} from "../../../../components/ui/dropdown-menu";
 import { CustomQuickAction } from "@opencanvas/shared/types";
 import { NewCustomQuickActionDialog } from "./NewCustomQuickActionDialog";
 import { useEffect, useState } from "react";
-import { useStore } from "../../../../../hooks/useStore";
-import { cn } from "../../../../../lib/utils";
-import { useToast } from "../../../../../hooks/use-toast";
-import { TighterText } from "../../../../../components/ui/header";
+import { useStore } from "../../../../hooks/useStore";
+import { cn } from "../../../../lib/utils";
+import { useToast } from "../../../../hooks/use-toast";
+import { TighterText } from "../../../../components/ui/header";
 import { GraphInput } from "@opencanvas/shared/types";
 import { User } from "@supabase/supabase-js";
 

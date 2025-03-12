@@ -1,4 +1,4 @@
-import { TooltipIconButton } from "../../../../components/ui/assistant-ui/tooltip-icon-button";
+import { TooltipIconButton } from "../../../components/ui/assistant-ui/tooltip-icon-button";
 import { Forward } from "lucide-react";
 
 interface NavigateArtifactHistoryProps {

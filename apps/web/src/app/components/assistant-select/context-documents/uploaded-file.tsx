@@ -1,16 +1,16 @@
-import PDFIcon from "../../../../components/icons/svg/PDFIcon.svg";
-import TXTIcon from "../../../../components/icons/svg/TXTIcon.svg";
-import MP4Icon from "../../../../components/icons/svg/MP4Icon.svg";
-import MP3Icon from "../../../../components/icons/svg/MP3Icon.svg";
+import PDFIcon from "../../../components/icons/svg/PDFIcon.svg";
+import TXTIcon from "../../../components/icons/svg/TXTIcon.svg";
+import MP4Icon from "../../../components/icons/svg/MP4Icon.svg";
+import MP3Icon from "../../../components/icons/svg/MP3Icon.svg";
 import { X } from "lucide-react";
 import NextImage from "next/image";
 import { Button } from "../../ui/button";
 import {
   ALLOWED_AUDIO_TYPE_ENDINGS,
   ALLOWED_VIDEO_TYPE_ENDINGS,
-} from "../../../../constants";
+} from "../../../constants";
 import { ContextDocument } from "@opencanvas/shared/types";
-import { cn } from "../../../../lib/utils";
+import { cn } from "../../../lib/utils";
 
 export function UploadedFiles({
   files,

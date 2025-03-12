@@ -4,10 +4,10 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "../../../components/ui/dropdown-menu";
+} from "../../components/ui/dropdown-menu";
 import { EllipsisVertical, Pencil, Trash2 } from "lucide-react";
 import { Assistant } from "@langchain/langgraph-sdk";
-import { useToast } from "../../../hooks/use-toast";
+import { useToast } from "../../hooks/use-toast";
 import { TooltipIconButton } from "../ui/assistant-ui/tooltip-icon-button";
 import styles from "./edit-delete-dropdown.module.css";
 

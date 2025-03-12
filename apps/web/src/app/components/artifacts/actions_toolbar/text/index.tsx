@@ -1,11 +1,11 @@
 import { useEffect, useRef, useState } from "react";
 import { Languages, BookOpen, SlidersVertical, SmilePlus } from "lucide-react";
-import { cn } from "../../../../../lib/utils";
+import { cn } from "../../../../lib/utils";
 import { ReadingLevelOptions } from "./ReadingLevelOptions";
 import { TranslateOptions } from "./TranslateOptions";
 import { LengthOptions } from "./LengthOptions";
-import { TooltipIconButton } from "../../../../../components/ui/assistant-ui/tooltip-icon-button";
-import { MagicPencilSVG } from "../../../../../components/icons/magic_pencil";
+import { TooltipIconButton } from "../../../../components/ui/assistant-ui/tooltip-icon-button";
+import { MagicPencilSVG } from "../../../../components/icons/magic_pencil";
 import { GraphInput } from "@opencanvas/shared/types";
 
 type SharedComponentProps = {

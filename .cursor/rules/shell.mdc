@@ -3,4 +3,5 @@ description: This tool performs shell commands.
 globs:
 alwaysApply: false
 ---
-When you execute a shell command, always use the absolute path to the command.
+When you execute a shell command like a cd, mkdir, and etc, always use the absolute path to the command.
+Just after you write a shell command in terminal, input a new line for executing the command.

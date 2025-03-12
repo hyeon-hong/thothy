@@ -4,7 +4,7 @@ import { NavigateArtifactHistory } from "./navigate-artifact-history";
 import { ArtifactCodeV3, ArtifactMarkdownV3 } from "@opencanvas/shared/types";
 import { Assistant } from "@langchain/langgraph-sdk";
 import { PanelRightClose } from "lucide-react";
-import { TooltipIconButton } from "../../../../components/ui/assistant-ui/tooltip-icon-button";
+import { TooltipIconButton } from "../../../components/ui/assistant-ui/tooltip-icon-button";
 
 interface ArtifactHeaderProps {
   isBackwardsDisabled: boolean;

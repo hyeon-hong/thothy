@@ -1,11 +1,11 @@
 import { useEffect, useState } from "react";
-import { cn } from "../../../../lib/utils";
+import { cn } from "../../../lib/utils";
 import NextImage from "next/image";
 import Link from "next/link";
 import { buttonVariants } from "../../ui/button";
 import { UserAuthForm } from "./user-auth-form-signup";
 import { signup } from "./actions";
-import { createSupabaseClient } from "../../../../lib/supabase/client";
+import { createSupabaseClient } from "../../../lib/supabase/client";
 import { useSearchParams, useRouter } from "next/navigation";
 
 export interface SignupWithEmailInput {

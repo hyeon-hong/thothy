@@ -1,4 +1,4 @@
-import { cn } from "../../../../../lib/utils";
+import { cn } from "../../../../lib/utils";
 import { useState } from "react";
 import { ArtifactLengthOptions } from "@opencanvas/shared/types";
 import {
@@ -6,8 +6,8 @@ import {
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from "../../../../../components/ui/tooltip";
-import { Slider } from "../../../../../components/ui/slider";
+} from "../../../../components/ui/tooltip";
+import { Slider } from "../../../../components/ui/slider";
 import { GraphInput } from "@opencanvas/shared/types";
 
 export interface LengthOptionsProps {

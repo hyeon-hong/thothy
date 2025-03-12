@@ -1,11 +1,11 @@
-import { TighterText } from "../../../../components/ui/header";
-import { InlineContextTooltip } from "../../../../components/ui/inline-context-tooltip";
-import { Input } from "../../../../components/ui/input";
-import { Label } from "../../../../components/ui/label";
-import { ALLOWED_AUDIO_TYPES, ALLOWED_VIDEO_TYPES } from "../../../../constants";
+import { TighterText } from "../../../components/ui/header";
+import { InlineContextTooltip } from "../../../components/ui/inline-context-tooltip";
+import { Input } from "../../../components/ui/input";
+import { Label } from "../../../components/ui/label";
+import { ALLOWED_AUDIO_TYPES, ALLOWED_VIDEO_TYPES } from "../../../constants";
 import { LoaderCircle, Plus, X } from "lucide-react";
 import { UploadedFiles } from "./uploaded-file";
-import { Button } from "../../../../components/ui/button";
+import { Button } from "../../../components/ui/button";
 import { useState } from "react";
 
 const ContextDocumentsWhatsThis = (): React.ReactNode => (

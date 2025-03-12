@@ -11,13 +11,13 @@ import "@blocknote/shadcn/style.css";
 import { isArtifactMarkdownContent } from "@opencanvas/shared/utils/artifacts";
 import { CopyText } from "./components/CopyText";
 import { getArtifactContent } from "@opencanvas/shared/utils/artifacts";
-import { useGraphContext } from "../../../contexts/GraphContext";
+import { useGraphContext } from "../../contexts/GraphContext";
 import React from "react";
 import { TooltipIconButton } from "../ui/assistant-ui/tooltip-icon-button";
 import { Eye, EyeOff } from "lucide-react";
 import { motion } from "framer-motion";
 import { Textarea } from "../ui/textarea";
-import { cn } from "../../../lib/utils";
+import { cn } from "../../lib/utils";
 
 const cleanText = (text: string) => {
   return text.replaceAll("\\\n", "\n");

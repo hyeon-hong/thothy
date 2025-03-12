@@ -3,7 +3,7 @@
 import {
   CreateCustomAssistantArgs,
   EditCustomAssistantArgs,
-} from "../../../contexts/AssistantContext";
+} from "../../contexts/AssistantContext";
 import { Assistant } from "@langchain/langgraph-sdk";
 import {
   Dispatch,
@@ -19,21 +19,21 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from "../ui/dialog";
+} from "../../components/ui/dialog";
 import { Button } from "../ui/button";
 import { TighterText } from "../ui/header";
 import { Label } from "../ui/label";
 import { Input } from "../ui/input";
 import { IconSelect } from "./icon-select";
 import React from "react";
-import { useToast } from "../../../hooks/use-toast";
+import { useToast } from "../../hooks/use-toast";
 import { ColorPicker } from "./color-picker";
 import { Textarea } from "../ui/textarea";
 import { InlineContextTooltip } from "../ui/inline-context-tooltip";
-import { useStore } from "../../../hooks/useStore";
-import { arrayToFileList, contextDocumentToFile } from "../../../lib/attachments";
+import { useStore } from "../../hooks/useStore";
+import { arrayToFileList, contextDocumentToFile } from "../../lib/attachments";
 import { ContextDocuments } from "./context-documents";
-import { useContextDocuments } from "../../../hooks/useContextDocuments";
+import { useContextDocuments } from "../../hooks/useContextDocuments";
 
 interface CreateEditAssistantDialogProps {
   open: boolean;

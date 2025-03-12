@@ -9,8 +9,8 @@ import {
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from "../../../../../components/ui/tooltip";
-import { cn } from "../../../../../lib/utils";
+} from "../../../../components/ui/tooltip";
+import { cn } from "../../../../lib/utils";
 import { CustomQuickAction } from "@opencanvas/shared/types";
 import { Dispatch, SetStateAction, useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";

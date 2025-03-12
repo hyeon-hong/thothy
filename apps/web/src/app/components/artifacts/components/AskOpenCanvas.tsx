@@ -1,12 +1,12 @@
 import { Dispatch, FormEvent, forwardRef, SetStateAction } from "react";
-import { Button } from "../../../../components/ui/button";
-import { Input } from "../../../../components/ui/input";
+import { Button } from "../../../components/ui/button";
+import { Input } from "../../../components/ui/input";
 import { CircleArrowUp } from "lucide-react";
-import { cn } from "../../../../lib/utils";
+import { cn } from "../../../lib/utils";
 import { ArtifactV3 } from "@opencanvas/shared/types";
 import { getArtifactContent } from "@opencanvas/shared/utils/artifacts";
 import { isArtifactCodeContent } from "@opencanvas/shared/utils/artifacts";
-import { useToast } from "../../../../hooks/use-toast";
+import { useToast } from "../../../hooks/use-toast";
 
 interface AskOpenCanvasProps {
   isInputVisible: boolean;

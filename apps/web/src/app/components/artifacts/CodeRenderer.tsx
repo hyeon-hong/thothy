@@ -14,11 +14,11 @@ import { xml } from "@codemirror/lang-xml";
 import { clojure } from "@nextjournal/lang-clojure";
 import { csharp } from "@replit/codemirror-lang-csharp";
 import styles from "./CodeRenderer.module.css";
-import { cleanContent } from "../../../lib/normalize_string";
-import { cn } from "../../../lib/utils";
+import { cleanContent } from "../../lib/normalize_string";
+import { cn } from "../../lib/utils";
 import { CopyText } from "./components/CopyText";
 import { getArtifactContent } from "@opencanvas/shared/utils/artifacts";
-import { useGraphContext } from "../../../contexts/GraphContext";
+import { useGraphContext } from "../../contexts/GraphContext";
 
 export interface CodeRendererProps {
   editorRef: MutableRefObject<EditorView | null>;

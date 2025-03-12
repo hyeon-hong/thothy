@@ -1,10 +1,10 @@
 "use client";
 
-import { useToast } from "../../../hooks/use-toast";
+import { useToast } from "../../hooks/use-toast";
 import {
   convertLangchainMessages,
   convertToOpenAIFormat,
-} from "../../../lib/convert_messages";
+} from "../../lib/convert_messages";
 import {
   ProgrammingLanguageOptions,
   ContextDocument,
@@ -20,18 +20,18 @@ import { Thread as ThreadType } from "@langchain/langgraph-sdk";
 import React, { useRef, useState } from "react";
 import { v4 as uuidv4 } from "uuid";
 import { Toaster } from "../ui/toaster";
-import { Thread } from "../../../components/chat-interface";
-import { useGraphContext } from "../../../contexts/GraphContext";
+import { Thread } from "../../components/chat-interface";
+import { useGraphContext } from "../../contexts/GraphContext";
 import {
   CompositeAttachmentAdapter,
   SimpleTextAttachmentAdapter,
 } from "@assistant-ui/react";
 import { AudioAttachmentAdapter } from "../ui/assistant-ui/attachment-adapters/audio";
 import { FFmpeg } from "@ffmpeg/ffmpeg";
-import { arrayToFileList, convertDocuments } from "../../../lib/attachments";
+import { arrayToFileList, convertDocuments } from "../../lib/attachments";
 import { VideoAttachmentAdapter } from "../ui/assistant-ui/attachment-adapters/video";
-import { useUserContext } from "../../../contexts/UserContext";
-import { useThreadContext } from "../../../contexts/ThreadProvider";
+import { useUserContext } from "../../contexts/UserContext";
+import { useThreadContext } from "../../contexts/ThreadProvider";
 import { PDFAttachmentAdapter } from "../ui/assistant-ui/attachment-adapters/pdf";
 
 export interface ContentComposerChatInterfaceProps {

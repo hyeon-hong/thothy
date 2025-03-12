@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { redirect, RedirectType } from "next/navigation";
-import { useUserContext } from "../../../../../contexts/UserContext";
+import { useUserContext } from "../../../../contexts/UserContext";
 
 export function SignupSuccess() {
   const { getUser, user } = useUserContext();

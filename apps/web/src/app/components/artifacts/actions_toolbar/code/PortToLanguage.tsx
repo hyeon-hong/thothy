@@ -1,6 +1,6 @@
 import { ProgrammingLanguageOptions } from "@opencanvas/shared/types";
-import { useToast } from "../../../../../hooks/use-toast";
-import { ProgrammingLanguageList } from "../../../../../components/ui/programming-lang-dropdown";
+import { useToast } from "../../../../hooks/use-toast";
+import { ProgrammingLanguageList } from "../../../../components/ui/programming-lang-dropdown";
 import { GraphInput } from "@opencanvas/shared/types";
 
 export interface PortToLanguageOptionsProps {

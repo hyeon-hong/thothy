@@ -1,5 +1,5 @@
-import { convertToOpenAIFormat } from "../../../lib/convert_messages";
-import { cn } from "../../../lib/utils";
+import { convertToOpenAIFormat } from "../../lib/convert_messages";
+import { cn } from "../../lib/utils";
 import {
   ArtifactCodeV3,
   ArtifactMarkdownV3,
@@ -16,10 +16,10 @@ import { CustomQuickActions } from "./actions_toolbar/custom";
 import { getArtifactContent } from "@opencanvas/shared/utils/artifacts";
 import { ArtifactLoading } from "./ArtifactLoading";
 import { AskOpenCanvas } from "./components/AskOpenCanvas";
-import { useGraphContext } from "../../../contexts/GraphContext";
+import { useGraphContext } from "../../contexts/GraphContext";
 import { ArtifactHeader } from "./header";
-import { useUserContext } from "../../../contexts/UserContext";
-import { useAssistantContext } from "../../../contexts/AssistantContext";
+import { useUserContext } from "../../contexts/UserContext";
+import { useAssistantContext } from "../../contexts/AssistantContext";
 
 export interface ArtifactRendererProps {
   isEditing: boolean;

@@ -1,16 +1,16 @@
-import { TooltipIconButton } from "../../../../../components/ui/assistant-ui/tooltip-icon-button";
-import { Button } from "../../../../../components/ui/button";
-import { Checkbox } from "../../../../../components/ui/checkbox";
+import { TooltipIconButton } from "../../../../components/ui/assistant-ui/tooltip-icon-button";
+import { Button } from "../../../../components/ui/button";
+import { Checkbox } from "../../../../components/ui/checkbox";
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from "../../../../../components/ui/dialog";
-import { Input } from "../../../../../components/ui/input";
-import { Label } from "../../../../../components/ui/label";
-import { Textarea } from "../../../../../components/ui/textarea";
+} from "../../../../components/ui/dialog";
+import { Input } from "../../../../components/ui/input";
+import { Label } from "../../../../components/ui/label";
+import { Textarea } from "../../../../components/ui/textarea";
 import { Eye, EyeOff } from "lucide-react";
 import {
   Dispatch,
@@ -20,12 +20,12 @@ import {
   useState,
 } from "react";
 import { FullPrompt } from "./FullPrompt";
-import { InlineContextTooltip } from "../../../../../components/ui/inline-context-tooltip";
-import { useStore } from "../../../../../hooks/useStore";
-import { useToast } from "../../../../../hooks/use-toast";
+import { InlineContextTooltip } from "../../../../components/ui/inline-context-tooltip";
+import { useStore } from "../../../../hooks/useStore";
+import { useToast } from "../../../../hooks/use-toast";
 import { v4 as uuidv4 } from "uuid";
 import { CustomQuickAction } from "@opencanvas/shared/types";
-import { TighterText } from "../../../../../components/ui/header";
+import { TighterText } from "../../../../components/ui/header";
 import { User } from "@supabase/supabase-js";
 
 const CUSTOM_INSTRUCTIONS_TOOLTIP_TEXT = `This field contains the custom instructions you set, which will then be used to instruct the LLM on how to re-generate the selected artifact.`;
