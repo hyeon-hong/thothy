@@ -1,7 +1,7 @@
-import { LANGGRAPH_API_URL } from "../../../constants";
+import { LANGGRAPH_API_URL } from "../../constants";
 import { NextRequest, NextResponse } from "next/server";
 import { Session, User } from "@supabase/supabase-js";
-import { verifyUserAuthenticated } from "../../../lib/supabase/verify_user_server";
+import { verifyUserAuthenticated } from "../../lib/supabase/verify_user_server";
 
 function getCorsHeaders() {
   return {

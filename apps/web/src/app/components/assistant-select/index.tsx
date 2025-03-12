@@ -7,7 +7,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "../../../components/ui/dropdown-menu";
+} from "../ui/dropdown-menu";
 import { useState } from "react";
 import * as Icons from "lucide-react";
 import React from "react";
@@ -17,9 +17,9 @@ import { CreateEditAssistantDialog } from "./create-edit-assistant-dialog";
 import { getIcon } from "./utils";
 import { AssistantItem } from "./assistant-item";
 import { Assistant } from "@langchain/langgraph-sdk";
-import { useToast } from "../../../hooks/use-toast";
-import { cn } from "../../../lib/utils";
-import { useAssistantContext } from "../../../contexts/AssistantContext";
+import { useToast } from "../../hooks/use-toast";
+import { cn } from "../../lib/utils";
+import { useAssistantContext } from "../../contexts/AssistantContext";
 
 interface AssistantSelectProps {
   userId: string | undefined;

@@ -19,7 +19,7 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from "../../components/ui/dialog";
+} from "../ui/dialog";
 import { Button } from "../ui/button";
 import { TighterText } from "../ui/header";
 import { Label } from "../ui/label";

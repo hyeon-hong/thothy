@@ -8,11 +8,11 @@ import { useEffect, useState } from "react";
 import { Thread } from "@langchain/langgraph-sdk";
 import { PiChatsCircleLight } from "react-icons/pi";
 import { TighterText } from "../ui/header";
-import { useGraphContext } from "../../../contexts/GraphContext";
-import { useToast } from "../../../hooks/use-toast";
+import { useGraphContext } from "../../contexts/GraphContext";
+import { useToast } from "../../hooks/use-toast";
 import React from "react";
-import { useUserContext } from "../../../contexts/UserContext";
-import { useThreadContext } from "../../../contexts/ThreadProvider";
+import { useUserContext } from "../../contexts/UserContext";
+import { useThreadContext } from "../../contexts/ThreadProvider";
 
 interface ThreadHistoryProps {
   switchSelectedThreadCallback: (thread: Thread) => void;

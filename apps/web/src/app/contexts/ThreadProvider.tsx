@@ -9,7 +9,7 @@ import { Thread } from "@langchain/langgraph-sdk";
 import { createClient } from "../hooks/utils";
 import { createContext, ReactNode, useContext, useMemo, useState } from "react";
 import { useUserContext } from "./UserContext";
-import { useToast } from "../../hooks/use-toast";
+import { useToast } from "../hooks/use-toast";
 import { useQueryState } from "nuqs";
 
 type ThreadContentType = {

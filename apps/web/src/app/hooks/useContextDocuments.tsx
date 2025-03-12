@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { FFmpeg } from "@ffmpeg/ffmpeg";
-import { arrayToFileList, convertDocuments, load } from "../../lib/attachments";
+import { arrayToFileList, convertDocuments, load } from "../lib/attachments";
 import { useToast } from "./use-toast";
 import { ContextDocument } from "@opencanvas/shared/types";
 

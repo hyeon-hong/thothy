@@ -2,7 +2,6 @@
 
 import { useToast } from "../../hooks/use-toast";
 import {
-  convertLangchainMessages,
   convertToOpenAIFormat,
 } from "../../lib/convert_messages";
 import {
@@ -129,7 +128,28 @@ export function ContentComposerChatInterfaceComponent(
   }
 
   const threadMessages = useExternalMessageConverter<BaseMessage>({
-    callback: convertLangchainMessages,
+    callback: (message) => {
+      const type = message._getType();
+      let role: "user" | "system" | "assistant";
+      
+      if (type === "human") {
+        role = "user";
+      } else if (type === "system") {
+        role = "system";
+      } else {
+        role = "assistant";
+      }
+      
+      const content = typeof message.content === 'string' 
+        ? message.content 
+        : JSON.stringify(message.content);
+      
+      return {
+        role,
+        content,
+        id: message.id,
+      };
+    },
     messages,
     isRunning,
     joinStrategy: "none",

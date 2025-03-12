@@ -2,8 +2,8 @@ import {
   HoverCard,
   HoverCardContent,
   HoverCardTrigger,
-} from "../../../components/ui/hover-card";
-import { cn } from "../../../lib/utils";
+} from "./hover-card";
+import { cn } from "../../lib/utils";
 import { CircleHelp } from "lucide-react";
 
 export function InlineContextTooltip({

@@ -1,4 +1,4 @@
-import { cleanContent } from "../../lib/normalize_string";
+import { cleanContent } from "../lib/normalize_string";
 import {
   Artifact,
   ArtifactCodeV3,

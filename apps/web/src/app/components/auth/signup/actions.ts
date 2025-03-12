@@ -2,7 +2,7 @@
 
 import { redirect } from "next/navigation";
 
-import { createClient } from "../../../../lib/supabase/server";
+import { createClient } from "../../../lib/supabase/server";
 import { SignupWithEmailInput } from "./Signup";
 
 export async function signup(input: SignupWithEmailInput, baseUrl: string) {

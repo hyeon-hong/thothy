@@ -4,7 +4,7 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-} from "../../../components/ui/card";
+} from "../ui/card";
 import { Skeleton } from "../ui/skeleton";
 
 export function LoadingSearchResultCards() {

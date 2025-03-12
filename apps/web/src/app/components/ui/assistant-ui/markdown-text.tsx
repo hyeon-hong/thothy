@@ -11,9 +11,9 @@ import remarkMath from "remark-math";
 import { FC, memo, useState } from "react";
 import { CheckIcon, CopyIcon } from "lucide-react";
 
-import { TooltipIconButton } from "../../../../components/ui/assistant-ui/tooltip-icon-button";
-import { SyntaxHighlighter } from "../../../../components/ui/assistant-ui/syntax-highlighter";
-import { cn } from "../../../../lib/utils";
+import { TooltipIconButton } from "./tooltip-icon-button";
+import { SyntaxHighlighter } from "./syntax-highlighter";
+import { cn } from "../../../lib/utils";
 
 import "katex/dist/katex.min.css";
 

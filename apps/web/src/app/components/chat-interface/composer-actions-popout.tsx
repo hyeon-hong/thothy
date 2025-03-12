@@ -6,9 +6,9 @@ import { useState } from "react";
 import { ComposerAddAttachment } from "../assistant-ui/attachment";
 import { AssistantSelect } from "../assistant-select";
 import { TooltipIconButton } from "../assistant-ui/tooltip-icon-button";
-import { cn } from "../../../lib/utils";
-import { useGraphContext } from "../../../contexts/GraphContext";
-import { useAssistantContext } from "../../../contexts/AssistantContext";
+import { cn } from "../../lib/utils";
+import { useGraphContext } from "../../contexts/GraphContext";
+import { useAssistantContext } from "../../contexts/AssistantContext";
 
 interface ComposerActionsPopOutProps {
   userId: string | undefined;

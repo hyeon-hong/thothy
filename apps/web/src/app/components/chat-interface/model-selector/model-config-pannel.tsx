@@ -2,19 +2,19 @@ import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from "../../../../components/ui/popover";
+} from "../../../components/ui/popover";
 import {
   CustomModelConfig,
   ModelConfigurationParams,
 } from "@opencanvas/shared/types";
 
-import { Button } from "../../../../components/ui/button";
-import { Slider } from "../../../../components/ui/slider";
+import { Button } from "../../../components/ui/button";
+import { Slider } from "../../../components/ui/slider";
 import {
   ALL_MODEL_NAMES,
   TEMPERATURE_EXCLUDED_MODELS,
 } from "@opencanvas/shared/models";
-import { cn } from "../../../../lib/utils";
+import { cn } from "../../../lib/utils";
 import { GearIcon, ResetIcon } from "@radix-ui/react-icons";
 import { useCallback } from "react";
 

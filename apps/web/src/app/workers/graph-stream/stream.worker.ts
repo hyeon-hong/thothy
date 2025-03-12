@@ -1,4 +1,4 @@
-import { createClient } from "../../../hooks/utils";
+import { createClient } from "../../hooks/utils";
 import { StreamConfig } from "./streamWorker.types";
 
 // Since workers can't directly access the client SDK, you'll need to recreate/import necessary parts

@@ -3,7 +3,7 @@
 import { ComposerPrimitive, ThreadPrimitive } from "@assistant-ui/react";
 import { type FC, useState, useEffect } from "react";
 
-import { TooltipIconButton } from "../../../components/ui/assistant-ui/tooltip-icon-button";
+import { TooltipIconButton } from "../assistant-ui/tooltip-icon-button";
 import { SendHorizontalIcon } from "lucide-react";
 import { DragAndDropWrapper } from "./drag-drop-wrapper";
 import { ComposerAttachments } from "../assistant-ui/attachment";

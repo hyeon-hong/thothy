@@ -5,7 +5,7 @@ import {
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
-} from "../../../components/ui/accordion";
+} from "../ui/accordion";
 import {
   ActionBarPrimitive,
   getExternalStoreMessage,
@@ -15,16 +15,16 @@ import {
 } from "@assistant-ui/react";
 import React, { Dispatch, SetStateAction, type FC } from "react";
 
-import { MarkdownText } from "../../../components/ui/assistant-ui/markdown-text";
-import { Avatar, AvatarFallback } from "../../../components/ui/avatar";
+import { MarkdownText } from "../ui/assistant-ui/markdown-text";
+import { Avatar, AvatarFallback } from "../ui/avatar";
 import { FeedbackButton } from "./feedback";
 import { TighterText } from "../ui/header";
-import { useFeedback } from "../../../hooks/useFeedback";
+import { useFeedback } from "../../hooks/useFeedback";
 import { ContextDocumentsUI } from "../tool-hooks/AttachmentsToolUI";
 import { HumanMessage } from "@langchain/core/messages";
 import { OC_HIDE_FROM_UI_KEY } from "@opencanvas/shared/constants";
 import { Button } from "../ui/button";
-import { WEB_SEARCH_RESULTS_QUERY_PARAM } from "../../../constants";
+import { WEB_SEARCH_RESULTS_QUERY_PARAM } from "../../constants";
 import { Globe } from "lucide-react";
 import { useQueryState } from "nuqs";
 

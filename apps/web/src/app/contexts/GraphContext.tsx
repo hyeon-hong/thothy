@@ -1,11 +1,11 @@
 import { v4 as uuidv4 } from "uuid";
-import { useUserContext } from "../../contexts/UserContext";
+import { useUserContext } from "./UserContext";
 import {
   isArtifactCodeContent,
   isArtifactMarkdownContent,
   isDeprecatedArtifactType,
 } from "@opencanvas/shared/utils/artifacts";
-import { reverseCleanContent } from "../../lib/normalize_string";
+import { reverseCleanContent } from "../lib/normalize_string";
 import {
   ArtifactType,
   ArtifactV3,
@@ -17,9 +17,9 @@ import {
   TextHighlight,
 } from "@opencanvas/shared/types";
 import { AIMessage, BaseMessage } from "@langchain/core/messages";
-import { useRuns } from "../../hooks/useRuns";
-import { createClient } from "../../hooks/utils";
-import { WEB_SEARCH_RESULTS_QUERY_PARAM } from "../../constants";
+import { useRuns } from "../hooks/useRuns";
+import { createClient } from "../hooks/utils";
+import { WEB_SEARCH_RESULTS_QUERY_PARAM } from "../constants";
 import {
   DEFAULT_INPUTS,
   OC_WEB_SEARCH_RESULTS_MESSAGE_KEY,
@@ -32,7 +32,7 @@ import {
   DEFAULT_MODEL_NAME,
 } from "@opencanvas/shared/models";
 import { Thread } from "@langchain/langgraph-sdk";
-import { useToast } from "../../hooks/use-toast";
+import { useToast } from "../hooks/use-toast";
 import {
   createContext,
   Dispatch,
@@ -60,7 +60,7 @@ import {
 import { debounce } from "lodash";
 import { useThreadContext } from "./ThreadProvider";
 import { useAssistantContext } from "./AssistantContext";
-import { StreamWorkerService } from "../../workers/graph-stream/streamWorker";
+import { StreamWorkerService } from "../workers/graph-stream/streamWorker";
 import { useQueryState } from "nuqs";
 
 interface GraphData {

@@ -1,7 +1,7 @@
 import { Dispatch, SetStateAction, useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { WEB_SEARCH_RESULTS_QUERY_PARAM } from "../../../constants";
-import { useGraphContext } from "../../../contexts/GraphContext";
+import { WEB_SEARCH_RESULTS_QUERY_PARAM } from "../../constants";
+import { useGraphContext } from "../../contexts/GraphContext";
 import { SearchResult } from "@opencanvas/shared/types";
 import { TighterText } from "../ui/header";
 import {
@@ -10,9 +10,9 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-} from "../../../components/ui/card";
-import { cn } from "../../../lib/utils";
-import { TooltipIconButton } from "../assistant-ui/tooltip-icon-button";
+} from "../ui/card";
+import { cn } from "../../lib/utils";
+import { TooltipIconButton } from "../ui/assistant-ui/tooltip-icon-button";
 import { X } from "lucide-react";
 import { format } from "date-fns";
 import { LoadingSearchResultCards } from "./loading-cards";

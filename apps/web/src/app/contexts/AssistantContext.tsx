@@ -1,4 +1,4 @@
-import { useToast } from "../../hooks/use-toast";
+import { useToast } from "../hooks/use-toast";
 import { Assistant } from "@langchain/langgraph-sdk";
 import { ContextDocument } from "@opencanvas/shared/types";
 import {
@@ -9,9 +9,9 @@ import {
   useContext,
   useState,
 } from "react";
-import { createClient } from "../../hooks/utils";
-import { getCookie, removeCookie } from "../../lib/cookies";
-import { ASSISTANT_ID_COOKIE } from "../../constants";
+import { createClient } from "../hooks/utils";
+import { getCookie, removeCookie } from "../lib/cookies";
+import { ASSISTANT_ID_COOKIE } from "../constants";
 
 type AssistantContentType = {
   assistants: Assistant[];

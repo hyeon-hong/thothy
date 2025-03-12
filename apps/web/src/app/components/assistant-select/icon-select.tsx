@@ -7,8 +7,8 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "../../../components/ui/dropdown-menu";
-import { Input } from "../../../components/ui/input";
+} from "../ui/dropdown-menu";
+import { Input } from "../ui/input";
 import React from "react";
 import debounce from "lodash/debounce";
 import startCase from "lodash/startCase";

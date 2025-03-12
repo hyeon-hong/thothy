@@ -1,6 +1,6 @@
 import React, { DragEvent } from "react";
 import { useComposer, useComposerRuntime } from "@assistant-ui/react";
-import { useToast } from "../../../hooks/use-toast";
+import { useToast } from "../../hooks/use-toast";
 
 interface DragAndDropWrapperProps {
   children: React.ReactNode;

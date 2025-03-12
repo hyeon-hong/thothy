@@ -1,12 +1,12 @@
 "use client";
 
-import LLMIcon from "../../../../components/icons/svg/LLMIcon.svg";
+import LLMIcon from "../../icons/svg/LLMIcon.svg";
 import {
   Command,
   CommandGroup,
   CommandItem,
   CommandList,
-} from "../../../../components/ui/command";
+} from "../../ui/command";
 import {
   ALL_MODEL_NAMES,
   ALL_MODELS,
@@ -21,7 +21,7 @@ import {
 } from "react";
 import { ModelConfigPanel } from "./model-config-pannel";
 import { IsNewBadge } from "./new-badge";
-import { cn } from "../../../../lib/utils";
+import { cn } from "../../../lib/utils";
 import {
   CustomModelConfig,
   ModelConfigurationParams,
@@ -34,7 +34,7 @@ import {
 } from "@radix-ui/react-popover";
 import { Check } from "lucide-react";
 import NextImage from "next/image";
-import { useUserContext } from "../../../../contexts/UserContext";
+import { useUserContext } from "../../../contexts/UserContext";
 
 interface ModelSelectorProps {
   modelName: ALL_MODEL_NAMES;
