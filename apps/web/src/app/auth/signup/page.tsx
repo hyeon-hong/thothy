@@ -1,6 +1,6 @@
 "use client";
 
-import { Signup } from "@/components/auth/signup/Signup";
+import { Signup } from "../../components/auth/signup/Signup";
 import { Suspense } from "react";
 
 export default function Page() {
