@@ -5,12 +5,13 @@
   "repository": "https://github.com/langchain-ai/open-canvas",
   "private": true,
   "workspaces": [
-    "apps/web",
+    "frontend/app/agents/data_agent",
     "agents/data_agent",
     "packages/evals",
     "packages/shared"
   ],
   "scripts": {
+    "clean": "rm -rf ./node_modules ./.turbo ./yarn.lock ./packages/evals/dist ./packages/evals/node_modules ./packages/shared/dist ./packages/shared/node_modules ./agents/data_agent/dist ./agents/data_agent/node_modules ./frontend/app/agents/data_agent/node_modules ./frontend/app/agents/data_agent/.next ./frontend/app/agents/data_agent/.turbo",
     "dev": "npx @langchain/langgraph-cli dev --port 54367 --config ./langgraph.json",
     "build": "turbo build",
     "turbo:command": "turbo",
