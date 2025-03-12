@@ -6,6 +6,7 @@
 
 # LangGraph
 .langgraph_api/
+.langgraph_api
 
 # Lock file
 **/package-lock.json

@@ -1,4 +1,9 @@
 import type { Config } from "tailwindcss";
+import scrollbarHide from "tailwind-scrollbar-hide";
+import tailwindcssAnimate from "tailwindcss-animate";
+// @ts-ignore - Missing type declarations
+import assistantUI from "@assistant-ui/react/tailwindcss";
+import scrollbar from "tailwind-scrollbar";
 
 const config: Config = {
     darkMode: "class",
@@ -168,12 +173,12 @@ const config: Config = {
   	}
   },
   plugins: [
-    require("tailwind-scrollbar-hide"),
-    require("tailwindcss-animate"),
-    require("@assistant-ui/react/tailwindcss")({
+    scrollbarHide,
+    tailwindcssAnimate,
+    assistantUI({
       components: ["thread"],
     }),
-		require('tailwind-scrollbar'),
+    scrollbar,
   ],
 };
 export default config;
