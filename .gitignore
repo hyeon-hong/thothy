@@ -6,6 +6,7 @@
 
 # LangGraph
 .langgraph_api/
+.langgraph_api
 
 # Lock file
 **/package-lock.json
@@ -184,3 +185,25 @@ cython_debug/
 
 # code-generator.py
 outputs/
+
+# The following lines are from apps/agents/.gitignore that weren't already in the root gitignore
+# dependencies
+/.pnp
+.pnp.js
+.yarn/install-state.gz
+.yarn/cache
+
+# testing
+/coverage
+
+# production
+/out/
+
+# vercel
+.vercel
+
+# typescript
+*.tsbuildinfo
+
+# credentials
+credentials.json
