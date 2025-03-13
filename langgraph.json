@@ -3,11 +3,11 @@
     "."
   ],
   "graphs": {
-    "agent": "./agents/data_agent/src/open-canvas/index.ts:graph",
-    "reflection": "./agents/data_agent/src/reflection/index.ts:graph",
-    "thread_title": "./agents/data_agent/src/thread-title/index.ts:graph",
-    "summarizer": "./agents/data_agent/src/summarizer/index.ts:graph",
-    "web_search": "./agents/data_agent/src/web-search/index.ts:graph"
+    "agent": "./agents/plan_agent/src/open-canvas/index.ts:graph",
+    "reflection": "./agents/plan_agent/src/reflection/index.ts:graph",
+    "thread_title": "./agents/plan_agent/src/thread-title/index.ts:graph",
+    "summarizer": "./agents/plan_agent/src/summarizer/index.ts:graph",
+    "web_search": "./agents/plan_agent/src/web-search/index.ts:graph"
   },
   "env": ".env",
   "node_version": "20"

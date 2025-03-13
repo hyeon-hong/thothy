@@ -2,7 +2,7 @@
 
 import React from "react";
 import { useParams } from "next/navigation";
-import Home from "../data_agent/page";
+import Home from "../plan_agent/page";
 import ChatAgentPage from "../chat_agent/page";
 import OpenDeepResearchAgentPage from "../open_deep_research_agent/page";
 
@@ -18,7 +18,7 @@ export default function AgentPage() {
                 return <ChatAgentPage />;
             case "open_deep_research_graph":
                 return <OpenDeepResearchAgentPage />;
-            case "data_graph":
+            case "plan_graph":
                 return <Home />;
             default:
                 return (
