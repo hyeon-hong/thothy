@@ -3,6 +3,8 @@
   "version": "0.0.1",
   "private": true,
   "scripts": {
+    "clean": "rm -rf ./node_modules ./.turbo ./.next ./dist ./yarn.lock",
+    "clean:dist": "rm -rf ./dist",
     "dev": "env-cmd -f ../.env next dev --port 3000",
     "build": "next build",
     "start": "env-cmd -f ../.env next start",
