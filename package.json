@@ -1,17 +1,15 @@
 {
-  "name": "open_canvas",
-  "author": "Brace Sproul",
-  "homepage": "https://opencanvas.langchain.com",
-  "repository": "https://github.com/langchain-ai/open-canvas",
+  "name": "thothy",
+  "author": "AI Thothy",
   "private": true,
   "workspaces": [
     "frontend",
-    "agents/plan_agent",
+    "backend/plan_agent",
     "packages/evals",
     "packages/shared"
   ],
   "scripts": {
-    "clean": "rm -rf ./node_modules ./.turbo ./yarn.lock ./packages/evals/dist ./packages/evals/node_modules ./packages/shared/dist ./packages/shared/node_modules ./agents/plan_agent/dist ./agents/plan_agent/node_modules ./frontend/node_modules ./frontend/.next",
+    "clean": "rm -rf ./node_modules ./.turbo ./yarn.lock ./packages/evals/dist ./packages/evals/node_modules ./packages/shared/dist ./packages/shared/node_modules ./backend/plan_agent/dist ./backend/plan_agent/node_modules ./frontend/node_modules ./frontend/.next",
     "dev": "npx @langchain/langgraph-cli dev --port 54367 --config ./langgraph.json",
     "build": "turbo build",
     "turbo:command": "turbo",
