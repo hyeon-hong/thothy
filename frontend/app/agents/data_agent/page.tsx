@@ -4,10 +4,8 @@ import { Thread } from "@assistant-ui/react";
 import { PriceSnapshotTool } from "./components/tools/price-snapshot/PriceSnapshotTool";
 import { PurchaseStockTool } from "./components/tools/purchase-stock/PurchaseStockTool";
 import { ToolFallback } from "./components/tools/ToolFallback";
-import { makeMarkdownText } from "@assistant-ui/react-markdown";
+import { MarkdownText } from "@/components/assistant-ui/markdown-text";
 import { MyRuntimeProvider } from "./MyRuntimeProvider";
-
-const MarkdownText = makeMarkdownText({});
 
 export default function DataAgentPage() {
   return (
