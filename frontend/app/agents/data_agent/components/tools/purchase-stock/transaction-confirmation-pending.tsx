@@ -2,14 +2,14 @@
 
 import { CheckIcon, XIcon } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
+import { Button } from "@/agents/data_agent/components/ui/button";
 import {
   Card,
   CardContent,
   CardFooter,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
+} from "@/agents/data_agent/components/ui/card";
 
 type TransactionConfirmation = {
   ticker: string;
