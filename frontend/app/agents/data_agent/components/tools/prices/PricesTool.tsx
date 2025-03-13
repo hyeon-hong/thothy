@@ -17,21 +17,28 @@ type PricesToolResult = {
 
 // This is a mock implementation that returns sample data for GOOGL
 // In a real implementation, this would fetch data from an API
-const mockGetPriceData = (ticker: string, startDate: string, endDate: string): PriceData[] => {
+const mockGetPriceData = (ticker?: string, startDate?: string, endDate?: string): PriceData[] => {
   console.log(`[PricesTool] mockGetPriceData called with ticker: ${ticker}, startDate: ${startDate}, endDate: ${endDate}`);
-  if (ticker.toUpperCase() === "GOOGL") {
+  if (ticker && ticker.toUpperCase() === "GOOGL") {
     console.log(`[PricesTool] Returning sample data for GOOGL with ${sampleGooglePriceData.length} entries`);
     return sampleGooglePriceData;
   }
-  console.log(`[PricesTool] No data available for ticker: ${ticker}`);
+  console.log(`[PricesTool] No data available for ticker: ${ticker || 'undefined'}`);
   return [];
 };
 
 export const PricesTool = makeAssistantToolUI<PricesToolArgs, string>({
   toolName: "prices",
-  render: function PricesUI({ args, result }) {
+  render: function PricesUI({ args, result, status }) {
     console.log(`[PricesTool] Render called with args:`, args);
     console.log(`[PricesTool] Result provided:`, result ? "yes" : "no");
+    console.log(`[PricesTool] Status:`, status?.type);
+    
+    // If no arguments yet, don't render anything
+    if (!args || !args.ticker) {
+      console.log(`[PricesTool] Tool not yet called with valid arguments`);
+      return null;
+    }
     
     let resultObj: PricesToolResult;
     

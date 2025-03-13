@@ -13,14 +13,23 @@ export default function DataAgentPage() {
   // Log that page is rendering and the tools are being loaded
   useEffect(() => {
     console.log('[DataAgentPage] Page mounted, initializing tools');
-    console.log('[DataAgentPage] PricesTool being registered with Thread component');
+    console.log('[DataAgentPage] Tools being registered with AssistantRuntimeProvider:');
+    // Access toolName using type assertion since it's a property of the component definition
+    console.log('[DataAgentPage] - PriceSnapshotTool:', (PriceSnapshotTool as any).toolName);
+    console.log('[DataAgentPage] - PurchaseStockTool:', (PurchaseStockTool as any).toolName);
+    console.log('[DataAgentPage] - PricesTool:', (PricesTool as any).toolName);
   }, []);
   
   return (
     <div className="flex h-full flex-col">
       <MyRuntimeProvider>
+        {/* Render tool UIs directly inside the AssistantRuntimeProvider */}
+        <PriceSnapshotTool />
+        <PurchaseStockTool />
+        <PricesTool />
+        
+        {/* Thread component now only needs welcomeSuggestions and toolFallback */}
         <Thread 
-          tools={[PriceSnapshotTool, PurchaseStockTool, PricesTool]}
           toolFallback={ToolFallback}
           welcomeSuggestions={[
             { prompt: "How much revenue did Apple make last year?" },

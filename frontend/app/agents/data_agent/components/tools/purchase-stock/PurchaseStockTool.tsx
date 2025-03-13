@@ -21,6 +21,16 @@ export const PurchaseStockTool = makeAssistantToolUI<PurchaseStockArgs, string>(
   {
     toolName: "purchase_stock",
     render: function PurchaseStockUI({ args, result, status, addResult }) {
+      console.log("[PurchaseStockTool] Render called with args:", args);
+      console.log("[PurchaseStockTool] Result provided:", result ? "yes" : "no");
+      console.log("[PurchaseStockTool] Status:", status?.type);
+      
+      // If no arguments yet, don't render anything
+      if (!args || !args.ticker || !args.companyName) {
+        console.log("[PurchaseStockTool] Tool not yet called with valid arguments");
+        return null;
+      }
+
       let resultObj: PurchaseStockResult;
       try {
         resultObj = result ? JSON.parse(result) : {};

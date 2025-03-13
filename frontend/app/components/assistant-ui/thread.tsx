@@ -24,25 +24,22 @@ import { MarkdownText } from "@/components/assistant-ui/markdown-text";
 import { TooltipIconButton } from "@/components/assistant-ui/tooltip-icon-button";
 
 type ThreadProps = {
-  tools?: ComponentType[];
   welcomeSuggestions?: { prompt: string }[];
   toolFallback?: any; // Using any to avoid type issues
 };
 
 export const Thread: FC<ThreadProps> = ({ 
-  tools = [], 
   welcomeSuggestions = [
     { prompt: "What is the weather in Tokyo?" },
     { prompt: "What is assistant-ui?" }
   ],
   toolFallback
 }) => {
-  // Log when Thread component receives tools
+  // Log when Thread component initializes
   useEffect(() => {
     console.log('[Thread] Thread component initialized');
-    console.log(`[Thread] Received ${tools.length} tools:`, tools.map(tool => (tool as any).toolName || tool.displayName || tool.name));
     console.log('[Thread] ToolFallback provided:', !!toolFallback);
-  }, [tools, toolFallback]);
+  }, [toolFallback]);
 
   return (
     <ThreadPrimitive.Root
@@ -59,11 +56,10 @@ export const Thread: FC<ThreadProps> = ({
             UserMessage: UserMessage,
             EditComposer: EditComposer,
             AssistantMessage: (props) => {
-              console.log('[Thread] Rendering AssistantMessage with tools');
+              console.log('[Thread] Rendering AssistantMessage');
               return (
                 <AssistantMessage 
                   {...props} 
-                  tools={tools} 
                   toolFallback={toolFallback} 
                 />
               );
@@ -223,16 +219,10 @@ const EditComposer: FC = () => {
   );
 };
 
-const AssistantMessage: FC<{ tools: ComponentType[]; toolFallback?: any }> = ({ tools, toolFallback }) => {
+const AssistantMessage: FC<{ toolFallback?: any }> = ({ toolFallback }) => {
   useEffect(() => {
-    console.log('[AssistantMessage] Component mounted with tools:', tools.map(tool => (tool as any).toolName || tool.displayName || tool.name));
-  }, [tools]);
-
-  const toolComponents = Object.fromEntries(tools.map(tool => {
-    const toolName = (tool as any).toolName || tool.displayName || tool.name;
-    console.log(`[AssistantMessage] Registering tool: ${toolName}`);
-    return [toolName, tool];
-  }));
+    console.log('[AssistantMessage] Component mounted');
+  }, []);
 
   return (
     <MessagePrimitive.Root className="grid grid-cols-[auto_auto_1fr] grid-rows-[auto_1fr] relative w-full max-w-[var(--thread-max-width)] py-4">
@@ -240,8 +230,8 @@ const AssistantMessage: FC<{ tools: ComponentType[]; toolFallback?: any }> = ({ 
         <MessagePrimitive.Content 
           components={{ 
             Text: MarkdownText,
-            ToolFallback: toolFallback,
-            ...toolComponents
+            // @ts-ignore - Using any to avoid type issues
+            tools: toolFallback ? { Fallback: toolFallback } : undefined,
           }} 
         />
       </div>
