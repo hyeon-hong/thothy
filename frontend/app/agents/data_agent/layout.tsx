@@ -1,6 +1,6 @@
 import "./globals.css";
 
-import { cn } from "@/lib/utils";
+import { cn } from "./lib/utils";
 import { Montserrat } from "next/font/google";
 import { MyRuntimeProvider } from "./MyRuntimeProvider";
 

@@ -5,34 +5,35 @@ import { useParams } from "next/navigation";
 import Home from "../plan_agent/page";
 import ChatAgentPage from "../chat_agent/page";
 import OpenDeepResearchAgentPage from "../open_deep_research_agent/page";
+import DataAgentPage from "../data_agent/page";
 
 export default function AgentPage() {
-    const params = useParams();
-    const graph_name = (params?.graph_name as string) || "chat_graph";
-    // console.log("graph_name", graph_name);
+  const params = useParams();
+  const graph_name = (params?.graph_name as string) || "chat_graph";
+  // console.log("graph_name", graph_name);
 
-    // Function to render the appropriate agent component
-    const renderAgentComponent = () => {
-        switch (graph_name) {
-            case "chat_graph":
-                return <ChatAgentPage />;
-            case "open_deep_research_graph":
-                return <OpenDeepResearchAgentPage />;
-            case "plan_graph":
-                return <Home />;
-            default:
-                return (
-                    <div className="container mx-auto px-4 py-8">
-                        <h1 className="text-3xl font-bold mb-6">
-                            Agent: {graph_name}
-                        </h1>
-                        <p className="text-gray-600">
-                            This agent type is not yet implemented.
-                        </p>
-                    </div>
-                );
-        }
-    };
+  // Function to render the appropriate agent component
+  const renderAgentComponent = () => {
+    switch (graph_name) {
+      case "chat_graph":
+        return <ChatAgentPage />;
+      case "open_deep_research_graph":
+        return <OpenDeepResearchAgentPage />;
+      case "plan_graph":
+        return <Home />;
+      case "data_graph":
+        return <DataAgentPage />;
+      default:
+        return (
+          <div className="container mx-auto px-4 py-8">
+            <h1 className="text-3xl font-bold mb-6">Agent: {graph_name}</h1>
+            <p className="text-gray-600">
+              This agent type is not yet implemented.
+            </p>
+          </div>
+        );
+    }
+  };
 
-    return renderAgentComponent();
+  return renderAgentComponent();
 }

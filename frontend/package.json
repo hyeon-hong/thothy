@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@assistant-ui/react": "^0.8.5",
+    "@assistant-ui/react-langgraph": "^0.1.16",
     "@assistant-ui/react-markdown": "^0.8.0",
     "@assistant-ui/react-syntax-highlighter": "^0.8.0",
     "@blocknote/core": "^0.25.1",
