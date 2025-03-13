@@ -241,14 +241,31 @@ export const priceSnapshotTool = tool(
 export const pricesTool = tool(
     async (input) => {
         try {
+            // Calculate default dates based on current date if not provided
+            let startDate = input.start_date;
+            let endDate = input.end_date;
+            
+            // If dates aren't provided, calculate reasonable defaults
+            if (!startDate || !endDate) {
+                const currentDate = new Date();
+                endDate = endDate || currentDate.toISOString().split('T')[0];
+                
+                // Default to one month ago if start_date not specified
+                if (!startDate) {
+                    const oneMonthAgo = new Date(currentDate);
+                    oneMonthAgo.setMonth(currentDate.getMonth() - 1);
+                    startDate = oneMonthAgo.toISOString().split('T')[0];
+                }
+            }
+            
             const data = await callFinancialDatasetAPI<SnapshotResponse>({
                 endpoint: "/prices",
                 params: {
                     ticker: input.ticker,
                     interval: input.interval ?? "day",
                     interval_multiplier: input.interval_multiplier ?? "1",
-                    start_date: input.start_date ?? "2025-01-01",
-                    end_date: input.end_date ?? "2025-03-13",
+                    start_date: startDate,
+                    end_date: endDate,
                 },
             });
             return JSON.stringify(data, null);
@@ -259,27 +276,31 @@ export const pricesTool = tool(
     },
     {
         name: "prices",
-        description: "Retrieves the current stock price list between two dates",
+        description: "Retrieves historical stock price data for a specific ticker between two dates. If no dates are specified, it returns the last month of data by default (from one month ago to today's date). You can specify custom date ranges with the start_date and end_date parameters in YYYY-MM-DD format.",
         schema: z.object({
             ticker: z
                 .string()
                 .describe("The ticker of the company. Example: 'AAPL'"),
             interval: z
                 .string()
+                .optional()
                 .describe("The interval of the prices. Example: 'day'"),
             interval_multiplier: z
                 .string()
+                .optional()
                 .describe(
                     "The interval multiplier of the prices. Example: '1'"
                 ),
             start_date: z
                 .string()
+                .optional()
                 .describe(
-                    "The start date of the prices. Example: '2025-01-01'"
+                    "The start date of the prices in YYYY-MM-DD format. If not provided, defaults to one month ago."
                 ),
             end_date: z
                 .string()
-                .describe("The end date of the prices. Example: '2025-03-13'"),
+                .optional()
+                .describe("The end date of the prices in YYYY-MM-DD format. If not provided, defaults to today's date."),
         }),
     }
 );
