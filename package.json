@@ -5,11 +5,16 @@
   "workspaces": [
     "frontend",
     "backend/plan_agent",
+    "backend/data_agent",
     "packages/evals",
     "packages/shared"
   ],
   "scripts": {
-    "clean": "rm -rf ./node_modules ./.turbo ./yarn.lock ./packages/evals/dist ./packages/evals/node_modules ./packages/shared/dist ./packages/shared/node_modules ./backend/plan_agent/dist ./backend/plan_agent/node_modules ./frontend/node_modules ./frontend/.next",
+    "clean": "npm run clean:root && npm run clean:packages && npm run clean:backend && npm run clean:frontend",
+    "clean:root": "rm -rf ./node_modules ./.turbo ./yarn.lock",
+    "clean:packages": "rm -rf ./packages/evals/dist ./packages/evals/node_modules ./packages/shared/dist ./packages/shared/node_modules",
+    "clean:backend": "rm -rf ./backend/plan_agent/dist ./backend/plan_agent/node_modules ./backend/data_agent/dist ./backend/data_agent/node_modules",
+    "clean:frontend": "rm -rf ./frontend/node_modules ./frontend/.next",
     "dev": "npx @langchain/langgraph-cli dev --port 54367 --config ./langgraph.json",
     "build": "turbo build",
     "turbo:command": "turbo",
