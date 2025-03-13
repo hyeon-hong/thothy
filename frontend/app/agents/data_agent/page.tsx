@@ -1,6 +1,6 @@
 "use client";
 
-import { Thread } from "@assistant-ui/react";
+import { Thread } from "@/components/assistant-ui/thread";
 import { PriceSnapshotTool } from "./components/tools/price-snapshot/PriceSnapshotTool";
 import { PurchaseStockTool } from "./components/tools/purchase-stock/PurchaseStockTool";
 import { ToolFallback } from "./components/tools/ToolFallback";
