@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Card, Typography, Box, Button, CardContent, CircularProgress, IconButton } from '@mui/material';
+import { Card, Typography, Box, Button, CardContent, CircularProgress, IconButton, CardMedia } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import { useRouter } from 'next/navigation';
 
@@ -45,6 +45,19 @@ export default function AgentCardWithRemove({ agent, onRemove }) {
             }}
             onClick={handleCardClick}
         >
+            {agent.imageUrl && (
+                <CardMedia
+                    component="img"
+                    image={agent.imageUrl}
+                    alt={agent.name}
+                    sx={{
+                        maxHeight: "220px",
+                        height: "220px",
+                        objectFit: "cover",
+                        borderBottom: "1px solid rgba(0, 0, 0, 0.1)",
+                    }}
+                />
+            )}
             <CardContent sx={{ flexGrow: 1, position: 'relative', display: 'flex', flexDirection: 'column' }}>
                 <Box sx={{ position: 'absolute', top: 8, right: 8 }}>
                     <IconButton 

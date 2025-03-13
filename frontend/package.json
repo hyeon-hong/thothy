@@ -3,6 +3,8 @@
   "version": "0.0.1",
   "private": true,
   "scripts": {
+    "clean": "rm -rf ./node_modules ./.turbo ./.next ./dist ./yarn.lock",
+    "clean:dist": "rm -rf ./dist",
     "dev": "env-cmd -f ../.env next dev --port 3000",
     "build": "next build",
     "start": "env-cmd -f ../.env next start",
@@ -10,6 +12,7 @@
   },
   "dependencies": {
     "@assistant-ui/react": "^0.8.5",
+    "@assistant-ui/react-langgraph": "^0.1.16",
     "@assistant-ui/react-markdown": "^0.8.0",
     "@assistant-ui/react-syntax-highlighter": "^0.8.0",
     "@blocknote/core": "^0.25.1",

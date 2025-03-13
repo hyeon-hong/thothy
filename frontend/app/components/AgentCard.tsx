@@ -195,10 +195,11 @@ export default function AgentCard({
             {agent.imageUrl && (
                 <CardMedia
                     component="img"
-                    height="140"
                     image={agent.imageUrl}
                     alt={agent.name}
                     sx={{
+                        maxHeight: "220px",
+                        height: "220px",
                         objectFit: "cover",
                         borderBottom: "1px solid rgba(0, 0, 0, 0.1)",
                     }}

@@ -1,0 +1,28 @@
+{
+  "name": "data_agent",
+  "author": "AI Thothy",
+  "description": "Data agent",
+  "version": "0.0.1",
+  "license": "Apache-2.0",
+  "type": "module",
+  "scripts": {
+    "build": "tsc --project tsconfig.json --outDir dist",
+    "start": "tsx --experimental-wasm-modules -r dotenv/config src/index.ts",
+    "format": "prettier --write \"**/*.ts\"",
+    "format:check": "prettier --check \"**/*.ts\""
+  },
+  "dependencies": {
+    "@langchain/community": "^0.3.35",
+    "@langchain/core": "^0.3.42",
+    "@langchain/langgraph": "^0.2.55",
+    "@langchain/openai": "^0.4.4",
+    "zod": "^3.24.2"
+  },
+  "devDependencies": {
+    "@tsconfig/recommended": "^1.0.8",
+    "dotenv": "^16.4.7",
+    "prettier": "^3.5.3",
+    "tsx": "^4.19.3",
+    "typescript": "^5.8.2"
+  }
+}

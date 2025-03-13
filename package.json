@@ -1,17 +1,21 @@
 {
-  "name": "open_canvas",
-  "author": "Brace Sproul",
-  "homepage": "https://opencanvas.langchain.com",
-  "repository": "https://github.com/langchain-ai/open-canvas",
+  "name": "thothy",
+  "author": "AI Thothy",
   "private": true,
   "workspaces": [
     "frontend",
-    "agents/plan_agent",
+    "backend/plan_agent",
+    "backend/data_agent",
     "packages/evals",
     "packages/shared"
   ],
   "scripts": {
-    "clean": "rm -rf ./node_modules ./.turbo ./yarn.lock ./packages/evals/dist ./packages/evals/node_modules ./packages/shared/dist ./packages/shared/node_modules ./agents/plan_agent/dist ./agents/plan_agent/node_modules ./frontend/node_modules ./frontend/.next",
+    "clean": "npm run clean:root && npm run clean:packages && npm run clean:backend && npm run clean:frontend",
+    "clean:root": "rm -rf ./node_modules ./.turbo ./yarn.lock",
+    "clean:dist": "rm -rf ./frontend/dist ./backend/plan_agent/dist ./backend/data_agent/dist ./packages/evals/dist ./packages/shared/dist",
+    "clean:packages": "rm -rf ./packages/evals/node_modules ./packages/shared/node_modules",
+    "clean:backend": "rm -rf ./backend/plan_agent/dist ./backend/plan_agent/node_modules ./backend/data_agent/dist ./backend/data_agent/node_modules",
+    "clean:frontend": "rm -rf ./frontend/node_modules ./frontend/.next",
     "dev": "npx @langchain/langgraph-cli dev --port 54367 --config ./langgraph.json",
     "build": "turbo build",
     "turbo:command": "turbo",
@@ -36,5 +40,8 @@
   },
   "resolutions": {
     "@langchain/core": "^0.3.38"
+  },
+  "dependencies": {
+    "recharts": "^2.15.1"
   }
 }

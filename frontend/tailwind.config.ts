@@ -4,6 +4,8 @@ import tailwindcssAnimate from "tailwindcss-animate";
 // @ts-ignore - Missing type declarations
 import assistantUI from "@assistant-ui/react/tailwindcss";
 import scrollbar from "tailwind-scrollbar";
+// @ts-ignore - Missing type declarations
+import assistantUIMarkdown from "@assistant-ui/react-markdown/tailwindcss";
 
 const config: Config = {
     darkMode: "class",
@@ -11,8 +13,20 @@ const config: Config = {
     "./src/pages/**/*.{js,ts,jsx,tsx,mdx}",
     "./src/components/**/*.{js,ts,jsx,tsx,mdx}",
     "./src/app/**/*.{js,ts,jsx,tsx,mdx}",
+    "./pages/**/*.{ts,tsx}",
+    "./components/**/*.{ts,tsx}",
+    "./app/**/*.{ts,tsx}",
   ],
   theme: {
+    container: {
+      center: true,
+      padding: {
+        xs: "2rem",
+      },
+      screens: {
+        xs: "460px",
+      },
+    },
   	extend: {
   		keyframes: {
   			'gradient-xy-enhanced': {
@@ -102,6 +116,7 @@ const config: Config = {
   			},
   			input: 'hsl(var(--input))',
   			ring: 'hsl(var(--ring))',
+        border: 'hsl(var(--border))',
   			chart: {
   				'1': 'hsl(var(--chart-1))',
   				'2': 'hsl(var(--chart-2))',
@@ -177,8 +192,10 @@ const config: Config = {
     tailwindcssAnimate,
     assistantUI({
       components: ["thread"],
+      shadcn: true,
     }),
     scrollbar,
+    assistantUIMarkdown,
   ],
 };
 export default config;

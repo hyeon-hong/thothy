@@ -8,6 +8,10 @@
 .langgraph_api/
 .langgraph_api
 
+# Data agent specific
+pdfs/**
+src/generated/**
+
 # Lock file
 **/package-lock.json
 **/yarn.lock
