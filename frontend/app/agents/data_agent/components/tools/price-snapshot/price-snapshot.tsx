@@ -2,7 +2,7 @@
 
 import { ArrowDownIcon, ArrowUpIcon } from "lucide-react";
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/agents/data_agent/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 type PriceSnapshotToolArgs = {
   ticker: string;
