@@ -5,7 +5,7 @@ import {
   MessagePrimitive,
   ThreadPrimitive,
 } from "@assistant-ui/react";
-import type { FC } from "react";
+import type { FC, ComponentType } from "react";
 import {
   ArrowDownIcon,
   CheckIcon,
@@ -17,12 +17,33 @@ import {
   SendHorizontalIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useEffect } from "react";
 
 import { Button } from "@/components/ui/button";
 import { MarkdownText } from "@/components/assistant-ui/markdown-text";
 import { TooltipIconButton } from "@/components/assistant-ui/tooltip-icon-button";
 
-export const Thread: FC = () => {
+type ThreadProps = {
+  tools?: ComponentType[];
+  welcomeSuggestions?: { prompt: string }[];
+  toolFallback?: any; // Using any to avoid type issues
+};
+
+export const Thread: FC<ThreadProps> = ({ 
+  tools = [], 
+  welcomeSuggestions = [
+    { prompt: "What is the weather in Tokyo?" },
+    { prompt: "What is assistant-ui?" }
+  ],
+  toolFallback
+}) => {
+  // Log when Thread component receives tools
+  useEffect(() => {
+    console.log('[Thread] Thread component initialized');
+    console.log(`[Thread] Received ${tools.length} tools:`, tools.map(tool => (tool as any).toolName || tool.displayName || tool.name));
+    console.log('[Thread] ToolFallback provided:', !!toolFallback);
+  }, [tools, toolFallback]);
+
   return (
     <ThreadPrimitive.Root
       className="bg-background box-border flex h-full flex-col overflow-hidden"
@@ -31,13 +52,22 @@ export const Thread: FC = () => {
       }}
     >
       <ThreadPrimitive.Viewport className="flex h-full flex-col items-center overflow-y-scroll scroll-smooth bg-inherit px-4 pt-8">
-        <ThreadWelcome />
+        <ThreadWelcome suggestions={welcomeSuggestions} />
 
         <ThreadPrimitive.Messages
           components={{
             UserMessage: UserMessage,
             EditComposer: EditComposer,
-            AssistantMessage: AssistantMessage,
+            AssistantMessage: (props) => {
+              console.log('[Thread] Rendering AssistantMessage with tools');
+              return (
+                <AssistantMessage 
+                  {...props} 
+                  tools={tools} 
+                  toolFallback={toolFallback} 
+                />
+              );
+            },
           }}
         />
 
@@ -68,7 +98,7 @@ const ThreadScrollToBottom: FC = () => {
   );
 };
 
-const ThreadWelcome: FC = () => {
+const ThreadWelcome: FC<{ suggestions: { prompt: string }[] }> = ({ suggestions }) => {
   return (
     <ThreadPrimitive.Empty>
       <div className="flex w-full max-w-[var(--thread-max-width)] flex-grow flex-col">
@@ -77,35 +107,28 @@ const ThreadWelcome: FC = () => {
             How can I help you today?
           </p>
         </div>
-        <ThreadWelcomeSuggestions />
+        <ThreadWelcomeSuggestions suggestions={suggestions} />
       </div>
     </ThreadPrimitive.Empty>
   );
 };
 
-const ThreadWelcomeSuggestions: FC = () => {
+const ThreadWelcomeSuggestions: FC<{ suggestions: { prompt: string }[] }> = ({ suggestions }) => {
   return (
     <div className="mt-3 flex w-full items-stretch justify-center gap-4">
-      <ThreadPrimitive.Suggestion
-        className="hover:bg-muted/80 flex max-w-sm grow basis-0 flex-col items-center justify-center rounded-lg border p-3 transition-colors ease-in"
-        prompt="What is the weather in Tokyo?"
-        method="replace"
-        autoSend
-      >
-        <span className="line-clamp-2 text-ellipsis text-sm font-semibold">
-          What is the weather in Tokyo?
-        </span>
-      </ThreadPrimitive.Suggestion>
-      <ThreadPrimitive.Suggestion
-        className="hover:bg-muted/80 flex max-w-sm grow basis-0 flex-col items-center justify-center rounded-lg border p-3 transition-colors ease-in"
-        prompt="What is assistant-ui?"
-        method="replace"
-        autoSend
-      >
-        <span className="line-clamp-2 text-ellipsis text-sm font-semibold">
-          What is assistant-ui?
-        </span>
-      </ThreadPrimitive.Suggestion>
+      {suggestions.map((suggestion, index) => (
+        <ThreadPrimitive.Suggestion
+          key={index}
+          className="hover:bg-muted/80 flex max-w-sm grow basis-0 flex-col items-center justify-center rounded-lg border p-3 transition-colors ease-in"
+          prompt={suggestion.prompt}
+          method="replace"
+          autoSend
+        >
+          <span className="line-clamp-2 text-ellipsis text-sm font-semibold">
+            {suggestion.prompt}
+          </span>
+        </ThreadPrimitive.Suggestion>
+      ))}
     </div>
   );
 };
@@ -200,11 +223,27 @@ const EditComposer: FC = () => {
   );
 };
 
-const AssistantMessage: FC = () => {
+const AssistantMessage: FC<{ tools: ComponentType[]; toolFallback?: any }> = ({ tools, toolFallback }) => {
+  useEffect(() => {
+    console.log('[AssistantMessage] Component mounted with tools:', tools.map(tool => (tool as any).toolName || tool.displayName || tool.name));
+  }, [tools]);
+
+  const toolComponents = Object.fromEntries(tools.map(tool => {
+    const toolName = (tool as any).toolName || tool.displayName || tool.name;
+    console.log(`[AssistantMessage] Registering tool: ${toolName}`);
+    return [toolName, tool];
+  }));
+
   return (
     <MessagePrimitive.Root className="grid grid-cols-[auto_auto_1fr] grid-rows-[auto_1fr] relative w-full max-w-[var(--thread-max-width)] py-4">
       <div className="text-foreground max-w-[calc(var(--thread-max-width)*0.8)] break-words leading-7 col-span-2 col-start-2 row-start-1 my-1.5">
-        <MessagePrimitive.Content components={{ Text: MarkdownText }} />
+        <MessagePrimitive.Content 
+          components={{ 
+            Text: MarkdownText,
+            ToolFallback: toolFallback,
+            ...toolComponents
+          }} 
+        />
       </div>
 
       <AssistantActionBar />

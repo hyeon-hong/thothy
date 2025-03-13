@@ -3,32 +3,31 @@
 import { Thread } from "@/components/assistant-ui/thread";
 import { PriceSnapshotTool } from "./components/tools/price-snapshot/PriceSnapshotTool";
 import { PurchaseStockTool } from "./components/tools/purchase-stock/PurchaseStockTool";
+import { PricesTool } from "./components/tools/prices/PricesTool";
 import { ToolFallback } from "./components/tools/ToolFallback";
 import { MarkdownText } from "@/components/assistant-ui/markdown-text";
 import { MyRuntimeProvider } from "./MyRuntimeProvider";
+import { useEffect } from "react";
 
 export default function DataAgentPage() {
+  // Log that page is rendering and the tools are being loaded
+  useEffect(() => {
+    console.log('[DataAgentPage] Page mounted, initializing tools');
+    console.log('[DataAgentPage] PricesTool being registered with Thread component');
+  }, []);
+  
   return (
     <div className="flex h-full flex-col">
       <MyRuntimeProvider>
-        <Thread
-          welcome={{
-            suggestions: [
-              {
-                prompt: "How much revenue did Apple make last year?",
-              },
-              {
-                prompt: "Is McDonald's profitable?",
-              },
-              {
-                prompt: "What's the current stock price of Tesla?",
-              },
-            ],
-          }}
-          assistantMessage={{
-            components: { Text: MarkdownText, ToolFallback },
-          }}
-          tools={[PriceSnapshotTool, PurchaseStockTool]}
+        <Thread 
+          tools={[PriceSnapshotTool, PurchaseStockTool, PricesTool]}
+          toolFallback={ToolFallback}
+          welcomeSuggestions={[
+            { prompt: "How much revenue did Apple make last year?" },
+            { prompt: "Is McDonald's profitable?" },
+            { prompt: "What's the current stock price of Tesla?" },
+            { prompt: "Show me the price history of GOOGL for the past month" },
+          ]}
         />
       </MyRuntimeProvider>
     </div>

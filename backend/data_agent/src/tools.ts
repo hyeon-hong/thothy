@@ -18,6 +18,7 @@ export async function callFinancialDatasetAPI<
     if (!process.env.FINANCIAL_DATASETS_API_KEY) {
         throw new Error("FINANCIAL_DATASETS_API_KEY is not set");
     }
+    console.log("fields.params", fields.params);
 
     const baseURL = "https://api.financialdatasets.ai";
     const queryParams = new URLSearchParams(fields.params).toString();
@@ -265,7 +266,7 @@ export const pricesTool = tool(
                 .describe("The ticker of the company. Example: 'AAPL'"),
             interval: z
                 .string()
-                .describe("The interval of the prices. Example: 'daily'"),
+                .describe("The interval of the prices. Example: 'day'"),
             interval_multiplier: z
                 .string()
                 .describe(
