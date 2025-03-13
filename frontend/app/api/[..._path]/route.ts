@@ -1,7 +1,7 @@
-import { LANGGRAPH_API_URL } from "../../agents/data_agent/constants";
+import { LANGGRAPH_API_URL } from "../../agents/plan_agent/constants";
 import { NextRequest, NextResponse } from "next/server";
 import { Session, User } from "@supabase/supabase-js";
-import { verifyUserAuthenticated } from "../../agents/data_agent/lib/supabase/verify_user_server";
+import { verifyUserAuthenticated } from "../../agents/plan_agent/lib/supabase/verify_user_server";
 
 function getCorsHeaders() {
   return {

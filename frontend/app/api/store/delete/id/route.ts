@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Client } from "@langchain/langgraph-sdk";
-import { LANGGRAPH_API_URL } from "../../../../agents/data_agent/constants";
-import { verifyUserAuthenticated } from "../../../../agents/data_agent/lib/supabase/verify_user_server";
+import { LANGGRAPH_API_URL } from "../../../../agents/plan_agent/constants";
+import { verifyUserAuthenticated } from "../../../../agents/plan_agent/lib/supabase/verify_user_server";
 
 export async function POST(req: NextRequest) {
   try {
