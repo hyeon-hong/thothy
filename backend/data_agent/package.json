@@ -6,7 +6,9 @@
   "license": "Apache-2.0",
   "type": "module",
   "scripts": {
-    "build": "tsc --project tsconfig.json --outDir dist",
+    "dev": "npx @langchain/langgraph-cli dev --port 54367 --config ./langgraph.json",
+    "clean": "rm -rf ./dist .turbo || true",
+    "build": "yarn clean && tsc",
     "start": "tsx --experimental-wasm-modules -r dotenv/config src/index.ts",
     "format": "prettier --write \"**/*.ts\"",
     "format:check": "prettier --check \"**/*.ts\""
