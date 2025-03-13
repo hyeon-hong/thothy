@@ -15,6 +15,21 @@ type PricesToolResult = {
   error?: string;
 };
 
+// API response might have 'prices' instead of 'priceData'
+type APIResponse = {
+  ticker: string;
+  prices: Array<{
+    ticker: string;
+    open: number;
+    close: number;
+    high: number;
+    low: number;
+    time: string;
+    volume: number;
+  }>;
+  error?: string;
+};
+
 // This is a mock implementation that returns sample data for GOOGL
 // In a real implementation, this would fetch data from an API
 const mockGetPriceData = (ticker?: string, startDate?: string, endDate?: string): PriceData[] => {
@@ -27,6 +42,55 @@ const mockGetPriceData = (ticker?: string, startDate?: string, endDate?: string)
   return [];
 };
 
+// Convert API response format to our internal format
+const transformAPIResponse = (response: any): PricesToolResult => {
+  console.log(`[PricesTool] Transforming API response:`, response);
+  
+  // If the response already has priceData, just return it
+  if (response.priceData && Array.isArray(response.priceData)) {
+    return response as PricesToolResult;
+  }
+  
+  // If the response has prices array, transform it to priceData
+  if (response.prices && Array.isArray(response.prices)) {
+    console.log(`[PricesTool] Found 'prices' array with ${response.prices.length} entries`);
+    
+    // Map API data format to our PriceData format
+    const priceData = response.prices.map((item: {
+      ticker: string;
+      open: number;
+      close: number;
+      high: number;
+      low: number;
+      time: string;
+      volume: number;
+    }) => {
+      // Parse the date from the time string
+      const date = new Date(item.time);
+      // Format the date as a readable string (e.g., "September 15, 2023")
+      const formattedDate = date.toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      });
+      
+      return {
+        date: formattedDate,
+        open: item.open,
+        close: item.close,
+        high: item.high,
+        low: item.low
+      };
+    });
+    
+    return { priceData };
+  }
+  
+  // If no valid data format found
+  console.log(`[PricesTool] No valid price data found in response`);
+  return { priceData: [], error: "Invalid data format" };
+};
+
 export const PricesTool = makeAssistantToolUI<PricesToolArgs, string>({
   toolName: "prices",
   render: function PricesUI({ args, result, status }) {
@@ -34,6 +98,10 @@ export const PricesTool = makeAssistantToolUI<PricesToolArgs, string>({
     console.log(`[PricesTool] Result provided:`, result ? "yes" : "no");
     console.log(`[PricesTool] Status:`, status?.type);
     
+    console.log("args: ", args);
+    console.log("result: ", result);
+    console.log("status: ", status);
+
     // If no arguments yet, don't render anything
     if (!args || !args.ticker) {
       console.log(`[PricesTool] Tool not yet called with valid arguments`);
@@ -51,8 +119,12 @@ export const PricesTool = makeAssistantToolUI<PricesToolArgs, string>({
     } else {
       try {
         console.log(`[PricesTool] Parsing result from JSON`);
-        resultObj = JSON.parse(result);
-        console.log(`[PricesTool] Result parsed successfully with ${resultObj.priceData?.length || 0} entries`);
+        const parsedResult = JSON.parse(result);
+        console.log(`[PricesTool] Result parsed successfully:`, parsedResult);
+        
+        // Transform the API response to our internal format
+        resultObj = transformAPIResponse(parsedResult);
+        console.log(`[PricesTool] Transformed result:`, resultObj);
       } catch (e) {
         console.error(`[PricesTool] Error parsing result:`, e);
         resultObj = { priceData: [], error: result };
@@ -60,6 +132,24 @@ export const PricesTool = makeAssistantToolUI<PricesToolArgs, string>({
     }
 
     console.log(`[PricesTool] Rendering component with ${resultObj.priceData?.length || 0} data points`);
+    console.log("resultObj: ", resultObj);
+    
+    // Extract actual date range from the price data if available
+    let startDate = args.startDate || "";
+    let endDate = args.endDate || "";
+    
+    // If we have price data, extract the first and last dates
+    if (resultObj.priceData && resultObj.priceData.length > 0) {
+      const sortedData = [...resultObj.priceData].sort((a, b) => {
+        return new Date(a.date).getTime() - new Date(b.date).getTime();
+      });
+      
+      // Get the first and last dates from sorted data
+      startDate = sortedData[0].date;
+      endDate = sortedData[sortedData.length - 1].date;
+      
+      console.log(`[PricesTool] Extracted date range: ${startDate} to ${endDate}`);
+    }
     
     return (
       <div className="mb-4 flex flex-col items-center gap-2">
@@ -70,8 +160,8 @@ export const PricesTool = makeAssistantToolUI<PricesToolArgs, string>({
           <PricesChart
             ticker={args.ticker}
             priceData={resultObj.priceData}
-            startDate={args.startDate}
-            endDate={args.endDate}
+            startDate={startDate}
+            endDate={endDate}
           />
         )}
         {resultObj.error && (

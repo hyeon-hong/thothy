@@ -34,8 +34,37 @@ export function PricesChart({
   endDate,
 }: PricesChartProps) {
   // Format dates for display
-  const formattedStartDate = new Date(startDate).toLocaleDateString();
-  const formattedEndDate = new Date(endDate).toLocaleDateString();
+  let formattedStartDate = startDate;
+  let formattedEndDate = endDate;
+  
+  // Try to parse the dates, but fall back to the original strings if parsing fails
+  try {
+    // Only attempt to format if the dates look like they might be parseable
+    if (startDate && !startDate.includes('Invalid')) {
+      const parsedStartDate = new Date(startDate);
+      if (!isNaN(parsedStartDate.getTime())) {
+        formattedStartDate = parsedStartDate.toLocaleDateString('en-US', {
+          year: 'numeric',
+          month: 'short',
+          day: 'numeric'
+        });
+      }
+    }
+    
+    if (endDate && !endDate.includes('Invalid')) {
+      const parsedEndDate = new Date(endDate);
+      if (!isNaN(parsedEndDate.getTime())) {
+        formattedEndDate = parsedEndDate.toLocaleDateString('en-US', {
+          year: 'numeric',
+          month: 'short',
+          day: 'numeric'
+        });
+      }
+    }
+  } catch (error) {
+    console.error("[PricesChart] Error formatting dates:", error);
+    // Keep using the original strings
+  }
 
   return (
     <Card className="mx-auto w-full max-w-2xl">
