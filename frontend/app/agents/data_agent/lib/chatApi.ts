@@ -3,8 +3,10 @@ import { LangChainMessage } from "@assistant-ui/react-langgraph";
 
 const createClient = () => {
   const apiUrl =
-    process.env["NEXT_PUBLIC_LANGGRAPH_API_URL"] ||
-    new URL("/api", window.location.href).href;
+    process.env.NODE_ENV === "development"
+      ? process.env.NEXT_PUBLIC_DEVELOP_LANGGRAPH_API_URL
+      : process.env.NEXT_PUBLIC_MAIN_LANGGRAPH_API_URL;
+
   return new Client({
     apiUrl,
   });
