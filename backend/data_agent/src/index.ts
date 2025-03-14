@@ -27,7 +27,7 @@ const GraphAnnotation = Annotation.Root({
 });
 
 const llm = new ChatOpenAI({
-  model: "gpt-4o",
+  model: "gpt-4o-mini",
   temperature: 0,
 });
 
@@ -44,7 +44,6 @@ const callModel = async (state: typeof GraphAnnotation.State) => {
       "the companies, so you much call tools when answering users questions. " +
       "All financial data tools require a company ticker to be passed in as a parameter. If you " +
       "do not know the ticker or today's date, you should use the web search tool to find it.\n\n" +
-      
       "When handling time-related queries, carefully interpret relative time references as follows:\n" +
       "- 'Last month' means the previous calendar month (e.g., if today is March 13, 2025, 'last month' refers to February 1-28, 2025)\n" +
       "- 'Last week' means the 7 days before the current date\n" +
@@ -52,7 +51,6 @@ const callModel = async (state: typeof GraphAnnotation.State) => {
       "- 'Year to date' or 'YTD' means from January 1 of the current year until today\n" +
       "- 'Last quarter' means the previous 3 months\n" +
       "- 'Last 30 days' means a 30-day window ending today\n\n" +
-      
       "For price history and financial data tools, when no explicit dates are provided:\n" +
       "1. First check if the query contains time period indicators (e.g., 'last month', 'past 3 years', etc.)\n" +
       "2. For relative time references, calculate the appropriate start and end dates based on the current date\n" +
