@@ -19,7 +19,7 @@ import {
   StockPurchase,
   ALL_TOOLS_LIST,
   webSearchTool,
-} from "tools.js";
+} from "./tools.js";
 import { z } from "zod";
 
 const GraphAnnotation = Annotation.Root({
