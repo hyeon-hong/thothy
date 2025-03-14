@@ -1,9 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Client } from "@langchain/langgraph-sdk";
-import { LANGGRAPH_API_URL } from "../../../../agents/plan_agent/constants";
 import { verifyUserAuthenticated } from "../../../../agents/plan_agent/lib/supabase/verify_user_server";
 
 export async function POST(req: NextRequest) {
+  const LANGGRAPH_API_URL =
+    process.env.NODE_ENV === "development"
+      ? process.env.NEXT_PUBLIC_DEVELOP_LANGGRAPH_API_URL
+      : process.env.NEXT_PUBLIC_MAIN_LANGGRAPH_API_URL;
+
   try {
     const authRes = await verifyUserAuthenticated();
     if (!authRes?.user) {

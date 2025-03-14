@@ -11,6 +11,7 @@ import {
   BaseMessage,
   ToolMessage,
   type AIMessage,
+  SystemMessage,
 } from "@langchain/core/messages";
 import { ChatOpenAI } from "@langchain/openai";
 import {
@@ -18,7 +19,7 @@ import {
   StockPurchase,
   ALL_TOOLS_LIST,
   webSearchTool,
-} from "tools.js";
+} from "./tools.js";
 import { z } from "zod";
 
 const GraphAnnotation = Annotation.Root({
@@ -36,30 +37,32 @@ const toolNode = new ToolNode(ALL_TOOLS_LIST);
 const callModel = async (state: typeof GraphAnnotation.State) => {
   const { messages } = state;
 
-  const systemMessage = {
-    role: "system",
-    content:
-      "You're an expert financial analyst, tasked with answering the users questions " +
-      "about a given company or companies. You do not have up to date information on " +
-      "the companies, so you much call tools when answering users questions. " +
-      "All financial data tools require a company ticker to be passed in as a parameter. If you " +
-      "do not know the ticker or today's date, you should use the web search tool to find it.\n\n" +
-      "When handling time-related queries, carefully interpret relative time references as follows:\n" +
-      "- 'Last month' means the previous calendar month (e.g., if today is March 13, 2025, 'last month' refers to February 1-28, 2025)\n" +
-      "- 'Last week' means the 7 days before the current date\n" +
-      "- 'Last year' means the previous calendar year\n" +
-      "- 'Year to date' or 'YTD' means from January 1 of the current year until today\n" +
-      "- 'Last quarter' means the previous 3 months\n" +
-      "- 'Last 30 days' means a 30-day window ending today\n\n" +
-      "For price history and financial data tools, when no explicit dates are provided:\n" +
-      "1. First check if the query contains time period indicators (e.g., 'last month', 'past 3 years', etc.)\n" +
-      "2. For relative time references, calculate the appropriate start and end dates based on the current date\n" +
-      "3. Pass these calculated dates to the appropriate tool rather than relying on default values\n" +
-      "4. Provide clear date context in your response to the user (e.g., 'Here's GOOGL's price history from February 1, 2025 to March 1, 2025...')",
-  };
+  const systemMessageContent =
+    "You're an expert financial analyst, tasked with answering the users questions " +
+    "about a given company or companies. You do not have up to date information on " +
+    "the companies, so you much call tools when answering users questions. " +
+    "All financial data tools require a company ticker to be passed in as a parameter. If you " +
+    "do not know the ticker or today's date, you should use the web search tool to find it.\n\n" +
+    "When handling time-related queries, carefully interpret relative time references as follows:\n" +
+    "- 'Last month' means the previous calendar month (e.g., if today is March 13, 2025, 'last month' refers to February 1-28, 2025)\n" +
+    "- 'Last week' means the 7 days before the current date\n" +
+    "- 'Last year' means the previous calendar year\n" +
+    "- 'Year to date' or 'YTD' means from January 1 of the current year until today\n" +
+    "- 'Last quarter' means the previous 3 months\n" +
+    "- 'Last 30 days' means a 30-day window ending today\n\n" +
+    "For price history and financial data tools, when no explicit dates are provided:\n" +
+    "1. First check if the query contains time period indicators (e.g., 'last month', 'past 3 years', etc.)\n" +
+    "2. For relative time references, calculate the appropriate start and end dates based on the current date\n" +
+    "3. Pass these calculated dates to the appropriate tool rather than relying on default values\n" +
+    "4. Provide clear date context in your response to the user (e.g., 'Here's GOOGL's price history from February 1, 2025 to March 1, 2025...')";
+
+  const systemMessage = new SystemMessage(systemMessageContent);
 
   const llmWithTools = llm.bindTools(ALL_TOOLS_LIST);
+
+  // Call the traceable function
   const result = await llmWithTools.invoke([systemMessage, ...messages]);
+
   return { messages: result };
 };
 

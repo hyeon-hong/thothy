@@ -1,29 +1,45 @@
 import { ThreadState, Client } from "@langchain/langgraph-sdk";
 import { LangChainMessage } from "@assistant-ui/react-langgraph";
+import { createClient as createSupabaseClient } from "@/utils/supabase/client";
 
-const createClient = () => {
+const createClient = async () => {
   const apiUrl =
-    process.env["NEXT_PUBLIC_LANGGRAPH_API_URL"] ||
-    new URL("/api", window.location.href).href;
+    process.env.NODE_ENV === "development"
+      ? process.env.NEXT_PUBLIC_DEVELOP_LANGGRAPH_API_URL
+      : process.env.NEXT_PUBLIC_MAIN_LANGGRAPH_TYPESCRIPT_API_URL;
+
+  const supabase = createSupabaseClient();
+  const {
+    data: { session },
+    error,
+  } = await supabase.auth.getSession();
+  console.log("supabase: ", supabase);
+  console.log("error: ", error);
+  console.log("session: ", session);
+
   return new Client({
     apiUrl,
+    apiKey: process.env.LANGCHAIN_API_KEY,
+    defaultHeaders: {
+      Authorization: `Bearer ${session?.access_token}`,
+    },
   });
 };
 
 export const createAssistant = async (graphId: string) => {
-  const client = createClient();
+  const client = await createClient();
   return client.assistants.create({ graphId });
 };
 
 export const createThread = async () => {
-  const client = createClient();
+  const client = await createClient();
   return client.threads.create();
 };
 
 export const getThreadState = async (
   threadId: string
 ): Promise<ThreadState<Record<string, any>>> => {
-  const client = createClient();
+  const client = await createClient();
   return client.threads.getState(threadId);
 };
 
@@ -34,7 +50,7 @@ export const updateState = async (
     asNode?: string;
   }
 ) => {
-  const client = createClient();
+  const client = await createClient();
   return client.threads.updateState(threadId, {
     values: fields.newState,
     asNode: fields.asNode!,
@@ -45,9 +61,9 @@ export const sendMessage = async (params: {
   threadId: string;
   messages: LangChainMessage[];
 }) => {
-  const client = createClient();
+  const client = await createClient();
 
-  let input: Record<string, any> | null = {
+  const input: Record<string, any> | null = {
     messages: params.messages,
   };
   const config = {
