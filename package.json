@@ -2,6 +2,7 @@
   "name": "thothy",
   "author": "AI Thothy",
   "private": true,
+  "packageManager": "yarn@1.22.22",
   "workspaces": [
     "frontend",
     "backend/plan_agent",
@@ -22,7 +23,6 @@
     "lint": "turbo lint",
     "lint:fix": "turbo lint:fix"
   },
-  "packageManager": "yarn@1.22.22",
   "devDependencies": {
     "@eslint/eslintrc": "^3.3.0",
     "@typescript-eslint/eslint-plugin": "^8.26.1",
