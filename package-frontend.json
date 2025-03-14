@@ -3,13 +3,16 @@
   "author": "AI Thothy",
   "private": true,
   "workspaces": [
-    "backend/plan_agent",
-    "backend/data_agent"
+    "frontend",
+    "packages/evals",
+    "packages/shared"
   ],
   "scripts": {
-    "clean": "npm run clean:root && npm run clean:backend",
+    "clean": "npm run clean:root && npm run clean:packages && npm run clean:frontend",
     "clean:root": "rm -rf ./node_modules ./.turbo ./yarn.lock",
-    "clean:backend": "rm -rf ./backend/plan_agent/dist ./backend/plan_agent/node_modules ./backend/data_agent/dist ./backend/data_agent/node_modules",
+    "clean:dist": "rm -rf ./frontend/dist ./packages/evals/dist ./packages/shared/dist",
+    "clean:packages": "rm -rf ./packages/evals/node_modules ./packages/shared/node_modules",
+    "clean:frontend": "rm -rf ./frontend/node_modules ./frontend/.next",
     "dev": "npx @langchain/langgraph-cli dev --config ./langgraph.json",
     "build": "turbo build",
     "turbo:command": "turbo",
