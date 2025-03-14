@@ -1,4 +1,3 @@
-import { LANGGRAPH_API_URL } from "../../agents/plan_agent/constants";
 import { NextRequest, NextResponse } from "next/server";
 import { Session, User } from "@supabase/supabase-js";
 import { verifyUserAuthenticated } from "../../agents/plan_agent/lib/supabase/verify_user_server";
@@ -12,6 +11,11 @@ function getCorsHeaders() {
 }
 
 async function handleRequest(req: NextRequest, method: string) {
+  const LANGGRAPH_API_URL =
+    process.env.NODE_ENV === "development"
+      ? process.env.NEXT_PUBLIC_DEVELOP_LANGGRAPH_API_URL
+      : process.env.NEXT_PUBLIC_MAIN_LANGGRAPH_API_URL;
+
   let session: Session | undefined;
   let user: User | undefined;
   try {
