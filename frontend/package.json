@@ -6,7 +6,7 @@
     "clean": "rm -rf ./node_modules ./.turbo ./.next ./dist ./yarn.lock",
     "clean:dist": "rm -rf ./dist",
     "dev": "env-cmd -f ../.env next dev",
-    "build": "next build",
+    "build": "env-cmd -f ../.env next build",
     "start": "env-cmd -f ../.env next start",
     "lint": "next lint"
   },

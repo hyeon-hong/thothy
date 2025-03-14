@@ -63,7 +63,7 @@ export const sendMessage = async (params: {
 }) => {
   const client = await createClient();
 
-  let input: Record<string, any> | null = {
+  const input: Record<string, any> | null = {
     messages: params.messages,
   };
   const config = {

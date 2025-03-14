@@ -230,7 +230,6 @@ const AssistantMessage: FC<{ toolFallback?: any }> = ({ toolFallback }) => {
         <MessagePrimitive.Content 
           components={{ 
             Text: MarkdownText,
-            // @ts-ignore - Using any to avoid type issues
             tools: toolFallback ? { Fallback: toolFallback } : undefined,
           }} 
         />
