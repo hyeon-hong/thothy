@@ -6,5 +6,5 @@
   "graphs": {
     "stockbroker": "./src/index.ts:graph"
   },
-  "env": ".env"
+  "env": "./.env"
 }

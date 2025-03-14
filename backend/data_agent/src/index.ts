@@ -14,7 +14,6 @@ import {
   SystemMessage,
 } from "@langchain/core/messages";
 import { ChatOpenAI } from "@langchain/openai";
-import { traceable } from "langsmith/traceable";
 import {
   priceSnapshotTool,
   StockPurchase,
@@ -60,18 +59,10 @@ const callModel = async (state: typeof GraphAnnotation.State) => {
   const systemMessage = new SystemMessage(systemMessageContent);
 
   const llmWithTools = llm.bindTools(ALL_TOOLS_LIST);
-  const llmWithTools_invoke = traceable(
-    async (input: BaseMessage[]) => {
-      return await llmWithTools.invoke(input);
-    },
-    {
-      run_type: "llm",
-      name: "callModel",
-      project_name: "data_agent",
-    }
-  );
-  // const result = await llmWithTools.invoke([systemMessage, ...messages]);
-  const result = await llmWithTools_invoke([systemMessage, ...messages]);
+
+  // Call the traceable function
+  const result = await llmWithTools.invoke([systemMessage, ...messages]);
+
   return { messages: result };
 };
 
