@@ -3,11 +3,8 @@
   "author": "AI Thothy",
   "private": true,
   "workspaces": [
-    "frontend",
     "backend/plan_agent",
-    "backend/data_agent",
-    "packages/evals",
-    "packages/shared"
+    "backend/data_agent"
   ],
   "scripts": {
     "clean": "npm run clean:root && npm run clean:backend",
