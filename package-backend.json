@@ -10,6 +10,7 @@
     "clean": "npm run clean:root && npm run clean:backend",
     "clean:root": "rm -rf ./node_modules ./.turbo ./yarn.lock",
     "clean:backend": "rm -rf ./backend/plan_agent/dist ./backend/plan_agent/node_modules ./backend/data_agent/dist ./backend/data_agent/node_modules",
+    "clean:packages": "rm -rf ./packages/evals/dist ./packages/evals/node_modules ./packages/shared/dist ./packages/shared/node_modules",
     "dev": "npx @langchain/langgraph-cli dev --config ./langgraph.json",
     "build": "turbo build",
     "turbo:command": "turbo",
