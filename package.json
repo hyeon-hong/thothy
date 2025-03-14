@@ -16,7 +16,7 @@
     "clean:packages": "rm -rf ./packages/evals/node_modules ./packages/shared/node_modules",
     "clean:backend": "rm -rf ./backend/plan_agent/dist ./backend/plan_agent/node_modules ./backend/data_agent/dist ./backend/data_agent/node_modules",
     "clean:frontend": "rm -rf ./frontend/node_modules ./frontend/.next",
-    "dev": "npx @langchain/langgraph-cli dev --port 54367 --config ./langgraph.json",
+    "dev": "npx @langchain/langgraph-cli dev --config ./langgraph.json",
     "build": "turbo build",
     "turbo:command": "turbo",
     "format": "turbo format",
