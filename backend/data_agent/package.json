@@ -1,12 +1,12 @@
 {
   "name": "data_agent",
   "author": "AI Thothy",
-  "description": "Data agent",
+  "description": "Data Agent",
   "version": "0.0.1",
   "license": "Apache-2.0",
   "type": "module",
   "scripts": {
-    "dev": "npx @langchain/langgraph-cli dev --port 54367 --config ./langgraph.json",
+    "dev": "npx @langchain/langgraph-cli dev --config ./langgraph.json",
     "clean": "rm -rf ./dist .turbo || true",
     "build": "yarn clean && tsc",
     "start": "tsx --experimental-wasm-modules -r dotenv/config src/index.ts",
