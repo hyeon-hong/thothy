@@ -1,8 +1,5 @@
-import os
-from langsmith import Client
 from langgraph.graph import END, START, StateGraph
 from langchain_core.runnables import RunnableLambda
-from langchain import hub
 import re
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.runnables import RunnablePassthrough
@@ -16,6 +13,7 @@ from langchain_core.prompts import (
     PromptTemplate,
 )
 from langchain_core.prompts.image import ImagePromptTemplate
+from browser_graph.prompts import WEB_VOYAGER_PROMPT
 from browser_graph.states import AgentState
 from browser_graph.tools import mark_page
 from browser_graph.tools import click
@@ -76,70 +74,10 @@ def parse(text: str) -> dict:
     return {"action": action, "args": action_input}
 
 
-# Pull the prompt template directly from the hub
-# This returns a ChatPromptTemplate object
-# prompt = hub.pull("wfh/web-voyager")
-
-# client = Client(api_key=os.getenv("LANGSMITH_API_KEY"))
-# prompt = client.pull_prompt("wfh/web-voyager", include_model=True)
-
-# prompt = ChatPromptTemplate([("system", WEB_VOYAGER_PROMPT)])
-# print("prompt: ", prompt)
-# print("prompt.__dict__: ", prompt.__dict__)
-# print("type(prompt): ", type(prompt))
-# Breaking the long commented prompt template into multiple lines
-
 # Create system message component
 system_message = SystemMessagePromptTemplate(
     prompt=PromptTemplate(
-        template="""
-Imagine you are a robot browsing the web, just like humans. Now you need to 
-complete a task. In each iteration, you will receive an Observation that 
-includes a screenshot of a webpage and some texts. This screenshot will feature 
-Numerical Labels placed in the TOP LEFT corner of each Web Element. Carefully 
-analyze the visual information to identify the Numerical Label corresponding to 
-the Web Element that requires interaction, then follow the guidelines and 
-choose one of the following actions:
-
-1. Click a Web Element.
-2. Delete existing content in a textbox and then type content.
-3. Scroll up or down.
-4. Wait 
-5. Go back
-7. Return to google to start over.
-8. Respond with the final answer
-
-Correspondingly, Action should STRICTLY follow the format:
-
-- Click [Numerical_Label] 
-- Type [Numerical_Label]; [Content] 
-- Scroll [Numerical_Label or WINDOW]; [up or down] 
-- Wait 
-- GoBack
-- Google
-- ANSWER; [content]
-
-Key Guidelines You MUST follow:
-
-* Action guidelines *
-1) Execute only one action per iteration.
-2) When clicking or typing, ensure to select the correct bounding box.
-3) Numeric labels lie in the top-left corner of their corresponding bounding 
-boxes and are colored the same.
-
-* Web Browsing Guidelines *
-1) Don't interact with useless web elements like Login, Sign-in, donation 
-that appear in Webpages
-2) Select strategically to minimize time wasted.
-
-Your reply should strictly follow the format:
-
-Thought: {{Your brief thoughts (briefly summarize the info that will help 
-ANSWER)}}
-Action: {{One Action format you choose}}
-Then the User will provide:
-Observation: {{A labeled screenshot Given by User}}
-""",
+        template=WEB_VOYAGER_PROMPT,
         input_variables=[]
     )
 )
@@ -204,13 +142,10 @@ def update_scratchpad(state: AgentState):
 
 
 def select_tool(state: AgentState):
-    print("call select_tool()")
-    print("state: ", state)
     # Any time the agent completes, this function
     # is called to route the output to a tool or
     # to the end user.
     action = state["prediction"]["action"]
-    print("action: ", action)
     if "ANSWER" in action:
         return END
     if action == "retry":

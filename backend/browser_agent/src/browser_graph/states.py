@@ -36,21 +36,21 @@ class AgentState(TypedDict):
 
 async def get_empty_state():
     """Create and return an empty initial state for the browser agent.
-    
+
     This function initializes a browser page and returns the basic state structure
     needed to begin browser agent operations.
-    
+
     Returns:
         AgentState: An initialized state with a browser page ready for interaction.
     """
     from playwright.async_api import async_playwright
-    
+
     # Start Playwright and create a browser page
     playwright = await async_playwright().start()
     browser = await playwright.chromium.launch(headless=False)
     context = await browser.new_context(viewport={"width": 1280, "height": 800})
     page = await context.new_page()
-    
+
     # Create an empty initial state
     return {
         "page": page,

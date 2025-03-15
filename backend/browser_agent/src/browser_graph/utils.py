@@ -186,8 +186,6 @@ async def call_agent(question: str, page, max_steps: int = 150):
     print("🔄 Starting browser navigation...\n")
 
     async for event in event_stream:
-        print("event: ", event)
-
         # We'll display an event stream here
         if "agent" not in event:
             continue
@@ -196,9 +194,6 @@ async def call_agent(question: str, page, max_steps: int = 150):
         pred = event["agent"].get("prediction") or {}
         action = pred.get("action")
         action_input = pred.get("args")
-        print("pred: ", pred)
-        print("action: ", action)
-        print("action_input: ", action_input)
 
         # Get current URL
         if callable(getattr(page, 'url', None)):
