@@ -156,7 +156,7 @@ def select_tool(state: AgentState):
     # to the end user.
     action = state["prediction"]["action"]
     print("action: ", action)
-    if action == "ANSWER":
+    if "ANSWER" in action:
         return END
     if action == "retry":
         return "agent"
