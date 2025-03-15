@@ -13,6 +13,8 @@ from langchain_core.prompts import (
     MessagesPlaceholder,
     PromptTemplate,
 )
+from langchain_core.runnables import chain as chain_decorator
+import asyncio
 from langchain_core.prompts.image import ImagePromptTemplate
 from browser_graph.prompts import SYSTEM_PROMPT, SYSTEM_PROMPT_TEXT_ONLY
 from browser_graph.states import AgentState
@@ -25,46 +27,38 @@ from browser_graph.tools import go_search_website
 from browser_graph.tools import crawl_website
 from browser_graph.utils import (
     extract_information,
-    get_webarena_accessibility_tree,
-    get_web_element_rect
+    get_webarena_accessibility_tree
 )
+
+# Some javascript we will run on each step
+# to take a screenshot of the page, select the
+# elements to annotate, and add bounding boxes
+with open("mark_page.js") as f:
+    mark_page_script = f.read()
+
+
+@chain_decorator
+async def mark_page(page):
+    await page.evaluate(mark_page_script)
+    for _ in range(10):
+        try:
+            bboxes = await page.evaluate("markPage()")
+            break
+        except Exception:
+            # May be loading...
+            asyncio.sleep(3)
+    screenshot = await page.screenshot()
+    # Ensure the bboxes don't follow us around
+    await page.evaluate("unmarkPage()")
+    return {
+        "img": base64.b64encode(screenshot).decode(),
+        "bboxes": bboxes,
+    }
 
 
 async def annotate(state):
-    """Annotate the page with visual markers or get accessibility tree"""
-    # Check if we're in text-only mode
-    text_only = state.get("text_only", False)
-
-    if text_only:
-        # Use accessibility tree for text-only mode
-        accessibility_tree, obs_info = await get_webarena_accessibility_tree(
-            state["page"]
-        )
-        return {
-            **state,
-            "accessibility_tree": accessibility_tree,
-            "accessibility_info": obs_info,
-            # For consistency with visual mode
-            "bboxes": obs_info
-        }
-    else:
-        # Use visual annotation for standard mode
-        # Take a screenshot of the page
-        screenshot = await state["page"].screenshot()
-        img_base64 = base64.b64encode(screenshot).decode()
-        
-        # Use get_web_element_rect to mark elements on the page
-        rects, web_elements, web_elements_text = get_web_element_rect(
-            state["page"], fix_color=True
-        )
-        
-        # Return the updated state
-        return {
-            **state,
-            "img": img_base64,
-            "bboxes": web_elements,
-            "web_elements_text": web_elements_text
-        }
+    marked_page = await mark_page.with_retry().ainvoke(state["page"])
+    return {**state, **marked_page}
 
 
 def format_descriptions(state):
@@ -83,7 +77,7 @@ def format_descriptions(state):
             **state,
             "bbox_descriptions": state["web_elements_text"]
         }
-    
+
     # Fallback to the original processing for compatibility
     labels = []
     for i, bbox in enumerate(state["bboxes"]):
