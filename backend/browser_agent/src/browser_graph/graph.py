@@ -15,6 +15,7 @@ from browser_graph.tools import scroll
 from browser_graph.tools import wait
 from browser_graph.tools import go_back
 from browser_graph.tools import to_google
+from browser_graph.tools import crawl
 
 
 async def annotate(state):
@@ -101,21 +102,7 @@ def select_tool(state: AgentState):
     return action
 
 
-graph_builder = StateGraph(AgentState)
-
-
-graph_builder.add_node("agent", agent)
-graph_builder.add_edge(START, "agent")
-
-graph_builder.add_node("update_scratchpad", update_scratchpad)
-graph_builder.add_edge("update_scratchpad", "agent")
-
-# Add the ANSWER node to handle final responses
-
-
 def final_answer(state):
-    # This function passes through the final state when the agent answers
-    # You can add additional processing for the final answer here if needed
     if "prediction" in state and "args" in state["prediction"]:
         args = state["prediction"]["args"]
         final_text = args[0] if args else ""
@@ -123,7 +110,16 @@ def final_answer(state):
     return state
 
 
+graph_builder = StateGraph(AgentState)
+
+# Add nodes
+graph_builder.add_node("agent", agent)
+graph_builder.add_node("update_scratchpad", update_scratchpad)
 graph_builder.add_node("ANSWER", final_answer)
+
+# Add edges
+graph_builder.add_edge(START, "agent")
+graph_builder.add_edge("update_scratchpad", "agent")
 graph_builder.add_edge("ANSWER", END)
 
 tools = {
@@ -133,8 +129,8 @@ tools = {
     "Wait": wait,
     "GoBack": go_back,
     "Google": to_google,
+    "Crawl": crawl,
 }
-
 
 for node_name, tool in tools.items():
     graph_builder.add_node(
@@ -148,9 +144,11 @@ for node_name, tool in tools.items():
     # Always return to the agent (by means of the update-scratchpad node)
     graph_builder.add_edge(node_name, "update_scratchpad")
 
-
+# Add conditional edges
 graph_builder.add_conditional_edges("agent", select_tool)
 
+# Compile the graph
 graph = graph_builder.compile()
 
+# Export the graph
 __all__ = ["graph"]

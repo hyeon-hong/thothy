@@ -96,14 +96,14 @@ async def to_google(state: AgentState):
     return "Navigated to google.com."
 
 
-async def extract_content(state: AgentState):
+async def crawl(state: AgentState):
     """Extract the main content from the current webpage.
-    
+
     This function uses both Newspaper3k and Trafilatura libraries to extract
     the main content, title, authors, publish date, and other relevant 
     information from the current webpage. It tries both libraries and returns
     the best result.
-    
+
     Returns:
         str: A summary of the extracted content or an error message.
     """
@@ -111,9 +111,9 @@ async def extract_content(state: AgentState):
     import subprocess
     import sys
     import json
-    
+
     page = state["page"]
-    
+
     # Check and install required packages if necessary
     required_packages = ['newspaper3k', 'trafilatura']
     for package in required_packages:
@@ -126,15 +126,15 @@ async def extract_content(state: AgentState):
             except subprocess.CalledProcessError:
                 error_msg = f"Failed to install {package}. Cannot extract content."
                 return error_msg
-    
+
     # Now import the libraries (after ensuring they're installed)
     import newspaper
     import trafilatura
-    
+
     # Get the current URL and HTML content
     current_url = await page.url()
     html_content = await page.content()
-    
+
     result = {
         "title": "",
         "authors": [],
@@ -144,7 +144,7 @@ async def extract_content(state: AgentState):
         "keywords": [],
         "source": "Unknown"
     }
-    
+
     # Try Newspaper3k first (good for news articles)
     try:
         article = newspaper.Article(current_url)
@@ -152,7 +152,7 @@ async def extract_content(state: AgentState):
         article.parse()
         # This provides summary and keywords but might take time
         article.nlp()
-        
+
         if article.title:
             result["title"] = article.title
         if article.authors:
@@ -168,7 +168,7 @@ async def extract_content(state: AgentState):
         result["source"] = "Newspaper3k"
     except Exception as e:
         print(f"Newspaper3k extraction failed: {str(e)}")
-    
+
     # If Newspaper3k didn't get good content, try Trafilatura
     if not result["text"] or len(result["text"]) < 100:
         try:
@@ -181,7 +181,7 @@ async def extract_content(state: AgentState):
                 include_tables=False,
                 with_metadata=True
             )
-            
+
             if extracted:
                 extracted_json = json.loads(extracted)
                 if extracted_json.get("title") and not result["title"]:
@@ -206,11 +206,11 @@ async def extract_content(state: AgentState):
                 result["source"] = "Trafilatura"
         except Exception as e:
             print(f"Trafilatura extraction failed: {str(e)}")
-    
+
     # Check if we successfully extracted content
     if not result["text"]:
         return "Failed to extract content from this page."
-    
+
     # Format the output for the agent
     output = []
     output.append(f"TITLE: {result['title']}")
@@ -232,7 +232,7 @@ async def extract_content(state: AgentState):
         truncated_text = text_to_include[:2000] + "... (content truncated)"
         text_to_include = truncated_text
     output.append(text_to_include)
-    
+
     return "\n".join(output)
 
 
