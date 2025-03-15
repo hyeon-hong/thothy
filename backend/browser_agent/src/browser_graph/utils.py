@@ -69,12 +69,27 @@ def save_debug_data(session_dir, step_num, img_data, url, action, action_input):
     with open(img_path, "wb") as f:
         f.write(base64.b64decode(img_data))
     
+    # Convert URL to string if it's a Page object
+    if hasattr(url, '__class__') and url.__class__.__name__ == 'Page':
+        url_str = str(url)
+    else:
+        url_str = url
+    
+    # Handle action_input to make it JSON serializable
+    serializable_action_input = action_input
+    try:
+        # Test if it's serializable
+        json.dumps(action_input)
+    except (TypeError, OverflowError):
+        # If not serializable, convert to string
+        serializable_action_input = str(action_input)
+    
     # Save step metadata including URL and action
     step_data = {
         "step": step_num,
-        "url": url,
+        "url": url_str,
         "action": action,
-        "action_input": action_input,
+        "action_input": serializable_action_input,
         "timestamp": datetime.now().isoformat(),
         "image_path": str(img_path)
     }
@@ -174,7 +189,10 @@ async def call_agent(question: str, page, max_steps: int = 150):
         action_input = pred.get("args")
 
         # Get current URL
-        current_url = await page.url()
+        if callable(getattr(page, 'url', None)):
+            current_url = await page.url()
+        else:
+            current_url = page
 
         # Clear terminal and print step information
         clear_terminal()
