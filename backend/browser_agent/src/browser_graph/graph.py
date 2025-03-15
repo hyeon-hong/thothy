@@ -7,11 +7,10 @@ from langchain_core.output_parsers import StrOutputParser
 from langchain_core.runnables import RunnablePassthrough
 from langchain_core.messages import SystemMessage
 from langchain_openai import ChatOpenAI
-from langchain_core.prompts import ChatPromptTemplate
 from browser_graph.states import AgentState
 from browser_graph.tools import mark_page
 from browser_graph.tools import click
-from browser_graph.tools import type_text
+from browser_graph.tools import type_text  # noqa: E501
 from browser_graph.tools import scroll
 from browser_graph.tools import wait
 from browser_graph.tools import go_back
@@ -62,7 +61,8 @@ def parse(text: str) -> dict:
     action = action.strip()
     if action_input is not None:
         action_input = [
-            inp.strip().strip("[]") for inp in action_input.strip().split(";")
+            inp.strip().strip("[]") 
+            for inp in action_input.strip().split(";")
         ]
     return {"action": action, "args": action_input}
 
@@ -72,9 +72,12 @@ def parse(text: str) -> dict:
 # prompt = hub.pull("wfh/web-voyager")
 client = Client(api_key=os.getenv("LANGSMITH_API_KEY"))
 prompt = client.pull_prompt("wfh/web-voyager", include_model=True)
+# Breaking the long commented prompt template into multiple lines
 # prompt = ChatPromptTemplate.from_template(
 #     """
-# Imagine you are a robot browsing the web, just like humans. Now you need to complete a task. In each iteration, you will receive an Observation that includes a screenshot of a webpage and some texts. This screenshot will
+# Imagine you are a robot browsing the web, just like humans. Now you need 
+# to complete a task. In each iteration, you will receive an Observation that
+# includes a screenshot of a webpage and some texts. This screenshot will
 # feature Numerical Labels placed in the TOP LEFT corner of each Web Element. Carefully analyze the visual
 # information to identify the Numerical Label corresponding to the Web Element that requires interaction, then follow
 # the guidelines and choose one of the following actions:

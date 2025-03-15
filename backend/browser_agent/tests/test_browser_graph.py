@@ -4,16 +4,16 @@ import asyncio
 import time
 import argparse
 
-from browser_graph.utils import get_browser, call_agent_backup, call_agent
+from browser_graph.utils import get_browser, call_agent
 
 
 def get_query_options():
     """Provide different test queries to choose from."""
     return {
         "xkcd": "Please explain today's XKCD comic for me. Why is it funny?",
-        "news": "Find and summarize the top 3 news stories about artificial intelligence today.",
+        "news": "Find and summarize the top 3 news stories about AI today.",
         "weather": "What's the current weather in San Francisco?",
-        "python": "Find the latest documentation about Python's asyncio module and explain how to use it.",
+        "python": "Find Python's asyncio documentation and explain its usage.",
         "paris": "What are the top 5 tourist attractions in Paris?",
         "simple": "What is the capital of France?"
     }
@@ -41,9 +41,9 @@ async def main():
     # Get the selected query
     selected_query = query_options[args.query]
 
-    print("\n" + "="*80)
-    print("BROWSER AGENT TEST".center(80))
-    print("="*80 + "\n")
+    print("\n" + "=" * 79)
+    print("BROWSER AGENT TEST".center(79))
+    print("=" * 79 + "\n")
 
     start_time = time.time()
 
@@ -62,13 +62,13 @@ async def main():
     elapsed = time.time() - start_time
 
     # Print summary
-    print("\n" + "="*80)
-    print("TEST SUMMARY".center(80))
-    print("="*80)
+    print("\n" + "=" * 79)
+    print("TEST SUMMARY".center(79))
+    print("=" * 79)
     print(f"Query: {selected_query}")
     print(f"Answer: {res}")
     print(f"Time taken: {elapsed:.2f} seconds")
-    print("="*80 + "\n")
+    print("=" * 79 + "\n")
 
     # Clean up
     await browser.close()

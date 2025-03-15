@@ -62,7 +62,9 @@ def print_step_info(step_num, action, action_input):
     print(f"{'='*70}\n")
 
 
-def save_debug_data(session_dir, step_num, img_data, url, action, action_input):
+def save_debug_data(
+    session_dir, step_num, img_data, url, action, action_input
+):
     """Save debug data including image and URL information."""
     # Save the image
     images_dir = session_dir / "images"
@@ -111,7 +113,9 @@ def save_debug_data(session_dir, step_num, img_data, url, action, action_input):
     return img_path
 
 
-def save_session_summary(session_dir, query, final_answer, steps, elapsed_time):
+def save_session_summary(
+    session_dir, query, final_answer, steps, elapsed_time
+):
     """Save a summary of the session for easy reference."""
     summary = {
         "query": query,
@@ -129,15 +133,15 @@ def save_session_summary(session_dir, query, final_answer, steps, elapsed_time):
     # Create a more human-readable version
     readable_path = session_dir / "README.md"
     with open(readable_path, "w") as f:
-        f.write(f"# Browser Agent Session\n\n")
+        f.write("# Browser Agent Session\n\n")
         f.write(f"## Query\n{query}\n\n")
         f.write(f"## Final Answer\n{final_answer}\n\n")
-        f.write(f"## Statistics\n")
+        f.write("## Statistics\n")
         f.write(f"- Steps: {len(steps)}\n")
         f.write(f"- Time: {elapsed_time:.2f} seconds\n")
         f.write(
             f"- Completed: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n\n")
-        f.write(f"## Steps\n\n")
+        f.write("## Steps\n\n")
         for i, step in enumerate(steps, 1):
             f.write(f"{i}. {step}\n")
 
