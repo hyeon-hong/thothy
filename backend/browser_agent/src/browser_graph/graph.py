@@ -13,7 +13,7 @@ from langchain_core.prompts import (
     PromptTemplate,
 )
 from langchain_core.prompts.image import ImagePromptTemplate
-from browser_graph.prompts import WEB_VOYAGER_PROMPT
+from browser_graph.prompts import SYSTEM_PROMPT, SYSTEM_PROMPT_TEXT_ONLY
 from browser_graph.states import AgentState
 from browser_graph.tools import mark_page
 from browser_graph.tools import click
@@ -23,16 +23,46 @@ from browser_graph.tools import wait
 from browser_graph.tools import go_back
 from browser_graph.tools import go_search_website
 from browser_graph.tools import crawl_website
+from browser_graph.utils import (
+    extract_information,
+    get_webarena_accessibility_tree
+)
 
 
 async def annotate(state):
-    marked_page = await mark_page.with_retry().ainvoke(state["page"])
-    return {**state, **marked_page}
+    """Annotate the page with visual markers or get accessibility tree"""
+    # Check if we're in text-only mode
+    text_only = state.get("text_only", False)
+    
+    if text_only:
+        # Use accessibility tree for text-only mode
+        accessibility_tree, obs_info = await get_webarena_accessibility_tree(
+            state["page"]
+        )
+        return {
+            **state, 
+            "accessibility_tree": accessibility_tree,
+            "accessibility_info": obs_info,
+            # For consistency with visual mode
+            "bboxes": obs_info  
+        }
+    else:
+        # Use visual annotation for standard mode
+        marked_page = await mark_page.with_retry().ainvoke(state["page"])
+        return {**state, **marked_page}
 
 
 def format_descriptions(state):
+    """Format element descriptions for the model prompt"""
+    # Handle text-only mode with accessibility tree
+    if state.get("text_only", False) and "accessibility_tree" in state:
+        return {
+            **state, 
+            "bbox_descriptions": state["accessibility_tree"]
+        }
+    
+    # Handle visual mode with bounding boxes  
     labels = []
-
     for i, bbox in enumerate(state["bboxes"]):
         text = bbox.get("ariaLabel") or ""
         if not text.strip():
@@ -40,7 +70,7 @@ def format_descriptions(state):
         el_type = bbox.get("type")
         labels.append(f'{i} (<{el_type}/>): "{text}"')
     bbox_descriptions = "\nValid Bounding Boxes:\n" + "\n".join(labels)
-
+    
     return {**state, "bbox_descriptions": bbox_descriptions}
 
 
@@ -60,68 +90,129 @@ def parse(text: str) -> dict:
         return {"action": "ANSWER", "args": [text.strip()]}
 
     action_str = action_block[len(action_prefix):]
-    split_output = action_str.split(" ", 1)
-    if len(split_output) == 1:
-        action, action_input = split_output[0], None
+    
+    # Use the extract_information function from utils.py
+    action_key, info = extract_information(action_str)
+    
+    # Handle case where extraction fails
+    if action_key is None:
+        # Default case for unrecognized actions
+        split_output = action_str.split(" ", 1)
+        if len(split_output) == 1:
+            action, action_input = split_output[0], None
+        else:
+            action, action_input = split_output
+        action = action.strip()
+        if action_input is not None:
+            action_input = [
+                inp.strip().strip("[]")
+                for inp in action_input.strip().split(";")
+            ]
+        return {"action": action, "args": action_input}
+    
+    # For click, wait, goback, google actions - info is a tuple
+    if action_key in ["click", "wait", "goback", "google"]:
+        # For these actions, info is a tuple of groups from regex match
+        if action_key == "google":
+            action_key = "Search"  # Map to Search tool
+        return {"action": action_key.capitalize(), "args": info}
     else:
-        action, action_input = split_output
-    action = action.strip()
-    if action_input is not None:
-        action_input = [
-            inp.strip().strip("[]")
-            for inp in action_input.strip().split(";")
-        ]
-    return {"action": action, "args": action_input}
+        # For type, scroll, answer actions - info is a dict
+        return {"action": action_key.capitalize(), "args": info}
 
 
-# Create system message component
-system_message = SystemMessagePromptTemplate(
-    prompt=PromptTemplate(
-        template=WEB_VOYAGER_PROMPT,
-        input_variables=[]
-    )
-)
-
-# Create scratchpad placeholder
-scratchpad_placeholder = MessagesPlaceholder(
-    variable_name='scratchpad',
-    optional=True
-)
-
-# Create human message component with image and text
-human_message = HumanMessagePromptTemplate(
-    prompt=[
-        ImagePromptTemplate(
-            input_variables=['img'],
-            template={'url': 'data:image/png;base64, {img}'}
-        ),
-        PromptTemplate(
-            input_variables=['bbox_descriptions'],
-            template='{bbox_descriptions}'
-        ),
-        PromptTemplate(
-            input_variables=['input'],
-            template='{input}'
+# Create a function to generate the appropriate prompt based on mode
+def create_prompt(text_only=False):
+    """Create the appropriate prompt template based on mode"""
+    # Select the appropriate system prompt
+    system_template = SYSTEM_PROMPT_TEXT_ONLY if text_only else SYSTEM_PROMPT
+    
+    # Create system message component
+    system_message = SystemMessagePromptTemplate(
+        prompt=PromptTemplate(
+            template=system_template,
+            input_variables=[]
         )
-    ]
-)
+    )
+    
+    # Create scratchpad placeholder
+    scratchpad_placeholder = MessagesPlaceholder(
+        variable_name='scratchpad',
+        optional=True
+    )
+    
+    # For text-only mode, we only need a text prompt
+    if text_only:
+        human_message = HumanMessagePromptTemplate(
+            prompt=PromptTemplate(
+                input_variables=['bbox_descriptions', 'input'],
+                template="{bbox_descriptions}\n\n{input}"
+            )
+        )
+    else:
+        # For visual mode, we need an image and text
+        human_message = HumanMessagePromptTemplate(
+            prompt=[
+                ImagePromptTemplate(
+                    input_variables=['img'],
+                    template={'url': 'data:image/png;base64, {img}'}
+                ),
+                PromptTemplate(
+                    input_variables=['bbox_descriptions'],
+                    template='{bbox_descriptions}'
+                ),
+                PromptTemplate(
+                    input_variables=['input'],
+                    template='{input}'
+                )
+            ]
+        )
+    
+    # Create the ChatPromptTemplate with all required parameters
+    if text_only:
+        return ChatPromptTemplate(
+            messages=[system_message, scratchpad_placeholder, human_message],
+            input_variables=['bbox_descriptions', 'input'],
+            optional_variables=['scratchpad'],
+            partial_variables={'scratchpad': []}
+        )
+    else:
+        return ChatPromptTemplate(
+            messages=[system_message, scratchpad_placeholder, human_message],
+            input_variables=['bbox_descriptions', 'img', 'input'],
+            optional_variables=['scratchpad'],
+            partial_variables={'scratchpad': []}
+        )
 
-# Create the ChatPromptTemplate with all required parameters
-prompt = ChatPromptTemplate(
-    messages=[system_message, scratchpad_placeholder, human_message],
-    input_variables=['bbox_descriptions', 'img', 'input'],
-    optional_variables=['scratchpad'],
-    partial_variables={'scratchpad': []}
-)
 
-llm = ChatOpenAI(model="gpt-4o", max_tokens=4096)
-agent = annotate | RunnablePassthrough.assign(
-    prediction=format_descriptions
-    | prompt  # Using the ChatPromptTemplate directly
-    | llm
-    | StrOutputParser()
-    | parse
-)
+def create_agent(text_only=False):
+    """Create the appropriate agent chain based on mode"""
+    # Create the appropriate prompt
+    prompt = create_prompt(text_only)
+    
+    # Create the language model
+    llm = ChatOpenAI(model="gpt-4o", max_tokens=4096)
+    
+    # Create and return the agent chain
+    return (
+        RunnableLambda(lambda state: {**state, "text_only": text_only}) 
+        | annotate 
+        | RunnablePassthrough.assign(
+            prediction=format_descriptions
+            | prompt
+            | llm
+            | StrOutputParser()
+            | parse
+        )
+    )
+
+
+# Create agents for both modes (default to visual mode)
+agent = create_agent(text_only=False)
+agent_text_only = create_agent(text_only=True)
+
+# We'll use the visual agent as the default
+default_agent = agent
 
 
 def update_scratchpad(state: AgentState):
@@ -146,12 +237,29 @@ def select_tool(state: AgentState):
     # is called to route the output to a tool or
     # to the end user.
     action = state["prediction"]["action"]
+    
+    # End the chain if an answer is provided
     if "ANSWER" in action:
         return END
+        
+    # Return to agent for retry
     if action == "retry":
         return "agent"
-
-    return action
+    
+    # Map the remaining actions to the appropriate tools
+    tool_map = {
+        "Click": "Click",
+        "Type": "Type",
+        "Scroll": "Scroll",
+        "Wait": "Wait",
+        "GoBack": "GoBack",
+        "Google": "Search",  # Map Google action to Search tool
+        "Search": "Search",  # Direct mapping
+        "Crawl": "Crawl"
+    }
+    
+    # Return the tool name if it exists, otherwise default to the action
+    return tool_map.get(action, action)
 
 
 def final_answer(state):
@@ -160,6 +268,11 @@ def final_answer(state):
         final_text = args[0] if args else ""
         return {**state, "final_answer": final_text}
     return state
+
+
+def select_agent(state):
+    """Select the appropriate agent based on text_only flag"""
+    return "agent_text_only" if state.get("text_only", False) else "agent"
 
 
 graph_builder = StateGraph(AgentState)
@@ -171,12 +284,13 @@ tools = {
     "Scroll": scroll,
     "Wait": wait,
     "GoBack": go_back,
-    "Search": go_search_website,
+    "Search": go_search_website,  # This corresponds to "Google" in run.py
     "Crawl": crawl_website,
 }
 
-# Add nodes
+# Add nodes for both agent types
 graph_builder.add_node("agent", agent)
+graph_builder.add_node("agent_text_only", agent_text_only)
 graph_builder.add_node("update_scratchpad", update_scratchpad)
 graph_builder.add_node("ANSWER", final_answer)
 
@@ -192,20 +306,19 @@ for node_name, tool in tools.items():
     )
 
 # Add edges
-# START -> agent
-# agent -> select_tool
-# select_tool -> various tools/ANSWER/END
-# tools -> update_scratchpad
-# update_scratchpad -> agent
-# ANSWER -> END
-graph_builder.add_edge(START, "agent")
+# First decide which agent to use
+graph_builder.add_conditional_edges(START, select_agent)
+
+# From each agent, route to tools based on prediction
 graph_builder.add_conditional_edges("agent", select_tool)
+graph_builder.add_conditional_edges("agent_text_only", select_tool)
 
 # Add tool-related edges
 for tool_name in tools:
     graph_builder.add_edge(tool_name, "update_scratchpad")
 
-graph_builder.add_edge("update_scratchpad", "agent")
+# After updating scratchpad, route back to the original agent
+graph_builder.add_edge("update_scratchpad", select_agent)
 graph_builder.add_edge("ANSWER", END)
 
 # Compile the graph
