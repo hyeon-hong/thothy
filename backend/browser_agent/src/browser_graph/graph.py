@@ -15,7 +15,7 @@ from browser_graph.tools import scroll
 from browser_graph.tools import wait
 from browser_graph.tools import go_back
 from browser_graph.tools import go_search_website
-from browser_graph.tools import crawl
+from browser_graph.tools import crawl_website
 
 
 async def annotate(state):
@@ -136,7 +136,8 @@ tools = {
     "Wait": wait,
     "GoBack": go_back,
     "Search": go_search_website,
-    "Crawl": crawl,
+    "Crawl": crawl_website,
+    "ANSWER": final_answer,
 }
 
 for node_name, tool in tools.items():

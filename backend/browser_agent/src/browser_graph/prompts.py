@@ -10,7 +10,8 @@ the guidelines and choose one of the following actions:
 4. Wait
 5. Go back
 7. Return to search website to start over.
-8. Respond with the final answer
+8. Crawl the current webpage.
+9. Respond with the final answer
 
 Correspondingly, Action should STRICTLY follow the format:
 
@@ -20,6 +21,7 @@ Correspondingly, Action should STRICTLY follow the format:
 - Wait
 - GoBack
 - Search
+- Crawl
 - ANSWER; [content]
 
 Key Guidelines You MUST follow:

@@ -97,7 +97,7 @@ async def go_search_website(state: AgentState):
     return "Navigated to search website."
 
 
-async def crawl(state: AgentState):
+async def crawl_website(state: AgentState):
     """Extract the main content from the current webpage.
 
     This function uses both Newspaper3k and Trafilatura libraries to extract
