@@ -1,4 +1,4 @@
-WEB_BROWSER_PROMPT = """
+WEB_VOYAGER_PROMPT = """
 Imagine you are a robot browsing the web, just like humans. Now you need to complete a task. In each iteration, you will receive an Observation that includes a screenshot of a webpage and some texts. This screenshot will
 feature Numerical Labels placed in the TOP LEFT corner of each Web Element. Carefully analyze the visual
 information to identify the Numerical Label corresponding to the Web Element that requires interaction, then follow

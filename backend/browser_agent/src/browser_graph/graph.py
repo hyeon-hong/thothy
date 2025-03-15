@@ -1,12 +1,12 @@
 from langgraph.graph import END, START, StateGraph
 from langchain_core.runnables import RunnableLambda
 import re
-from langchain import hub
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.runnables import RunnablePassthrough
 from langchain_core.messages import SystemMessage
 from langchain_openai import ChatOpenAI
 
+from browser_graph.prompts import WEB_VOYAGER_PROMPT
 from browser_graph.states import AgentState
 from browser_graph.tools import mark_page
 from browser_graph.tools import click
@@ -66,7 +66,7 @@ def parse(text: str) -> dict:
 
 # Will need a later version of langchain to pull
 # this image prompt template
-prompt = hub.pull("wfh/web-voyager")
+prompt = WEB_VOYAGER_PROMPT
 
 llm = ChatOpenAI(model="gpt-4o", max_tokens=4096)
 agent = annotate | RunnablePassthrough.assign(
@@ -96,7 +96,7 @@ def select_tool(state: AgentState):
     # to the end user.
     action = state["prediction"]["action"]
     if action == "ANSWER":
-        return "ANSWER"
+        return END
     if action == "retry":
         return "agent"
     return action
@@ -137,7 +137,6 @@ tools = {
     "GoBack": go_back,
     "Search": go_search_website,
     "Crawl": crawl_website,
-    "ANSWER": final_answer,
 }
 
 for node_name, tool in tools.items():
