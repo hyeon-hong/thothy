@@ -1,7 +1,7 @@
 from typing import List, Optional
 from typing_extensions import TypedDict
 
-from langchain_core.messages import BaseMessage, SystemMessage
+from langchain_core.messages import BaseMessage
 from playwright.async_api import Page
 
 

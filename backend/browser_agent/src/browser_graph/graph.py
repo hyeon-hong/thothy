@@ -7,14 +7,14 @@ from langchain_core.runnables import RunnablePassthrough
 from langchain_core.messages import SystemMessage
 from langchain_openai import ChatOpenAI
 
-from .states import AgentState
-from .tools import mark_page
-from .tools import click
-from .tools import type_text
-from .tools import scroll
-from .tools import wait
-from .tools import go_back
-from .tools import to_google
+from browser_graph.states import AgentState
+from browser_graph.tools import mark_page
+from browser_graph.tools import click
+from browser_graph.tools import type_text
+from browser_graph.tools import scroll
+from browser_graph.tools import wait
+from browser_graph.tools import go_back
+from browser_graph.tools import to_google
 
 
 async def annotate(state):
@@ -127,3 +127,5 @@ for node_name, tool in tools.items():
 graph_builder.add_conditional_edges("agent", select_tool)
 
 graph = graph_builder.compile()
+
+__all__ = ["graph"]

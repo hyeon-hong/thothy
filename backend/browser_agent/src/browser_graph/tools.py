@@ -3,7 +3,7 @@ import base64
 import asyncio
 import platform
 
-from backend.browser_agent.src.browser_graph.graph import AgentState
+from browser_graph.graph import AgentState
 
 
 async def click(state: AgentState):
@@ -99,7 +99,7 @@ async def to_google(state: AgentState):
 # Some javascript we will run on each step
 # to take a screenshot of the page, select the
 # elements to annotate, and add bounding boxes
-with open("mark_page.js") as f:
+with open("./mark_page.js") as f:
     mark_page_script = f.read()
 
 
