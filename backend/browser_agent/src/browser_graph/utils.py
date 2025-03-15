@@ -9,7 +9,7 @@ from datetime import datetime
 from pathlib import Path
 from playwright.async_api import async_playwright
 
-from backend.browser_agent.src.browser_graph.constants import SEARCH_WEBSITE
+from browser_graph.constants import SEARCH_WEBSITE
 from browser_graph.graph import graph
 
 

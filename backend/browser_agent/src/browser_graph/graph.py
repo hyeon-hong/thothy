@@ -5,8 +5,7 @@ from langchain_core.output_parsers import StrOutputParser
 from langchain_core.runnables import RunnablePassthrough
 from langchain_core.messages import SystemMessage
 from langchain_openai import ChatOpenAI
-
-from browser_graph.prompts import WEB_VOYAGER_PROMPT
+from langchain import hub
 from browser_graph.states import AgentState
 from browser_graph.tools import mark_page
 from browser_graph.tools import click
@@ -64,13 +63,18 @@ def parse(text: str) -> dict:
     return {"action": action, "args": action_input}
 
 
-# Will need a later version of langchain to pull
-# this image prompt template
-prompt = WEB_VOYAGER_PROMPT
+# Pull the prompt template directly from the hub
+# This returns a ChatPromptTemplate object
+prompt = hub.pull("wfh/web-voyager")
+
 
 llm = ChatOpenAI(model="gpt-4o", max_tokens=4096)
 agent = annotate | RunnablePassthrough.assign(
-    prediction=format_descriptions | prompt | llm | StrOutputParser() | parse
+    prediction=format_descriptions
+    | prompt  # Using the ChatPromptTemplate directly
+    | llm
+    | StrOutputParser()
+    | parse
 )
 
 
@@ -112,23 +116,7 @@ def final_answer(state):
 
 graph_builder = StateGraph(AgentState)
 
-# Add nodes
-graph_builder.add_node("agent", agent)
-graph_builder.add_node("update_scratchpad", update_scratchpad)
-graph_builder.add_node("ANSWER", final_answer)
-
-# Add edges
-# START -> agent
-# agent -> select_tool
-# select_tool -> update_scratchpad
-# update_scratchpad -> agent
-# agent -> ANSWER
-# ANSWER -> END
-graph_builder.add_edge(START, "agent")
-graph_builder.add_conditional_edges("agent", select_tool)
-graph_builder.add_edge("update_scratchpad", "agent")
-graph_builder.add_edge("ANSWER", END)
-
+# Define tools
 tools = {
     "Click": click,
     "Type": type_text,
@@ -139,6 +127,12 @@ tools = {
     "Crawl": crawl_website,
 }
 
+# Add nodes
+graph_builder.add_node("agent", agent)
+graph_builder.add_node("update_scratchpad", update_scratchpad)
+graph_builder.add_node("ANSWER", final_answer)
+
+# Add tool nodes
 for node_name, tool in tools.items():
     graph_builder.add_node(
         node_name,
@@ -148,8 +142,23 @@ for node_name, tool in tools.items():
         RunnableLambda(tool) | (lambda observation: {
             "observation": observation}),
     )
-    # Always return to the agent (by means of the update-scratchpad node)
-    graph_builder.add_edge(node_name, "update_scratchpad")
+
+# Add edges
+# START -> agent
+# agent -> select_tool
+# select_tool -> various tools/ANSWER/END
+# tools -> update_scratchpad
+# update_scratchpad -> agent
+# ANSWER -> END
+graph_builder.add_edge(START, "agent")
+graph_builder.add_conditional_edges("agent", select_tool)
+
+# Add tool-related edges
+for tool_name in tools:
+    graph_builder.add_edge(tool_name, "update_scratchpad")
+
+graph_builder.add_edge("update_scratchpad", "agent")
+graph_builder.add_edge("ANSWER", END)
 
 # Compile the graph
 graph = graph_builder.compile()
