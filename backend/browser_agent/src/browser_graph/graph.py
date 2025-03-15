@@ -1,6 +1,7 @@
 from langgraph.graph import END, START, StateGraph
 from langchain_core.runnables import RunnableLambda
 import re
+import base64
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.runnables import RunnablePassthrough
 from langchain_core.messages import SystemMessage
@@ -15,7 +16,6 @@ from langchain_core.prompts import (
 from langchain_core.prompts.image import ImagePromptTemplate
 from browser_graph.prompts import SYSTEM_PROMPT, SYSTEM_PROMPT_TEXT_ONLY
 from browser_graph.states import AgentState
-from browser_graph.tools import mark_page
 from browser_graph.tools import click
 from browser_graph.tools import type_text  # noqa: E501
 from browser_graph.tools import scroll
@@ -25,7 +25,8 @@ from browser_graph.tools import go_search_website
 from browser_graph.tools import crawl_website
 from browser_graph.utils import (
     extract_information,
-    get_webarena_accessibility_tree
+    get_webarena_accessibility_tree,
+    get_web_element_rect
 )
 
 
@@ -48,8 +49,22 @@ async def annotate(state):
         }
     else:
         # Use visual annotation for standard mode
-        marked_page = await mark_page.with_retry().ainvoke(state["page"])
-        return {**state, **marked_page}
+        # Take a screenshot of the page
+        screenshot = await state["page"].screenshot()
+        img_base64 = base64.b64encode(screenshot).decode()
+        
+        # Use get_web_element_rect to mark elements on the page
+        rects, web_elements, web_elements_text = get_web_element_rect(
+            state["page"], fix_color=True
+        )
+        
+        # Return the updated state
+        return {
+            **state,
+            "img": img_base64,
+            "bboxes": web_elements,
+            "web_elements_text": web_elements_text
+        }
 
 
 def format_descriptions(state):
@@ -62,6 +77,14 @@ def format_descriptions(state):
         }
 
     # Handle visual mode with bounding boxes
+    # Use web_elements_text if available (when using get_web_element_rect)
+    if "web_elements_text" in state:
+        return {
+            **state,
+            "bbox_descriptions": state["web_elements_text"]
+        }
+    
+    # Fallback to the original processing for compatibility
     labels = []
     for i, bbox in enumerate(state["bboxes"]):
         text = bbox.get("ariaLabel") or ""

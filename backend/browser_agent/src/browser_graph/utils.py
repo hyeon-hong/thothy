@@ -175,7 +175,7 @@ async def call_agent(question: str, page, max_steps: int = 150):
             "session_start": datetime.now().isoformat(),
             "query": question
         }) + "\n")
-    
+
     # Import graph locally to avoid circular imports
     from browser_graph.graph import graph
 
@@ -265,49 +265,6 @@ async def call_agent(question: str, page, max_steps: int = 150):
     print("\n🏁 BROWSER AGENT COMPLETED")
     print(f"✅ FINAL ANSWER: {final_answer}")
     print(f"📁 Complete session data saved to: {session_dir}")
-
-    return final_answer
-
-
-async def call_agent_backup(question: str, page, max_steps: int = 150):
-    """Call the agent and return the final answer."""
-    
-    # Import graph locally to avoid circular imports
-    from browser_graph.graph import graph
-
-    event_stream = graph.astream(
-        {
-            "page": page,
-            "input": question,
-            "scratchpad": [],
-        },
-        {
-            "recursion_limit": max_steps,
-        },
-    )
-
-    final_answer = None
-    steps = []
-
-    async for event in event_stream:
-        """We'll display an event stream here"""
-
-        if "agent" not in event:
-            continue
-
-        pred = event["agent"].get("prediction") or {}
-        action = pred.get("action")
-        action_input = pred.get("args")
-
-        display.clear_output(wait=False)
-
-        steps.append(f"{len(steps) + 1}. {action}: {action_input}")
-        print("\n".join(steps))
-        display.display(display.Image(base64.b64decode(event["agent"]["img"])))
-
-        if "ANSWER" in action:
-            final_answer = action_input[0]
-            break
 
     return final_answer
 
