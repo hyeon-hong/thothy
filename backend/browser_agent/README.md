@@ -1,27 +1,26 @@
 # Browser Agent
 
-A vision-enabled web-browsing agent capable of controlling the mouse and keyboard, based on the Web Voyager architecture.
+An autonomous web browsing agent built with LangGraph, Playwright, and LLMs.
 
-## Description
+## Overview
 
-This agent works by viewing annotated browser screenshots for each turn, then choosing the next step to take. It uses a basic reasoning and action (ReAct) loop architecture with these unique aspects:
+This browser agent can:
+- Navigate web pages autonomously
+- Search and find information
+- Click on elements 
+- Type text into forms
+- Scroll through content
+- Answer questions based on what it discovers
 
-- Utilizes Set-of-Marks image annotations to serve as UI affordances for the agent
-- Controls both mouse and keyboard in the browser
-- Uses Playwright for browser automation
+## Installation
 
-## Setup
-
-### Requirements
-
-1. Python 3.12 or higher
-2. Install the required dependencies:
+First, make sure you have the required dependencies:
 
 ```bash
 pip install -e .
 ```
 
-3. Install Playwright browsers:
+The browser agent requires Playwright, which must be installed separately:
 
 ```bash
 playwright install
@@ -29,24 +28,71 @@ playwright install
 
 ## Usage
 
-The browser agent can be invoked through the LangGraph framework:
+You can run the browser agent with:
 
-```python
-from browser_graph.graph import configure_and_get_graph
-
-# Configure the graph with optional parameters
-graph = configure_and_get_graph()
-
-# Execute the graph with an initial task
-result = graph.invoke({
-    "task": "Search for the latest news on AI and summarize the top 3 results",
-    "url": "https://www.google.com"
-})
+```bash
+python tests/test_browser_graph.py --query xkcd
 ```
 
-## Features
+The `--query` parameter accepts several predefined query types:
 
-- Browser initialization and control
-- Screenshot capture and annotation
-- Mouse and keyboard interaction
-- Web navigation and task execution 
+- `xkcd`: Explains today's XKCD comic
+- `news`: Summarizes top AI news stories
+- `weather`: Shows weather in San Francisco
+- `python`: Finds documentation for Python's asyncio
+- `paris`: Lists tourist attractions in Paris
+- `simple`: Answers a simple question (capital of France)
+
+## Debugging Features
+
+The browser agent includes comprehensive debugging features:
+
+### Session Directories
+
+Each run creates a unique session directory under `outputs/` with the following structure:
+
+```
+outputs/
+└── 20250315_123456_a1b2c3d4/
+    ├── README.md                 # Human-readable session summary
+    ├── session_summary.json      # JSON summary of the session
+    ├── session_log.jsonl         # Line-by-line log of all events
+    ├── step_001_data.json        # Metadata for each step
+    ├── step_002_data.json
+    └── images/
+        ├── step_001.png          # Screenshot of each step
+        ├── step_002.png
+        └── ...
+```
+
+### Captured Data
+
+For each step, the agent captures:
+- Screenshot of the page
+- Current URL
+- Action performed
+- Input values
+- Timestamp
+
+### Viewing Results
+
+After running a test, you'll see a summary in the terminal and a message showing where the full debug data was saved:
+
+```
+🏁 BROWSER AGENT COMPLETED
+✅ FINAL ANSWER: The capital of France is Paris.
+📁 Complete session data saved to: outputs/20250315_123456_a1b2c3d4
+```
+
+You can open the `README.md` file in the session directory for a human-readable summary.
+
+## Development
+
+To modify the agent's behavior, you can edit:
+- `src/browser_graph/graph.py`: The LangGraph definition
+- `src/browser_graph/tools.py`: Web interaction tools
+- `src/browser_graph/states.py`: State definitions
+
+## License
+
+This project is licensed under the MIT License - see the LICENSE file for details. 

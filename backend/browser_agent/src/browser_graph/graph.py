@@ -36,9 +36,18 @@ def format_descriptions(state):
 
 def parse(text: str) -> dict:
     action_prefix = "Action: "
-    if not text.strip().split("\n")[-1].startswith(action_prefix):
-        return {"action": "retry", "args": f"Could not parse LLM Output: {text}"}
-    action_block = text.strip().split("\n")[-1]
+
+    # Check if the last line is an action
+    lines = text.strip().split("\n")
+    last_line = lines[-1] if lines else ""
+
+    # Try to find an explicit action in the last few lines
+    if last_line.startswith(action_prefix):
+        action_block = last_line
+    else:
+        # If no action format is found, but there's meaningful content,
+        # interpret it as an answer
+        return {"action": "ANSWER", "args": [text.strip()]}
 
     action_str = action_block[len(action_prefix):]
     split_output = action_str.split(" ", 1)
@@ -58,7 +67,7 @@ def parse(text: str) -> dict:
 # this image prompt template
 prompt = hub.pull("wfh/web-voyager")
 
-llm = ChatOpenAI(model="gpt-4-vision-preview", max_tokens=4096)
+llm = ChatOpenAI(model="gpt-4o", max_tokens=4096)
 agent = annotate | RunnablePassthrough.assign(
     prediction=format_descriptions | prompt | llm | StrOutputParser() | parse
 )
@@ -86,7 +95,7 @@ def select_tool(state: AgentState):
     # to the end user.
     action = state["prediction"]["action"]
     if action == "ANSWER":
-        return END
+        return "ANSWER"
     if action == "retry":
         return "agent"
     return action
@@ -100,6 +109,22 @@ graph_builder.add_edge(START, "agent")
 
 graph_builder.add_node("update_scratchpad", update_scratchpad)
 graph_builder.add_edge("update_scratchpad", "agent")
+
+# Add the ANSWER node to handle final responses
+
+
+def final_answer(state):
+    # This function passes through the final state when the agent answers
+    # You can add additional processing for the final answer here if needed
+    if "prediction" in state and "args" in state["prediction"]:
+        args = state["prediction"]["args"]
+        final_text = args[0] if args else ""
+        return {**state, "final_answer": final_text}
+    return state
+
+
+graph_builder.add_node("ANSWER", final_answer)
+graph_builder.add_edge("ANSWER", END)
 
 tools = {
     "Click": click,
