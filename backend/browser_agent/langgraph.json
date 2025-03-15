@@ -1,0 +1,8 @@
+{
+  "name": "browser_agent",
+  "description": "A vision-enabled web-browsing agent capable of controlling the mouse and keyboard",
+  "graph_config": {
+    "entry_point": "thothy.browser_graph.graph:configure_and_get_graph",
+    "extra_imports": ["langgraph", "langchain", "langchain-openai"]
+  }
+} 
