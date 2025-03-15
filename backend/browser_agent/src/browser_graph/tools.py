@@ -4,6 +4,7 @@ import asyncio
 import platform
 
 from browser_graph.graph import AgentState
+from browser_graph.constants import SEARCH_WEBSITE
 
 
 async def click(state: AgentState):
@@ -90,10 +91,10 @@ async def go_back(state: AgentState):
     return f"Navigated back a page to {page.url}."
 
 
-async def to_google(state: AgentState):
+async def go_search_website(state: AgentState):
     page = state["page"]
-    await page.goto("https://www.google.com/")
-    return "Navigated to google.com."
+    await page.goto(SEARCH_WEBSITE)
+    return "Navigated to search website."
 
 
 async def crawl(state: AgentState):

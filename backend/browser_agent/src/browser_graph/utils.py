@@ -9,6 +9,7 @@ from datetime import datetime
 from pathlib import Path
 from playwright.async_api import async_playwright
 
+from backend.browser_agent.src.browser_graph.constants import SEARCH_WEBSITE
 from browser_graph.graph import graph
 
 
@@ -17,19 +18,19 @@ def create_session_dir():
     # Create a unique session ID with timestamp
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     session_id = f"{timestamp}_{uuid.uuid4().hex[:8]}"
-    
+
     # Create main outputs directory if it doesn't exist
     outputs_dir = Path("outputs")
     outputs_dir.mkdir(exist_ok=True)
-    
+
     # Create session directory
     session_dir = outputs_dir / session_id
     session_dir.mkdir(exist_ok=True)
-    
+
     # Create subdirectories for organization
     images_dir = session_dir / "images"
     images_dir.mkdir(exist_ok=True)
-    
+
     return session_dir
 
 
@@ -38,10 +39,7 @@ async def get_browser():
     # We will set headless=False so we can watch the agent navigate the web.
     browser = await browser.chromium.launch(headless=False, args=None)
     page = await browser.new_page()
-    # _ = await page.goto("https://www.google.com")
-    # _ = await page.goto("https://duckduckgo.com/")
-    # _ = await page.goto("https://www.bing.com/")
-    _ = await page.goto("https://search.aol.com/")
+    _ = await page.goto(SEARCH_WEBSITE)
     return browser, page
 
 
@@ -67,16 +65,16 @@ def save_debug_data(session_dir, step_num, img_data, url, action, action_input):
     # Save the image
     images_dir = session_dir / "images"
     img_path = images_dir / f"step_{step_num:03d}.png"
-    
+
     with open(img_path, "wb") as f:
         f.write(base64.b64decode(img_data))
-    
+
     # Convert URL to string if it's a Page object
     if hasattr(url, '__class__') and url.__class__.__name__ == 'Page':
         url_str = str(url)
     else:
         url_str = url
-    
+
     # Handle action_input to make it JSON serializable
     serializable_action_input = action_input
     try:
@@ -85,7 +83,7 @@ def save_debug_data(session_dir, step_num, img_data, url, action, action_input):
     except (TypeError, OverflowError):
         # If not serializable, convert to string
         serializable_action_input = str(action_input)
-    
+
     # Save step metadata including URL and action
     step_data = {
         "step": step_num,
@@ -95,19 +93,19 @@ def save_debug_data(session_dir, step_num, img_data, url, action, action_input):
         "timestamp": datetime.now().isoformat(),
         "image_path": str(img_path)
     }
-    
+
     # Save step metadata to JSON file
     metadata_path = session_dir / f"step_{step_num:03d}_data.json"
     with open(metadata_path, "w") as f:
         json.dump(step_data, f, indent=2)
-    
+
     # Also update the session log file with this step
     session_log_path = session_dir / "session_log.jsonl"
     with open(session_log_path, "a") as f:
         f.write(json.dumps(step_data) + "\n")
-    
+
     print(f"[Debug data saved to {session_dir}]")
-    
+
     return img_path
 
 
@@ -121,11 +119,11 @@ def save_session_summary(session_dir, query, final_answer, steps, elapsed_time):
         "elapsed_time_seconds": elapsed_time,
         "completed_at": datetime.now().isoformat()
     }
-    
+
     summary_path = session_dir / "session_summary.json"
     with open(summary_path, "w") as f:
         json.dump(summary, f, indent=2)
-    
+
     # Create a more human-readable version
     readable_path = session_dir / "README.md"
     with open(readable_path, "w") as f:
@@ -135,21 +133,22 @@ def save_session_summary(session_dir, query, final_answer, steps, elapsed_time):
         f.write(f"## Statistics\n")
         f.write(f"- Steps: {len(steps)}\n")
         f.write(f"- Time: {elapsed_time:.2f} seconds\n")
-        f.write(f"- Completed: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n\n")
+        f.write(
+            f"- Completed: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n\n")
         f.write(f"## Steps\n\n")
         for i, step in enumerate(steps, 1):
             f.write(f"{i}. {step}\n")
-    
+
     print(f"[Session summary saved to {summary_path}]")
 
 
 async def call_agent(question: str, page, max_steps: int = 150):
     # Create a unique session directory for this run
     session_dir = create_session_dir()
-    
+
     # Start time for tracking
     start_time = time.time()
-    
+
     # Initialize the session log file
     session_log_path = session_dir / "session_log.jsonl"
     with open(session_log_path, "w") as f:
@@ -157,7 +156,7 @@ async def call_agent(question: str, page, max_steps: int = 150):
             "session_start": datetime.now().isoformat(),
             "query": question
         }) + "\n")
-    
+
     event_stream = graph.astream(
         {
             "page": page,
@@ -202,12 +201,12 @@ async def call_agent(question: str, page, max_steps: int = 150):
         # Store and print all steps so far
         step_description = f"{len(steps) + 1}. {action}: {action_input}"
         steps.append(step_description)
-        
+
         print("STEPS SO FAR:")
         for i, step in enumerate(steps, 1):
             print(f"  {step}")
         print("\n")
-        
+
         # Print URL information
         print(f"CURRENT URL: {current_url}")
 
@@ -217,8 +216,8 @@ async def call_agent(question: str, page, max_steps: int = 150):
         # Save debug data (image and URL)
         if "img" in event["agent"]:
             saved_path = save_debug_data(
-                session_dir, 
-                step_num, 
+                session_dir,
+                step_num,
                 event["agent"]["img"],
                 current_url,
                 action,
@@ -233,7 +232,7 @@ async def call_agent(question: str, page, max_steps: int = 150):
 
     # Calculate elapsed time
     elapsed_time = time.time() - start_time
-    
+
     # Save session summary
     save_session_summary(
         session_dir,

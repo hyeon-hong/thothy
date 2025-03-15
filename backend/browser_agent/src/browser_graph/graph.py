@@ -14,7 +14,7 @@ from browser_graph.tools import type_text
 from browser_graph.tools import scroll
 from browser_graph.tools import wait
 from browser_graph.tools import go_back
-from browser_graph.tools import to_google
+from browser_graph.tools import go_search_website
 from browser_graph.tools import crawl
 
 
@@ -118,7 +118,14 @@ graph_builder.add_node("update_scratchpad", update_scratchpad)
 graph_builder.add_node("ANSWER", final_answer)
 
 # Add edges
+# START -> agent
+# agent -> select_tool
+# select_tool -> update_scratchpad
+# update_scratchpad -> agent
+# agent -> ANSWER
+# ANSWER -> END
 graph_builder.add_edge(START, "agent")
+graph_builder.add_conditional_edges("agent", select_tool)
 graph_builder.add_edge("update_scratchpad", "agent")
 graph_builder.add_edge("ANSWER", END)
 
@@ -128,7 +135,7 @@ tools = {
     "Scroll": scroll,
     "Wait": wait,
     "GoBack": go_back,
-    "Google": to_google,
+    "Search": go_search_website,
     "Crawl": crawl,
 }
 
@@ -143,9 +150,6 @@ for node_name, tool in tools.items():
     )
     # Always return to the agent (by means of the update-scratchpad node)
     graph_builder.add_edge(node_name, "update_scratchpad")
-
-# Add conditional edges
-graph_builder.add_conditional_edges("agent", select_tool)
 
 # Compile the graph
 graph = graph_builder.compile()
