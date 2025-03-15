@@ -39,7 +39,9 @@ async def get_browser():
     browser = await browser.chromium.launch(headless=False, args=None)
     page = await browser.new_page()
     # _ = await page.goto("https://www.google.com")
-    _ = await page.goto("https://duckduckgo.com/")
+    # _ = await page.goto("https://duckduckgo.com/")
+    # _ = await page.goto("https://www.bing.com/")
+    _ = await page.goto("https://search.aol.com/")
     return browser, page
 
 

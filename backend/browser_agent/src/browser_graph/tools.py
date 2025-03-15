@@ -96,6 +96,146 @@ async def to_google(state: AgentState):
     return "Navigated to google.com."
 
 
+async def extract_content(state: AgentState):
+    """Extract the main content from the current webpage.
+    
+    This function uses both Newspaper3k and Trafilatura libraries to extract
+    the main content, title, authors, publish date, and other relevant 
+    information from the current webpage. It tries both libraries and returns
+    the best result.
+    
+    Returns:
+        str: A summary of the extracted content or an error message.
+    """
+    import importlib.util
+    import subprocess
+    import sys
+    import json
+    
+    page = state["page"]
+    
+    # Check and install required packages if necessary
+    required_packages = ['newspaper3k', 'trafilatura']
+    for package in required_packages:
+        if importlib.util.find_spec(package) is None:
+            try:
+                subprocess.check_call([
+                    sys.executable, "-m", "pip", "install", package
+                ])
+                print(f"Installed {package} successfully.")
+            except subprocess.CalledProcessError:
+                error_msg = f"Failed to install {package}. Cannot extract content."
+                return error_msg
+    
+    # Now import the libraries (after ensuring they're installed)
+    import newspaper
+    import trafilatura
+    
+    # Get the current URL and HTML content
+    current_url = await page.url()
+    html_content = await page.content()
+    
+    result = {
+        "title": "",
+        "authors": [],
+        "publish_date": "",
+        "text": "",
+        "summary": "",
+        "keywords": [],
+        "source": "Unknown"
+    }
+    
+    # Try Newspaper3k first (good for news articles)
+    try:
+        article = newspaper.Article(current_url)
+        article.set_html(html_content)
+        article.parse()
+        # This provides summary and keywords but might take time
+        article.nlp()
+        
+        if article.title:
+            result["title"] = article.title
+        if article.authors:
+            result["authors"] = article.authors
+        if article.publish_date:
+            result["publish_date"] = article.publish_date.strftime("%Y-%m-%d")
+        if article.text:
+            result["text"] = article.text
+        if article.summary:
+            result["summary"] = article.summary
+        if article.keywords:
+            result["keywords"] = article.keywords
+        result["source"] = "Newspaper3k"
+    except Exception as e:
+        print(f"Newspaper3k extraction failed: {str(e)}")
+    
+    # If Newspaper3k didn't get good content, try Trafilatura
+    if not result["text"] or len(result["text"]) < 100:
+        try:
+            extracted = trafilatura.extract(
+                html_content,
+                output_format='json',
+                include_comments=False,
+                include_links=True,
+                include_images=False,
+                include_tables=False,
+                with_metadata=True
+            )
+            
+            if extracted:
+                extracted_json = json.loads(extracted)
+                if extracted_json.get("title") and not result["title"]:
+                    result["title"] = extracted_json["title"]
+                if extracted_json.get("author") and not result["authors"]:
+                    result["authors"] = [extracted_json["author"]]
+                if extracted_json.get("date") and not result["publish_date"]:
+                    result["publish_date"] = extracted_json["date"]
+                if extracted_json.get("text"):
+                    result["text"] = extracted_json["text"]
+                    # Generate a summary if Newspaper didn't provide one
+                    if not result["summary"]:
+                        # Use the first few sentences as a summary
+                        sentences = result["text"].split(". ")
+                        summary = ". ".join(
+                            sentences[:min(5, len(sentences))]
+                        )
+                        # Add period if needed
+                        if not result["text"].endswith("."):
+                            summary += "."
+                        result["summary"] = summary
+                result["source"] = "Trafilatura"
+        except Exception as e:
+            print(f"Trafilatura extraction failed: {str(e)}")
+    
+    # Check if we successfully extracted content
+    if not result["text"]:
+        return "Failed to extract content from this page."
+    
+    # Format the output for the agent
+    output = []
+    output.append(f"TITLE: {result['title']}")
+    if result["authors"]:
+        output.append(f"AUTHORS: {', '.join(result['authors'])}")
+    if result["publish_date"]:
+        output.append(f"DATE: {result['publish_date']}")
+    if result["keywords"]:
+        output.append(f"KEYWORDS: {', '.join(result['keywords'])}")
+    output.append("")
+    if result["summary"]:
+        output.append("SUMMARY:")
+        output.append(result["summary"])
+        output.append("")
+    output.append("FULL TEXT:")
+    # Only include first portion of the text if it's very long
+    text_to_include = result["text"]
+    if len(text_to_include) > 2000:
+        truncated_text = text_to_include[:2000] + "... (content truncated)"
+        text_to_include = truncated_text
+    output.append(text_to_include)
+    
+    return "\n".join(output)
+
+
 # Some javascript we will run on each step
 # to take a screenshot of the page, select the
 # elements to annotate, and add bounding boxes
