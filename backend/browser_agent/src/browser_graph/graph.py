@@ -33,18 +33,18 @@ async def annotate(state):
     """Annotate the page with visual markers or get accessibility tree"""
     # Check if we're in text-only mode
     text_only = state.get("text_only", False)
-    
+
     if text_only:
         # Use accessibility tree for text-only mode
         accessibility_tree, obs_info = await get_webarena_accessibility_tree(
             state["page"]
         )
         return {
-            **state, 
+            **state,
             "accessibility_tree": accessibility_tree,
             "accessibility_info": obs_info,
             # For consistency with visual mode
-            "bboxes": obs_info  
+            "bboxes": obs_info
         }
     else:
         # Use visual annotation for standard mode
@@ -57,11 +57,11 @@ def format_descriptions(state):
     # Handle text-only mode with accessibility tree
     if state.get("text_only", False) and "accessibility_tree" in state:
         return {
-            **state, 
+            **state,
             "bbox_descriptions": state["accessibility_tree"]
         }
-    
-    # Handle visual mode with bounding boxes  
+
+    # Handle visual mode with bounding boxes
     labels = []
     for i, bbox in enumerate(state["bboxes"]):
         text = bbox.get("ariaLabel") or ""
@@ -70,7 +70,7 @@ def format_descriptions(state):
         el_type = bbox.get("type")
         labels.append(f'{i} (<{el_type}/>): "{text}"')
     bbox_descriptions = "\nValid Bounding Boxes:\n" + "\n".join(labels)
-    
+
     return {**state, "bbox_descriptions": bbox_descriptions}
 
 
@@ -90,10 +90,10 @@ def parse(text: str) -> dict:
         return {"action": "ANSWER", "args": [text.strip()]}
 
     action_str = action_block[len(action_prefix):]
-    
+
     # Use the extract_information function from utils.py
     action_key, info = extract_information(action_str)
-    
+
     # Handle case where extraction fails
     if action_key is None:
         # Default case for unrecognized actions
@@ -109,7 +109,7 @@ def parse(text: str) -> dict:
                 for inp in action_input.strip().split(";")
             ]
         return {"action": action, "args": action_input}
-    
+
     # For click, wait, goback, google actions - info is a tuple
     if action_key in ["click", "wait", "goback", "google"]:
         # For these actions, info is a tuple of groups from regex match
@@ -126,7 +126,7 @@ def create_prompt(text_only=False):
     """Create the appropriate prompt template based on mode"""
     # Select the appropriate system prompt
     system_template = SYSTEM_PROMPT_TEXT_ONLY if text_only else SYSTEM_PROMPT
-    
+
     # Create system message component
     system_message = SystemMessagePromptTemplate(
         prompt=PromptTemplate(
@@ -134,13 +134,13 @@ def create_prompt(text_only=False):
             input_variables=[]
         )
     )
-    
+
     # Create scratchpad placeholder
     scratchpad_placeholder = MessagesPlaceholder(
         variable_name='scratchpad',
         optional=True
     )
-    
+
     # For text-only mode, we only need a text prompt
     if text_only:
         human_message = HumanMessagePromptTemplate(
@@ -167,7 +167,7 @@ def create_prompt(text_only=False):
                 )
             ]
         )
-    
+
     # Create the ChatPromptTemplate with all required parameters
     if text_only:
         return ChatPromptTemplate(
@@ -189,14 +189,14 @@ def create_agent(text_only=False):
     """Create the appropriate agent chain based on mode"""
     # Create the appropriate prompt
     prompt = create_prompt(text_only)
-    
+
     # Create the language model
     llm = ChatOpenAI(model="gpt-4o", max_tokens=4096)
-    
+
     # Create and return the agent chain
     return (
-        RunnableLambda(lambda state: {**state, "text_only": text_only}) 
-        | annotate 
+        RunnableLambda(lambda state: {**state, "text_only": text_only})
+        | annotate
         | RunnablePassthrough.assign(
             prediction=format_descriptions
             | prompt
@@ -237,15 +237,15 @@ def select_tool(state: AgentState):
     # is called to route the output to a tool or
     # to the end user.
     action = state["prediction"]["action"]
-    
+
     # End the chain if an answer is provided
     if "ANSWER" in action:
         return END
-        
+
     # Return to agent for retry
     if action == "retry":
         return "agent"
-    
+
     # Map the remaining actions to the appropriate tools
     tool_map = {
         "Click": "Click",
@@ -257,7 +257,7 @@ def select_tool(state: AgentState):
         "Search": "Search",  # Direct mapping
         "Crawl": "Crawl"
     }
-    
+
     # Return the tool name if it exists, otherwise default to the action
     return tool_map.get(action, action)
 
@@ -306,8 +306,13 @@ for node_name, tool in tools.items():
     )
 
 # Add edges
-# First decide which agent to use
-graph_builder.add_conditional_edges(START, select_agent)
+# First decide which agent to use based on text_only flag
+graph_builder.add_conditional_edges(
+    START,
+    lambda state: (
+        "agent_text_only" if state.get("text_only", False) else "agent"
+    )
+)
 
 # From each agent, route to tools based on prediction
 graph_builder.add_conditional_edges("agent", select_tool)
@@ -318,7 +323,12 @@ for tool_name in tools:
     graph_builder.add_edge(tool_name, "update_scratchpad")
 
 # After updating scratchpad, route back to the original agent
-graph_builder.add_edge("update_scratchpad", select_agent)
+graph_builder.add_conditional_edges(
+    "update_scratchpad",
+    lambda state: (
+        "agent_text_only" if state.get("text_only", False) else "agent"
+    )
+)
 graph_builder.add_edge("ANSWER", END)
 
 # Compile the graph

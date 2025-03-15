@@ -1,7 +1,5 @@
 """Utility functions for browser agent."""
 
-from utils_webarena import fetch_browser_info, fetch_page_accessibility_tree, \
-    parse_accessibility_tree, clean_accesibility_tree
 from PIL import Image
 import numpy as np
 import logging
@@ -18,7 +16,14 @@ from IPython import display
 
 
 from browser_graph.constants import SEARCH_WEBSITE
-from browser_graph.graph import graph
+# Removing the circular import - will import locally when needed
+# from browser_graph.graph import graph
+from browser_graph.utils_webarena import (
+    fetch_browser_info,
+    fetch_page_accessibility_tree,
+    parse_accessibility_tree,
+    clean_accesibility_tree
+)
 
 
 def create_session_dir():
@@ -170,6 +175,9 @@ async def call_agent(question: str, page, max_steps: int = 150):
             "session_start": datetime.now().isoformat(),
             "query": question
         }) + "\n")
+    
+    # Import graph locally to avoid circular imports
+    from browser_graph.graph import graph
 
     event_stream = graph.astream(
         {
@@ -263,6 +271,9 @@ async def call_agent(question: str, page, max_steps: int = 150):
 
 async def call_agent_backup(question: str, page, max_steps: int = 150):
     """Call the agent and return the final answer."""
+    
+    # Import graph locally to avoid circular imports
+    from browser_graph.graph import graph
 
     event_stream = graph.astream(
         {
