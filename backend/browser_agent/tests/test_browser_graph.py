@@ -3,7 +3,8 @@
 import asyncio
 import time
 import argparse
-from browser_graph.utils import get_browser, call_agent
+
+from browser_graph.utils import get_browser, call_agent_backup, call_agent
 
 
 def get_query_options():
@@ -21,24 +22,25 @@ def get_query_options():
 async def main():
     """Run a test search query with the browser agent."""
     # Parse command line arguments
-    parser = argparse.ArgumentParser(description="Test the browser agent with different queries")
-    
+    parser = argparse.ArgumentParser(
+        description="Test the browser agent with different queries")
+
     # Add list of query options
     query_options = get_query_options()
     query_choices = list(query_options.keys())
-    
+
     parser.add_argument(
-        '--query', 
+        '--query',
         choices=query_choices,
         default='xkcd',
         help='Query type to run'
     )
-    
+
     args = parser.parse_args()
-    
+
     # Get the selected query
     selected_query = query_options[args.query]
-    
+
     print("\n" + "="*80)
     print("BROWSER AGENT TEST".center(80))
     print("="*80 + "\n")
@@ -47,12 +49,13 @@ async def main():
 
     # Initialize browser and run query
     browser, page = await get_browser()
-    
+
     print(f"Test query type: {args.query}")
     print(f"Starting browser agent with query: '{selected_query}'")
     print("This may take a moment...\n")
 
     # Run the agent
+    # res = await call_agent_backup(selected_query, page)
     res = await call_agent(selected_query, page)
 
     # Calculate elapsed time

@@ -8,6 +8,8 @@ import uuid
 from datetime import datetime
 from pathlib import Path
 from playwright.async_api import async_playwright
+from IPython import display
+
 
 from browser_graph.constants import SEARCH_WEBSITE
 from browser_graph.graph import graph
@@ -143,6 +145,8 @@ def save_session_summary(session_dir, query, final_answer, steps, elapsed_time):
 
 
 async def call_agent(question: str, page, max_steps: int = 150):
+    """Call the agent and return the final answer."""
+
     # Create a unique session directory for this run
     session_dir = create_session_dir()
 
@@ -167,6 +171,7 @@ async def call_agent(question: str, page, max_steps: int = 150):
             "recursion_limit": max_steps,
         },
     )
+
     final_answer = None
     steps = []
     step_num = 0
@@ -177,17 +182,19 @@ async def call_agent(question: str, page, max_steps: int = 150):
     print("🔄 Starting browser navigation...\n")
 
     async for event in event_stream:
+        print("event: ", event)
+
         # We'll display an event stream here
         if "agent" not in event:
-            # Check if the final answer is in the event
-            if "final_answer" in event:
-                final_answer = event["final_answer"]
             continue
 
         step_num += 1
         pred = event["agent"].get("prediction") or {}
         action = pred.get("action")
         action_input = pred.get("args")
+        print("pred: ", pred)
+        print("action: ", action)
+        print("action_input: ", action_input)
 
         # Get current URL
         if callable(getattr(page, 'url', None)):
@@ -196,7 +203,7 @@ async def call_agent(question: str, page, max_steps: int = 150):
             current_url = page
 
         # Clear terminal and print step information
-        clear_terminal()
+        # clear_terminal()
 
         # Store and print all steps so far
         step_description = f"{len(steps) + 1}. {action}: {action_input}"
@@ -226,7 +233,7 @@ async def call_agent(question: str, page, max_steps: int = 150):
             print(f"[Step {step_num} image saved to {saved_path}]")
 
         # Check for ANSWER action
-        if action == "ANSWER" and action_input:
+        if "ANSWER" in action:
             final_answer = action_input[0]
             break
 
@@ -245,4 +252,45 @@ async def call_agent(question: str, page, max_steps: int = 150):
     print("\n🏁 BROWSER AGENT COMPLETED")
     print(f"✅ FINAL ANSWER: {final_answer}")
     print(f"📁 Complete session data saved to: {session_dir}")
+
+    return final_answer
+
+
+async def call_agent_backup(question: str, page, max_steps: int = 150):
+    """Call the agent and return the final answer."""
+
+    event_stream = graph.astream(
+        {
+            "page": page,
+            "input": question,
+            "scratchpad": [],
+        },
+        {
+            "recursion_limit": max_steps,
+        },
+    )
+
+    final_answer = None
+    steps = []
+
+    async for event in event_stream:
+        """We'll display an event stream here"""
+
+        if "agent" not in event:
+            continue
+
+        pred = event["agent"].get("prediction") or {}
+        action = pred.get("action")
+        action_input = pred.get("args")
+
+        display.clear_output(wait=False)
+
+        steps.append(f"{len(steps) + 1}. {action}: {action_input}")
+        print("\n".join(steps))
+        display.display(display.Image(base64.b64decode(event["agent"]["img"])))
+
+        if "ANSWER" in action:
+            final_answer = action_input[0]
+            break
+
     return final_answer
