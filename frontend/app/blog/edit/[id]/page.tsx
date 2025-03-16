@@ -1,9 +1,9 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
-import Header from "../../components/Header";
+import Header from "../../../components/Header";
 import { Container, Typography, Box, TextField } from '@mui/material';
 import { Button } from "@/components/ui/button";
 import { useRouter } from 'next/navigation';
@@ -30,11 +30,18 @@ const ToolbarButton = ({
   </button>
 );
 
-export default function BlogEditPage() {
+interface BlogPost {
+  id: string;
+  title: string;
+  content: string;
+  user_id: string;
+}
+
+export default function BlogEditPage({ params }: { params: { id: string } }) {
   const router = useRouter();
   const [title, setTitle] = useState('');
+  const [isLoading, setIsLoading] = useState(true);
   const [userId, setUserId] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
   
   const editor = useEditor({
     extensions: [StarterKit],
@@ -46,17 +53,45 @@ export default function BlogEditPage() {
   });
 
   useEffect(() => {
-    const checkUser = async () => {
+    const fetchBlog = async () => {
       const supabase = createClient();
+      
+      // Get the current user
       const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        setUserId(user.id);
-      } else {
+      if (!user) {
         router.push('/login');
+        return;
       }
+      setUserId(user.id);
+
+      // Fetch the blog post
+      const { data, error } = await supabase
+        .from('blogs')
+        .select('*')
+        .eq('id', params.id)
+        .single();
+
+      if (error) {
+        console.error('Error fetching blog:', error);
+        router.push('/blog');
+        return;
+      }
+
+      // Check if the user is the owner
+      if (data.user_id !== user.id) {
+        router.push('/blog');
+        return;
+      }
+
+      setTitle(data.title);
+      editor?.commands.setContent(data.content);
+      setIsLoading(false);
     };
-    checkUser();
-  }, [router]);
+
+    if (editor) {
+      fetchBlog();
+    }
+  }, [editor, params.id, router]);
 
   const handleBack = () => {
     router.push('/blog');
@@ -72,17 +107,18 @@ export default function BlogEditPage() {
     try {
       const { error } = await supabase
         .from('blogs')
-        .insert({
+        .update({
           title,
           content,
           user_id: userId
-        });
+        })
+        .eq('id', params.id);
 
       if (error) throw error;
       
-      router.push('/blog');
+      router.push(`/blog/${params.id}`);
     } catch (error) {
-      console.error('Error saving blog:', error);
+      console.error('Error updating blog:', error);
       // TODO: Add error handling UI
     } finally {
       setIsLoading(false);
@@ -100,7 +136,7 @@ export default function BlogEditPage() {
               <ArrowLeft className="h-4 w-4" /> Back
             </Button>
             <Typography variant="h4" component="h1">
-              New Blog Post
+              Edit Blog Post
             </Typography>
           </Box>
           <Button 
