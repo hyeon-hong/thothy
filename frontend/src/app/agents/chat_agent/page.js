@@ -1,9 +1,9 @@
 "use client";
 
-import "./index.css";
+import "@/app/globals.css";
 import React, { useEffect, useRef } from "react";
-import { Chat } from "../../components/Chat";
-import { ChatProvider } from "../../contexts/ChatContext";
+import { Chat } from "@/components/Chat";
+import { ChatProvider } from "@/contexts/ChatContext";
 
 export default function ChatAgentPage() {
     const inputRef = useRef(null);

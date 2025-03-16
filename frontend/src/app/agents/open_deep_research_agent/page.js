@@ -1,6 +1,6 @@
 "use client";
 
-import "./index.css";
+import "@/app/globals.css";
 import React, { useEffect, useRef, useState, useMemo } from "react";
 import {
     Box,
@@ -19,7 +19,7 @@ import {
     ListItemText,
     ListItemSecondaryAction,
 } from "@mui/material";
-import { useAuth } from "../../contexts/AuthContext";
+import { useAuth } from "@/contexts/AuthContext";
 import { Client } from "@langchain/langgraph-sdk";
 import DeleteIcon from "@mui/icons-material/Delete";
 import AddIcon from "@mui/icons-material/Add";

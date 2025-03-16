@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from 'react';
-import Header from '../components/Header';
+import Header from '@/components/Header';
 import { usePathname } from 'next/navigation';
 
 export default function AgentsLayout({ children }) {
