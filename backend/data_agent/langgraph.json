@@ -1,0 +1,10 @@
+{
+  "dependencies": [
+    "."
+  ],
+  "graphs": {
+    "stockbroker": "./src/index.ts:graph"
+  },
+  "env": "./.env",
+  "node_version": "20"
+}

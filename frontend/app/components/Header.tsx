@@ -21,11 +21,10 @@ import { useAuth } from '../contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import AccountCircle from '@mui/icons-material/AccountCircle';
 import Logout from '@mui/icons-material/Logout';
-import { navigateTo } from '../../utils/navigation';
 import Link from 'next/link';
 
 interface HeaderProps {
-  currentView: string;
+  currentView: 'blog' | 'find' | 'staff' | 'login';
 }
 
 export default function Header({ currentView }: HeaderProps) {
@@ -77,6 +76,10 @@ export default function Header({ currentView }: HeaderProps) {
     router.push('/staff');
   };
 
+  const handleBlogClick = () => {
+    router.push('/blog');
+  };
+
   return (
     <AppBar position="static" color="transparent" elevation={0} sx={{ borderBottom: '2px solid rgba(0, 0, 0, 0.12)' }}>
       <Container maxWidth="lg">
@@ -96,28 +99,43 @@ export default function Header({ currentView }: HeaderProps) {
           </Typography>
 
           <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
-            <Button
-              color={currentView === 'find' ? 'primary' : 'inherit'}
-              onClick={handleFindClick}
-              sx={{
-                ...navButtonStyle,
-                fontWeight: currentView === 'find' ? 700 : 400,
-              }}
-            >
-              Find
-            </Button>
+            {currentView !== 'login' && (
+              <>
+                <Button
+                  color={currentView === 'blog' ? 'primary' : 'inherit'}
+                  onClick={handleBlogClick}
+                  sx={{
+                    ...navButtonStyle,
+                    fontWeight: currentView === 'blog' ? 700 : 400,
+                  }}
+                >
+                  Blog
+                </Button>
 
-            {user && (
-              <Button
-                color={currentView === 'staff' ? 'primary' : 'inherit'}
-                onClick={handleStaffClick}
-                sx={{
-                  ...navButtonStyle,
-                  fontWeight: currentView === 'staff' ? 700 : 400,
-                }}
-              >
-                Staff
-              </Button>
+                <Button
+                  color={currentView === 'find' ? 'primary' : 'inherit'}
+                  onClick={handleFindClick}
+                  sx={{
+                    ...navButtonStyle,
+                    fontWeight: currentView === 'find' ? 700 : 400,
+                  }}
+                >
+                  Find
+                </Button>
+
+                {user && (
+                  <Button
+                    color={currentView === 'staff' ? 'primary' : 'inherit'}
+                    onClick={handleStaffClick}
+                    sx={{
+                      ...navButtonStyle,
+                      fontWeight: currentView === 'staff' ? 700 : 400,
+                    }}
+                  >
+                    Staff
+                  </Button>
+                )}
+              </>
             )}
 
             {user ? (

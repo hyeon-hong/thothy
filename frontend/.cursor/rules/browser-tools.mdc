@@ -1,6 +1,0 @@
----
-description: Thistool performs debugging steps for applications
-globs: **/*.tsx, **/*.ts, **/*.js, **/*.jsx
-alwaysApply: false
----
-When I say /debug, gather console logs and take a screenshot of the app to help fix issues.

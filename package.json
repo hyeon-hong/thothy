@@ -1,0 +1,46 @@
+{
+  "name": "thothy",
+  "author": "AI Thothy",
+  "private": true,
+  "packageManager": "yarn@1.22.22",
+  "workspaces": [
+    "frontend",
+    "backend/plan_agent",
+    "backend/data_agent",
+    "packages/evals",
+    "packages/shared"
+  ],
+  "scripts": {
+    "clean": "npm run clean:root && npm run clean:frontend && npm run clean:backend && npm run clean:packages",
+    "clean:root": "rm -rf ./node_modules ./.turbo ./yarn.lock",
+    "clean:frontend": "rm -rf ./frontend/node_modules ./frontend/.next",
+    "clean:backend": "rm -rf ./backend/plan_agent/dist ./backend/plan_agent/node_modules ./backend/data_agent/dist ./backend/data_agent/node_modules",
+    "clean:packages": "rm -rf ./packages/evals/dist ./packages/evals/node_modules ./packages/shared/dist ./packages/shared/node_modules",
+    "dev": "npx @langchain/langgraph-cli dev --config ./langgraph.json",
+    "build": "turbo build",
+    "turbo:command": "turbo",
+    "format": "turbo format",
+    "lint": "turbo lint",
+    "lint:fix": "turbo lint:fix"
+  },
+  "devDependencies": {
+    "@eslint/eslintrc": "^3.3.0",
+    "@typescript-eslint/eslint-plugin": "^8.26.1",
+    "@typescript-eslint/parser": "^8.26.1",
+    "eslint": "^9.22.0",
+    "eslint-config-prettier": "^10.1.1",
+    "eslint-plugin-import": "^2.31.0",
+    "eslint-plugin-no-instanceof": "^1.0.1",
+    "eslint-plugin-prettier": "^5.2.3",
+    "prettier": "^3.5.3",
+    "tsx": "^4.19.3",
+    "turbo": "latest",
+    "typescript": "^5"
+  },
+  "resolutions": {
+    "@langchain/core": "^0.3.38"
+  },
+  "dependencies": {
+    "recharts": "^2.15.1"
+  }
+}

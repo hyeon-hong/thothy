@@ -1,12 +1,19 @@
+# Turbo
+.turbo/
+
 # MAC
 .DS_Store
 
 # LangGraph
 .langgraph_api/
+.langgraph_api
+
+# Data agent specific
+pdfs/**
+src/generated/**
 
 # Lock file
 **/package-lock.json
-**/yarn.lock
 **/poetry.lock
 
 # Node modules
@@ -136,7 +143,7 @@ celerybeat.pid
 
 # Environments
 .env
-.env.local
+.env.*
 .venv
 env/
 venv/
@@ -181,3 +188,25 @@ cython_debug/
 
 # code-generator.py
 outputs/
+
+# The following lines are from apps/agents/.gitignore that weren't already in the root gitignore
+# dependencies
+/.pnp
+.pnp.js
+.yarn/install-state.gz
+.yarn/cache
+
+# testing
+/coverage
+
+# production
+/out/
+
+# vercel
+.vercel
+
+# typescript
+*.tsbuildinfo
+
+# credentials
+credentials.json
