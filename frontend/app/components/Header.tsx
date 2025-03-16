@@ -24,7 +24,7 @@ import Logout from '@mui/icons-material/Logout';
 import Link from 'next/link';
 
 interface HeaderProps {
-  currentView: 'blog' | 'find' | 'staff' | 'login';
+  currentView: 'inbox' | 'find' | 'staff' | 'team' | 'blog' | 'login';
 }
 
 export default function Header({ currentView }: HeaderProps) {
@@ -80,6 +80,14 @@ export default function Header({ currentView }: HeaderProps) {
     router.push('/blog');
   };
 
+  const handleInboxClick = () => {
+    router.push('/inbox');
+  };
+
+  const handleTeamClick = () => {
+    router.push('/team');
+  };
+
   return (
     <AppBar position="static" color="transparent" elevation={0} sx={{ borderBottom: '2px solid rgba(0, 0, 0, 0.12)' }}>
       <Container maxWidth="lg">
@@ -101,16 +109,18 @@ export default function Header({ currentView }: HeaderProps) {
           <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
             {currentView !== 'login' && (
               <>
-                <Button
-                  color={currentView === 'blog' ? 'primary' : 'inherit'}
-                  onClick={handleBlogClick}
-                  sx={{
-                    ...navButtonStyle,
-                    fontWeight: currentView === 'blog' ? 700 : 400,
-                  }}
-                >
-                  Blog
-                </Button>
+                {user && (
+                  <Button
+                    color={currentView === 'inbox' ? 'primary' : 'inherit'}
+                    onClick={handleInboxClick}
+                    sx={{
+                      ...navButtonStyle,
+                      fontWeight: currentView === 'inbox' ? 700 : 400,
+                    }}
+                  >
+                    Inbox
+                  </Button>
+                )}
 
                 <Button
                   color={currentView === 'find' ? 'primary' : 'inherit'}
@@ -135,6 +145,30 @@ export default function Header({ currentView }: HeaderProps) {
                     Staff
                   </Button>
                 )}
+
+                {user && (
+                  <Button
+                    color={currentView === 'team' ? 'primary' : 'inherit'}
+                    onClick={handleTeamClick}
+                    sx={{
+                      ...navButtonStyle,
+                      fontWeight: currentView === 'team' ? 700 : 400,
+                    }}
+                  >
+                    Team
+                  </Button>
+                )}
+
+                <Button
+                  color={currentView === 'blog' ? 'primary' : 'inherit'}
+                  onClick={handleBlogClick}
+                  sx={{
+                    ...navButtonStyle,
+                    fontWeight: currentView === 'blog' ? 700 : 400,
+                  }}
+                >
+                  Blog
+                </Button>
               </>
             )}
 
