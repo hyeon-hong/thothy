@@ -1,0 +1,7 @@
+---
+description: This tool performs debugging steps for web applications.
+globs: **/*.tsx, **/*.ts, **/*.js, **/*.jsx
+alwaysApply: false
+---
+
+When I say /debug, gather a web browser console logs to help fix issues.

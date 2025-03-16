@@ -21,7 +21,6 @@ import { useAuth } from '../contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import AccountCircle from '@mui/icons-material/AccountCircle';
 import Logout from '@mui/icons-material/Logout';
-import { navigateTo } from '../utils/navigation';
 import Link from 'next/link';
 
 interface HeaderProps {
