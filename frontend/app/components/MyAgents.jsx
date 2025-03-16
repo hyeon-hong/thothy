@@ -60,12 +60,24 @@ export default function MyAgents() {
     }, [user?.id, supabase]);
 
     const handleAgentUnselect = async (agentId) => {
+        if (!user) return;
+
         try {
+            const { error } = await supabase
+                .from("user_agents")
+                .delete()
+                .eq("user_id", user.id)
+                .eq("agent_id", agentId);
+
+            if (error) {
+                throw error;
+            }
+
             setMyAgents((prevAgents) =>
                 prevAgents.filter((agent) => agent.id !== agentId)
             );
         } catch (error) {
-            // Handle error silently
+            console.error("Failed to unselect agent:", error);
         }
     };
 
