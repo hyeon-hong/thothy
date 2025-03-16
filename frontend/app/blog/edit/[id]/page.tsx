@@ -38,7 +38,12 @@ interface BlogPost {
   user_id: string;
 }
 
-export default function BlogEditPage({ params }: { params: { id: string } }) {
+interface PageParams {
+  id: string;
+}
+
+export default function BlogEditPage({ params }: { params: Promise<PageParams> }) {
+  const unwrappedParams = React.use(params) as PageParams;
   const router = useRouter();
   const [title, setTitle] = useState('');
   const [isLoading, setIsLoading] = useState(true);
@@ -68,7 +73,7 @@ export default function BlogEditPage({ params }: { params: { id: string } }) {
       const { data, error } = await supabase
         .from('blogs')
         .select('*')
-        .eq('id', params.id)
+        .eq('id', unwrappedParams.id)
         .single();
 
       if (error) {
@@ -91,7 +96,7 @@ export default function BlogEditPage({ params }: { params: { id: string } }) {
     if (editor) {
       fetchBlog();
     }
-  }, [editor, params.id, router]);
+  }, [editor, unwrappedParams.id, router]);
 
   const handleBack = () => {
     router.push('/blog');
@@ -117,11 +122,11 @@ export default function BlogEditPage({ params }: { params: { id: string } }) {
           content,
           user_id: userId
         })
-        .eq('id', params.id);
+        .eq('id', unwrappedParams.id);
 
       if (error) throw error;
       
-      router.push(`/blog/${params.id}`);
+      router.push(`/blog/${unwrappedParams.id}`);
     } catch (error) {
       console.error('Error updating blog:', error);
       // TODO: Add error handling UI
