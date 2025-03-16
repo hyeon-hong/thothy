@@ -3,4 +3,5 @@ description: Rule for langgraph sdk.
 globs: 
 alwaysApply: false
 ---
-Don't use useStream hook for UI.
+
+Don't use useStream of langgraph hook for UI.

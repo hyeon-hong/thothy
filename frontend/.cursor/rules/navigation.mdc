@@ -1,6 +1,0 @@
----
-description: Navigation method for SPA
-globs: *.tsx
-alwaysApply: false
----
-Use one consolidated method for SPA navigation.
