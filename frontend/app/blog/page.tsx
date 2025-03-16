@@ -45,7 +45,13 @@ export default function BlogPage() {
       <Header currentView="blog" />
       
       <Container maxWidth="lg" sx={{ mt: 8, mb: 8 }}>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
+        <Box sx={{ 
+          display: 'flex', 
+          justifyContent: 'space-between', 
+          alignItems: 'center', 
+          mb: 4,
+          mt: 2
+        }}>
           <div>
             <Typography variant="h2" component="h1" gutterBottom>
               Blog
@@ -54,12 +60,16 @@ export default function BlogPage() {
               Explore the latest insights, tutorials, and updates from the Thothy team.
             </Typography>
           </div>
-          <Button 
-            onClick={handleNewBlog}
-            className="gap-2"
-          >
-            <Plus className="h-4 w-4" /> New Blog
-          </Button>
+          <div className="flex items-center">
+            <Button 
+              onClick={handleNewBlog}
+              className="gap-2"
+              variant="default"
+              size="lg"
+            >
+              <Plus className="h-4 w-4" /> New Blog
+            </Button>
+          </div>
         </Box>
 
         <Grid container spacing={4} sx={{ mt: 4 }}>
