@@ -8,6 +8,7 @@ import { Container, Typography, Grid, Box } from '@mui/material';
 import { useRouter } from 'next/navigation';
 import { Plus } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
+import LoginDialog from '@/components/LoginDialog';
 
 interface BlogPost {
   id: string;
@@ -21,10 +22,20 @@ export default function BlogPage() {
   const router = useRouter();
   const [blogPosts, setBlogPosts] = useState<BlogPost[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [userId, setUserId] = useState<string | null>(null);
+  const [showLoginDialog, setShowLoginDialog] = useState(false);
 
   useEffect(() => {
-    const fetchBlogs = async () => {
+    const fetchData = async () => {
       const supabase = createClient();
+      
+      // Get the current user
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        setUserId(user.id);
+      }
+
+      // Fetch blogs
       const { data, error } = await supabase
         .from('blogs')
         .select('*')
@@ -39,10 +50,14 @@ export default function BlogPage() {
       setIsLoading(false);
     };
 
-    fetchBlogs();
+    fetchData();
   }, []);
 
   const handleNewBlog = () => {
+    if (!userId) {
+      setShowLoginDialog(true);
+      return;
+    }
     router.push('/blog/edit');
   };
 
@@ -132,6 +147,11 @@ export default function BlogPage() {
           )}
         </Grid>
       </Container>
+
+      <LoginDialog 
+        isOpen={showLoginDialog} 
+        onClose={() => setShowLoginDialog(false)} 
+      />
     </div>
   );
 } 

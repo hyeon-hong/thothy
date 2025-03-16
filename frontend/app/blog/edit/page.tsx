@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Header from "../../components/Header";
@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, Save } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
+import LoginDialog from '@/components/LoginDialog';
 
 // Toolbar button component
 const ToolbarButton = ({ 
@@ -35,6 +36,7 @@ export default function BlogEditPage() {
   const [title, setTitle] = useState('');
   const [userId, setUserId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [showLoginDialog, setShowLoginDialog] = useState(false);
   
   const editor = useEditor({
     extensions: [StarterKit],
@@ -51,19 +53,22 @@ export default function BlogEditPage() {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
         setUserId(user.id);
-      } else {
-        router.push('/login');
       }
     };
     checkUser();
-  }, [router]);
+  }, []);
 
   const handleBack = () => {
     router.push('/blog');
   };
 
   const handleSave = async () => {
-    if (!editor || !userId) return;
+    if (!editor) return;
+    
+    if (!userId) {
+      setShowLoginDialog(true);
+      return;
+    }
     
     setIsLoading(true);
     const content = editor.getHTML();
@@ -165,6 +170,11 @@ export default function BlogEditPage() {
           </div>
         </Box>
       </Container>
+
+      <LoginDialog 
+        isOpen={showLoginDialog} 
+        onClose={() => setShowLoginDialog(false)} 
+      />
     </div>
   );
 } 

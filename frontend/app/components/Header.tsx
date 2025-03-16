@@ -25,7 +25,7 @@ import { navigateTo } from '../utils/navigation';
 import Link from 'next/link';
 
 interface HeaderProps {
-  currentView: string;
+  currentView: 'blog' | 'find' | 'staff' | 'login';
 }
 
 export default function Header({ currentView }: HeaderProps) {
@@ -100,39 +100,43 @@ export default function Header({ currentView }: HeaderProps) {
           </Typography>
 
           <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
-            <Button
-              color={currentView === 'blog' ? 'primary' : 'inherit'}
-              onClick={handleBlogClick}
-              sx={{
-                ...navButtonStyle,
-                fontWeight: currentView === 'blog' ? 700 : 400,
-              }}
-            >
-              Blog
-            </Button>
+            {currentView !== 'login' && (
+              <>
+                <Button
+                  color={currentView === 'blog' ? 'primary' : 'inherit'}
+                  onClick={handleBlogClick}
+                  sx={{
+                    ...navButtonStyle,
+                    fontWeight: currentView === 'blog' ? 700 : 400,
+                  }}
+                >
+                  Blog
+                </Button>
 
-            <Button
-              color={currentView === 'find' ? 'primary' : 'inherit'}
-              onClick={handleFindClick}
-              sx={{
-                ...navButtonStyle,
-                fontWeight: currentView === 'find' ? 700 : 400,
-              }}
-            >
-              Find
-            </Button>
+                <Button
+                  color={currentView === 'find' ? 'primary' : 'inherit'}
+                  onClick={handleFindClick}
+                  sx={{
+                    ...navButtonStyle,
+                    fontWeight: currentView === 'find' ? 700 : 400,
+                  }}
+                >
+                  Find
+                </Button>
 
-            {user && (
-              <Button
-                color={currentView === 'staff' ? 'primary' : 'inherit'}
-                onClick={handleStaffClick}
-                sx={{
-                  ...navButtonStyle,
-                  fontWeight: currentView === 'staff' ? 700 : 400,
-                }}
-              >
-                Staff
-              </Button>
+                {user && (
+                  <Button
+                    color={currentView === 'staff' ? 'primary' : 'inherit'}
+                    onClick={handleStaffClick}
+                    sx={{
+                      ...navButtonStyle,
+                      fontWeight: currentView === 'staff' ? 700 : 400,
+                    }}
+                  >
+                    Staff
+                  </Button>
+                )}
+              </>
             )}
 
             {user ? (

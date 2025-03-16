@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, Save } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
+import LoginDialog from '@/components/LoginDialog';
 
 // Toolbar button component
 const ToolbarButton = ({ 
@@ -42,6 +43,7 @@ export default function BlogEditPage({ params }: { params: { id: string } }) {
   const [title, setTitle] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [userId, setUserId] = useState<string | null>(null);
+  const [showLoginDialog, setShowLoginDialog] = useState(false);
   
   const editor = useEditor({
     extensions: [StarterKit],
@@ -58,11 +60,9 @@ export default function BlogEditPage({ params }: { params: { id: string } }) {
       
       // Get the current user
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        router.push('/login');
-        return;
+      if (user) {
+        setUserId(user.id);
       }
-      setUserId(user.id);
 
       // Fetch the blog post
       const { data, error } = await supabase
@@ -78,7 +78,7 @@ export default function BlogEditPage({ params }: { params: { id: string } }) {
       }
 
       // Check if the user is the owner
-      if (data.user_id !== user.id) {
+      if (user && data.user_id !== user.id) {
         router.push('/blog');
         return;
       }
@@ -98,7 +98,12 @@ export default function BlogEditPage({ params }: { params: { id: string } }) {
   };
 
   const handleSave = async () => {
-    if (!editor || !userId) return;
+    if (!editor) return;
+    
+    if (!userId) {
+      setShowLoginDialog(true);
+      return;
+    }
     
     setIsLoading(true);
     const content = editor.getHTML();
@@ -201,6 +206,11 @@ export default function BlogEditPage({ params }: { params: { id: string } }) {
           </div>
         </Box>
       </Container>
+
+      <LoginDialog 
+        isOpen={showLoginDialog} 
+        onClose={() => setShowLoginDialog(false)} 
+      />
     </div>
   );
 } 
