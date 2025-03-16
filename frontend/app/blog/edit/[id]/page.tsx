@@ -46,54 +46,64 @@ export default function BlogEditPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [userId, setUserId] = useState<string | null>(null);
   const [showLoginDialog, setShowLoginDialog] = useState(false);
+  const [initialContent, setInitialContent] = useState('');
   
   const editor = useEditor({
     extensions: [StarterKit],
+    content: initialContent,
     editorProps: {
       attributes: {
         class: 'prose prose-lg max-w-none focus:outline-none min-h-[500px] px-4 py-2',
       },
     },
-  });
+  }, [initialContent]); // Re-create editor when initial content changes
 
   useEffect(() => {
+    if (!id) {
+      router.push('/blog');
+      return;
+    }
+
     const fetchBlog = async () => {
-      const supabase = createClient();
-      
-      // Get the current user
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        setUserId(user.id);
-      }
+      try {
+        const supabase = createClient();
+        
+        // Get the current user
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          setUserId(user.id);
+        }
 
-      // Fetch the blog post
-      const { data, error } = await supabase
-        .from('blogs')
-        .select('*')
-        .eq('id', id)
-        .single();
+        // Fetch the blog post
+        const { data, error } = await supabase
+          .from('blogs')
+          .select('*')
+          .eq('id', id)
+          .single();
 
-      if (error) {
-        console.error('Error fetching blog:', error);
+        if (error) {
+          console.error('Error fetching blog:', error);
+          router.push('/blog');
+          return;
+        }
+
+        // Check if the user is the owner
+        if (user && data.user_id !== user.id) {
+          router.push('/blog');
+          return;
+        }
+
+        setTitle(data.title);
+        setInitialContent(data.content);
+        setIsLoading(false);
+      } catch (error) {
+        console.error('Error in fetchBlog:', error);
         router.push('/blog');
-        return;
       }
-
-      // Check if the user is the owner
-      if (user && data.user_id !== user.id) {
-        router.push('/blog');
-        return;
-      }
-
-      setTitle(data.title);
-      editor?.commands.setContent(data.content);
-      setIsLoading(false);
     };
 
-    if (editor) {
-      fetchBlog();
-    }
-  }, [editor, id, router]);
+    fetchBlog();
+  }, [id, router]);
 
   const handleBack = () => {
     router.push('/blog');
@@ -137,76 +147,84 @@ export default function BlogEditPage() {
       <Header currentView="blog" />
       
       <Container maxWidth="lg" sx={{ mt: 8, mb: 8 }}>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 6 }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-            <Button variant="outline" onClick={handleBack} className="gap-2">
-              <ArrowLeft className="h-4 w-4" /> Back
-            </Button>
-            <Typography variant="h4" component="h1">
-              Edit Blog Post
-            </Typography>
+        {isLoading ? (
+          <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '60vh' }}>
+            <Typography>Loading...</Typography>
           </Box>
-          <Button 
-            onClick={handleSave} 
-            className="gap-2"
-            disabled={isLoading || !title.trim()}
-          >
-            <Save className="h-4 w-4" /> {isLoading ? 'Saving...' : 'Save Post'}
-          </Button>
-        </Box>
+        ) : (
+          <>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 6 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                <Button variant="outline" onClick={handleBack} className="gap-2">
+                  <ArrowLeft className="h-4 w-4" /> Back
+                </Button>
+                <Typography variant="h4" component="h1">
+                  Edit Blog Post
+                </Typography>
+              </Box>
+              <Button 
+                onClick={handleSave} 
+                className="gap-2"
+                disabled={isLoading || !title.trim()}
+              >
+                <Save className="h-4 w-4" /> {isLoading ? 'Saving...' : 'Save Post'}
+              </Button>
+            </Box>
 
-        <Box sx={{ mb: 4 }}>
-          <TextField
-            fullWidth
-            label="Blog Title"
-            variant="outlined"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            sx={{ mb: 4 }}
-          />
+            <Box sx={{ mb: 4 }}>
+              <TextField
+                fullWidth
+                label="Blog Title"
+                variant="outlined"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                sx={{ mb: 4 }}
+              />
 
-          <div className="border rounded-lg overflow-hidden">
-            <div className="border-b bg-gray-50 p-2 flex gap-2">
-              <ToolbarButton
-                onClick={() => editor?.chain().focus().toggleBold().run()}
-                active={editor?.isActive('bold')}
-              >
-                <span className="font-bold">B</span>
-              </ToolbarButton>
-              <ToolbarButton
-                onClick={() => editor?.chain().focus().toggleItalic().run()}
-                active={editor?.isActive('italic')}
-              >
-                <span className="italic">I</span>
-              </ToolbarButton>
-              <ToolbarButton
-                onClick={() => editor?.chain().focus().toggleHeading({ level: 2 }).run()}
-                active={editor?.isActive('heading', { level: 2 })}
-              >
-                H2
-              </ToolbarButton>
-              <ToolbarButton
-                onClick={() => editor?.chain().focus().toggleBulletList().run()}
-                active={editor?.isActive('bulletList')}
-              >
-                •
-              </ToolbarButton>
-              <ToolbarButton
-                onClick={() => editor?.chain().focus().toggleOrderedList().run()}
-                active={editor?.isActive('orderedList')}
-              >
-                1.
-              </ToolbarButton>
-              <ToolbarButton
-                onClick={() => editor?.chain().focus().toggleBlockquote().run()}
-                active={editor?.isActive('blockquote')}
-              >
-                ""
-              </ToolbarButton>
-            </div>
-            <EditorContent editor={editor} />
-          </div>
-        </Box>
+              <div className="border rounded-lg overflow-hidden">
+                <div className="border-b bg-gray-50 p-2 flex gap-2">
+                  <ToolbarButton
+                    onClick={() => editor?.chain().focus().toggleBold().run()}
+                    active={editor?.isActive('bold')}
+                  >
+                    <span className="font-bold">B</span>
+                  </ToolbarButton>
+                  <ToolbarButton
+                    onClick={() => editor?.chain().focus().toggleItalic().run()}
+                    active={editor?.isActive('italic')}
+                  >
+                    <span className="italic">I</span>
+                  </ToolbarButton>
+                  <ToolbarButton
+                    onClick={() => editor?.chain().focus().toggleHeading({ level: 2 }).run()}
+                    active={editor?.isActive('heading', { level: 2 })}
+                  >
+                    H2
+                  </ToolbarButton>
+                  <ToolbarButton
+                    onClick={() => editor?.chain().focus().toggleBulletList().run()}
+                    active={editor?.isActive('bulletList')}
+                  >
+                    •
+                  </ToolbarButton>
+                  <ToolbarButton
+                    onClick={() => editor?.chain().focus().toggleOrderedList().run()}
+                    active={editor?.isActive('orderedList')}
+                  >
+                    1.
+                  </ToolbarButton>
+                  <ToolbarButton
+                    onClick={() => editor?.chain().focus().toggleBlockquote().run()}
+                    active={editor?.isActive('blockquote')}
+                  >
+                    ""
+                  </ToolbarButton>
+                </div>
+                <EditorContent editor={editor} />
+              </div>
+            </Box>
+          </>
+        )}
       </Container>
 
       <LoginDialog 
