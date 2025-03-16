@@ -4,7 +4,9 @@ import React from 'react';
 import Header from "../components/Header";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Container, Typography, Grid } from '@mui/material';
+import { Container, Typography, Grid, Box } from '@mui/material';
+import { useRouter } from 'next/navigation';
+import { Plus } from 'lucide-react';
 
 // Mock blog data - replace with real data later
 const blogPosts = [
@@ -32,17 +34,33 @@ const blogPosts = [
 ];
 
 export default function BlogPage() {
+  const router = useRouter();
+
+  const handleNewBlog = () => {
+    router.push('/blog/edit');
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <Header currentView="blog" />
       
       <Container maxWidth="lg" sx={{ mt: 8, mb: 8 }}>
-        <Typography variant="h2" component="h1" gutterBottom>
-          Blog
-        </Typography>
-        <Typography variant="body1" color="text.secondary" paragraph>
-          Explore the latest insights, tutorials, and updates from the Thothy team.
-        </Typography>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
+          <div>
+            <Typography variant="h2" component="h1" gutterBottom>
+              Blog
+            </Typography>
+            <Typography variant="body1" color="text.secondary">
+              Explore the latest insights, tutorials, and updates from the Thothy team.
+            </Typography>
+          </div>
+          <Button 
+            onClick={handleNewBlog}
+            className="gap-2"
+          >
+            <Plus className="h-4 w-4" /> New Blog
+          </Button>
+        </Box>
 
         <Grid container spacing={4} sx={{ mt: 4 }}>
           {blogPosts.map((post) => (

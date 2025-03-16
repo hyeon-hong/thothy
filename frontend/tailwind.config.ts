@@ -196,6 +196,7 @@ const config: Config = {
     }),
     scrollbar,
     assistantUIMarkdown,
+    require('@tailwindcss/typography'),
   ],
 };
 export default config;
