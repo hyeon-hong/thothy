@@ -1,7 +1,7 @@
 'use client';
 
 import { ReactNode, useState } from "react";
-import Header from "../../components/Header";
+import Header from "@/components/Header";
 import { usePathname } from "next/navigation";
 
 interface AgentLayoutProps {
