@@ -6,7 +6,7 @@ import StarterKit from '@tiptap/starter-kit';
 import Header from "../../../components/Header";
 import { Container, Typography, Box, TextField } from '@mui/material';
 import { Button } from "@/components/ui/button";
-import { useRouter } from 'next/navigation';
+import { useRouter, useParams } from 'next/navigation';
 import { ArrowLeft, Save } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
 import LoginDialog from '@/components/LoginDialog';
@@ -38,12 +38,9 @@ interface BlogPost {
   user_id: string;
 }
 
-interface PageParams {
-  id: string;
-}
-
-export default function BlogEditPage({ params }: { params: Promise<PageParams> }) {
-  const unwrappedParams = React.use(params) as PageParams;
+export default function BlogEditPage() {
+  const params = useParams();
+  const id = params?.id as string;
   const router = useRouter();
   const [title, setTitle] = useState('');
   const [isLoading, setIsLoading] = useState(true);
@@ -73,7 +70,7 @@ export default function BlogEditPage({ params }: { params: Promise<PageParams> }
       const { data, error } = await supabase
         .from('blogs')
         .select('*')
-        .eq('id', unwrappedParams.id)
+        .eq('id', id)
         .single();
 
       if (error) {
@@ -96,7 +93,7 @@ export default function BlogEditPage({ params }: { params: Promise<PageParams> }
     if (editor) {
       fetchBlog();
     }
-  }, [editor, unwrappedParams.id, router]);
+  }, [editor, id, router]);
 
   const handleBack = () => {
     router.push('/blog');
@@ -122,11 +119,11 @@ export default function BlogEditPage({ params }: { params: Promise<PageParams> }
           content,
           user_id: userId
         })
-        .eq('id', unwrappedParams.id);
+        .eq('id', id);
 
       if (error) throw error;
       
-      router.push(`/blog/${unwrappedParams.id}`);
+      router.push(`/blog/${id}`);
     } catch (error) {
       console.error('Error updating blog:', error);
       // TODO: Add error handling UI
