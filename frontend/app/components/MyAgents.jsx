@@ -22,19 +22,17 @@ export default function MyAgents() {
             try {
                 const { data, error } = await supabase
                     .from("user_agents")
-                    .select(
-                        `
+                    .select(`
+                        id,
                         agent_id,
-                        agents:agent_id (
+                        agent:agents(
                             id,
                             name,
                             description,
                             image_url,
-                            graph_name,
-                            code
+                            graph_name
                         )
-                    `
-                    )
+                    `)
                     .eq("user_id", user.id);
 
                 if (error) {
@@ -43,9 +41,11 @@ export default function MyAgents() {
 
                 // Transform the data to match the expected format
                 const agents = data.map((ua) => ({
-                    ...ua.agents,
-                    imageUrl: ua.agents.image_url,
-                    graph_name: ua.agents.graph_name,
+                    id: ua.agent.id,
+                    name: ua.agent.name,
+                    description: ua.agent.description,
+                    imageUrl: ua.agent.image_url,
+                    graph_name: ua.agent.graph_name
                 }));
 
                 setMyAgents(agents);
