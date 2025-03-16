@@ -77,6 +77,10 @@ export default function Header({ currentView }: HeaderProps) {
     router.push('/staff');
   };
 
+  const handleBlogClick = () => {
+    router.push('/blog');
+  };
+
   return (
     <AppBar position="static" color="transparent" elevation={0} sx={{ borderBottom: '2px solid rgba(0, 0, 0, 0.12)' }}>
       <Container maxWidth="lg">
@@ -96,6 +100,17 @@ export default function Header({ currentView }: HeaderProps) {
           </Typography>
 
           <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+            <Button
+              color={currentView === 'blog' ? 'primary' : 'inherit'}
+              onClick={handleBlogClick}
+              sx={{
+                ...navButtonStyle,
+                fontWeight: currentView === 'blog' ? 700 : 400,
+              }}
+            >
+              Blog
+            </Button>
+
             <Button
               color={currentView === 'find' ? 'primary' : 'inherit'}
               onClick={handleFindClick}
