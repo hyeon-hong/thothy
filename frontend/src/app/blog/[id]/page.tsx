@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from 'react';
-import Header from "../../components/Header";
+import Header from "@/components/Header";
 import { Container, Typography, Box } from '@mui/material';
 import { Button } from "@/components/ui/button";
 import { useRouter } from 'next/navigation';

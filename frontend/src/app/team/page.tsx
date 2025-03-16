@@ -2,9 +2,9 @@
 
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { Container, Typography, Box } from '@mui/material';
-import Header from '../components/Header';
+import Header from '@/components/Header';
 
 export default function TeamPage() {
   const { user, loading } = useAuth();

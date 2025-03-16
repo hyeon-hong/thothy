@@ -1,0 +1,8 @@
+---
+description: Rule for nextjs.
+globs: 
+alwaysApply: false
+---
+
+Use src folder for all components, pages, and utils.
+Use src/app folder for all pages.

@@ -2,10 +2,10 @@
 
 import React from "react";
 import { useParams } from "next/navigation";
-import Home from "../plan_agent/page";
-import ChatAgentPage from "../chat_agent/page";
-import OpenDeepResearchAgentPage from "../open_deep_research_agent/page";
-import DataAgentPage from "../data_agent/page";
+import Home from "@/app/agents/plan_agent/page";
+import ChatAgentPage from "@/app/agents/chat_agent/page";
+import OpenDeepResearchAgentPage from "@/app/agents/open_deep_research_agent/page";
+import DataAgentPage from "@/app/agents/data_agent/page";
 
 export default function AgentPage() {
   const params = useParams();

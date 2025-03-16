@@ -3,10 +3,10 @@
 import React, { useState, useEffect } from "react";
 import { Container, Typography, Button, Box, Grid, Paper, Snackbar, Alert, CircularProgress } from "@mui/material";
 import { useRouter, usePathname } from "next/navigation";
-import { useAuth } from "./contexts/AuthContext";
-import Header from "./components/Header";
-import AgentHub from "./components/AgentHub";
-import MyAgents from "./components/MyAgents";
+import { useAuth } from "@/contexts/AuthContext";
+import Header from "@/components/Header";
+import AgentHub from "@/components/AgentHub";
+import MyAgents from "@/components/MyAgents";
 
 export default function Home() {
     const router = useRouter();

@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
-import Header from "../../../components/Header";
+import Header from "@/components/Header";
 import { Container, Typography, Box, TextField } from '@mui/material';
 import { Button } from "@/components/ui/button";
 import { useRouter, useParams } from 'next/navigation';
