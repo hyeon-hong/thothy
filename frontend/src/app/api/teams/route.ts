@@ -1,7 +1,5 @@
 import { NextResponse } from "next/server";
-import { headers } from "next/headers";
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
-import { cookies } from 'next/headers';
+import { createClient } from "@/utils/supabase/server";
 
 export async function POST(request: Request) {
   try {
@@ -15,7 +13,7 @@ export async function POST(request: Request) {
     }
 
     // Get the authenticated user's ID
-    const supabase = createRouteHandlerClient({ cookies });
+    const supabase = await createClient();
     const { data: { user }, error: userError } = await supabase.auth.getUser();
 
     if (userError || !user) {
@@ -32,7 +30,7 @@ export async function POST(request: Request) {
         {
           name,
           description,
-          agent_ids,
+          agent_list: agent_ids,
           user_id: user.id,
           created_at: new Date().toISOString()
         }
