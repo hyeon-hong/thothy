@@ -13,9 +13,7 @@ from news_graph.graph import graph as news_graph
 llm = ChatAnthropic(model="claude-3-5-sonnet-latest")
 
 members = ["news_agent", "blog_agent"]
-# Our team supervisor is an LLM node. It just picks the next agent to process
-# and decides when the work is completed
-options = members + ["FINISH"]
+OptionType = Literal["news_agent", "blog_agent", "FINISH"]
 
 system_prompt = (
     "You are a supervisor tasked with managing a conversation between the"
@@ -29,14 +27,14 @@ system_prompt = (
 class Router(TypedDict):
     """Worker to route to next. If no workers needed, route to FINISH."""
 
-    next: Literal[*options]
+    next: OptionType
 
 
 class State(MessagesState):
     next: str
 
 
-def supervisor_node(state: State) -> Command[Literal[*members, "__end__"]]:
+def supervisor_node(state: State) -> Command[Literal["news_agent", "blog_agent", "__end__"]]:
     messages = [
         {"role": "system", "content": system_prompt},
     ] + state["messages"]
@@ -81,9 +79,19 @@ async def blog_agent_node(state: State) -> Command[Literal["supervisor"]]:
     )
 
 
+# Build the graph
 builder = StateGraph(State)
-builder.add_edge(START, "supervisor")
+
+# Add the nodes
 builder.add_node("supervisor", supervisor_node)
 builder.add_node("news_agent", news_agent_node)
 builder.add_node("blog_agent", blog_agent_node)
+
+# Add the edges
+builder.add_edge(START, "supervisor")
+
+# Compile the graph
 graph = builder.compile()
+graph.name = "team_graph"
+
+__all__ = ["graph"]
