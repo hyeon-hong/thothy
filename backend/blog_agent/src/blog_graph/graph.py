@@ -2,6 +2,7 @@
 
 import logging
 import json
+import os
 from typing import Sequence, TypedDict, Union
 from pydantic import BaseModel
 
@@ -83,6 +84,9 @@ async def create_blog_post(
         content: The content of the blog post (HTML format)
         user_id: The ID of the user creating the post
     """
+    # Get the user id from the environment variable of BLOG_AGENT_USER_ID
+    user_id = os.getenv("BLOG_AGENT_USER_ID")
+    logging.warning(f"create_blog_post user_id: {user_id}")
     result = await post_blog(title, content, user_id)
     return json.dumps(result, indent=2)
 

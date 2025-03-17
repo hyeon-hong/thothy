@@ -1,12 +1,12 @@
 """Blog agent tools."""
 
-import logging
 from typing import Dict, Any, List
 import os
 import aiohttp
 from datetime import datetime
 from dotenv import load_dotenv
 from supabase import create_client, Client
+import uuid
 
 # Load environment variables
 load_dotenv()
@@ -72,7 +72,7 @@ async def post_blog(
     Args:
         title: Blog post title
         content: Blog post content (HTML format)
-        user_id: ID of the user creating the post
+        user_id: ID of the user creating the post (must be a valid UUID)
 
     Returns:
         Dictionary containing the created blog post data
@@ -89,6 +89,12 @@ async def post_blog(
 
     if not user_id:
         raise ValueError("User ID is required")
+        
+    # Validate UUID format
+    try:
+        uuid.UUID(user_id)
+    except ValueError:
+        raise ValueError("Invalid user ID format. Must be a valid UUID.")
 
     try:
         # Prepare blog post data
