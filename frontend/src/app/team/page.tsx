@@ -145,7 +145,7 @@ export default function TeamPage() {
                   </DialogDescription>
                 </DialogHeader>
                 
-                <div className="mt-4">
+                <div className="mt-4 flex flex-col" style={{ height: "400px" }}>
                   <div className="flex flex-wrap gap-1 p-2 mb-2 border rounded-md min-h-10 relative">
                     {selectedAgents.length === 0 && (
                       <span className="text-sm text-muted-foreground px-1 py-0.5">
@@ -179,57 +179,63 @@ export default function TeamPage() {
                     </button>
                   </div>
                   
-                  {showSelectionList && (
-                    <Command className="border rounded-lg">
-                      <CommandInput placeholder="Search agents..." />
-                      <CommandEmpty>No agents found.</CommandEmpty>
-                      <CommandGroup>
-                        {agents.map((agent) => (
-                          <CommandItem
-                            key={agent.id}
-                            onSelect={() => toggleAgent(agent.id)}
-                            className="cursor-pointer"
-                          >
-                            <div className="flex items-center space-x-2 mr-2">
-                              <Checkbox 
-                                id={`checkbox-${agent.id}`}
-                                checked={selectedAgents.includes(agent.id)}
-                                onCheckedChange={() => toggleAgent(agent.id)}
-                                onClick={(e: React.MouseEvent) => e.stopPropagation()}
-                                className={cn(
-                                  "transition-colors",
-                                  selectedAgents.includes(agent.id) 
-                                    ? "border-primary data-[state=checked]:bg-white data-[state=checked]:text-black" 
-                                    : ""
-                                )}
-                                style={{
-                                  ...(selectedAgents.includes(agent.id) ? {
-                                    '--tw-checkbox-bg': 'white',
-                                    '--tw-checkbox-fg': 'black',
-                                  } : {})
-                                } as React.CSSProperties}
-                              />
-                            </div>
-                            <div className="flex-1">
-                              <div className="flex items-center">
-                                <span className={selectedAgents.includes(agent.id) ? "font-medium" : ""}>
-                                  {agent.name}
-                                </span>
-                                {selectedAgents.includes(agent.id) && (
-                                  <Badge variant="secondary" className="ml-2 bg-white text-black border border-gray-300">
-                                    Selected
-                                  </Badge>
-                                )}
+                  <div className="flex-1 overflow-hidden flex flex-col">
+                    {showSelectionList ? (
+                      <Command className="border rounded-lg flex-1 overflow-auto">
+                        <CommandInput placeholder="Search agents..." />
+                        <CommandEmpty>No agents found.</CommandEmpty>
+                        <CommandGroup>
+                          {agents.map((agent) => (
+                            <CommandItem
+                              key={agent.id}
+                              onSelect={() => toggleAgent(agent.id)}
+                              className="cursor-pointer"
+                            >
+                              <div className="flex items-center space-x-2 mr-2">
+                                <Checkbox 
+                                  id={`checkbox-${agent.id}`}
+                                  checked={selectedAgents.includes(agent.id)}
+                                  onCheckedChange={() => toggleAgent(agent.id)}
+                                  onClick={(e: React.MouseEvent) => e.stopPropagation()}
+                                  className={cn(
+                                    "transition-colors",
+                                    selectedAgents.includes(agent.id) 
+                                      ? "border-primary data-[state=checked]:bg-white data-[state=checked]:text-black" 
+                                      : ""
+                                  )}
+                                  style={{
+                                    ...(selectedAgents.includes(agent.id) ? {
+                                      '--tw-checkbox-bg': 'white',
+                                      '--tw-checkbox-fg': 'black',
+                                    } : {})
+                                  } as React.CSSProperties}
+                                />
                               </div>
-                              <p className="text-sm text-muted-foreground">
-                                {agent.description}
-                              </p>
-                            </div>
-                          </CommandItem>
-                        ))}
-                      </CommandGroup>
-                    </Command>
-                  )}
+                              <div className="flex-1">
+                                <div className="flex items-center">
+                                  <span className={selectedAgents.includes(agent.id) ? "font-medium" : ""}>
+                                    {agent.name}
+                                  </span>
+                                  {selectedAgents.includes(agent.id) && (
+                                    <Badge variant="secondary" className="ml-2 bg-white text-black border border-gray-300">
+                                      Selected
+                                    </Badge>
+                                  )}
+                                </div>
+                                <p className="text-sm text-muted-foreground">
+                                  {agent.description}
+                                </p>
+                              </div>
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </Command>
+                    ) : (
+                      <div className="border rounded-lg flex-1 flex items-center justify-center p-4 text-muted-foreground text-sm">
+                        Click the arrow button above to view agents
+                      </div>
+                    )}
+                  </div>
                 </div>
               </DialogContent>
             </Dialog>
