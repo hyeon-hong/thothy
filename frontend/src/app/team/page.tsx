@@ -94,8 +94,26 @@ export default function TeamPage() {
     return agent ? agent.name : '';
   };
 
-  const handleBuildTeam = () => {
-    // Logic to handle team building
+  const insertTeamToSupabase = async (name: string, description: string, agentIds: string[]) => {
+    try {
+      const response = await fetch('/api/teams', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ name, description, agent_ids: agentIds }),
+      });
+      if (!response.ok) {
+        throw new Error('Failed to insert team');
+      }
+      console.log('Team inserted successfully');
+    } catch (error) {
+      console.error('Error inserting team:', error);
+    }
+  };
+
+  const handleBuildTeam = async () => {
+    await insertTeamToSupabase(teamName, teamDescription, selectedAgents);
     setDialogOpen(false);
     // Additional logic to save the team with name, description and selected agents
   };
