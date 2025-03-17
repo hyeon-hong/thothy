@@ -44,7 +44,10 @@ Use permission-based access
 """
 
 SUPABASE_URL = os.environ["NEXT_PUBLIC_SUPABASE_URL"]
-SUPABASE_SERVICE_ROLE_KEY = os.environ["SUPABASE_SERVICE_ROLE_KEY"]
+if os.environ["THOTHY_DEVELOPMENT_MODE"] == "true":
+    SUPABASE_KEY = os.environ["SUPABASE_SERVICE_ROLE_KEY"]
+else:
+    SUPABASE_KEY = os.environ["NEXT_PUBLIC_SUPABASE_ANON_KEY"]
 SUPABASE_JWT_SECRET = os.environ["SUPABASE_JWT_SECRET"]
 ALGORITHM = "HS256"
 
@@ -85,7 +88,7 @@ async def auth_authenticate(
                 f"{SUPABASE_URL}/auth/v1/user",
                 headers={
                     "Authorization": f"Bearer {token}",
-                    "apiKey": SUPABASE_SERVICE_ROLE_KEY,
+                    "apiKey": SUPABASE_KEY,
                 },
             )
     except (IndexError, InvalidTokenError, ConnectionError) as e:
