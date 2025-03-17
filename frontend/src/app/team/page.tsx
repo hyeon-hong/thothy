@@ -50,6 +50,7 @@ type Team = {
   description: string;
   agent_list: string[];
   created_at: string;
+  schedule: string; // cron expression
 };
 
 type TeamDialogProps = {
@@ -58,6 +59,8 @@ type TeamDialogProps = {
   setTeamName: (name: string) => void;
   teamDescription: string;
   setTeamDescription: (desc: string) => void;
+  schedule: string;
+  setSchedule: (schedule: string) => void;
   selectedAgents: string[];
   setSelectedAgents: React.Dispatch<React.SetStateAction<string[]>>;
   showSelectionList: boolean;
@@ -68,12 +71,50 @@ type TeamDialogProps = {
   toggleAgent: (id: string) => void;
 };
 
+// Add helper function to convert cron to readable text
+const cronToText = (cron: string): string => {
+  if (!cron) return 'Not scheduled';
+  
+  const parts = cron.split(' ');
+  if (parts.length !== 5) return 'Invalid schedule';
+
+  const [minute, hour, dayOfMonth, month, dayOfWeek] = parts;
+
+  if (minute === '*' && hour === '*' && dayOfMonth === '*' && month === '*' && dayOfWeek === '*') {
+    return 'Every minute';
+  }
+
+  if (minute === '0' && hour === '*' && dayOfMonth === '*' && month === '*' && dayOfWeek === '*') {
+    return 'Every hour';
+  }
+
+  if (minute === '0' && hour === '0' && dayOfMonth === '*' && month === '*' && dayOfWeek === '*') {
+    return 'Every day at midnight';
+  }
+
+  if (minute === '0' && hour === '12' && dayOfMonth === '*' && month === '*' && dayOfWeek === '*') {
+    return 'Every day at noon';
+  }
+
+  if (minute === '0' && hour === '0' && dayOfMonth === '*' && month === '*' && dayOfWeek === '0') {
+    return 'Every Sunday at midnight';
+  }
+
+  if (minute === '0' && hour === '0' && dayOfMonth === '1' && month === '*' && dayOfWeek === '*') {
+    return 'First day of every month at midnight';
+  }
+
+  return `Cron: ${cron}`;
+};
+
 const TeamDialog = ({
   isEdit = false,
   teamName,
   setTeamName,
   teamDescription,
   setTeamDescription,
+  schedule,
+  setSchedule,
   selectedAgents,
   setSelectedAgents,
   showSelectionList,
@@ -117,6 +158,27 @@ const TeamDialog = ({
           placeholder="Describe your team's purpose"
           rows={3}
         />
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="team-schedule">Schedule</Label>
+        <select
+          id="team-schedule"
+          value={schedule}
+          onChange={(e) => setSchedule(e.target.value)}
+          className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
+        >
+          <option value="">Not scheduled</option>
+          <option value="* * * * *">Every minute</option>
+          <option value="0 * * * *">Every hour</option>
+          <option value="0 0 * * *">Every day at midnight</option>
+          <option value="0 12 * * *">Every day at noon</option>
+          <option value="0 0 * * 0">Every Sunday at midnight</option>
+          <option value="0 0 1 * *">First day of every month at midnight</option>
+        </select>
+        <p className="text-sm text-muted-foreground mt-1">
+          {cronToText(schedule)}
+        </p>
       </div>
     </div>
 
@@ -266,6 +328,7 @@ export default function TeamPage() {
   const [selectedAgents, setSelectedAgents] = useState<string[]>([]);
   const [teamName, setTeamName] = useState("");
   const [teamDescription, setTeamDescription] = useState("");
+  const [schedule, setSchedule] = useState("");
   const [editingTeam, setEditingTeam] = useState<Team | null>(null);
 
   useEffect(() => {
@@ -331,6 +394,7 @@ export default function TeamPage() {
           name: teamName,
           description: teamDescription,
           agent_ids: selectedAgents,
+          schedule: schedule,
         }),
       });
 
@@ -344,6 +408,7 @@ export default function TeamPage() {
       setTeamName("");
       setTeamDescription("");
       setSelectedAgents([]);
+      setSchedule("");
       setShowDialog(false);
     } catch (error) {
       console.error("Error creating team:", error);
@@ -363,6 +428,7 @@ export default function TeamPage() {
           name: teamName,
           description: teamDescription,
           agent_ids: selectedAgents,
+          schedule: schedule,
         }),
       });
 
@@ -444,6 +510,8 @@ export default function TeamPage() {
                 setTeamName={setTeamName}
                 teamDescription={teamDescription}
                 setTeamDescription={setTeamDescription}
+                schedule={schedule}
+                setSchedule={setSchedule}
                 selectedAgents={selectedAgents}
                 setSelectedAgents={setSelectedAgents}
                 showSelectionList={showSelectionList}
@@ -484,6 +552,7 @@ export default function TeamPage() {
                           setTeamName(team.name);
                           setTeamDescription(team.description);
                           setSelectedAgents(team.agent_list);
+                          setSchedule(team.schedule || '');
                           setShowDialog(true);
                         }}
                         className="h-8 w-8 p-0"
@@ -493,8 +562,11 @@ export default function TeamPage() {
                       </Button>
                     </CardHeader>
                     <CardContent>
-                      <p className="text-sm text-muted-foreground mb-4">
+                      <p className="text-sm text-muted-foreground mb-2">
                         {team.description}
+                      </p>
+                      <p className="text-sm text-muted-foreground mb-4">
+                        Schedule: {cronToText(team.schedule)}
                       </p>
                       <div className="flex flex-wrap gap-2">
                         {team.agent_list.map((agentId) => {
