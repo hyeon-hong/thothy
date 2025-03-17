@@ -10,15 +10,5 @@
     "disable_studio_auth": false
   },
   "env": "../../.env",
-  "python_version": "3.12",
-  "module": "blog_graph.graph",
-  "class": "BlogGraph",
-  "config": {
-    "module": "blog_graph.configuration",
-    "class": "BlogConfiguration"
-  },
-  "api": {
-    "module": ".langgraph_api.api",
-    "class": "BlogAPI"
-  }
+  "python_version": "3.12"
 }

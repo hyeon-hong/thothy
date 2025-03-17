@@ -24,6 +24,8 @@ llm = init_chat_model(
 )
 
 # Create memory manager for blog-related information
+
+
 class BlogPost(BaseModel):
     """Store blog-related information."""
     title: str
@@ -34,16 +36,6 @@ class BlogPost(BaseModel):
     summary: str | None = None
     tags: list[str] | None = None
 
-namespace = ("blog", "{user_id}", "posts")
-
-memory_manager = create_memory_store_manager(
-    "anthropic:claude-3-sonnet-20240229",
-    schemas=[BlogPost],
-    enable_inserts=True,
-    enable_deletes=True,
-    instructions="Extract and organize blog content information",
-    namespace=namespace,
-)
 
 async def blog_processor(
     state: MessagesState,
@@ -79,4 +71,4 @@ workflow.add_edge("blog_processor", END)
 graph = workflow.compile(checkpointer=MemorySaver())
 graph.name = "blog_graph"
 
-__all__ = ["graph"] 
+__all__ = ["graph"]
