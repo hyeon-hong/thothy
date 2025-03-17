@@ -12,7 +12,7 @@ from langchain.tools import tool
 from langgraph.checkpoint.memory import MemorySaver
 from langgraph.graph import MessagesState, StateGraph, START, END
 from blog_graph.configuration import BlogConfigurable
-from blog_graph.tools import fetch_hackernews_articles, post_blog
+from blog_graph.tools import post_blog
 from langgraph.prebuilt import ToolNode
 
 # Configure logging to hide INFO messages
@@ -47,29 +47,6 @@ class AgentState(MessagesState):
     tool_outputs: Sequence[ToolOutput]
 
 
-class HackerNewsInput(BaseModel):
-    """Input schema for get_hacker_news tool."""
-    limit: int = 5
-
-
-@tool
-async def get_hacker_news(input_dict: HackerNewsInput) -> str:
-    """
-    Fetch the latest articles from Hacker News.
-
-    Args:
-        input_dict: HackerNewsInput containing:
-            limit: Number of articles to fetch (default: 5)
-    """
-    logging.warning(f"get_hacker_news input: {input_dict}")
-    try:
-        articles = await fetch_hackernews_articles(input_dict.limit)
-        return json.dumps(articles, indent=2)
-    except Exception as e:
-        logging.error(f"Error in get_hacker_news: {str(e)}")
-        raise
-
-
 @tool
 async def create_blog_post(
     title: str,
@@ -93,7 +70,7 @@ async def create_blog_post(
 
 
 # Create the tool node with our tools
-tools = [get_hacker_news, create_blog_post]
+tools = [create_blog_post]
 tool_node = ToolNode(tools)
 
 llm = init_chat_model(
@@ -115,13 +92,11 @@ async def should_continue(state: MessagesState):
 async def call_model(state: MessagesState):
     """Call the model with the current state."""
     system_msg = (
-        "You are a helpful blog assistant with access to two main functions:\n"
-        "1. get_hacker_news: Fetch latest articles from Hacker News\n"
-        "2. create_blog_post: Create a new blog post on Thothy\n\n"
-        "Help users by fetching news or creating blog posts based on their "
-        "requests. When creating blog posts, ensure the content is well-"
-        "formatted and includes proper HTML tags. When fetching news, you "
-        "can specify how many articles to fetch."
+        "You are a helpful blog assistant with access to the create_blog_post "
+        "function that allows you to create new blog posts on Thothy.\n\n"
+        "Help users by creating blog posts based on their requests. When "
+        "creating blog posts, ensure the content is well-formatted and "
+        "includes proper HTML tags."
     )
     messages = [{"role": "system", "content": system_msg}] + state["messages"]
     response = llm.invoke(messages)
