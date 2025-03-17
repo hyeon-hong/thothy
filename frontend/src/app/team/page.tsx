@@ -77,7 +77,7 @@ const TeamDialog = ({
   setSelectedAgents,
   showSelectionList,
   setShowSelectionList,
-  agents,
+  agents = [],
   onSubmit,
   getAgentName,
   toggleAgent,
@@ -174,7 +174,7 @@ const TeamDialog = ({
             <CommandInput placeholder="Search agents..." />
             <CommandEmpty>No agents found.</CommandEmpty>
             <CommandGroup className="overflow-y-auto h-full custom-scrollbar">
-              {agents.map((agent) => (
+              {agents?.map((agent) => (
                 <CommandItem
                   key={agent.id}
                   onSelect={() => toggleAgent(agent.id)}
@@ -254,56 +254,52 @@ const TeamDialog = ({
 );
 
 export default function TeamPage() {
-  const { user, loading } = useAuth();
+  const { user } = useAuth();
   const router = useRouter();
-  const [agents, setAgents] = useState<Agent[]>([]);
   const [teams, setTeams] = useState<Team[]>([]);
+  const [agents, setAgents] = useState<Agent[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [showDialog, setShowDialog] = useState(false);
+  const [showSelectionList, setShowSelectionList] = useState(false);
   const [selectedAgents, setSelectedAgents] = useState<string[]>([]);
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [editDialogOpen, setEditDialogOpen] = useState(false);
-  const [showSelectionList, setShowSelectionList] = useState(true);
   const [teamName, setTeamName] = useState("");
   const [teamDescription, setTeamDescription] = useState("");
   const [editingTeam, setEditingTeam] = useState<Team | null>(null);
 
   useEffect(() => {
-    if (!loading && !user) {
-      router.push("/auth/signin");
+    if (!user) {
+      router.push('/login');
+      return;
     }
-  }, [user, loading, router]);
 
-  useEffect(() => {
-    const fetchTeams = async () => {
+    const fetchData = async () => {
+      setIsLoading(true);
       try {
-        const response = await fetch("/api/teams");
-        const data = await response.json();
-        if (!response.ok) throw new Error(data.error);
-        setTeams(data);
+        const [teamsResponse, agentsResponse] = await Promise.all([
+          fetch("/api/teams"),
+          fetch("/api/agents")
+        ]);
+
+        if (!teamsResponse.ok || !agentsResponse.ok) {
+          throw new Error('Failed to fetch data');
+        }
+
+        const [teamsData, agentsData] = await Promise.all([
+          teamsResponse.json(),
+          agentsResponse.json()
+        ]);
+
+        setTeams(teamsData);
+        setAgents(agentsData);
       } catch (error) {
-        console.error("Error fetching teams:", error);
+        console.error("Error fetching data:", error);
+      } finally {
+        setIsLoading(false);
       }
     };
 
-    if (user) {
-      fetchTeams();
-    }
-  }, [user]);
-
-  useEffect(() => {
-    const fetchAgents = async () => {
-      try {
-        const response = await fetch("/api/agents");
-        const data = await response.json();
-        setAgents(data);
-      } catch (error) {
-        console.error("Error fetching agents:", error);
-      }
-    };
-
-    if (user) {
-      fetchAgents();
-    }
-  }, [user]);
+    fetchData();
+  }, [user, router]);
 
   const toggleAgent = (agentId: string) => {
     setSelectedAgents((current) =>
@@ -342,7 +338,7 @@ export default function TeamPage() {
       setTeamName("");
       setTeamDescription("");
       setSelectedAgents([]);
-      setDialogOpen(false);
+      setShowDialog(false);
     } catch (error) {
       console.error("Error creating team:", error);
     }
@@ -379,18 +375,10 @@ export default function TeamPage() {
       setTeamDescription("");
       setSelectedAgents([]);
       setEditingTeam(null);
-      setEditDialogOpen(false);
+      setShowDialog(false);
     } catch (error) {
       console.error("Error updating team:", error);
     }
-  };
-
-  const openEditDialog = (team: Team) => {
-    setEditingTeam(team);
-    setTeamName(team.name);
-    setTeamDescription(team.description);
-    setSelectedAgents(team.agent_list);
-    setEditDialogOpen(true);
   };
 
   const handleDialogChange = (open: boolean, isEdit: boolean) => {
@@ -398,67 +386,69 @@ export default function TeamPage() {
       setTeamName("");
       setTeamDescription("");
       setSelectedAgents([]);
-      setShowSelectionList(true);
+      setShowSelectionList(false);
       if (isEdit) {
         setEditingTeam(null);
-        setEditDialogOpen(false);
+        setShowDialog(false);
       } else {
-        setDialogOpen(false);
+        setShowDialog(false);
       }
     }
   };
 
-  if (loading) {
-    return (
-      <>
-        <Header currentView="team" />
-        <Container maxWidth="lg">
-          <Box sx={{ mt: 4, textAlign: "center" }}>
-            <Typography>Loading...</Typography>
-          </Box>
-        </Container>
-      </>
-    );
-  }
-
-  if (!user) {
-    return null;
-  }
-
   return (
-    <>
+    <Container maxWidth="lg">
       <Header currentView="team" />
-      <Container maxWidth="lg">
-        <Box sx={{ mt: 4 }}>
-          <Typography variant="h4" component="h1" gutterBottom>
-            Team
-          </Typography>
+      {isLoading ? (
+        <Box display="flex" justifyContent="center" alignItems="center" minHeight="200px">
+          <Typography>Loading...</Typography>
+        </Box>
+      ) : (
+        <>
+          <Box sx={{ mt: 4, mb: 4 }}>
+            <Typography variant="h4" component="h1" gutterBottom>
+              Teams
+            </Typography>
+            <Typography variant="body1" color="text.secondary">
+              Create and manage your agent teams
+            </Typography>
+          </Box>
 
-          <div className="my-6">
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <Typography variant="h6" component="h3">
-                  Your Teams
-                </Typography>
-                <Typography variant="body2" color="textSecondary">
-                  {teams.length === 0
-                    ? "No teams created yet"
-                    : `${teams.length} team${teams.length > 1 ? "s" : ""}`}
-                </Typography>
-              </div>
-
+          <Dialog open={showDialog} onOpenChange={(open) => handleDialogChange(open, Boolean(editingTeam))}>
+            <DialogTrigger asChild>
               <Button
-                variant="outlined"
+                variant="contained"
                 startIcon={<Users />}
-                onClick={() => setDialogOpen(true)}
+                onClick={() => setShowDialog(true)}
               >
                 Build a team
               </Button>
-            </div>
+            </DialogTrigger>
+            <TeamDialog
+              isEdit={Boolean(editingTeam)}
+              teamName={teamName}
+              setTeamName={setTeamName}
+              teamDescription={teamDescription}
+              setTeamDescription={setTeamDescription}
+              selectedAgents={selectedAgents}
+              setSelectedAgents={setSelectedAgents}
+              showSelectionList={showSelectionList}
+              setShowSelectionList={setShowSelectionList}
+              agents={agents}
+              onSubmit={editingTeam ? handleEditTeam : handleBuildTeam}
+              getAgentName={getAgentName}
+              toggleAgent={toggleAgent}
+            />
+          </Dialog>
 
-            {/* Display Teams */}
-            {teams.length > 0 && (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
+          {/* Teams grid */}
+          <Box sx={{ mt: 4 }}>
+            {teams.length === 0 ? (
+              <Typography variant="body1" color="text.secondary" textAlign="center">
+                No teams created yet. Start by building your first team!
+              </Typography>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {teams.map((team) => (
                   <Card key={team.id} className="flex flex-col">
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -469,7 +459,13 @@ export default function TeamPage() {
                         </CardDescription>
                       </div>
                       <Button
-                        onClick={() => openEditDialog(team)}
+                        onClick={() => {
+                          setEditingTeam(team);
+                          setTeamName(team.name);
+                          setTeamDescription(team.description);
+                          setSelectedAgents(team.agent_list);
+                          setShowDialog(true);
+                        }}
                         className="h-8 w-8 p-0"
                         variant="outlined"
                       >
@@ -495,52 +491,9 @@ export default function TeamPage() {
                 ))}
               </div>
             )}
-
-            {/* Create Team Dialog */}
-            <Dialog 
-              open={dialogOpen} 
-              onOpenChange={(open) => handleDialogChange(open, false)}
-            >
-              <TeamDialog
-                teamName={teamName}
-                setTeamName={setTeamName}
-                teamDescription={teamDescription}
-                setTeamDescription={setTeamDescription}
-                selectedAgents={selectedAgents}
-                setSelectedAgents={setSelectedAgents}
-                showSelectionList={showSelectionList}
-                setShowSelectionList={setShowSelectionList}
-                agents={agents}
-                onSubmit={handleBuildTeam}
-                getAgentName={getAgentName}
-                toggleAgent={toggleAgent}
-              />
-            </Dialog>
-
-            {/* Edit Team Dialog */}
-            <Dialog 
-              open={editDialogOpen}
-              onOpenChange={(open) => handleDialogChange(open, true)}
-            >
-              <TeamDialog
-                isEdit
-                teamName={teamName}
-                setTeamName={setTeamName}
-                teamDescription={teamDescription}
-                setTeamDescription={setTeamDescription}
-                selectedAgents={selectedAgents}
-                setSelectedAgents={setSelectedAgents}
-                showSelectionList={showSelectionList}
-                setShowSelectionList={setShowSelectionList}
-                agents={agents}
-                onSubmit={handleEditTeam}
-                getAgentName={getAgentName}
-                toggleAgent={toggleAgent}
-              />
-            </Dialog>
-          </div>
-        </Box>
-      </Container>
-    </>
+          </Box>
+        </>
+      )}
+    </Container>
   );
 }
