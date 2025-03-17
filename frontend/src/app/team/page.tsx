@@ -26,11 +26,15 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
+  DialogFooter,
 } from "@/components/ui/dialog";
 import { Check, X, Users, ChevronUp, ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 
 type Agent = {
   id: string;
@@ -46,6 +50,8 @@ export default function TeamPage() {
   const [selectedAgents, setSelectedAgents] = useState<string[]>([]);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [showSelectionList, setShowSelectionList] = useState(true);
+  const [teamName, setTeamName] = useState('');
+  const [teamDescription, setTeamDescription] = useState('');
 
   useEffect(() => {
     if (!loading && !user) {
@@ -86,6 +92,12 @@ export default function TeamPage() {
   const getAgentName = (agentId: string) => {
     const agent = agents.find((a) => a.id === agentId);
     return agent ? agent.name : '';
+  };
+
+  const handleBuildTeam = () => {
+    // Logic to handle team building
+    setDialogOpen(false);
+    // Additional logic to save the team with name, description and selected agents
   };
 
   if (loading) {
@@ -132,18 +144,41 @@ export default function TeamPage() {
                 startIcon={<Users />}
                 onClick={() => setDialogOpen(true)}
               >
-                Select Agents
+                Build a team
               </Button>
             </div>
             
             <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
               <DialogContent className="sm:max-w-[600px]">
                 <DialogHeader>
-                  <DialogTitle>Select Agents</DialogTitle>
+                  <DialogTitle>Build a team</DialogTitle>
                   <DialogDescription>
-                    Choose the agents you want to work with. You can select multiple agents.
+                    Create your team and choose the agents you want to work with.
                   </DialogDescription>
                 </DialogHeader>
+                
+                <div className="space-y-4 mt-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="team-name">Team name</Label>
+                    <Input 
+                      id="team-name" 
+                      value={teamName} 
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => setTeamName(e.target.value)}
+                      placeholder="Enter team name"
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="team-description">Team description</Label>
+                    <Textarea 
+                      id="team-description" 
+                      value={teamDescription} 
+                      onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setTeamDescription(e.target.value)}
+                      placeholder="Describe your team's purpose"
+                      rows={3}
+                    />
+                  </div>
+                </div>
                 
                 <div className="mt-4 flex flex-col" style={{ height: "400px" }}>
                   <div className="flex flex-wrap gap-1 p-2 mb-2 border rounded-md min-h-10 relative">
@@ -239,6 +274,15 @@ export default function TeamPage() {
                     )}
                   </div>
                 </div>
+                
+                <DialogFooter className="mt-4">
+                  <Button 
+                    variant="contained" 
+                    onClick={handleBuildTeam}
+                  >
+                    Build
+                  </Button>
+                </DialogFooter>
               </DialogContent>
             </Dialog>
             
