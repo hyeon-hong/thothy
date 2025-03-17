@@ -74,7 +74,6 @@ async def create_blog_post(
     title: str,
     content: str,
     user_id: str,
-    tags: list[str] | None = None
 ) -> str:
     """
     Create a new blog post on Thothy.
@@ -83,9 +82,8 @@ async def create_blog_post(
         title: The title of the blog post
         content: The content of the blog post (HTML format)
         user_id: The ID of the user creating the post
-        tags: Optional list of tags for the post
     """
-    result = await post_blog(title, content, user_id, tags)
+    result = await post_blog(title, content, user_id)
     return json.dumps(result, indent=2)
 
 

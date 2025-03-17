@@ -1,9 +1,9 @@
-"""Tools for the blog agent."""
+"""Blog agent tools."""
 
+import logging
+from typing import Dict, Any, List
 import os
-import json
 import aiohttp
-from typing import List, Dict, Any, Optional
 from datetime import datetime
 from dotenv import load_dotenv
 from supabase import create_client, Client
@@ -65,7 +65,6 @@ async def post_blog(
     title: str,
     content: str,
     user_id: str,
-    tags: Optional[List[str]] = None
 ) -> Dict[str, Any]:
     """
     Post a new blog entry to Thothy using Supabase.
@@ -74,7 +73,6 @@ async def post_blog(
         title: Blog post title
         content: Blog post content (HTML format)
         user_id: ID of the user creating the post
-        tags: Optional list of tags for the post
 
     Returns:
         Dictionary containing the created blog post data
@@ -98,7 +96,6 @@ async def post_blog(
             "title": title,
             "content": content,
             "user_id": user_id,
-            "tags": json.dumps(tags) if tags else None
         }
 
         # Insert blog post into Supabase
