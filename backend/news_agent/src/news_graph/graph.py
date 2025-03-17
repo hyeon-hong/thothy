@@ -1,8 +1,7 @@
-"""Blog agent using LangGraph."""
+"""News agent using LangGraph."""
 
 import logging
 import json
-import os
 from typing import Sequence, TypedDict, Union
 from pydantic import BaseModel
 
@@ -11,8 +10,8 @@ from langchain.tools import tool
 
 from langgraph.checkpoint.memory import MemorySaver
 from langgraph.graph import MessagesState, StateGraph, START, END
-from blog_graph.configuration import BlogConfigurable
-from blog_graph.tools import post_blog
+from news_graph.configuration import NewsConfigurable
+from news_graph.tools import fetch_hackernews_articles
 from langgraph.prebuilt import ToolNode
 
 # Configure logging to hide INFO messages
@@ -23,8 +22,8 @@ logging.getLogger("langchain").setLevel(logging.WARNING)
 logging.getLogger("langmem").setLevel(logging.WARNING)
 
 
-class BlogPost(BaseModel):
-    """Store blog-related information."""
+class NewsPost(BaseModel):
+    """Store news-related information."""
     title: str
     content: str
     author: str
@@ -43,34 +42,35 @@ class ToolOutput(TypedDict):
 
 
 class AgentState(MessagesState):
-    """State for the blog agent."""
+    """State for the news agent."""
     tool_outputs: Sequence[ToolOutput]
 
 
+class HackerNewsInput(BaseModel):
+    """Input schema for get_hacker_news tool."""
+    limit: int = 5
+
+
 @tool
-async def create_blog_post(
-    title: str,
-    content: str,
-    user_id: str,
-) -> str:
+async def get_hacker_news(input_dict: HackerNewsInput) -> str:
     """
-    Create a new blog post on Thothy.
+    Fetch the latest articles from Hacker News.
 
     Args:
-        title: The title of the blog post
-        content: The content of the blog post (HTML format)
-        user_id: The ID of the user creating the post
+        input_dict: HackerNewsInput containing:
+            limit: Number of articles to fetch (default: 5)
     """
-    # Check the development mode
-    if os.getenv("BLOG_AGENT_DEVELOPMENT_MODE") == "true":
-        user_id = os.getenv("BLOG_AGENT_USER_ID")
-    logging.warning(f"create_blog_post user_id: {user_id}")
-    result = await post_blog(title, content, user_id)
-    return json.dumps(result, indent=2)
+    logging.warning(f"get_hacker_news input: {input_dict}")
+    try:
+        articles = await fetch_hackernews_articles(input_dict.limit)
+        return json.dumps(articles, indent=2)
+    except Exception as e:
+        logging.error(f"Error in get_hacker_news: {str(e)}")
+        raise
 
 
 # Create the tool node with our tools
-tools = [create_blog_post]
+tools = [get_hacker_news]
 tool_node = ToolNode(tools)
 
 llm = init_chat_model(
@@ -92,11 +92,10 @@ async def should_continue(state: MessagesState):
 async def call_model(state: MessagesState):
     """Call the model with the current state."""
     system_msg = (
-        "You are a helpful blog assistant with access to the create_blog_post "
-        "function that allows you to create new blog posts on Thothy.\n\n"
-        "Help users by creating blog posts based on their requests. When "
-        "creating blog posts, ensure the content is well-formatted and "
-        "includes proper HTML tags."
+        "You are a helpful news assistant with access to one main function:\n"
+        "1. get_hacker_news: Fetch latest articles from Hacker News\n"
+        "Help users by fetching news based on their requests. When fetching "
+        "news, you can specify how many articles to fetch."
     )
     messages = [{"role": "system", "content": system_msg}] + state["messages"]
     response = llm.invoke(messages)
@@ -104,7 +103,7 @@ async def call_model(state: MessagesState):
 
 
 # Initialize graph builder with state schema
-workflow = StateGraph(MessagesState, BlogConfigurable)
+workflow = StateGraph(MessagesState, NewsConfigurable)
 
 # Add the nodes we will cycle between
 workflow.add_node("agent", call_model)
@@ -117,6 +116,6 @@ workflow.add_edge("tools", "agent")
 
 # Compile graph
 graph = workflow.compile(checkpointer=MemorySaver())
-graph.name = "blog_graph"
+graph.name = "news_graph"
 
 __all__ = ["graph"]

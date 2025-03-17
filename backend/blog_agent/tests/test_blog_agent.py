@@ -4,7 +4,7 @@ import logging
 import os
 import asyncio
 from dotenv import load_dotenv
-from blog_graph.tools import fetch_hackernews_articles, post_blog
+from blog_graph.tools import post_blog
 
 # Load environment variables
 load_dotenv()
@@ -16,29 +16,43 @@ if not USER_ID:
     raise ValueError("BLOG_AGENT_USER_ID environment variable is not set")
 
 
-async def test_create_blog_with_hn():
-    """Test creating a blog post with Hacker News content."""
+async def test_create_blog():
+    """Test creating a blog post with mock content."""
     try:
-        # Fetch top HN articles
-        articles = await fetch_hackernews_articles(limit=5)
-        logging.warning(f"articles: {articles}")
+        # Mock blog content
+        title = "Getting Started with Python: A Beginner's Guide"
+        content = """
+        <h1>Getting Started with Python: A Beginner's Guide</h1>
 
-        if not articles:
-            print("No Hacker News articles found")
-            return
+        <p>Python has become one of the most popular programming languages in 
+        the world, and for good reason. Its simple syntax, readability, and 
+        vast ecosystem of libraries make it an excellent choice for beginners 
+        and experts alike.</p>
 
-        # Create blog content from HN articles
-        title = "Today's Top Stories from Hacker News"
-        content = "<h1>Latest from Hacker News</h1>\n\n"
+        <h2>Why Choose Python?</h2>
+        <ul>
+            <li>Easy to learn and read</li>
+            <li>Large community and support</li>
+            <li>Extensive library ecosystem</li>
+            <li>Versatile applications (web, data science, AI, etc.)</li>
+        </ul>
 
-        for article in articles:
-            content += (
-                f"<h2><a href='{article['url']}'>{article['title']}</a></h2>\n"
-            )
-            content += (
-                f"<p>Posted by {article['by']} | {article['score']} points | "
-                f"{article['descendants']} comments</p>\n\n"
-            )
+        <h2>Setting Up Your Environment</h2>
+        <p>To get started with Python, you'll need to:</p>
+        <ol>
+            <li>Download Python from python.org</li>
+            <li>Install a code editor (like VS Code or PyCharm)</li>
+            <li>Set up your development environment</li>
+        </ol>
+
+        <h2>Your First Python Program</h2>
+        <pre><code>
+# This is your first Python program
+print("Hello, World!")
+        </code></pre>
+
+        <p>Stay tuned for more Python tutorials and tips!</p>
+        """
 
         # Create the blog post
         result = await post_blog(
@@ -58,4 +72,4 @@ async def test_create_blog_with_hn():
 
 if __name__ == "__main__":
     # Run the test
-    asyncio.run(test_create_blog_with_hn())
+    asyncio.run(test_create_blog())
