@@ -256,7 +256,7 @@ const TeamDialog = ({
 );
 
 export default function TeamPage() {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
   const router = useRouter();
   const [teams, setTeams] = useState<Team[]>([]);
   const [agents, setAgents] = useState<Agent[]>([]);
@@ -269,8 +269,12 @@ export default function TeamPage() {
   const [editingTeam, setEditingTeam] = useState<Team | null>(null);
 
   useEffect(() => {
-    if (!user) {
-      router.push("/login");
+    // Don't redirect while auth is loading
+    if (loading) return;
+    
+    // Only redirect if auth has finished loading and there's no user
+    if (!loading && !user) {
+      router.push("/auth/login");
       return;
     }
 
