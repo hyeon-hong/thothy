@@ -36,6 +36,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { v4 as uuidv4 } from "uuid";
+import { Client } from "@langchain/langgraph-sdk";
+import type { Cron as LangGraphCron } from "@langchain/langgraph-sdk";
+import { createClient as createSupabaseClient } from "@/utils/supabase/client";
 
 type Agent = {
   id: string;
@@ -44,14 +47,7 @@ type Agent = {
   image_url: string;
 };
 
-type Cron = {
-  cron_id: string;
-  thread_id: string;
-  schedule: string;
-  end_time: string;
-  created_at: string;
-  updated_at: string;
-};
+type Cron = LangGraphCron;
 
 type Team = {
   id: string;
@@ -83,35 +79,71 @@ type TeamDialogProps = {
 
 // Add helper function to convert cron to readable text
 const cronToText = (cron: string): string => {
-  if (!cron) return 'Not scheduled';
-  
-  const parts = cron.split(' ');
-  if (parts.length !== 5) return 'Invalid schedule';
+  if (!cron) return "Not scheduled";
+
+  const parts = cron.split(" ");
+  if (parts.length !== 5) return "Invalid schedule";
 
   const [minute, hour, dayOfMonth, month, dayOfWeek] = parts;
 
-  if (minute === '*' && hour === '*' && dayOfMonth === '*' && month === '*' && dayOfWeek === '*') {
-    return 'Every minute';
+  if (
+    minute === "*" &&
+    hour === "*" &&
+    dayOfMonth === "*" &&
+    month === "*" &&
+    dayOfWeek === "*"
+  ) {
+    return "Every minute";
   }
 
-  if (minute === '0' && hour === '*' && dayOfMonth === '*' && month === '*' && dayOfWeek === '*') {
-    return 'Every hour';
+  if (
+    minute === "0" &&
+    hour === "*" &&
+    dayOfMonth === "*" &&
+    month === "*" &&
+    dayOfWeek === "*"
+  ) {
+    return "Every hour";
   }
 
-  if (minute === '0' && hour === '0' && dayOfMonth === '*' && month === '*' && dayOfWeek === '*') {
-    return 'Every day at midnight';
+  if (
+    minute === "0" &&
+    hour === "0" &&
+    dayOfMonth === "*" &&
+    month === "*" &&
+    dayOfWeek === "*"
+  ) {
+    return "Every day at midnight";
   }
 
-  if (minute === '0' && hour === '12' && dayOfMonth === '*' && month === '*' && dayOfWeek === '*') {
-    return 'Every day at noon';
+  if (
+    minute === "0" &&
+    hour === "12" &&
+    dayOfMonth === "*" &&
+    month === "*" &&
+    dayOfWeek === "*"
+  ) {
+    return "Every day at noon";
   }
 
-  if (minute === '0' && hour === '0' && dayOfMonth === '*' && month === '*' && dayOfWeek === '0') {
-    return 'Every Sunday at midnight';
+  if (
+    minute === "0" &&
+    hour === "0" &&
+    dayOfMonth === "*" &&
+    month === "*" &&
+    dayOfWeek === "0"
+  ) {
+    return "Every Sunday at midnight";
   }
 
-  if (minute === '0' && hour === '0' && dayOfMonth === '1' && month === '*' && dayOfWeek === '*') {
-    return 'First day of every month at midnight';
+  if (
+    minute === "0" &&
+    hour === "0" &&
+    dayOfMonth === "1" &&
+    month === "*" &&
+    dayOfWeek === "*"
+  ) {
+    return "First day of every month at midnight";
   }
 
   return `Cron: ${cron}`;
@@ -184,7 +216,9 @@ const TeamDialog = ({
           <option value="0 0 * * *">Every day at midnight</option>
           <option value="0 12 * * *">Every day at noon</option>
           <option value="0 0 * * 0">Every Sunday at midnight</option>
-          <option value="0 0 1 * *">First day of every month at midnight</option>
+          <option value="0 0 1 * *">
+            First day of every month at midnight
+          </option>
         </select>
         <p className="text-sm text-muted-foreground mt-1">
           {cronToText(schedule)}
@@ -327,8 +361,26 @@ const TeamDialog = ({
   </DialogContent>
 );
 
+const createLangGraphClient = async () => {
+  const supabase = createSupabaseClient();
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+  console.log("session: ", session);
+
+  return new Client({
+    // apiUrl: "http://localhost:2024",
+    apiUrl:
+      "https://thothy-develop-ade0901b16765152ba85a0fc2a36964b.us.langgraph.app",
+    apiKey: process.env.NEXT_PUBLIC_LANGSMITH_API_KEY,
+    defaultHeaders: {
+      Authorization: `Bearer ${session?.access_token}`,
+    },
+  });
+};
+
 const getCronhubUrl = (schedule: string): string => {
-  if (!schedule) return '';
+  if (!schedule) return "";
   return `https://crontab.cronhub.io/?cron_expression=${encodeURIComponent(schedule)}`;
 };
 
@@ -337,7 +389,7 @@ export default function TeamPage() {
   const router = useRouter();
   const [teams, setTeams] = useState<Team[]>([]);
   const [agents, setAgents] = useState<Agent[]>([]);
-  const [crons, setCrons] = useState<Cron[]>([]);
+  const [crons, setCrons] = useState<LangGraphCron[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showDialog, setShowDialog] = useState(false);
   const [showSelectionList, setShowSelectionList] = useState(true);
@@ -350,7 +402,7 @@ export default function TeamPage() {
   useEffect(() => {
     // Don't redirect while auth is loading
     if (loading) return;
-    
+
     // Only redirect if auth has finished loading and there's no user
     if (!loading && !user) {
       router.push("/auth/login");
@@ -359,46 +411,48 @@ export default function TeamPage() {
 
     const fetchData = async () => {
       setIsLoading(true);
+      const client = await createLangGraphClient();
+      let cronsData: LangGraphCron[] = [];
       try {
-        const [teamsResponse, agentsResponse, cronsResponse] = await Promise.all([
+        // Fetch crons using LangGraph client
+        console.log("client: ", client);
+        cronsData = await client.crons.search({
+          limit: 100,
+        });
+        console.log("cronsData: ", cronsData);
+      } catch (error) {
+        console.error("Error fetching data:", error);
+      } finally {
+        const [teamsResponse, agentsResponse] = await Promise.all([
           fetch("/api/teams"),
           fetch("/api/agents"),
-          fetch("http://localhost:2024/runs/crons/search", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              limit: 100 // Get all crons
-            })
-          })
         ]);
 
-        if (!teamsResponse.ok || !agentsResponse.ok || !cronsResponse.ok) {
+        if (!teamsResponse.ok || !agentsResponse.ok) {
           throw new Error("Failed to fetch data");
         }
 
-        const [teamsData, agentsData, cronsData] = await Promise.all([
+        const [teamsData, agentsData] = await Promise.all([
           teamsResponse.json(),
           agentsResponse.json(),
-          cronsResponse.json()
         ]);
+        console.log("teamsData: ", teamsData);
+        console.log("agentsData: ", agentsData);
 
         // Match crons with teams and update team schedules
         const teamsWithCrons = teamsData.map((team: Team) => {
-          const matchingCron = cronsData.find((cron: Cron) => cron.cron_id === team.cron_id);
+          const matchingCron = cronsData.find(
+            (cron) => cron.cron_id === team.cron_id
+          );
           return {
             ...team,
-            schedule: matchingCron ? matchingCron.schedule : team.schedule
+            schedule: matchingCron ? matchingCron.schedule : team.schedule,
           };
         });
 
         setTeams(teamsWithCrons);
         setAgents(agentsData);
         setCrons(cronsData);
-      } catch (error) {
-        console.error("Error fetching data:", error);
-      } finally {
         setIsLoading(false);
       }
     };
@@ -455,33 +509,26 @@ export default function TeamPage() {
     if (!editingTeam) return;
 
     try {
+      const client = await createLangGraphClient();
+
       // If schedule changed, handle cron updates
       if (editingTeam.schedule !== schedule) {
         // 1. Delete existing cron if it exists
         if (editingTeam.cron_id) {
           try {
             // Search for existing cron
-            const cronsResponse = await fetch("http://localhost:2024/runs/crons/search", {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-              },
-              body: JSON.stringify({
-                limit: 1,
-                thread_id: editingTeam.id
-              })
+            const crons = await client.crons.search({
+              limit: 1,
+              threadId: editingTeam.id,
             });
 
-            if (cronsResponse.ok) {
-              const crons = await cronsResponse.json();
-              const existingCron = crons.find((cron: Cron) => cron.cron_id === editingTeam.cron_id);
+            const existingCron = crons.find(
+              (cron) => cron.cron_id === editingTeam.cron_id
+            );
 
-              if (existingCron) {
-                // Delete the existing cron
-                await fetch(`http://localhost:2024/runs/crons/${existingCron.cron_id}`, {
-                  method: "DELETE"
-                });
-              }
+            if (existingCron) {
+              // Delete the existing cron
+              await client.crons.delete(existingCron.cron_id);
             }
           } catch (error) {
             console.error("Error deleting existing cron:", error);
@@ -491,26 +538,14 @@ export default function TeamPage() {
         // 2. Create new cron if schedule is set
         if (schedule) {
           try {
-            const createCronResponse = await fetch("http://localhost:2024/runs/crons", {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
+            const newCron = await client.crons.create("chat_graph", {
+              schedule: schedule,
+              input: {
+                team_id: editingTeam.id,
+                action: "run_team",
               },
-              body: JSON.stringify({
-                assistant_id: "chat_graph", // Using the default graph ID
-                schedule: schedule,
-                input: {
-                  team_id: editingTeam.id,
-                  action: "run_team"
-                }
-              })
             });
 
-            if (!createCronResponse.ok) {
-              throw new Error("Failed to create cron");
-            }
-
-            const newCron = await createCronResponse.json();
             editingTeam.cron_id = newCron.cron_id;
           } catch (error) {
             console.error("Error creating new cron:", error);
@@ -529,7 +564,7 @@ export default function TeamPage() {
           description: teamDescription,
           agent_ids: selectedAgents,
           schedule: schedule,
-          cron_id: editingTeam.cron_id
+          cron_id: editingTeam.cron_id,
         }),
       });
 
@@ -538,10 +573,14 @@ export default function TeamPage() {
 
       // Update the team in the teams list
       setTeams((prevTeams) =>
-        prevTeams.map((team) => (team.id === editingTeam.id ? {
-          ...data,
-          schedule: schedule // Ensure we use the new schedule
-        } : team))
+        prevTeams.map((team) =>
+          team.id === editingTeam.id
+            ? {
+                ...data,
+                schedule: schedule, // Ensure we use the new schedule
+              }
+            : team
+        )
       );
 
       // Reset form
@@ -585,7 +624,15 @@ export default function TeamPage() {
         </Box>
       ) : (
         <>
-          <Box sx={{ mt: 4, mb: 4, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <Box
+            sx={{
+              mt: 4,
+              mb: 4,
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+            }}
+          >
             <div>
               <Typography variant="h4" component="h1" gutterBottom>
                 Teams
@@ -657,7 +704,7 @@ export default function TeamPage() {
                           setTeamName(team.name);
                           setTeamDescription(team.description);
                           setSelectedAgents(team.agent_list);
-                          setSchedule(team.schedule || '');
+                          setSchedule(team.schedule || "");
                           setShowDialog(true);
                         }}
                         className="h-8 w-8 p-0"
@@ -671,17 +718,18 @@ export default function TeamPage() {
                         {team.description}
                       </p>
                       <p className="text-sm text-muted-foreground mb-4">
-                        Schedule: {team.schedule ? (
-                          <a 
-                            href={getCronhubUrl(team.schedule)} 
-                            target="_blank" 
+                        Schedule:{" "}
+                        {team.schedule ? (
+                          <a
+                            href={getCronhubUrl(team.schedule)}
+                            target="_blank"
                             rel="noopener noreferrer"
                             className="text-blue-500 hover:text-blue-700 underline"
                           >
                             {cronToText(team.schedule)}
                           </a>
                         ) : (
-                          'Not scheduled'
+                          "Not scheduled"
                         )}
                       </p>
                       <div className="flex flex-wrap gap-2">
