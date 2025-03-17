@@ -149,13 +149,27 @@ export default function TeamPage() {
                           checked={selectedAgents.includes(agent.id)}
                           onCheckedChange={() => toggleAgent(agent.id)}
                           onClick={(e: React.MouseEvent) => e.stopPropagation()}
+                          className={cn(
+                            "transition-colors",
+                            selectedAgents.includes(agent.id) 
+                              ? "border-primary data-[state=checked]:bg-white data-[state=checked]:text-black" 
+                              : ""
+                          )}
+                          style={{
+                            ...(selectedAgents.includes(agent.id) ? {
+                              '--tw-checkbox-bg': 'white',
+                              '--tw-checkbox-fg': 'black',
+                            } : {})
+                          } as React.CSSProperties}
                         />
                       </div>
                       <div className="flex-1">
                         <div className="flex items-center">
-                          {agent.name}
+                          <span className={selectedAgents.includes(agent.id) ? "font-medium" : ""}>
+                            {agent.name}
+                          </span>
                           {selectedAgents.includes(agent.id) && (
-                            <Badge variant="secondary" className="ml-2">
+                            <Badge variant="secondary" className="ml-2 bg-white text-black border border-gray-300">
                               Selected
                             </Badge>
                           )}
