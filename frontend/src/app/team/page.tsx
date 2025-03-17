@@ -35,6 +35,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { v4 as uuidv4 } from "uuid";
 
 type Agent = {
   id: string;
@@ -86,7 +87,9 @@ const TeamDialog = ({
     <DialogHeader>
       <DialogTitle>{isEdit ? "Edit team" : "Build a team"}</DialogTitle>
       <DialogDescription>
-        {isEdit ? "Update your team details and agents." : "Create your team and choose the agents you want to work with."}
+        {isEdit
+          ? "Update your team details and agents."
+          : "Create your team and choose the agents you want to work with."}
       </DialogDescription>
     </DialogHeader>
 
@@ -150,9 +153,7 @@ const TeamDialog = ({
           onClick={() => setShowSelectionList((prev) => !prev)}
           className="absolute right-2 top-1/2 transform -translate-y-1/2 h-6 w-6 rounded-full flex items-center justify-center hover:bg-muted-foreground/10"
           aria-label={
-            showSelectionList
-              ? "Hide selection list"
-              : "Show selection list"
+            showSelectionList ? "Hide selection list" : "Show selection list"
           }
         >
           {showSelectionList ? (
@@ -165,75 +166,79 @@ const TeamDialog = ({
 
       <div className="flex-1 overflow-hidden flex flex-col">
         {showSelectionList ? (
-          <Command
-            className="border rounded-lg flex-1 overflow-hidden"
-            style={{
-              height: "300px",
-            }}
-          >
-            <CommandInput placeholder="Search agents..." />
-            <CommandEmpty>No agents found.</CommandEmpty>
-            <CommandGroup className="overflow-y-auto h-full custom-scrollbar">
-              {(agents || []).map((agent) => (
-                <CommandItem
-                  key={agent.id}
-                  onSelect={() => toggleAgent(agent.id)}
-                  className="cursor-pointer"
-                >
-                  <div className="flex items-center space-x-2 mr-2">
-                    <Checkbox
-                      id={`checkbox-${agent.id}`}
-                      checked={selectedAgents.includes(agent.id)}
-                      onCheckedChange={() => toggleAgent(agent.id)}
-                      onClick={(e: React.MouseEvent) =>
-                        e.stopPropagation()
-                      }
-                      className={cn(
-                        "transition-colors",
-                        selectedAgents.includes(agent.id)
-                          ? "border-primary data-[state=checked]:bg-white data-[state=checked]:text-black"
-                          : ""
-                      )}
-                      style={
-                        {
-                          ...(selectedAgents.includes(agent.id)
-                            ? {
-                                "--tw-checkbox-bg": "white",
-                                "--tw-checkbox-fg": "black",
-                              }
-                            : {}),
-                        } as React.CSSProperties
-                      }
-                    />
-                  </div>
-                  <div className="flex-1">
-                    <div className="flex items-center">
-                      <span
-                        className={
+          agents ? (
+            <Command
+              className="border rounded-lg flex-1 overflow-hidden"
+              style={{
+                height: "300px",
+              }}
+            >
+              <CommandInput placeholder="Search agents..." />
+              <CommandEmpty>No agents found.</CommandEmpty>
+              <CommandGroup className="overflow-y-auto h-full custom-scrollbar">
+                {agents.map((agent) => (
+                  <CommandItem
+                    key={agent.id}
+                    onSelect={() => toggleAgent(agent.id)}
+                    className="cursor-pointer"
+                  >
+                    <div className="flex items-center space-x-2 mr-2">
+                      <Checkbox
+                        id={`checkbox-${agent.id}`}
+                        checked={selectedAgents.includes(agent.id)}
+                        onCheckedChange={() => toggleAgent(agent.id)}
+                        onClick={(e: React.MouseEvent) => e.stopPropagation()}
+                        className={cn(
+                          "transition-colors",
                           selectedAgents.includes(agent.id)
-                            ? "font-medium"
+                            ? "border-primary data-[state=checked]:bg-white data-[state=checked]:text-black"
                             : ""
+                        )}
+                        style={
+                          {
+                            ...(selectedAgents.includes(agent.id)
+                              ? {
+                                  "--tw-checkbox-bg": "white",
+                                  "--tw-checkbox-fg": "black",
+                                }
+                              : {}),
+                          } as React.CSSProperties
                         }
-                      >
-                        {agent.name}
-                      </span>
-                      {selectedAgents.includes(agent.id) && (
-                        <Badge
-                          variant="secondary"
-                          className="ml-2 bg-white text-black border border-gray-300"
-                        >
-                          Selected
-                        </Badge>
-                      )}
+                      />
                     </div>
-                    <p className="text-sm text-muted-foreground">
-                      {agent.description}
-                    </p>
-                  </div>
-                </CommandItem>
-              ))}
-            </CommandGroup>
-          </Command>
+                    <div className="flex-1">
+                      <div className="flex items-center">
+                        <span
+                          className={
+                            selectedAgents.includes(agent.id)
+                              ? "font-medium"
+                              : ""
+                          }
+                        >
+                          {agent.name}
+                        </span>
+                        {selectedAgents.includes(agent.id) && (
+                          <Badge
+                            variant="secondary"
+                            className="ml-2 bg-white text-black border border-gray-300"
+                          >
+                            Selected
+                          </Badge>
+                        )}
+                      </div>
+                      <p className="text-sm text-muted-foreground">
+                        {agent.description}
+                      </p>
+                    </div>
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+            </Command>
+          ) : (
+            <div className="border rounded-lg flex-1 flex items-center justify-center p-4 text-muted-foreground text-sm">
+              Click the arrow button above to view agents
+            </div>
+          )
         ) : (
           <div className="border rounded-lg flex-1 flex items-center justify-center p-4 text-muted-foreground text-sm">
             Click the arrow button above to view agents
@@ -243,10 +248,7 @@ const TeamDialog = ({
     </div>
 
     <DialogFooter className="mt-4">
-      <Button
-        variant="contained"
-        onClick={onSubmit}
-      >
+      <Button variant="contained" onClick={onSubmit}>
         {isEdit ? "Save changes" : "Build"}
       </Button>
     </DialogFooter>
@@ -260,7 +262,7 @@ export default function TeamPage() {
   const [agents, setAgents] = useState<Agent[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showDialog, setShowDialog] = useState(false);
-  const [showSelectionList, setShowSelectionList] = useState(false);
+  const [showSelectionList, setShowSelectionList] = useState(true);
   const [selectedAgents, setSelectedAgents] = useState<string[]>([]);
   const [teamName, setTeamName] = useState("");
   const [teamDescription, setTeamDescription] = useState("");
@@ -268,7 +270,7 @@ export default function TeamPage() {
 
   useEffect(() => {
     if (!user) {
-      router.push('/login');
+      router.push("/login");
       return;
     }
 
@@ -277,16 +279,16 @@ export default function TeamPage() {
       try {
         const [teamsResponse, agentsResponse] = await Promise.all([
           fetch("/api/teams"),
-          fetch("/api/agents")
+          fetch("/api/agents"),
         ]);
 
         if (!teamsResponse.ok || !agentsResponse.ok) {
-          throw new Error('Failed to fetch data');
+          throw new Error("Failed to fetch data");
         }
 
         const [teamsData, agentsData] = await Promise.all([
           teamsResponse.json(),
-          agentsResponse.json()
+          agentsResponse.json(),
         ]);
 
         setTeams(teamsData);
@@ -346,7 +348,7 @@ export default function TeamPage() {
 
   const handleEditTeam = async () => {
     if (!editingTeam) return;
-    
+
     try {
       const response = await fetch(`/api/teams/${editingTeam.id}`, {
         method: "PUT",
@@ -365,9 +367,7 @@ export default function TeamPage() {
 
       // Update the team in the teams list
       setTeams((prevTeams) =>
-        prevTeams.map((team) =>
-          team.id === editingTeam.id ? data : team
-        )
+        prevTeams.map((team) => (team.id === editingTeam.id ? data : team))
       );
 
       // Reset form
@@ -400,7 +400,12 @@ export default function TeamPage() {
     <Container maxWidth="lg">
       <Header currentView="team" />
       {isLoading ? (
-        <Box display="flex" justifyContent="center" alignItems="center" minHeight="200px">
+        <Box
+          display="flex"
+          justifyContent="center"
+          alignItems="center"
+          minHeight="200px"
+        >
           <Typography>Loading...</Typography>
         </Box>
       ) : (
@@ -414,7 +419,12 @@ export default function TeamPage() {
             </Typography>
           </Box>
 
-          <Dialog open={showDialog} onOpenChange={(open) => handleDialogChange(open, Boolean(editingTeam))}>
+          <Dialog
+            open={showDialog}
+            onOpenChange={(open) =>
+              handleDialogChange(open, Boolean(editingTeam))
+            }
+          >
             <DialogTrigger asChild>
               <Button
                 variant="contained"
@@ -444,7 +454,11 @@ export default function TeamPage() {
           {/* Teams grid */}
           <Box sx={{ mt: 4 }}>
             {teams.length === 0 ? (
-              <Typography variant="body1" color="text.secondary" textAlign="center">
+              <Typography
+                variant="body1"
+                color="text.secondary"
+                textAlign="center"
+              >
                 No teams created yet. Start by building your first team!
               </Typography>
             ) : (
@@ -455,7 +469,8 @@ export default function TeamPage() {
                       <div>
                         <CardTitle>{team.name}</CardTitle>
                         <CardDescription>
-                          Created on {new Date(team.created_at).toLocaleDateString()}
+                          Created on{" "}
+                          {new Date(team.created_at).toLocaleDateString()}
                         </CardDescription>
                       </div>
                       <Button
