@@ -1,12 +1,16 @@
 import logging
-from langgraph.graph import MessagesState, StateGraph, START, END
+from typing import Literal
+from langgraph.graph import StateGraph, START, END
+from langchain_core.messages import HumanMessage
 from langgraph.types import Command
+from langgraph.graph import MessagesState
 from langchain_anthropic import ChatAnthropic
 from typing_extensions import TypedDict
-from typing import Literal
 
 from blog_graph.graph import graph as blog_graph
 from news_graph.graph import graph as news_graph
+
+llm = ChatAnthropic(model="claude-3-5-sonnet-latest")
 
 members = ["news_agent", "blog_agent"]
 # Our team supervisor is an LLM node. It just picks the next agent to process
@@ -28,46 +32,58 @@ class Router(TypedDict):
     next: Literal[*options]
 
 
-llm = ChatAnthropic(model="claude-3-5-sonnet-latest")
+class State(MessagesState):
+    next: str
 
 
-async def call_news_agent(state: MessagesState):
-    """Call the news agent with the current state."""
-    return await news_graph.invoke(state)
-
-
-async def call_blog_agent(state: MessagesState):
-    """Call the blog agent with the current state."""
-    return await blog_graph.invoke(state)
-
-
-def supervisor_node(state: MessagesState) -> Command[Literal[*members, "__end__"]]:
+def supervisor_node(state: State) -> Command[Literal[*members, "__end__"]]:
     messages = [
         {"role": "system", "content": system_prompt},
     ] + state["messages"]
-    logging.info(f"Supervisor messages: {messages}")
     response = llm.with_structured_output(Router).invoke(messages)
-    logging.info(f"Supervisor response: {response}")
     goto = response["next"]
+    logging.info(f"Supervisor goto: {goto}")
     if goto == "FINISH":
         goto = END
 
     return Command(goto=goto, update={"next": goto})
 
 
-# Build the graph
-builder = StateGraph(MessagesState)
+async def news_agent_node(state: State) -> Command[Literal["supervisor"]]:
+    result = await news_graph.ainvoke(state)
+    logging.info(f"News agent result: {result}")
+    return Command(
+        update={
+            "messages": [
+                HumanMessage(
+                    content=result["messages"][-1].content,
+                    name="news_agent"
+                )
+            ]
+        },
+        goto="supervisor",
+    )
 
-# Add edges
+
+async def blog_agent_node(state: State) -> Command[Literal["supervisor"]]:
+    result = await blog_graph.ainvoke(state)
+    logging.info(f"Blog agent result: {result}")
+    return Command(
+        update={
+            "messages": [
+                HumanMessage(
+                    content=result["messages"][-1].content,
+                    name="blog_agent"
+                )
+            ]
+        },
+        goto="supervisor",
+    )
+
+
+builder = StateGraph(State)
 builder.add_edge(START, "supervisor")
-
-# Add nodes
 builder.add_node("supervisor", supervisor_node)
-builder.add_node("news_agent", call_news_agent)
-builder.add_node("blog_agent", call_blog_agent)
-
-# Compile the graph
+builder.add_node("news_agent", news_agent_node)
+builder.add_node("blog_agent", blog_agent_node)
 graph = builder.compile()
-graph.name = "team_graph"
-
-__all__ = ["graph"]
