@@ -181,10 +181,15 @@ export default function TeamPage() {
                   
                   <div className="flex-1 overflow-hidden flex flex-col">
                     {showSelectionList ? (
-                      <Command className="border rounded-lg flex-1 overflow-auto">
+                      <Command className="border rounded-lg flex-1 overflow-auto" style={{ 
+                        maxHeight: "300px", 
+                        overflowY: "auto", 
+                        scrollbarWidth: "thin",
+                        scrollbarColor: "rgba(155, 155, 155, 0.5) transparent" 
+                      }}>
                         <CommandInput placeholder="Search agents..." />
                         <CommandEmpty>No agents found.</CommandEmpty>
-                        <CommandGroup>
+                        <CommandGroup className="overflow-y-auto max-h-[240px] custom-scrollbar pb-0">
                           {agents.map((agent) => (
                             <CommandItem
                               key={agent.id}
