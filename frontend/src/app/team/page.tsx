@@ -19,9 +19,10 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Check } from "lucide-react";
+import { Check, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 
 type Agent = {
   id: string;
@@ -66,6 +67,17 @@ export default function TeamPage() {
     );
   };
 
+  const removeAgent = (agentId: string, e: React.MouseEvent<SVGSVGElement> | React.KeyboardEvent<SVGSVGElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setSelectedAgents((current) => current.filter((id) => id !== agentId));
+  };
+
+  const getAgentName = (agentId: string) => {
+    const agent = agents.find((a) => a.id === agentId);
+    return agent ? agent.name : '';
+  };
+
   if (loading) {
     return (
       <>
@@ -100,6 +112,27 @@ export default function TeamPage() {
               </CardDescription>
             </CardHeader>
             <CardContent>
+              <div className="flex flex-wrap gap-1 p-2 mb-2 border rounded-md min-h-10">
+                {selectedAgents.length === 0 && (
+                  <span className="text-sm text-muted-foreground px-1 py-0.5">
+                    No agents selected
+                  </span>
+                )}
+                {selectedAgents.map((agentId) => (
+                  <Badge key={agentId} variant="secondary" className="flex items-center gap-1 px-2 py-1">
+                    {getAgentName(agentId)}
+                    <button
+                      type="button"
+                      onClick={() => setSelectedAgents(current => current.filter(id => id !== agentId))}
+                      className="ml-1 h-4 w-4 rounded-full inline-flex items-center justify-center hover:bg-muted-foreground/20"
+                      aria-label={`Remove ${getAgentName(agentId)}`}
+                    >
+                      <X className="h-3 w-3 text-muted-foreground hover:text-destructive" />
+                    </button>
+                  </Badge>
+                ))}
+              </div>
+              
               <Command className="border rounded-lg">
                 <CommandInput placeholder="Search agents..." />
                 <CommandEmpty>No agents found.</CommandEmpty>
@@ -110,12 +143,14 @@ export default function TeamPage() {
                       onSelect={() => toggleAgent(agent.id)}
                       className="cursor-pointer"
                     >
-                      <Check
-                        className={cn(
-                          "mr-2 h-4 w-4",
-                          selectedAgents.includes(agent.id) ? "opacity-100" : "opacity-0"
-                        )}
-                      />
+                      <div className="flex items-center space-x-2 mr-2">
+                        <Checkbox 
+                          id={`checkbox-${agent.id}`}
+                          checked={selectedAgents.includes(agent.id)}
+                          onCheckedChange={() => toggleAgent(agent.id)}
+                          onClick={(e: React.MouseEvent) => e.stopPropagation()}
+                        />
+                      </div>
                       <div className="flex-1">
                         <div className="flex items-center">
                           {agent.name}
