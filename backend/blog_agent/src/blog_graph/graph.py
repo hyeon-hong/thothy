@@ -1,4 +1,4 @@
-"""News agent using LangGraph."""
+"""Blog agent using LangGraph."""
 
 import logging
 from pydantic import BaseModel
@@ -8,7 +8,7 @@ from langchain.chat_models import init_chat_model
 from langgraph.checkpoint.memory import MemorySaver
 from langgraph.graph import MessagesState, StateGraph, START, END
 from langmem import create_memory_store_manager
-from news_graph.configuration import NewsConfigurable
+from blog_graph.configuration import BlogConfigurable
 
 # Configure logging to hide INFO messages
 logging.basicConfig(level=logging.WARNING)
@@ -23,36 +23,37 @@ llm = init_chat_model(
     temperature=0.7
 )
 
-# Create memory manager for news-related information
-class NewsItem(BaseModel):
-    """Store news-related information."""
+# Create memory manager for blog-related information
+class BlogPost(BaseModel):
+    """Store blog-related information."""
     title: str
     content: str
-    source: str
+    author: str
     category: str
     timestamp: str
     summary: str | None = None
+    tags: list[str] | None = None
 
-namespace = ("news", "{user_id}", "articles")
+namespace = ("blog", "{user_id}", "posts")
 
 memory_manager = create_memory_store_manager(
     "anthropic:claude-3-sonnet-20240229",
-    schemas=[NewsItem],
+    schemas=[BlogPost],
     enable_inserts=True,
     enable_deletes=True,
-    instructions="Extract and organize news information",
+    instructions="Extract and organize blog content information",
     namespace=namespace,
 )
 
-async def news_processor(
+async def blog_processor(
     state: MessagesState,
-    config: NewsConfigurable,
+    config: BlogConfigurable,
 ) -> dict:
-    """Process news-related requests and generate responses."""
+    """Process blog-related requests and generate responses."""
     system_msg = (
-        "You are a helpful news assistant. Help the user find, summarize, "
-        "and understand news articles. Provide balanced and factual "
-        "information from reliable sources."
+        "You are a helpful blog assistant. Help the user find, summarize, "
+        "and understand blog posts. Provide insights and analysis about "
+        "blog content and trends."
     )
 
     # Invoke the LLM
@@ -62,20 +63,20 @@ async def news_processor(
 
     return {"messages": response}
 
-"""Build and return the news graph."""
+"""Build and return the blog graph."""
 
 # Initialize graph builder with state schema
-workflow = StateGraph(MessagesState, NewsConfigurable)
+workflow = StateGraph(MessagesState, BlogConfigurable)
 
-# Add news processor node
-workflow.add_node("news_processor", news_processor)
+# Add blog processor node
+workflow.add_node("blog_processor", blog_processor)
 
-# Add edges - start at news processor and can end after news processor
-workflow.add_edge(START, "news_processor")
-workflow.add_edge("news_processor", END)
+# Add edges - start at blog processor and can end after blog processor
+workflow.add_edge(START, "blog_processor")
+workflow.add_edge("blog_processor", END)
 
 # Compile graph
 graph = workflow.compile(checkpointer=MemorySaver())
-graph.name = "news_graph"
+graph.name = "blog_graph"
 
 __all__ = ["graph"] 

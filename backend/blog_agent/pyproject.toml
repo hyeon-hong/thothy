@@ -1,7 +1,7 @@
 [project]
-name = "news_agent"
+name = "blog_agent"
 version = "0.0.1"
-description = "An agent that can fetch and process news information."
+description = "An agent that can fetch and process blog content."
 authors = [
     { name = "Thothy", email = "ai.thothy@gmail.com" },
 ]
@@ -28,10 +28,10 @@ requires = ["setuptools>=73.0.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools]
-packages = ["news_graph", "thothy.news_graph"]
+packages = ["blog_graph", "thothy.blog_graph"]
 [tool.setuptools.package-dir]
-"news_graph" = "src/news_graph"
-"thothy.news_graph" = "src/news_graph"
+"blog_graph" = "src/blog_graph"
+"thothy.blog_graph" = "src/blog_graph"
 
 
 [tool.setuptools.package-data]

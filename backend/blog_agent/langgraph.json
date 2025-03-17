@@ -3,7 +3,7 @@
     "."
   ],
   "graphs": {
-    "chat_graph": "./src/chat_graph/graph.py:graph"
+    "blog_graph": "./src/blog_graph/graph.py:graph"
   },
   "auth": {
     "path": "../security/auth.py:auth",
@@ -11,14 +11,14 @@
   },
   "env": "../../.env",
   "python_version": "3.12",
-  "module": "news_graph.graph",
-  "class": "NewsGraph",
+  "module": "blog_graph.graph",
+  "class": "BlogGraph",
   "config": {
-    "module": "news_graph.configuration",
-    "class": "NewsConfiguration"
+    "module": "blog_graph.configuration",
+    "class": "BlogConfiguration"
   },
   "api": {
     "module": ".langgraph_api.api",
-    "class": "NewsAPI"
+    "class": "BlogAPI"
   }
 }
