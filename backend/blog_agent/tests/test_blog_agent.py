@@ -25,9 +25,9 @@ async def test_create_blog():
         <h1>Getting Started with Python: A Beginner's Guide</h1>
 
         <p>Python has become one of the most popular programming languages in 
-        the world, and for good reason. Its simple syntax, readability, and vast 
-        ecosystem of libraries make it an excellent choice for beginners and 
-        experts alike.</p>
+        the world, and for good reason. Its simple syntax, readability, and 
+        vast ecosystem of libraries make it an excellent choice for beginners 
+        and experts alike.</p>
 
         <h2>Why Choose Python?</h2>
         <ul>

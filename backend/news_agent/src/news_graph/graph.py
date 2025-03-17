@@ -94,8 +94,8 @@ async def call_model(state: MessagesState):
     system_msg = (
         "You are a helpful news assistant with access to one main function:\n"
         "1. get_hacker_news: Fetch latest articles from Hacker News\n"
-        "Help users by fetching news based on their requests. When fetching news, "
-        "you can specify how many articles to fetch."
+        "Help users by fetching news based on their requests. When fetching "
+        "news, you can specify how many articles to fetch."
     )
     messages = [{"role": "system", "content": system_msg}] + state["messages"]
     response = llm.invoke(messages)

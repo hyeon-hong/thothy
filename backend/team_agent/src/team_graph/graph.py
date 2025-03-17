@@ -34,7 +34,9 @@ class State(MessagesState):
     next: str
 
 
-def supervisor_node(state: State) -> Command[Literal["news_agent", "blog_agent", "__end__"]]:
+def supervisor_node(
+    state: State
+) -> Command[Literal["news_agent", "blog_agent", "__end__"]]:
     messages = [
         {"role": "system", "content": system_prompt},
     ] + state["messages"]
