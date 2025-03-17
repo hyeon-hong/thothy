@@ -414,46 +414,47 @@ export default function TeamPage() {
         </Box>
       ) : (
         <>
-          <Box sx={{ mt: 4, mb: 4 }}>
-            <Typography variant="h4" component="h1" gutterBottom>
-              Teams
-            </Typography>
-            <Typography variant="body1" color="text.secondary">
-              Create and manage your agent teams
-            </Typography>
+          <Box sx={{ mt: 4, mb: 4, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div>
+              <Typography variant="h4" component="h1" gutterBottom>
+                Teams
+              </Typography>
+              <Typography variant="body1" color="text.secondary">
+                Create and manage your agent teams
+              </Typography>
+            </div>
+            <Dialog
+              open={showDialog}
+              onOpenChange={(open) =>
+                handleDialogChange(open, Boolean(editingTeam))
+              }
+            >
+              <DialogTrigger asChild>
+                <Button
+                  variant="contained"
+                  startIcon={<Users />}
+                  onClick={() => setShowDialog(true)}
+                >
+                  Build a team
+                </Button>
+              </DialogTrigger>
+              <TeamDialog
+                isEdit={Boolean(editingTeam)}
+                teamName={teamName}
+                setTeamName={setTeamName}
+                teamDescription={teamDescription}
+                setTeamDescription={setTeamDescription}
+                selectedAgents={selectedAgents}
+                setSelectedAgents={setSelectedAgents}
+                showSelectionList={showSelectionList}
+                setShowSelectionList={setShowSelectionList}
+                agents={agents}
+                onSubmit={editingTeam ? handleEditTeam : handleBuildTeam}
+                getAgentName={getAgentName}
+                toggleAgent={toggleAgent}
+              />
+            </Dialog>
           </Box>
-
-          <Dialog
-            open={showDialog}
-            onOpenChange={(open) =>
-              handleDialogChange(open, Boolean(editingTeam))
-            }
-          >
-            <DialogTrigger asChild>
-              <Button
-                variant="contained"
-                startIcon={<Users />}
-                onClick={() => setShowDialog(true)}
-              >
-                Build a team
-              </Button>
-            </DialogTrigger>
-            <TeamDialog
-              isEdit={Boolean(editingTeam)}
-              teamName={teamName}
-              setTeamName={setTeamName}
-              teamDescription={teamDescription}
-              setTeamDescription={setTeamDescription}
-              selectedAgents={selectedAgents}
-              setSelectedAgents={setSelectedAgents}
-              showSelectionList={showSelectionList}
-              setShowSelectionList={setShowSelectionList}
-              agents={agents}
-              onSubmit={editingTeam ? handleEditTeam : handleBuildTeam}
-              getAgentName={getAgentName}
-              toggleAgent={toggleAgent}
-            />
-          </Dialog>
 
           {/* Teams grid */}
           <Box sx={{ mt: 4 }}>
