@@ -174,7 +174,7 @@ const TeamDialog = ({
             <CommandInput placeholder="Search agents..." />
             <CommandEmpty>No agents found.</CommandEmpty>
             <CommandGroup className="overflow-y-auto h-full custom-scrollbar">
-              {agents?.map((agent) => (
+              {(agents || []).map((agent) => (
                 <CommandItem
                   key={agent.id}
                   onSelect={() => toggleAgent(agent.id)}
