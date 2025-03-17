@@ -44,6 +44,15 @@ type Agent = {
   image_url: string;
 };
 
+type Cron = {
+  cron_id: string;
+  thread_id: string;
+  schedule: string;
+  end_time: string;
+  created_at: string;
+  updated_at: string;
+};
+
 type Team = {
   id: string;
   name: string;
@@ -51,6 +60,7 @@ type Team = {
   agent_list: string[];
   created_at: string;
   schedule: string; // cron expression
+  cron_id?: string; // Optional cron ID reference
 };
 
 type TeamDialogProps = {
@@ -317,11 +327,17 @@ const TeamDialog = ({
   </DialogContent>
 );
 
+const getCronhubUrl = (schedule: string): string => {
+  if (!schedule) return '';
+  return `https://crontab.cronhub.io/?cron_expression=${encodeURIComponent(schedule)}`;
+};
+
 export default function TeamPage() {
   const { user, loading } = useAuth();
   const router = useRouter();
   const [teams, setTeams] = useState<Team[]>([]);
   const [agents, setAgents] = useState<Agent[]>([]);
+  const [crons, setCrons] = useState<Cron[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showDialog, setShowDialog] = useState(false);
   const [showSelectionList, setShowSelectionList] = useState(true);
@@ -344,22 +360,42 @@ export default function TeamPage() {
     const fetchData = async () => {
       setIsLoading(true);
       try {
-        const [teamsResponse, agentsResponse] = await Promise.all([
+        const [teamsResponse, agentsResponse, cronsResponse] = await Promise.all([
           fetch("/api/teams"),
           fetch("/api/agents"),
+          fetch("http://localhost:2024/runs/crons/search", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              limit: 100 // Get all crons
+            })
+          })
         ]);
 
-        if (!teamsResponse.ok || !agentsResponse.ok) {
+        if (!teamsResponse.ok || !agentsResponse.ok || !cronsResponse.ok) {
           throw new Error("Failed to fetch data");
         }
 
-        const [teamsData, agentsData] = await Promise.all([
+        const [teamsData, agentsData, cronsData] = await Promise.all([
           teamsResponse.json(),
           agentsResponse.json(),
+          cronsResponse.json()
         ]);
 
-        setTeams(teamsData);
+        // Match crons with teams and update team schedules
+        const teamsWithCrons = teamsData.map((team: Team) => {
+          const matchingCron = cronsData.find((cron: Cron) => cron.cron_id === team.cron_id);
+          return {
+            ...team,
+            schedule: matchingCron ? matchingCron.schedule : team.schedule
+          };
+        });
+
+        setTeams(teamsWithCrons);
         setAgents(agentsData);
+        setCrons(cronsData);
       } catch (error) {
         console.error("Error fetching data:", error);
       } finally {
@@ -419,6 +455,70 @@ export default function TeamPage() {
     if (!editingTeam) return;
 
     try {
+      // If schedule changed, handle cron updates
+      if (editingTeam.schedule !== schedule) {
+        // 1. Delete existing cron if it exists
+        if (editingTeam.cron_id) {
+          try {
+            // Search for existing cron
+            const cronsResponse = await fetch("http://localhost:2024/runs/crons/search", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                limit: 1,
+                thread_id: editingTeam.id
+              })
+            });
+
+            if (cronsResponse.ok) {
+              const crons = await cronsResponse.json();
+              const existingCron = crons.find((cron: Cron) => cron.cron_id === editingTeam.cron_id);
+
+              if (existingCron) {
+                // Delete the existing cron
+                await fetch(`http://localhost:2024/runs/crons/${existingCron.cron_id}`, {
+                  method: "DELETE"
+                });
+              }
+            }
+          } catch (error) {
+            console.error("Error deleting existing cron:", error);
+          }
+        }
+
+        // 2. Create new cron if schedule is set
+        if (schedule) {
+          try {
+            const createCronResponse = await fetch("http://localhost:2024/runs/crons", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                assistant_id: "chat_graph", // Using the default graph ID
+                schedule: schedule,
+                input: {
+                  team_id: editingTeam.id,
+                  action: "run_team"
+                }
+              })
+            });
+
+            if (!createCronResponse.ok) {
+              throw new Error("Failed to create cron");
+            }
+
+            const newCron = await createCronResponse.json();
+            editingTeam.cron_id = newCron.cron_id;
+          } catch (error) {
+            console.error("Error creating new cron:", error);
+          }
+        }
+      }
+
+      // Update team in database
       const response = await fetch(`/api/teams/${editingTeam.id}`, {
         method: "PUT",
         headers: {
@@ -429,6 +529,7 @@ export default function TeamPage() {
           description: teamDescription,
           agent_ids: selectedAgents,
           schedule: schedule,
+          cron_id: editingTeam.cron_id
         }),
       });
 
@@ -437,13 +538,17 @@ export default function TeamPage() {
 
       // Update the team in the teams list
       setTeams((prevTeams) =>
-        prevTeams.map((team) => (team.id === editingTeam.id ? data : team))
+        prevTeams.map((team) => (team.id === editingTeam.id ? {
+          ...data,
+          schedule: schedule // Ensure we use the new schedule
+        } : team))
       );
 
       // Reset form
       setTeamName("");
       setTeamDescription("");
       setSelectedAgents([]);
+      setSchedule("");
       setEditingTeam(null);
       setShowDialog(false);
     } catch (error) {
@@ -566,7 +671,18 @@ export default function TeamPage() {
                         {team.description}
                       </p>
                       <p className="text-sm text-muted-foreground mb-4">
-                        Schedule: {cronToText(team.schedule)}
+                        Schedule: {team.schedule ? (
+                          <a 
+                            href={getCronhubUrl(team.schedule)} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="text-blue-500 hover:text-blue-700 underline"
+                          >
+                            {cronToText(team.schedule)}
+                          </a>
+                        ) : (
+                          'Not scheduled'
+                        )}
                       </p>
                       <div className="flex flex-wrap gap-2">
                         {team.agent_list.map((agentId) => {
