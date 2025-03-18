@@ -10,6 +10,8 @@ import React, {
 } from "react";
 import { User, Session } from "@supabase/supabase-js";
 import { createClient } from "@/utils/supabase/client";
+import { useRouter, usePathname } from "next/navigation";
+
 const STORAGE_KEY = "thothy_auth_state";
 
 interface AuthContextType {
@@ -50,6 +52,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const [user, setUser] = useState<User | null>(null);
     const [session, setSession] = useState<Session | null>(null);
     const [loading, setLoading] = useState(true);
+    const router = useRouter();
+    const pathname = usePathname();
     const supabase = createClient();
 
     useEffect(() => {
@@ -94,6 +98,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                     setSession(null);
                     setUser(null);
                     localStorage.removeItem(STORAGE_KEY);
+                    
+                    // If on a protected path, redirect to login
+                    const protectedPaths = ['/team', '/find', '/inbox', '/staff', '/blog'];
+                    if (protectedPaths.some(path => pathname?.startsWith(path))) {
+                        router.push(`/auth/login?redirectTo=${encodeURIComponent(pathname || '/')}`);
+                    }
                 }
             } catch (error) {
                 console.error("Error initializing auth:", error);
@@ -110,9 +120,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         // Set up auth state change listener (this handles token refreshes)
         const { data: { subscription } } = supabase.auth.onAuthStateChange(
             async (event, currentSession) => {
-                // console.log("Auth state changed:", event);
-                // console.log("Current session:", currentSession);
-                
                 if (currentSession?.user) {
                     // Extract user metadata from Google OAuth
                     const userMetadata = currentSession.user.user_metadata || {};
@@ -135,10 +142,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                     setSession(currentSession);
                     setUser(updatedUser);
                     saveAuthState(updatedUser, currentSession);
+
+                    // If there's a redirectTo parameter, navigate there
+                    const params = new URLSearchParams(window.location.search);
+                    const redirectTo = params.get('redirectTo');
+                    if (redirectTo && window.location.pathname.startsWith('/auth')) {
+                        router.push(redirectTo);
+                    }
                 } else if (event === 'SIGNED_OUT') {
                     setSession(null);
                     setUser(null);
                     localStorage.removeItem(STORAGE_KEY);
+                    router.push('/auth/login');
                 }
             }
         );
@@ -147,12 +162,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return () => {
             subscription.unsubscribe();
         };
-    }, []);
+    }, [pathname]);
 
     const signIn = useCallback(async () => {
         try {
-            // Redirect to the sign-in API endpoint
-            window.location.href = '/api/auth/signin?provider=google';
+            // Get the redirectTo parameter from the URL if it exists
+            const searchParams = new URLSearchParams(window.location.search);
+            const redirectTo = searchParams.get('redirectTo') || '/';
+            
+            // Redirect to the sign-in API endpoint with the redirectTo parameter
+            window.location.href = `/api/auth/signin?provider=google&redirectTo=${encodeURIComponent(redirectTo)}`;
         } catch (error) {
             console.error("Error signing in:", error);
         }
