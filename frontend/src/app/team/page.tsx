@@ -48,6 +48,7 @@ import { v4 as uuidv4 } from "uuid";
 import { Client } from "@langchain/langgraph-sdk";
 import type { Cron as LangGraphCron } from "@langchain/langgraph-sdk";
 import { createClient as createSupabaseClient } from "@/utils/supabase/client";
+import { HumanMessage } from "@langchain/core/messages";
 
 type Agent = {
   id: string;
@@ -96,6 +97,13 @@ type Run = {
 
 type CronJobsDialogProps = {
   crons: import("@langchain/langgraph-sdk").Cron[];
+};
+
+type Message = {
+  content: string | Record<string, any>;
+  type: string;
+  name?: string;
+  additional_kwargs?: Record<string, any>;
 };
 
 // Add helper function to convert cron to readable text
@@ -619,6 +627,18 @@ const CronJobsDialog = ({ crons }: CronJobsDialogProps) => {
   );
 };
 
+const createTeamMessage = (teamId: string, description: string): Message => ({
+  content: description || "No description provided",
+  type: "team_action",
+  name: "team_runner",
+  additional_kwargs: {
+    team_id: teamId,
+    action: "run_team",
+    timestamp: new Date().toISOString(),
+    source: "team_page",
+  },
+});
+
 const createLangGraphClient = async () => {
   const supabase = createSupabaseClient();
   const {
@@ -745,6 +765,44 @@ export default function TeamPage() {
       const data = await response.json();
       if (!response.ok) throw new Error(data.error);
 
+      // If schedule is set, create a cron job
+      if (schedule) {
+        try {
+          const client = await createLangGraphClient();
+          console.log("📅 Creating new cron job for team:", {
+            team_id: data.id,
+            schedule: schedule,
+            agent_count: selectedAgents.length,
+            description: teamDescription,
+          });
+
+          const newCron = await client.crons.create("team_graph", {
+            schedule: schedule,
+            streamMode: "values",
+            streamSubgraphs: true,
+            metadata: {
+              team_id: data.id,
+              team_name: teamName,
+              agent_list: selectedAgents,
+            },
+            input: createTeamMessage(data.id, teamDescription),
+          });
+
+          console.log("✅ Successfully created cron job:", {
+            cron_id: newCron.cron_id,
+            schedule: schedule,
+            team_id: data.id,
+            agent_count: selectedAgents.length,
+          });
+
+          // Update the team with the cron ID
+          data.cron_id = newCron.cron_id;
+        } catch (error) {
+          console.error("❌ Failed to create cron job:", error);
+          throw new Error("Error creating cron job");
+        }
+      }
+
       // Add the new team to the teams list
       setTeams((prevTeams) => [data, ...prevTeams]);
 
@@ -755,6 +813,7 @@ export default function TeamPage() {
       setSchedule("");
       setShowDialog(false);
     } catch (error) {
+      console.error("❌ Failed to build team:", error);
       throw new Error("Error creating team");
     }
   };
@@ -770,6 +829,11 @@ export default function TeamPage() {
         // 1. Delete existing cron if it exists
         if (editingTeam.cron_id) {
           try {
+            console.log("🔍 Searching for existing cron:", {
+              team_id: editingTeam.id,
+              cron_id: editingTeam.cron_id,
+            });
+
             // Search for existing cron
             const crons = await client.crons.search({
               limit: 1,
@@ -781,10 +845,15 @@ export default function TeamPage() {
             );
 
             if (existingCron) {
+              console.log("🗑️ Deleting existing cron:", {
+                cron_id: existingCron.cron_id,
+                team_id: editingTeam.id,
+              });
               // Delete the existing cron
               await client.crons.delete(existingCron.cron_id);
             }
           } catch (error) {
+            console.error("❌ Failed to delete existing cron:", error);
             throw new Error("Error deleting existing cron");
           }
         }
@@ -792,19 +861,35 @@ export default function TeamPage() {
         // 2. Create new cron if schedule is set
         if (schedule) {
           try {
+            console.log("📅 Creating new cron job for team:", {
+              team_id: editingTeam.id,
+              schedule: schedule,
+              agent_count: selectedAgents.length,
+              description: teamDescription,
+            });
+
             const newCron = await client.crons.create("team_graph", {
               schedule: schedule,
               streamMode: "values",
               streamSubgraphs: true,
               metadata: {
                 team_id: editingTeam.id,
+                team_name: teamName,
+                agent_list: selectedAgents,
               },
-              input: { role: "user", content: "Hello" },
-              ifNotExists: "create",
+              input: createTeamMessage(editingTeam.id, teamDescription)
+            });
+
+            console.log("✅ Successfully created new cron job:", {
+              cron_id: newCron.cron_id,
+              schedule: schedule,
+              team_id: editingTeam.id,
+              agent_count: selectedAgents.length,
             });
 
             editingTeam.cron_id = newCron.cron_id;
           } catch (error) {
+            console.error("❌ Failed to create new cron:", error);
             throw new Error("Error creating new cron");
           }
         }
