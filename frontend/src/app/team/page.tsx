@@ -873,8 +873,10 @@ export default function TeamPage() {
                 team_name: teamName,
                 agent_list: selectedAgents,
               },
-              input: createTeamMessage(editingTeam.id, teamDescription),
+              // input: createTeamMessage(editingTeam.id, teamDescription),
+              input: { user: teamDescription },
             });
+            console.log("🔍 New cron job:", newCron);
 
             console.log("✅ Successfully created new cron job:", {
               cron_id: newCron.cron_id,

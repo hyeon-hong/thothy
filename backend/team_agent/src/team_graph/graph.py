@@ -70,7 +70,9 @@ def init_request_node(state: State) -> Command[Literal["team_supervisor"]]:
     """Initialize the state with the user's request and generate todo list."""
     # Get the initial request from the first message
     initial_request = state["messages"][0].content if state["messages"] else ""
-    logging.info(f"Setting initial request: {initial_request}")
+    logging.info("state: ", state)
+    logging.info("state['messages']: ", state["messages"])
+    logging.info("Setting initial request: ", initial_request)
 
     # Generate todo list using LLM
     todo_prompt = get_todo_prompt(initial_request)
@@ -81,6 +83,8 @@ def init_request_node(state: State) -> Command[Literal["team_supervisor"]]:
     except Exception as e:
         logging.error(f"Error generating todo list: {str(e)}")
         raise RuntimeError(f"Failed to generate todo list: {str(e)}")
+    logging.info("response: ", response)
+    logging.info("response['todos']: ", response["todos"])
 
     # Convert response to TodoItems
     todos = [
@@ -114,7 +118,7 @@ def team_supervisor_node(
     except Exception as e:
         logging.error(f"Error in team supervisor routing: {str(e)}")
         raise RuntimeError(f"Failed to determine next action: {str(e)}")
-        
+
     goto = response["next"]
     logging.info(f"Team supervisor goto: {goto}")
 
