@@ -6,6 +6,7 @@ export async function PUT(
   { params }: { params: { id: string } }
 ) {
   try {
+    const id = params.id;  // Extract ID early to avoid repeated access
     const { name, description, agent_ids } = await request.json();
 
     if (!name || !description || !agent_ids) {
@@ -35,8 +36,8 @@ export async function PUT(
         agent_list: agent_ids,
         updated_at: new Date().toISOString()
       })
-      .eq('id', params.id)
-      .eq('user_id', user.id) // Ensure the user owns the team
+      .eq('id', id)  // Use the extracted ID
+      .eq('user_id', user.id)
       .select()
       .single();
 
