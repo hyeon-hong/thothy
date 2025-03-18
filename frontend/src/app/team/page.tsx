@@ -874,7 +874,11 @@ export default function TeamPage() {
                 agent_list: selectedAgents,
               },
               // input: createTeamMessage(editingTeam.id, teamDescription),
-              input: { user: teamDescription },
+              input: {
+                state: {
+                  messages: [{ role: "user", content: teamDescription }],
+                },
+              },
             });
             console.log("🔍 New cron job:", newCron);
 
