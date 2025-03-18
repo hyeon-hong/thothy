@@ -39,13 +39,8 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const apiKey =
-    process.env.NODE_ENV === "development"
-      ? process.env.NEXT_PUBLIC_DEVELOP_LANGSMITH_API_KEY
-      : process.env.NEXT_PUBLIC_MAIN_LANGSMITH_API_KEY;
-
   const lsClient = new Client({
-    apiKey: apiKey,
+    apiKey: process.env.NEXT_PUBLIC_LANGSMITH_API_KEY,
   });
 
   try {

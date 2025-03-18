@@ -3,11 +3,6 @@ import { Client } from "@langchain/langgraph-sdk";
 import { verifyUserAuthenticated } from "../../../agents/plan_agent/lib/supabase/verify_user_server";
 
 export async function POST(req: NextRequest) {
-  const LANGGRAPH_API_URL =
-    process.env.NODE_ENV === "development"
-      ? process.env.NEXT_PUBLIC_DEVELOP_LANGGRAPH_API_URL
-      : process.env.NEXT_PUBLIC_MAIN_LANGGRAPH_API_URL;
-
   try {
     const authRes = await verifyUserAuthenticated();
     if (!authRes?.user) {
@@ -20,14 +15,9 @@ export async function POST(req: NextRequest) {
 
   const { namespace, key, value } = await req.json();
 
-  const apiKey =
-    process.env.NODE_ENV === "development"
-      ? process.env.NEXT_PUBLIC_DEVELOP_LANGSMITH_API_KEY
-      : process.env.NEXT_PUBLIC_MAIN_LANGSMITH_API_KEY;
-
   const lgClient = new Client({
-    apiKey: apiKey,
-    apiUrl: LANGGRAPH_API_URL,
+    apiKey: process.env.NEXT_PUBLIC_LANGSMITH_API_KEY,
+    apiUrl: process.env.NEXT_PUBLIC_LANGGRAPH_API_URL,
   });
 
   try {

@@ -3,9 +3,6 @@ import { LangChainMessage } from "@assistant-ui/react-langgraph";
 import { createClient as createSupabaseClient } from "@/utils/supabase/client";
 
 const createClient = async () => {
-  // TODO: We don't run the typescript agent in LangGraph Platform, so we need to use the develop api url
-  const apiUrl = process.env.NEXT_PUBLIC_LOCAL_LANGGRAPH_API_URL;
-
   const supabase = createSupabaseClient();
   const {
     data: { session },
@@ -15,14 +12,10 @@ const createClient = async () => {
   console.log("error: ", error);
   console.log("session: ", session);
 
-  const apiKey =
-    process.env.NODE_ENV === "development"
-      ? process.env.NEXT_PUBLIC_DEVELOP_LANGSMITH_API_KEY
-      : process.env.NEXT_PUBLIC_MAIN_LANGSMITH_API_KEY;
-
+  // TODO: We don't run the typescript agent in LangGraph Platform, so we need to use the develop api url
   return new Client({
-    apiUrl,
-    apiKey: apiKey,
+    apiUrl: process.env.NEXT_PUBLIC_LOCAL_LANGGRAPH_API_URL,
+    apiKey: process.env.NEXT_PUBLIC_LANGSMITH_API_KEY,
     defaultHeaders: {
       Authorization: `Bearer ${session?.access_token}`,
     },
