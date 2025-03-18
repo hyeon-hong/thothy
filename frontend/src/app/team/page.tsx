@@ -875,9 +875,7 @@ export default function TeamPage() {
               },
               // input: createTeamMessage(editingTeam.id, teamDescription),
               input: {
-                state: {
-                  messages: [{ role: "user", content: teamDescription }],
-                },
+                messages: [{ role: "user", content: teamDescription }],
               },
             });
             console.log("🔍 New cron job:", newCron);
