@@ -1,0 +1,10 @@
+{
+  "dependencies": [
+    "."
+  ],
+  "graphs": {
+    "blog_graph": "./src/blog_graph/graph.py:graph"
+  },
+  "env": "../../.env",
+  "python_version": "3.12"
+}

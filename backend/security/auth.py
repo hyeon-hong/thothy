@@ -44,7 +44,10 @@ Use permission-based access
 """
 
 SUPABASE_URL = os.environ["NEXT_PUBLIC_SUPABASE_URL"]
-SUPABASE_SERVICE_ROLE_KEY = os.environ["SUPABASE_SERVICE_ROLE_KEY"]
+if os.environ["THOTHY_DEVELOPMENT_MODE"] == "true":
+    SUPABASE_KEY = os.environ["SUPABASE_SERVICE_ROLE_KEY"]
+else:
+    SUPABASE_KEY = os.environ["NEXT_PUBLIC_SUPABASE_ANON_KEY"]
 SUPABASE_JWT_SECRET = os.environ["SUPABASE_JWT_SECRET"]
 ALGORITHM = "HS256"
 
@@ -62,8 +65,8 @@ async def auth_authenticate(
     authorization: str | None,
 ) -> tuple[list[str], Auth.types.MinimalUserDict]:
     """Validate JWT tokens and extract user information."""
-    print("========== Function: auth_authenticate")
-    print(f"========== authorization: {authorization}")
+    # print("========== Function: auth_authenticate")
+    # print(f"========== authorization: {authorization}")
 
     assert authorization
 
@@ -85,7 +88,7 @@ async def auth_authenticate(
                 f"{SUPABASE_URL}/auth/v1/user",
                 headers={
                     "Authorization": f"Bearer {token}",
-                    "apiKey": SUPABASE_SERVICE_ROLE_KEY,
+                    "apiKey": SUPABASE_KEY,
                 },
             )
     except (IndexError, InvalidTokenError, ConnectionError) as e:
@@ -110,7 +113,7 @@ async def auth_authenticate(
 
 def _default(ctx: Auth.types.AuthContext, value: dict):
     """Add the owner to the resource metadata and return filters."""
-    print("========== Function: _default")
+    # print("========== Function: _default")
 
     filters = {"owner": ctx.user.identity}
 
@@ -125,12 +128,12 @@ async def auth_on(
         ctx: Auth.types.AuthContext,
         value: Any) -> bool:
     """Reject requests that aren't handled by more specific handlers."""
-    print("========== Function: auth_on")
-    print(f"========== ctx.resource: {ctx.resource}")
-    print(f"========== ctx.action: {ctx.action}")
-    print(f"========== ctx.permissions: {ctx.permissions}")
-    print(f"========== ctx.user: {ctx.user}")
-    print(f"========== value: {value}")
+    # print("========== Function: auth_on")
+    # print(f"========== ctx.resource: {ctx.resource}")
+    # print(f"========== ctx.action: {ctx.action}")
+    # print(f"========== ctx.permissions: {ctx.permissions}")
+    # print(f"========== ctx.user: {ctx.user}")
+    # print(f"========== value: {value}")
 
     # Uncomment this only for testing LangGraph Studio
     # if isinstance(ctx.user, Auth.types.StudioUser):
@@ -146,12 +149,13 @@ async def auth_on_threads(
     value: Any,
 ) -> Any:
     """Thread creation. This will match only on thread create actions"""
-    print("========== Function: auth_on_threads")
-    print(f"========== ctx.resource: {ctx.resource}")
-    print(f"========== ctx.action: {ctx.action}")
-    print(f"========== ctx.permissions: {ctx.permissions}")
-    print(f"========== ctx.user: {ctx.user}")
-    print(f"========== value: {value}")
+
+    # print("========== Function: auth_on_threads")
+    # print(f"========== ctx.resource: {ctx.resource}")
+    # print(f"========== ctx.action: {ctx.action}")
+    # print(f"========== ctx.permissions: {ctx.permissions}")
+    # print(f"========== ctx.user: {ctx.user}")
+    # print(f"========== value: {value}")
 
     return {"owner": ctx.user.identity}
 
@@ -162,12 +166,13 @@ async def auth_on_threads_create(
     value: Any
 ) -> Any:
     """Thread creation. This will match only on thread create actions"""
-    print("========== Function: auth_on_threads_create")
-    print(f"========== ctx.resource: {ctx.resource}")
-    print(f"========== ctx.action: {ctx.action}")
-    print(f"========== ctx.permissions: {ctx.permissions}")
-    print(f"========== ctx.user: {ctx.user}")
-    print(f"========== value: {value}")
+
+    # print("========== Function: auth_on_threads_create")
+    # print(f"========== ctx.resource: {ctx.resource}")
+    # print(f"========== ctx.action: {ctx.action}")
+    # print(f"========== ctx.permissions: {ctx.permissions}")
+    # print(f"========== ctx.user: {ctx.user}")
+    # print(f"========== value: {value}")
 
     # Check permission
     # if "threads:create" not in ctx.user.permissions:
@@ -185,12 +190,13 @@ async def auth_on_threads_read(
     value: Any
 ) -> bool:
     """Read a thread. This will match only on thread read actions"""
-    print("========== Function: auth_on_threads_read")
-    print(f"========== ctx.resource: {ctx.resource}")
-    print(f"========== ctx.action: {ctx.action}")
-    print(f"========== ctx.permissions: {ctx.permissions}")
-    print(f"========== ctx.user: {ctx.user}")
-    print(f"========== value: {value}")
+
+    # print("========== Function: auth_on_threads_read")
+    # print(f"========== ctx.resource: {ctx.resource}")
+    # print(f"========== ctx.action: {ctx.action}")
+    # print(f"========== ctx.permissions: {ctx.permissions}")
+    # print(f"========== ctx.user: {ctx.user}")
+    # print(f"========== value: {value}")
 
     # if "threads:read" not in ctx.permissions:
     #     raise Auth.exceptions.HTTPException(
@@ -208,12 +214,13 @@ async def auth_on_threads_update(
     value: Any
 ) -> bool:
     """Update a thread. This will match only on thread update actions"""
-    print("========== Function: auth_on_threads_update")
-    print(f"========== ctx.resource: {ctx.resource}")
-    print(f"========== ctx.action: {ctx.action}")
-    print(f"========== ctx.permissions: {ctx.permissions}")
-    print(f"========== ctx.user: {ctx.user}")
-    print(f"========== value: {value}")
+
+    # print("========== Function: auth_on_threads_update")
+    # print(f"========== ctx.resource: {ctx.resource}")
+    # print(f"========== ctx.action: {ctx.action}")
+    # print(f"========== ctx.permissions: {ctx.permissions}")
+    # print(f"========== ctx.user: {ctx.user}")
+    # print(f"========== value: {value}")
 
     # Check permission
     # if "threads:update" not in ctx.permissions:
@@ -232,12 +239,13 @@ async def auth_on_threads_delete(
     value: Any
 ) -> bool:
     """Delete a thread. This will match only on thread delete actions"""
-    print("========== Function: auth_on_threads_delete")
-    print(f"========== ctx.resource: {ctx.resource}")
-    print(f"========== ctx.action: {ctx.action}")
-    print(f"========== ctx.permissions: {ctx.permissions}")
-    print(f"========== ctx.user: {ctx.user}")
-    print(f"========== value: {value}")
+
+    # print("========== Function: auth_on_threads_delete")
+    # print(f"========== ctx.resource: {ctx.resource}")
+    # print(f"========== ctx.action: {ctx.action}")
+    # print(f"========== ctx.permissions: {ctx.permissions}")
+    # print(f"========== ctx.user: {ctx.user}")
+    # print(f"========== value: {value}")
 
     # Check permission
     # if "threads:delete" not in ctx.permissions:
@@ -256,11 +264,12 @@ async def auth_on_threads_search(
     value: Any
 ) -> Any:
     """Search for threads. This will match only on thread search actions"""
-    print("========== Function: auth_on_threads_search")
-    print(f"========== ctx.resource: {ctx.resource}")
-    print(f"========== ctx.action: {ctx.action}")
-    print(f"========== ctx.permissions: {ctx.permissions}")
-    print(f"========== value: {value}")
+
+    # print("========== Function: auth_on_threads_search")
+    # print(f"========== ctx.resource: {ctx.resource}")
+    # print(f"========== ctx.action: {ctx.action}")
+    # print(f"========== ctx.permissions: {ctx.permissions}")
+    # print(f"========== value: {value}")
 
     # if "threads:search" not in ctx.permissions:
     #     raise Auth.exceptions.HTTPException(
@@ -277,12 +286,13 @@ async def auth_on_threads_create_run(
     value: Any
 ):
     """Create a run. This will match only on run create actions"""
-    print("========== Function: auth_on_threads_create_run")
-    print(f"========== ctx.resource: {ctx.resource}")
-    print(f"========== ctx.action: {ctx.action}")
-    print(f"========== ctx.permissions: {ctx.permissions}")
-    print(f"========== ctx.user: {ctx.user}")
-    print(f"========== value: {value}")
+
+    # print("========== Function: auth_on_threads_create_run")
+    # print(f"========== ctx.resource: {ctx.resource}")
+    # print(f"========== ctx.action: {ctx.action}")
+    # print(f"========== ctx.permissions: {ctx.permissions}")
+    # print(f"========== ctx.user: {ctx.user}")
+    # print(f"========== value: {value}")
 
     # Check permission
     # if "threads:create_run" not in ctx.permissions:
@@ -294,20 +304,38 @@ async def auth_on_threads_create_run(
     return {"owner": ctx.user.identity}
 
 
+@auth.on.assistants
+async def auth_on_assistants(
+    ctx: Auth.types.AuthContext,
+    value: Any,
+) -> Any:
+    """Assistant creation. This will match only on assistant create actions"""
+
+    # print("========== Function: auth_on_assistants")
+    # print(f"========== ctx.resource: {ctx.resource}")
+    # print(f"========== ctx.action: {ctx.action}")
+    # print(f"========== ctx.permissions: {ctx.permissions}")
+    # print(f"========== ctx.user: {ctx.user}")
+    # print(f"========== value: {value}")
+
+    return {"owner": ctx.user.identity}
+
+
 @auth.on.assistants.create
 async def auth_on_assistants_create(
     ctx: Auth.types.AuthContext,
     value: Any,
 ) -> Any:
-    """Add the owner to the assistant metadata and return filters."""
-    print("========== Function: auth_on_assistants_create")
-    print(f"========== ctx.resource: {ctx.resource}")
-    print(f"========== ctx.action: {ctx.action}")
-    print(f"========== ctx.permissions: {ctx.permissions}")
-    print(f"========== ctx.user: {ctx.user}")
-    print(f"========== value: {value}")
+    """Create an assistant. This will match only on assistant create actions"""
 
-    # if "assistants:create" not in ctx.permissions:
+    # print("========== Function: auth_on_assistants_create")
+    # print(f"========== ctx.resource: {ctx.resource}")
+    # print(f"========== ctx.action: {ctx.action}")
+    # print(f"========== ctx.permissions: {ctx.permissions}")
+    # print(f"========== ctx.user: {ctx.user}")
+    # print(f"========== value: {value}")
+
+    # if "assistantsVjjj:create" not in ctx.permissions:
     #     raise Auth.exceptions.HTTPException(
     #         status_code=403,
     #         detail="User lacks the required permissions: assistants:create."
@@ -322,13 +350,14 @@ async def auth_on_assistants_read(
     ctx: Auth.types.AuthContext,
     value: Any,
 ) -> bool:
-    """Add the owner to the assistant metadata and return filters."""
-    print("========== Function: auth_on_assistants_read")
-    print(f"========== ctx.resource: {ctx.resource}")
-    print(f"========== ctx.action: {ctx.action}")
-    print(f"========== ctx.permissions: {ctx.permissions}")
-    print(f"========== ctx.user: {ctx.user}")
-    print(f"========== value: {value}")
+    """Read an assistant. This will match only on assistant read actions"""
+
+    # print("========== Function: auth_on_assistants_read")
+    # print(f"========== ctx.resource: {ctx.resource}")
+    # print(f"========== ctx.action: {ctx.action}")
+    # print(f"========== ctx.permissions: {ctx.permissions}")
+    # print(f"========== ctx.user: {ctx.user}")
+    # print(f"========== value: {value}")
 
     # if "assistants:read" not in ctx.permissions:
     #     raise Auth.exceptions.HTTPException(
@@ -344,13 +373,14 @@ async def auth_on_assistants_update(
     ctx: Auth.types.AuthContext,
     value: Any,
 ) -> bool:
-    """Add the owner to the assistant metadata and return filters."""
-    print("========== Function: auth_on_assistants_update")
-    print(f"========== ctx.resource: {ctx.resource}")
-    print(f"========== ctx.action: {ctx.action}")
-    print(f"========== ctx.permissions: {ctx.permissions}")
-    print(f"========== ctx.user: {ctx.user}")
-    print(f"========== value: {value}")
+    """Update an assistant. This will match only on assistant update actions"""
+
+    # print("========== Function: auth_on_assistants_update")
+    # print(f"========== ctx.resource: {ctx.resource}")
+    # print(f"========== ctx.action: {ctx.action}")
+    # print(f"========== ctx.permissions: {ctx.permissions}")
+    # print(f"========== ctx.user: {ctx.user}")
+    # print(f"========== value: {value}")
 
     # if "assistants:update" not in ctx.permissions:
     #     raise Auth.exceptions.HTTPException(
@@ -358,7 +388,7 @@ async def auth_on_assistants_update(
     #         detail="User lacks the required permissions: assistants:update."
     #     )
 
-    return value.get("metadata", {}).get("owner") == ctx.user.identity
+    return {"owner": ctx.user.identity}
 
 
 @auth.on.assistants.delete
@@ -366,13 +396,14 @@ async def auth_on_assistants_delete(
     ctx: Auth.types.AuthContext,
     value: Any,
 ) -> bool:
-    """Add the owner to the assistant metadata and return filters."""
-    print("========== Function: auth_on_assistants_delete")
-    print(f"========== ctx.resource: {ctx.resource}")
-    print(f"========== ctx.action: {ctx.action}")
-    print(f"========== ctx.permissions: {ctx.permissions}")
-    print(f"========== ctx.user: {ctx.user}")
-    print(f"========== value: {value}")
+    """Delete an assistant. This will match only on assistant delete actions"""
+
+    # print("========== Function: auth_on_assistants_delete")
+    # print(f"========== ctx.resource: {ctx.resource}")
+    # print(f"========== ctx.action: {ctx.action}")
+    # print(f"========== ctx.permissions: {ctx.permissions}")
+    # print(f"========== ctx.user: {ctx.user}")
+    # print(f"========== value: {value}")
 
     # if "assistants:delete" not in ctx.permissions:
     #     raise Auth.exceptions.HTTPException(
@@ -380,7 +411,7 @@ async def auth_on_assistants_delete(
     #         detail="User lacks the required permissions: assistants:delete."
     #     )
 
-    return value.get("metadata", {}).get("owner") == ctx.user.identity
+    return {"owner": ctx.user.identity}
 
 
 @auth.on.assistants.search
@@ -388,13 +419,14 @@ async def auth_on_assistants_search(
     ctx: Auth.types.AuthContext,
     value: Any,
 ) -> bool:
-    """Add the owner to the assistant metadata and return filters."""
-    print("========== Function: auth_on_assistants_search")
-    print(f"========== ctx.resource: {ctx.resource}")
-    print(f"========== ctx.action: {ctx.action}")
-    print(f"========== ctx.permissions: {ctx.permissions}")
-    print(f"========== ctx.user: {ctx.user}")
-    print(f"========== value: {value}")
+    """Search for assistants. This will match only on assistant search actions"""
+
+    # print("========== Function: auth_on_assistants_search")
+    # print(f"========== ctx.resource: {ctx.resource}")
+    # print(f"========== ctx.action: {ctx.action}")
+    # print(f"========== ctx.permissions: {ctx.permissions}")
+    # print(f"========== ctx.user: {ctx.user}")
+    # print(f"========== value: {value}")
 
     # if "assistants:search" not in ctx.permissions:
     #     raise Auth.exceptions.HTTPException(
@@ -404,7 +436,107 @@ async def auth_on_assistants_search(
 
     return True
 
-# TODO: Add crons handlers of authentication
+
+@auth.on.crons
+async def auth_on_crons(
+    ctx: Auth.types.AuthContext,
+    value: Any,
+) -> Any:
+    """Cron creation. This will match only on cron create actions"""
+
+    # print("========== Function: auth_on_crons")
+    # print(f"========== ctx.resource: {ctx.resource}")
+    # print(f"========== ctx.action: {ctx.action}")
+    # print(f"========== ctx.permissions: {ctx.permissions}")
+    # print(f"========== ctx.user: {ctx.user}")
+    # print(f"========== value: {value}")
+
+    return {"owner": ctx.user.identity}
+
+
+@auth.on.crons.create
+async def auth_on_crons_create(
+    ctx: Auth.types.AuthContext,
+    value: Any,
+) -> bool:
+    """Create a cron. This will match only on cron create actions"""
+
+    print("========== Function: auth_on_crons_create")
+    print(f"========== ctx.resource: {ctx.resource}")
+    print(f"========== ctx.action: {ctx.action}")
+    print(f"========== ctx.permissions: {ctx.permissions}")
+    print(f"========== ctx.user: {ctx.user}")
+    print(f"========== value: {value}")
+
+    return _default(ctx, value)
+
+
+@auth.on.crons.read
+async def auth_on_crons_read(
+    ctx: Auth.types.AuthContext,
+    value: Any,
+) -> bool:
+    """Read a cron. This will match only on cron read actions"""
+
+    print("========== Function: auth_on_crons_read")
+    print(f"========== ctx.resource: {ctx.resource}")
+    print(f"========== ctx.action: {ctx.action}")
+    print(f"========== ctx.permissions: {ctx.permissions}")
+    print(f"========== ctx.user: {ctx.user}")
+    print(f"========== value: {value}")
+
+    return {"owner": ctx.user.identity}
+
+
+@auth.on.crons.update
+async def auth_on_crons_update(
+    ctx: Auth.types.AuthContext,
+    value: Any,
+) -> bool:
+    """Update a cron. This will match only on cron update actions"""
+
+    print("========== Function: auth_on_crons_update")
+    print(f"========== ctx.resource: {ctx.resource}")
+    print(f"========== ctx.action: {ctx.action}")
+    print(f"========== ctx.permissions: {ctx.permissions}")
+    print(f"========== ctx.user: {ctx.user}")
+    print(f"========== value: {value}")
+
+    return {"owner": ctx.user.identity}
+
+
+@auth.on.crons.delete
+async def auth_on_crons_delete(
+    ctx: Auth.types.AuthContext,
+    value: Any,
+) -> bool:
+    """Delete a cron. This will match only on cron delete actions"""
+
+    print("========== Function: auth_on_crons_delete")
+    print(f"========== ctx.resource: {ctx.resource}")
+    print(f"========== ctx.action: {ctx.action}")
+    print(f"========== ctx.permissions: {ctx.permissions}")
+    print(f"========== ctx.user: {ctx.user}")
+    print(f"========== value: {value}")
+
+    return {"owner": ctx.user.identity}
+
+
+@auth.on.crons.search
+async def auth_on_crons_search(
+    ctx: Auth.types.AuthContext,
+    value: Any,
+) -> bool:
+    """Search for crons. This will match only on cron search actions"""
+
+    print("========== Function: auth_on_crons_search")
+    print(f"========== ctx.resource: {ctx.resource}")
+    print(f"========== ctx.action: {ctx.action}")
+    print(f"========== ctx.permissions: {ctx.permissions}")
+    print(f"========== ctx.user: {ctx.user}")
+    print(f"========== value: {value}")
+
+    return {"owner": ctx.user.identity}
 
 
 def deep_inspect(obj, max_depth=5, _current_depth=0):
