@@ -368,10 +368,14 @@ const createLangGraphClient = async () => {
   } = await supabase.auth.getSession();
   console.log("session: ", session);
 
+  // Get apiUrl as development or production
+  const apiUrl =
+    process.env.NODE_ENV === "development"
+      ? process.env.NEXT_PUBLIC_DEVELOP_LANGGRAPH_API_URL
+      : process.env.NEXT_PUBLIC_MAIN_LANGGRAPH_API_URL;
+
   return new Client({
-    // apiUrl: "http://localhost:2024",
-    apiUrl:
-      "https://thothy-develop-ade0901b16765152ba85a0fc2a36964b.us.langgraph.app",
+    apiUrl: apiUrl,
     apiKey: process.env.NEXT_PUBLIC_LANGSMITH_API_KEY,
     defaultHeaders: {
       Authorization: `Bearer ${session?.access_token}`,
