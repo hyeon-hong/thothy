@@ -366,7 +366,6 @@ const createLangGraphClient = async () => {
   const {
     data: { session },
   } = await supabase.auth.getSession();
-  console.log("session: ", session);
 
   // Get apiUrl as development or production
   const apiUrl =
@@ -419,13 +418,11 @@ export default function TeamPage() {
       let cronsData: LangGraphCron[] = [];
       try {
         // Fetch crons using LangGraph client
-        console.log("client: ", client);
         cronsData = await client.crons.search({
           limit: 100,
         });
-        console.log("cronsData: ", cronsData);
       } catch (error) {
-        console.error("Error fetching data:", error);
+        throw new Error("Failed to fetch crons data");
       } finally {
         const [teamsResponse, agentsResponse] = await Promise.all([
           fetch("/api/teams"),
@@ -440,8 +437,6 @@ export default function TeamPage() {
           teamsResponse.json(),
           agentsResponse.json(),
         ]);
-        console.log("teamsData: ", teamsData);
-        console.log("agentsData: ", agentsData);
 
         // Match crons with teams and update team schedules
         const teamsWithCrons = teamsData.map((team: Team) => {
@@ -505,7 +500,7 @@ export default function TeamPage() {
       setSchedule("");
       setShowDialog(false);
     } catch (error) {
-      console.error("Error creating team:", error);
+      throw new Error("Error creating team");
     }
   };
 
@@ -535,7 +530,7 @@ export default function TeamPage() {
               await client.crons.delete(existingCron.cron_id);
             }
           } catch (error) {
-            console.error("Error deleting existing cron:", error);
+            throw new Error("Error deleting existing cron");
           }
         }
 
@@ -552,7 +547,7 @@ export default function TeamPage() {
 
             editingTeam.cron_id = newCron.cron_id;
           } catch (error) {
-            console.error("Error creating new cron:", error);
+            throw new Error("Error creating new cron");
           }
         }
       }
@@ -595,7 +590,7 @@ export default function TeamPage() {
       setEditingTeam(null);
       setShowDialog(false);
     } catch (error) {
-      console.error("Error updating team:", error);
+      throw new Error("Error updating team");
     }
   };
 
