@@ -69,8 +69,6 @@ type TeamDialogProps = {
   setSchedule: (schedule: string) => void;
   selectedAgents: string[];
   setSelectedAgents: React.Dispatch<React.SetStateAction<string[]>>;
-  showSelectionList: boolean;
-  setShowSelectionList: React.Dispatch<React.SetStateAction<boolean>>;
   agents: Agent[];
   onSubmit: () => void;
   getAgentName: (id: string) => string;
@@ -159,8 +157,6 @@ const TeamDialog = ({
   setSchedule,
   selectedAgents,
   setSelectedAgents,
-  showSelectionList,
-  setShowSelectionList,
   agents = [],
   onSubmit,
   getAgentName,
@@ -227,7 +223,7 @@ const TeamDialog = ({
     </div>
 
     <div className="mt-4 flex flex-col" style={{ height: "400px" }}>
-      <div className="flex flex-wrap gap-1 p-2 mb-2 border rounded-md min-h-10 relative">
+      <div className="flex flex-wrap gap-1 p-2 mb-2 border rounded-md min-h-10">
         {selectedAgents.length === 0 && (
           <span className="text-sm text-muted-foreground px-1 py-0.5">
             No agents selected
@@ -254,100 +250,80 @@ const TeamDialog = ({
             </button>
           </Badge>
         ))}
-        <button
-          type="button"
-          onClick={() => setShowSelectionList((prev) => !prev)}
-          className="absolute right-2 top-1/2 transform -translate-y-1/2 h-6 w-6 rounded-full flex items-center justify-center hover:bg-muted-foreground/10"
-          aria-label={
-            showSelectionList ? "Hide selection list" : "Show selection list"
-          }
-        >
-          {showSelectionList ? (
-            <ChevronUp className="h-4 w-4" />
-          ) : (
-            <ChevronDown className="h-4 w-4" />
-          )}
-        </button>
       </div>
 
       <div className="flex-1 overflow-hidden flex flex-col">
-        {showSelectionList ? (
-          agents ? (
-            <Command
-              className="border rounded-lg flex-1 overflow-hidden"
-              style={{
-                height: "300px",
-              }}
-            >
-              <CommandInput placeholder="Search agents..." />
-              <CommandEmpty>No agents found.</CommandEmpty>
-              <CommandGroup className="overflow-y-auto h-full custom-scrollbar">
-                {agents.map((agent) => (
-                  <CommandItem
-                    key={agent.id}
-                    onSelect={() => toggleAgent(agent.id)}
-                    className="cursor-pointer"
-                  >
-                    <div className="flex items-center space-x-2 mr-2">
-                      <Checkbox
-                        id={`checkbox-${agent.id}`}
-                        checked={selectedAgents.includes(agent.id)}
-                        onCheckedChange={() => toggleAgent(agent.id)}
-                        onClick={(e: React.MouseEvent) => e.stopPropagation()}
-                        className={cn(
-                          "transition-colors",
+        {agents ? (
+          <Command
+            className="border rounded-lg flex-1 overflow-hidden"
+            style={{
+              height: "300px",
+            }}
+          >
+            <CommandInput placeholder="Search agents..." />
+            <CommandEmpty>No agents found.</CommandEmpty>
+            <CommandGroup className="overflow-y-auto h-full custom-scrollbar">
+              {agents.map((agent) => (
+                <CommandItem
+                  key={agent.id}
+                  onSelect={() => toggleAgent(agent.id)}
+                  className="cursor-pointer"
+                >
+                  <div className="flex items-center space-x-2 mr-2">
+                    <Checkbox
+                      id={`checkbox-${agent.id}`}
+                      checked={selectedAgents.includes(agent.id)}
+                      onCheckedChange={() => toggleAgent(agent.id)}
+                      onClick={(e: React.MouseEvent) => e.stopPropagation()}
+                      className={cn(
+                        "transition-colors",
+                        selectedAgents.includes(agent.id)
+                          ? "border-primary data-[state=checked]:bg-white data-[state=checked]:text-black"
+                          : ""
+                      )}
+                      style={
+                        {
+                          ...(selectedAgents.includes(agent.id)
+                            ? {
+                                "--tw-checkbox-bg": "white",
+                                "--tw-checkbox-fg": "black",
+                              }
+                            : {}),
+                        } as React.CSSProperties
+                      }
+                    />
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex items-center">
+                      <span
+                        className={
                           selectedAgents.includes(agent.id)
-                            ? "border-primary data-[state=checked]:bg-white data-[state=checked]:text-black"
+                            ? "font-medium"
                             : ""
-                        )}
-                        style={
-                          {
-                            ...(selectedAgents.includes(agent.id)
-                              ? {
-                                  "--tw-checkbox-bg": "white",
-                                  "--tw-checkbox-fg": "black",
-                                }
-                              : {}),
-                          } as React.CSSProperties
                         }
-                      />
-                    </div>
-                    <div className="flex-1">
-                      <div className="flex items-center">
-                        <span
-                          className={
-                            selectedAgents.includes(agent.id)
-                              ? "font-medium"
-                              : ""
-                          }
+                      >
+                        {agent.name}
+                      </span>
+                      {selectedAgents.includes(agent.id) && (
+                        <Badge
+                          variant="secondary"
+                          className="ml-2 bg-white text-black border border-gray-300"
                         >
-                          {agent.name}
-                        </span>
-                        {selectedAgents.includes(agent.id) && (
-                          <Badge
-                            variant="secondary"
-                            className="ml-2 bg-white text-black border border-gray-300"
-                          >
-                            Selected
-                          </Badge>
-                        )}
-                      </div>
-                      <p className="text-sm text-muted-foreground">
-                        {agent.description}
-                      </p>
+                          Selected
+                        </Badge>
+                      )}
                     </div>
-                  </CommandItem>
-                ))}
-              </CommandGroup>
-            </Command>
-          ) : (
-            <div className="border rounded-lg flex-1 flex items-center justify-center p-4 text-muted-foreground text-sm">
-              Click the arrow button above to view agents
-            </div>
-          )
+                    <p className="text-sm text-muted-foreground">
+                      {agent.description}
+                    </p>
+                  </div>
+                </CommandItem>
+              ))}
+            </CommandGroup>
+          </Command>
         ) : (
           <div className="border rounded-lg flex-1 flex items-center justify-center p-4 text-muted-foreground text-sm">
-            Click the arrow button above to view agents
+            Loading agents...
           </div>
         )}
       </div>
@@ -395,7 +371,6 @@ export default function TeamPage() {
   const [crons, setCrons] = useState<LangGraphCron[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showDialog, setShowDialog] = useState(false);
-  const [showSelectionList, setShowSelectionList] = useState(true);
   const [selectedAgents, setSelectedAgents] = useState<string[]>([]);
   const [teamName, setTeamName] = useState("");
   const [teamDescription, setTeamDescription] = useState("");
@@ -599,7 +574,6 @@ export default function TeamPage() {
       setTeamName("");
       setTeamDescription("");
       setSelectedAgents([]);
-      setShowSelectionList(false);
       if (isEdit) {
         setEditingTeam(null);
         setShowDialog(false);
@@ -665,8 +639,6 @@ export default function TeamPage() {
                 setSchedule={setSchedule}
                 selectedAgents={selectedAgents}
                 setSelectedAgents={setSelectedAgents}
-                showSelectionList={showSelectionList}
-                setShowSelectionList={setShowSelectionList}
                 agents={agents}
                 onSubmit={editingTeam ? handleEditTeam : handleBuildTeam}
                 getAgentName={getAgentName}
