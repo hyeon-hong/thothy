@@ -74,9 +74,13 @@ def init_request_node(state: State) -> Command[Literal["team_supervisor"]]:
 
     # Generate todo list using LLM
     todo_prompt = get_todo_prompt(initial_request)
-    response = llm.with_structured_output(TodoListResponse).invoke(
-        [{"role": "user", "content": todo_prompt}]
-    )
+    try:
+        response = llm.with_structured_output(TodoListResponse).invoke(
+            [{"role": "user", "content": todo_prompt}]
+        )
+    except Exception as e:
+        logging.error(f"Error generating todo list: {str(e)}")
+        raise RuntimeError(f"Failed to generate todo list: {str(e)}")
 
     # Convert response to TodoItems
     todos = [
@@ -103,7 +107,14 @@ def team_supervisor_node(
         {"role": "system", "content": system_prompt},
     ] + state["messages"]
 
-    response = llm.with_structured_output(Router).invoke(messages)
+    logging.info(f"Team supervisor state['messages']: {state['messages']}")
+    logging.info(f"Team supervisor messages: {messages}")
+    try:
+        response = llm.with_structured_output(Router).invoke(messages)
+    except Exception as e:
+        logging.error(f"Error in team supervisor routing: {str(e)}")
+        raise RuntimeError(f"Failed to determine next action: {str(e)}")
+        
     goto = response["next"]
     logging.info(f"Team supervisor goto: {goto}")
 

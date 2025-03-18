@@ -29,7 +29,6 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import {
-  Check,
   X,
   Users,
   ChevronUp,
@@ -44,11 +43,9 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { v4 as uuidv4 } from "uuid";
 import { Client } from "@langchain/langgraph-sdk";
 import type { Cron as LangGraphCron } from "@langchain/langgraph-sdk";
 import { createClient as createSupabaseClient } from "@/utils/supabase/client";
-import { HumanMessage } from "@langchain/core/messages";
 
 type Agent = {
   id: string;
@@ -56,8 +53,6 @@ type Agent = {
   description: string;
   image_url: string;
 };
-
-type Cron = LangGraphCron;
 
 type Team = {
   id: string;
@@ -101,6 +96,7 @@ type CronJobsDialogProps = {
 
 type Message = {
   content: string | Record<string, any>;
+  role: string;
   type: string;
   name?: string;
   additional_kwargs?: Record<string, any>;
@@ -628,7 +624,8 @@ const CronJobsDialog = ({ crons }: CronJobsDialogProps) => {
 };
 
 const createTeamMessage = (teamId: string, description: string): Message => ({
-  content: description || "No description provided",
+  content: description || "Do your job.",
+  role: "user",
   type: "team_action",
   name: "team_runner",
   additional_kwargs: {
@@ -877,7 +874,7 @@ export default function TeamPage() {
                 team_name: teamName,
                 agent_list: selectedAgents,
               },
-              input: createTeamMessage(editingTeam.id, teamDescription)
+              input: createTeamMessage(editingTeam.id, teamDescription),
             });
 
             console.log("✅ Successfully created new cron job:", {
