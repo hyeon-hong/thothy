@@ -28,7 +28,16 @@ import {
   DialogTrigger,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { Check, X, Users, ChevronUp, ChevronDown, Pencil, Clock, Play } from "lucide-react";
+import {
+  Check,
+  X,
+  Users,
+  ChevronUp,
+  ChevronDown,
+  Pencil,
+  Clock,
+  Play,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -86,7 +95,7 @@ type Run = {
 };
 
 type CronJobsDialogProps = {
-  crons: import('@langchain/langgraph-sdk').Cron[];
+  crons: import("@langchain/langgraph-sdk").Cron[];
 };
 
 // Add helper function to convert cron to readable text
@@ -311,9 +320,7 @@ const TeamDialog = ({
                     <div className="flex items-center">
                       <span
                         className={
-                          selectedAgents.includes(agent.id)
-                            ? "font-medium"
-                            : ""
+                          selectedAgents.includes(agent.id) ? "font-medium" : ""
                         }
                       >
                         {agent.name}
@@ -354,76 +361,141 @@ const TeamDialog = ({
 const CronJobsDialog = ({ crons }: CronJobsDialogProps) => {
   const [expandedCron, setExpandedCron] = useState<string | null>(null);
   const [runs, setRuns] = useState<Record<string, Run[]>>({});
-  const [isLoadingRuns, setIsLoadingRuns] = useState<Record<string, boolean>>({});
-  const [localCrons, setLocalCrons] = useState<import('@langchain/langgraph-sdk').Cron[]>(crons);
+  const [isLoadingRuns, setIsLoadingRuns] = useState<Record<string, boolean>>(
+    {}
+  );
+  const [localCrons, setLocalCrons] =
+    useState<import("@langchain/langgraph-sdk").Cron[]>(crons);
+
+  useEffect(() => {
+    // Log initial cron jobs when dialog opens
+    console.log(
+      "🔄 Loaded Cron Jobs:",
+      crons.map((cron) => ({
+        cron_id: cron.cron_id,
+        thread_id: cron.thread_id,
+        schedule: cron.schedule,
+        created_at: new Date(cron.created_at).toLocaleString(),
+        end_time: cron.end_time
+          ? new Date(cron.end_time).toLocaleString()
+          : "No end time",
+        payload: cron.payload,
+      }))
+    );
+  }, [crons]);
 
   const handleDeleteCron = async (cronId: string) => {
     try {
+      const cronToDelete = localCrons.find((cron) => cron.cron_id === cronId);
+      console.log("🗑️ Deleting Cron Job:", {
+        cron_id: cronId,
+        thread_id: cronToDelete?.thread_id,
+        schedule: cronToDelete?.schedule,
+        created_at: cronToDelete?.created_at
+          ? new Date(cronToDelete.created_at).toLocaleString()
+          : undefined,
+        payload: cronToDelete?.payload,
+      });
+
       const client = await createLangGraphClient();
       await client.crons.delete(cronId);
-      
+
       // Update local state to remove the deleted cron
-      setLocalCrons((prevCrons) => prevCrons.filter((cron) => cron.cron_id !== cronId));
+      setLocalCrons((prevCrons) => {
+        const updatedCrons = prevCrons.filter(
+          (cron) => cron.cron_id !== cronId
+        );
+        console.log(
+          "✅ Successfully deleted cron job. Remaining crons:",
+          updatedCrons.length
+        );
+        return updatedCrons;
+      });
     } catch (error) {
-      console.error('Failed to delete cron:', error);
+      console.error("❌ Failed to delete cron:", error);
       throw new Error("Failed to delete cron job");
     }
   };
 
   const fetchRunsForThread = async (threadId: string) => {
     if (!threadId) return;
-    
+
     try {
-      setIsLoadingRuns(prev => ({ ...prev, [threadId]: true }));
+      console.log("📥 Fetching runs for thread:", threadId);
+      setIsLoadingRuns((prev) => ({ ...prev, [threadId]: true }));
       const client = await createLangGraphClient();
       const runsData = await client.runs.list(threadId, {
-        limit: 10 // Get last 10 runs
+        limit: 10, // Get last 10 runs
       });
+
       // Convert LangGraph runs to our Run type
-      const convertedRuns = runsData.map(run => ({
+      const convertedRuns = runsData.map((run) => ({
         run_id: run.run_id,
         thread_id: run.thread_id,
         assistant_id: run.assistant_id,
         created_at: run.created_at,
         updated_at: run.updated_at,
         status: run.status,
-        metadata: run.metadata || null
+        metadata: run.metadata || null,
       }));
-      setRuns(prev => ({ ...prev, [threadId]: convertedRuns }));
+
+      console.log("📊 Thread Runs Data:", {
+        thread_id: threadId,
+        total_runs: convertedRuns.length,
+        runs: convertedRuns.map((run) => ({
+          run_id: run.run_id,
+          status: run.status,
+          assistant_id: run.assistant_id,
+          created_at: new Date(run.created_at).toLocaleString(),
+          metadata: run.metadata,
+        })),
+      });
+
+      setRuns((prev) => ({ ...prev, [threadId]: convertedRuns }));
     } catch (error) {
-      console.error('Failed to fetch runs:', error);
+      console.error("❌ Failed to fetch runs:", {
+        thread_id: threadId,
+        error: error,
+      });
     } finally {
-      setIsLoadingRuns(prev => ({ ...prev, [threadId]: false }));
+      setIsLoadingRuns((prev) => ({ ...prev, [threadId]: false }));
     }
   };
 
   const toggleCron = (threadId: string) => {
     if (!threadId) return;
-    
+
     if (expandedCron === threadId) {
+      console.log("🔺 Collapsing cron details:", threadId);
       setExpandedCron(null);
     } else {
+      console.log("🔽 Expanding cron details:", threadId);
       setExpandedCron(threadId);
       if (!runs[threadId]) {
         fetchRunsForThread(threadId);
+      } else {
+        console.log("📋 Using cached runs for thread:", {
+          thread_id: threadId,
+          cached_runs: runs[threadId].length,
+        });
       }
     }
   };
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'success':
-        return 'text-green-500';
-      case 'error':
-        return 'text-red-500';
-      case 'pending':
-        return 'text-yellow-500';
-      case 'timeout':
-        return 'text-orange-500';
-      case 'interrupted':
-        return 'text-purple-500';
+      case "success":
+        return "text-green-500";
+      case "error":
+        return "text-red-500";
+      case "pending":
+        return "text-yellow-500";
+      case "timeout":
+        return "text-orange-500";
+      case "interrupted":
+        return "text-purple-500";
       default:
-        return 'text-gray-500';
+        return "text-gray-500";
     }
   };
 
@@ -456,9 +528,7 @@ const CronJobsDialog = ({ crons }: CronJobsDialogProps) => {
                   Created: {new Date(run.created_at).toLocaleString()}
                 </p>
               </div>
-              <Badge className={getStatusColor(run.status)}>
-                {run.status}
-              </Badge>
+              <Badge className={getStatusColor(run.status)}>{run.status}</Badge>
             </div>
           </div>
         ))}
@@ -485,18 +555,25 @@ const CronJobsDialog = ({ crons }: CronJobsDialogProps) => {
             {localCrons.map((cron) => (
               <div key={cron.cron_id} className="border rounded-lg p-4">
                 <div className="flex items-center justify-between">
-                  <div 
+                  <div
                     className="flex-1 cursor-pointer"
                     onClick={() => cron.thread_id && toggleCron(cron.thread_id)}
                   >
                     <div>
-                      <h4 className="font-medium">Schedule: {cronToText(cron.schedule)}</h4>
+                      <h4 className="font-medium">
+                        Schedule: {cronToText(cron.schedule)}
+                      </h4>
                       <p className="text-sm text-muted-foreground">
                         Created: {new Date(cron.created_at).toLocaleString()}
                       </p>
-                      {cron.thread_id && <p className="text-sm">Thread ID: {cron.thread_id}</p>}
+                      {cron.thread_id && (
+                        <p className="text-sm">Thread ID: {cron.thread_id}</p>
+                      )}
                       <p className="text-sm">
-                        End time: {cron.end_time ? new Date(cron.end_time).toLocaleString() : 'No end time'}
+                        End time:{" "}
+                        {cron.end_time
+                          ? new Date(cron.end_time).toLocaleString()
+                          : "No end time"}
                       </p>
                     </div>
                   </div>
@@ -512,9 +589,15 @@ const CronJobsDialog = ({ crons }: CronJobsDialogProps) => {
                     <button
                       type="button"
                       className="p-2 hover:bg-muted rounded-full"
-                      onClick={() => cron.thread_id && toggleCron(cron.thread_id)}
+                      onClick={() =>
+                        cron.thread_id && toggleCron(cron.thread_id)
+                      }
                     >
-                      {expandedCron === cron.thread_id ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                      {expandedCron === cron.thread_id ? (
+                        <ChevronUp className="h-4 w-4" />
+                      ) : (
+                        <ChevronDown className="h-4 w-4" />
+                      )}
                     </button>
                   </div>
                 </div>
@@ -562,7 +645,9 @@ export default function TeamPage() {
   const router = useRouter();
   const [teams, setTeams] = useState<Team[]>([]);
   const [agents, setAgents] = useState<Agent[]>([]);
-  const [crons, setCrons] = useState<import('@langchain/langgraph-sdk').Cron[]>([]);
+  const [crons, setCrons] = useState<import("@langchain/langgraph-sdk").Cron[]>(
+    []
+  );
   const [isLoading, setIsLoading] = useState(true);
   const [showDialog, setShowDialog] = useState(false);
   const [selectedAgents, setSelectedAgents] = useState<string[]>([]);
@@ -585,7 +670,7 @@ export default function TeamPage() {
     const fetchData = async () => {
       setIsLoading(true);
       const client = await createLangGraphClient();
-      let cronsData: import('@langchain/langgraph-sdk').Cron[] = [];
+      let cronsData: import("@langchain/langgraph-sdk").Cron[] = [];
       try {
         // Fetch crons using LangGraph client
         cronsData = await client.crons.search({
@@ -707,12 +792,15 @@ export default function TeamPage() {
         // 2. Create new cron if schedule is set
         if (schedule) {
           try {
-            const newCron = await client.crons.create("chat_graph", {
+            const newCron = await client.crons.create("team_graph", {
               schedule: schedule,
-              input: {
+              streamMode: "values",
+              streamSubgraphs: true,
+              metadata: {
                 team_id: editingTeam.id,
-                action: "run_team",
               },
+              input: { role: "user", content: "Hello" },
+              ifNotExists: "create",
             });
 
             editingTeam.cron_id = newCron.cron_id;
@@ -902,7 +990,9 @@ export default function TeamPage() {
                       </p>
                       <p className="text-sm text-muted-foreground mb-4">
                         Schedule:{" "}
-                        {team.schedule ? cronToText(team.schedule) : "Not scheduled"}
+                        {team.schedule
+                          ? cronToText(team.schedule)
+                          : "Not scheduled"}
                       </p>
                       <div className="flex flex-wrap gap-2">
                         {team.agent_list.map((agentId) => {
