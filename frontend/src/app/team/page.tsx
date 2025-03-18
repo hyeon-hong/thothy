@@ -28,7 +28,7 @@ import {
   DialogTrigger,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { Check, X, Users, ChevronUp, ChevronDown, Pencil } from "lucide-react";
+import { Check, X, Users, ChevronUp, ChevronDown, Pencil, Clock, Play } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -73,6 +73,20 @@ type TeamDialogProps = {
   onSubmit: () => void;
   getAgentName: (id: string) => string;
   toggleAgent: (id: string) => void;
+};
+
+type Run = {
+  run_id: string;
+  thread_id: string;
+  assistant_id: string;
+  created_at: string;
+  updated_at: string;
+  status: string;
+  metadata: Record<string, any> | null;
+};
+
+type CronJobsDialogProps = {
+  crons: import('@langchain/langgraph-sdk').Cron[];
 };
 
 // Add helper function to convert cron to readable text
@@ -337,6 +351,164 @@ const TeamDialog = ({
   </DialogContent>
 );
 
+const CronJobsDialog = ({ crons }: CronJobsDialogProps) => {
+  const [expandedCron, setExpandedCron] = useState<string | null>(null);
+  const [runs, setRuns] = useState<Record<string, Run[]>>({});
+  const [isLoadingRuns, setIsLoadingRuns] = useState<Record<string, boolean>>({});
+
+  const fetchRunsForThread = async (threadId: string) => {
+    if (!threadId) return;
+    
+    try {
+      setIsLoadingRuns(prev => ({ ...prev, [threadId]: true }));
+      const client = await createLangGraphClient();
+      const runsData = await client.runs.list(threadId, {
+        limit: 10 // Get last 10 runs
+      });
+      // Convert LangGraph runs to our Run type
+      const convertedRuns = runsData.map(run => ({
+        run_id: run.run_id,
+        thread_id: run.thread_id,
+        assistant_id: run.assistant_id,
+        created_at: run.created_at,
+        updated_at: run.updated_at,
+        status: run.status,
+        metadata: run.metadata || null
+      }));
+      setRuns(prev => ({ ...prev, [threadId]: convertedRuns }));
+    } catch (error) {
+      console.error('Failed to fetch runs:', error);
+    } finally {
+      setIsLoadingRuns(prev => ({ ...prev, [threadId]: false }));
+    }
+  };
+
+  const toggleCron = (threadId: string) => {
+    if (!threadId) return;
+    
+    if (expandedCron === threadId) {
+      setExpandedCron(null);
+    } else {
+      setExpandedCron(threadId);
+      if (!runs[threadId]) {
+        fetchRunsForThread(threadId);
+      }
+    }
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'success':
+        return 'text-green-500';
+      case 'error':
+        return 'text-red-500';
+      case 'pending':
+        return 'text-yellow-500';
+      case 'timeout':
+        return 'text-orange-500';
+      case 'interrupted':
+        return 'text-purple-500';
+      default:
+        return 'text-gray-500';
+    }
+  };
+
+  const renderRunsList = (threadId: string) => {
+    if (isLoadingRuns[threadId]) {
+      return (
+        <div className="text-center py-4 text-muted-foreground">
+          Loading runs...
+        </div>
+      );
+    }
+
+    const threadRuns = runs[threadId];
+    if (!threadRuns || threadRuns.length === 0) {
+      return (
+        <div className="text-center py-4 text-muted-foreground">
+          No runs found
+        </div>
+      );
+    }
+
+    return (
+      <div className="space-y-2">
+        {threadRuns.map((run: Run) => (
+          <div key={run.run_id} className="bg-muted p-3 rounded-md">
+            <div className="flex justify-between items-start">
+              <div>
+                <p className="text-sm font-medium">Run ID: {run.run_id}</p>
+                <p className="text-sm text-muted-foreground">
+                  Created: {new Date(run.created_at).toLocaleString()}
+                </p>
+              </div>
+              <Badge className={getStatusColor(run.status)}>
+                {run.status}
+              </Badge>
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  };
+
+  return (
+    <DialogContent className="sm:max-w-[800px]">
+      <DialogHeader>
+        <DialogTitle>Scheduled Jobs</DialogTitle>
+        <DialogDescription>
+          View all scheduled jobs and their status
+        </DialogDescription>
+      </DialogHeader>
+
+      <div className="space-y-4 mt-2">
+        {crons.length === 0 ? (
+          <div className="text-center text-muted-foreground py-8">
+            No scheduled jobs found
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {crons.map((cron) => (
+              <div key={cron.cron_id} className="border rounded-lg p-4">
+                <div 
+                  className="flex items-center justify-between cursor-pointer"
+                  onClick={() => cron.thread_id && toggleCron(cron.thread_id)}
+                >
+                  <div className="flex-1">
+                    <h4 className="font-medium">Schedule: {cronToText(cron.schedule)}</h4>
+                    <p className="text-sm text-muted-foreground">
+                      Created: {new Date(cron.created_at).toLocaleString()}
+                    </p>
+                    {cron.thread_id && <p className="text-sm">Thread ID: {cron.thread_id}</p>}
+                    <p className="text-sm">
+                      End time: {cron.end_time ? new Date(cron.end_time).toLocaleString() : 'No end time'}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    className="ml-2 p-2 hover:bg-muted rounded-full"
+                  >
+                    {expandedCron === cron.thread_id ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                  </button>
+                </div>
+
+                {expandedCron === cron.thread_id && cron.thread_id && (
+                  <div className="mt-4 border-t pt-4">
+                    <h5 className="font-medium mb-2 flex items-center gap-2">
+                      <Play className="h-4 w-4" /> Recent Runs
+                    </h5>
+                    {renderRunsList(cron.thread_id)}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </DialogContent>
+  );
+};
+
 const createLangGraphClient = async () => {
   const supabase = createSupabaseClient();
   const {
@@ -358,17 +530,12 @@ const createLangGraphClient = async () => {
   });
 };
 
-const getCronhubUrl = (schedule: string): string => {
-  if (!schedule) return "";
-  return `https://crontab.cronhub.io/?cron_expression=${encodeURIComponent(schedule)}`;
-};
-
 export default function TeamPage() {
   const { user, loading } = useAuth();
   const router = useRouter();
   const [teams, setTeams] = useState<Team[]>([]);
   const [agents, setAgents] = useState<Agent[]>([]);
-  const [crons, setCrons] = useState<LangGraphCron[]>([]);
+  const [crons, setCrons] = useState<import('@langchain/langgraph-sdk').Cron[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showDialog, setShowDialog] = useState(false);
   const [selectedAgents, setSelectedAgents] = useState<string[]>([]);
@@ -376,6 +543,7 @@ export default function TeamPage() {
   const [teamDescription, setTeamDescription] = useState("");
   const [schedule, setSchedule] = useState("");
   const [editingTeam, setEditingTeam] = useState<Team | null>(null);
+  const [showCronJobsDialog, setShowCronJobsDialog] = useState(false);
 
   useEffect(() => {
     // Don't redirect while auth is loading
@@ -390,7 +558,7 @@ export default function TeamPage() {
     const fetchData = async () => {
       setIsLoading(true);
       const client = await createLangGraphClient();
-      let cronsData: LangGraphCron[] = [];
+      let cronsData: import('@langchain/langgraph-sdk').Cron[] = [];
       try {
         // Fetch crons using LangGraph client
         cronsData = await client.crons.search({
@@ -614,37 +782,54 @@ export default function TeamPage() {
                 Create and manage your agent teams
               </Typography>
             </div>
-            <Dialog
-              open={showDialog}
-              onOpenChange={(open) =>
-                handleDialogChange(open, Boolean(editingTeam))
-              }
-            >
-              <DialogTrigger asChild>
-                <Button
-                  variant="contained"
-                  startIcon={<Users />}
-                  onClick={() => setShowDialog(true)}
-                >
-                  Build a team
-                </Button>
-              </DialogTrigger>
-              <TeamDialog
-                isEdit={Boolean(editingTeam)}
-                teamName={teamName}
-                setTeamName={setTeamName}
-                teamDescription={teamDescription}
-                setTeamDescription={setTeamDescription}
-                schedule={schedule}
-                setSchedule={setSchedule}
-                selectedAgents={selectedAgents}
-                setSelectedAgents={setSelectedAgents}
-                agents={agents}
-                onSubmit={editingTeam ? handleEditTeam : handleBuildTeam}
-                getAgentName={getAgentName}
-                toggleAgent={toggleAgent}
-              />
-            </Dialog>
+            <div className="flex gap-2">
+              <Dialog
+                open={showCronJobsDialog}
+                onOpenChange={setShowCronJobsDialog}
+              >
+                <DialogTrigger asChild>
+                  <Button
+                    variant="outlined"
+                    startIcon={<Clock />}
+                    onClick={() => setShowCronJobsDialog(true)}
+                  >
+                    View jobs
+                  </Button>
+                </DialogTrigger>
+                <CronJobsDialog crons={crons} />
+              </Dialog>
+              <Dialog
+                open={showDialog}
+                onOpenChange={(open) =>
+                  handleDialogChange(open, Boolean(editingTeam))
+                }
+              >
+                <DialogTrigger asChild>
+                  <Button
+                    variant="contained"
+                    startIcon={<Users />}
+                    onClick={() => setShowDialog(true)}
+                  >
+                    Build a team
+                  </Button>
+                </DialogTrigger>
+                <TeamDialog
+                  isEdit={Boolean(editingTeam)}
+                  teamName={teamName}
+                  setTeamName={setTeamName}
+                  teamDescription={teamDescription}
+                  setTeamDescription={setTeamDescription}
+                  schedule={schedule}
+                  setSchedule={setSchedule}
+                  selectedAgents={selectedAgents}
+                  setSelectedAgents={setSelectedAgents}
+                  agents={agents}
+                  onSubmit={editingTeam ? handleEditTeam : handleBuildTeam}
+                  getAgentName={getAgentName}
+                  toggleAgent={toggleAgent}
+                />
+              </Dialog>
+            </div>
           </Box>
 
           {/* Teams grid */}
@@ -690,18 +875,7 @@ export default function TeamPage() {
                       </p>
                       <p className="text-sm text-muted-foreground mb-4">
                         Schedule:{" "}
-                        {team.schedule ? (
-                          <a
-                            href={getCronhubUrl(team.schedule)}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-blue-500 hover:text-blue-700 underline"
-                          >
-                            {cronToText(team.schedule)}
-                          </a>
-                        ) : (
-                          "Not scheduled"
-                        )}
+                        {team.schedule ? cronToText(team.schedule) : "Not scheduled"}
                       </p>
                       <div className="flex flex-wrap gap-2">
                         {team.agent_list.map((agentId) => {
