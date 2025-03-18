@@ -4,10 +4,7 @@ import { createClient as createSupabaseClient } from "@/utils/supabase/client";
 
 const createClient = async () => {
   // TODO: We don't run the typescript agent in LangGraph Platform, so we need to use the develop api url
-  const apiUrl =
-    process.env.NODE_ENV === "development"
-      ? process.env.NEXT_PUBLIC_DEVELOP_LANGGRAPH_API_URL
-      : process.env.NEXT_PUBLIC_DEVELOP_LANGGRAPH_API_URL;
+  const apiUrl = process.env.NEXT_PUBLIC_LOCAL_LANGGRAPH_API_URL;
 
   const supabase = createSupabaseClient();
   const {
