@@ -355,6 +355,20 @@ const CronJobsDialog = ({ crons }: CronJobsDialogProps) => {
   const [expandedCron, setExpandedCron] = useState<string | null>(null);
   const [runs, setRuns] = useState<Record<string, Run[]>>({});
   const [isLoadingRuns, setIsLoadingRuns] = useState<Record<string, boolean>>({});
+  const [localCrons, setLocalCrons] = useState<import('@langchain/langgraph-sdk').Cron[]>(crons);
+
+  const handleDeleteCron = async (cronId: string) => {
+    try {
+      const client = await createLangGraphClient();
+      await client.crons.delete(cronId);
+      
+      // Update local state to remove the deleted cron
+      setLocalCrons((prevCrons) => prevCrons.filter((cron) => cron.cron_id !== cronId));
+    } catch (error) {
+      console.error('Failed to delete cron:', error);
+      throw new Error("Failed to delete cron job");
+    }
+  };
 
   const fetchRunsForThread = async (threadId: string) => {
     if (!threadId) return;
@@ -462,34 +476,47 @@ const CronJobsDialog = ({ crons }: CronJobsDialogProps) => {
       </DialogHeader>
 
       <div className="space-y-4 mt-2">
-        {crons.length === 0 ? (
+        {localCrons.length === 0 ? (
           <div className="text-center text-muted-foreground py-8">
             No scheduled jobs found
           </div>
         ) : (
           <div className="space-y-4">
-            {crons.map((cron) => (
+            {localCrons.map((cron) => (
               <div key={cron.cron_id} className="border rounded-lg p-4">
-                <div 
-                  className="flex items-center justify-between cursor-pointer"
-                  onClick={() => cron.thread_id && toggleCron(cron.thread_id)}
-                >
-                  <div className="flex-1">
-                    <h4 className="font-medium">Schedule: {cronToText(cron.schedule)}</h4>
-                    <p className="text-sm text-muted-foreground">
-                      Created: {new Date(cron.created_at).toLocaleString()}
-                    </p>
-                    {cron.thread_id && <p className="text-sm">Thread ID: {cron.thread_id}</p>}
-                    <p className="text-sm">
-                      End time: {cron.end_time ? new Date(cron.end_time).toLocaleString() : 'No end time'}
-                    </p>
-                  </div>
-                  <button
-                    type="button"
-                    className="ml-2 p-2 hover:bg-muted rounded-full"
+                <div className="flex items-center justify-between">
+                  <div 
+                    className="flex-1 cursor-pointer"
+                    onClick={() => cron.thread_id && toggleCron(cron.thread_id)}
                   >
-                    {expandedCron === cron.thread_id ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-                  </button>
+                    <div>
+                      <h4 className="font-medium">Schedule: {cronToText(cron.schedule)}</h4>
+                      <p className="text-sm text-muted-foreground">
+                        Created: {new Date(cron.created_at).toLocaleString()}
+                      </p>
+                      {cron.thread_id && <p className="text-sm">Thread ID: {cron.thread_id}</p>}
+                      <p className="text-sm">
+                        End time: {cron.end_time ? new Date(cron.end_time).toLocaleString() : 'No end time'}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteCron(cron.cron_id)}
+                      className="p-2 hover:bg-red-100 rounded-full text-red-500 transition-colors"
+                      title="Delete cron job"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                    <button
+                      type="button"
+                      className="p-2 hover:bg-muted rounded-full"
+                      onClick={() => cron.thread_id && toggleCron(cron.thread_id)}
+                    >
+                      {expandedCron === cron.thread_id ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                    </button>
+                  </div>
                 </div>
 
                 {expandedCron === cron.thread_id && cron.thread_id && (
