@@ -642,14 +642,12 @@ const createLangGraphClient = async () => {
   } = await supabase.auth.getSession();
 
   // Get apiUrl as development or production
-  const apiUrl =
-    process.env.NODE_ENV === "development"
-      ? process.env.NEXT_PUBLIC_DEVELOP_LANGGRAPH_API_URL
-      : process.env.NEXT_PUBLIC_MAIN_LANGGRAPH_API_URL;
+  const apiUrl = process.env.NEXT_PUBLIC_LANGGRAPH_API_URL;
+  const apiKey = process.env.NEXT_PUBLIC_LANGSMITH_API_KEY;
 
   return new Client({
     apiUrl: apiUrl,
-    apiKey: process.env.NEXT_PUBLIC_LANGSMITH_API_KEY,
+    apiKey: apiKey,
     defaultHeaders: {
       Authorization: `Bearer ${session?.access_token}`,
     },

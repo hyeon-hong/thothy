@@ -43,7 +43,7 @@ async function handleRequest(req: NextRequest, method: string) {
     const options: RequestInit = {
       method,
       headers: {
-        "x-api-key": process.env.LANGCHAIN_API_KEY || "",
+        "x-api-key": process.env.NEXT_PUBLIC_LANGSMITH_API_KEY || "",
       },
     };
 
