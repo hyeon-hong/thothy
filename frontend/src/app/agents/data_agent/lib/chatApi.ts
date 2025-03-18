@@ -18,9 +18,14 @@ const createClient = async () => {
   console.log("error: ", error);
   console.log("session: ", session);
 
+  const apiKey =
+    process.env.NODE_ENV === "development"
+      ? process.env.NEXT_PUBLIC_DEVELOP_LANGSMITH_API_KEY
+      : process.env.NEXT_PUBLIC_MAIN_LANGSMITH_API_KEY;
+
   return new Client({
     apiUrl,
-    apiKey: process.env.LANGCHAIN_API_KEY,
+    apiKey: apiKey,
     defaultHeaders: {
       Authorization: `Bearer ${session?.access_token}`,
     },

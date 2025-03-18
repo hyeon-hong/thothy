@@ -40,10 +40,15 @@ async function handleRequest(req: NextRequest, method: string) {
       ? `?${searchParams.toString()}`
       : "";
 
+    const apiKey =
+      process.env.NODE_ENV === "development"
+        ? process.env.NEXT_PUBLIC_DEVELOP_LANGSMITH_API_KEY
+        : process.env.NEXT_PUBLIC_MAIN_LANGSMITH_API_KEY;
+
     const options: RequestInit = {
       method,
       headers: {
-        "x-api-key": process.env.LANGCHAIN_API_KEY || "",
+        "x-api-key": apiKey || "",
       },
     };
 
