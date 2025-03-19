@@ -1,5 +1,6 @@
 """Blog agent tools."""
 
+import logging
 from typing import Dict, Any
 import os
 from dotenv import load_dotenv
@@ -56,6 +57,9 @@ async def post_blog(
 
     try:
         # Prepare blog post data
+        logging.warning(f"post_blog title: {title}")
+        logging.warning(f"post_blog content: {content}")
+        logging.warning(f"post_blog user_id: {user_id}")
         blog_data = {
             "title": title,
             "content": content,
@@ -64,6 +68,7 @@ async def post_blog(
 
         # Insert blog post into Supabase
         result = supabase.table('blogs').insert(blog_data).execute()
+        logging.warning(f"post_blog result: {result}")
 
         if not result.data:
             raise Exception("Failed to create blog post")
