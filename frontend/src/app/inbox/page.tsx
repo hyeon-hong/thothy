@@ -13,8 +13,8 @@ import { cn } from "@/lib/utils";
 export default function InboxPage(): React.ReactNode {
   return (
     <React.Suspense fallback={<div>Loading (layout)...</div>}>
-      <Header currentView="inbox" />
       <Toaster position="top-right" expand={true} richColors />
+      <Header currentView="inbox" />
       <ThreadsProvider>
         <SidebarProvider>
           <AppSidebar />
