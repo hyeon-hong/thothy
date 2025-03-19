@@ -93,7 +93,7 @@ const getClient = async ({ agentInboxes, getItem, toast }: GetClientArgs) => {
     });
     return;
   }
-  const deploymentUrl = agentInboxes.find((i) => i.selected)?.deploymentUrl;
+  let deploymentUrl = agentInboxes.find((i) => i.selected)?.deploymentUrl;
   if (!deploymentUrl) {
     console.error("Deployment URL not found. Please add a deployment URL in settings.");
     toast({
@@ -106,22 +106,13 @@ const getClient = async ({ agentInboxes, getItem, toast }: GetClientArgs) => {
     return;
   }
 
+  // Use proxy URL in development
+  if (process.env.NODE_ENV === 'development' && deploymentUrl.includes('langgraph.app')) {
+    deploymentUrl = `/api/langgraph${new URL(deploymentUrl).pathname}`;
+  }
+
   const langchainApiKeyLS =
     process.env.NEXT_PUBLIC_LANGGRAPH_API_KEY || undefined;
-  // getItem(LANGCHAIN_API_KEY_LOCAL_STORAGE_KEY) || undefined;
-
-  // Only show this error if the deployment URL is for a deployed LangGraph instance.
-  // Local graphs do NOT require an API key.
-  // if (!langchainApiKeyLS && deploymentUrl.includes("us.langgraph.app")) {
-  //   console.error("LangSmith API key not found. Please add your LangSmith API key in settings.");
-  //   toast({
-  //     title: "Error",
-  //     description: "Please add your LangSmith API key in settings.",
-  //     variant: "destructive",
-  //     duration: 5000,
-  //   });
-  //   return;
-  // }
 
   return await createClient({
     deploymentUrl,

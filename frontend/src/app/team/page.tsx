@@ -772,8 +772,6 @@ export default function TeamPage() {
 
           const newCron = await client.crons.create("team_graph", {
             schedule: schedule,
-            streamMode: "values",
-            streamSubgraphs: true,
             metadata: {
               team_id: data.id,
               team_name: teamName,
@@ -782,7 +780,7 @@ export default function TeamPage() {
             input: createTeamMessage(data.id, teamDescription),
             interruptBefore: ["blog_agent"],
             interruptAfter: ["__end__"],
-            multitask_strategy: "enqueue",
+            multitaskStrategy: "enqueue",
           });
 
           console.log("✅ Successfully created cron job:", {
@@ -867,8 +865,6 @@ export default function TeamPage() {
 
             const newCron = await client.crons.create("team_graph", {
               schedule: schedule,
-              streamMode: "values",
-              streamSubgraphs: true,
               metadata: {
                 team_id: editingTeam.id,
                 team_name: teamName,
@@ -878,6 +874,9 @@ export default function TeamPage() {
               input: {
                 messages: [{ role: "user", content: teamDescription }],
               },
+              interruptBefore: ["blog_agent"],
+              interruptAfter: ["__end__"],
+              multitaskStrategy: "enqueue",
             });
             console.log("🔍 New cron job:", newCron);
 
