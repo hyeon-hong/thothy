@@ -780,6 +780,9 @@ export default function TeamPage() {
               agent_list: selectedAgents,
             },
             input: createTeamMessage(data.id, teamDescription),
+            interruptBefore: ["blog_agent"],
+            interruptAfter: ["__end__"],
+            multitaskStrategy: "enqueue",
           });
 
           console.log("✅ Successfully created cron job:", {
