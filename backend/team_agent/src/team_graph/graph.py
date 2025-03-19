@@ -1,16 +1,19 @@
 import logging
 from typing import Literal, List, Dict
+from langchain_openai import ChatOpenAI
 from langgraph.graph import StateGraph, START, END
 from langchain_core.messages import HumanMessage
 from langgraph.types import Command
 from langgraph.graph import MessagesState
-from langchain_anthropic import ChatAnthropic
+# from langchain_anthropic import ChatAnthropic
 from typing_extensions import TypedDict
 
 from blog_graph.graph import graph as blog_graph
 from news_graph.graph import graph as news_graph
 
-llm = ChatAnthropic(model="claude-3-5-sonnet-latest")
+# llm = ChatAnthropic(model="claude-3-5-sonnet-latest")
+# Create llm with OpenAI
+llm = ChatOpenAI(model="gpt-4o-mini")
 
 members = ["news_agent", "blog_agent"]
 OptionType = Literal["news_agent", "blog_agent", "FINISH"]
@@ -80,6 +83,7 @@ def init_request_node(state: State) -> Command[Literal["team_supervisor"]]:
         )
     except Exception as e:
         logging.error(f"Error generating todo list: {str(e)}")
+        # TODO: Should handle this better
         raise RuntimeError(f"Failed to generate todo list: {str(e)}")
     logging.info(f"response: {response}")
 
