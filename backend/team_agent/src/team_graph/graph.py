@@ -84,7 +84,23 @@ def init_request_node(state: State) -> Command[Literal["team_supervisor"]]:
     except Exception as e:
         logging.error(f"Error generating todo list: {str(e)}")
         # TODO: Should handle this better
-        raise RuntimeError(f"Failed to generate todo list: {str(e)}")
+        # raise RuntimeError(f"Failed to generate todo list: {str(e)}")
+    finally:
+        # TODO: Remove this
+        response = {
+            "todos": [
+                {
+                    "task": "Fetch news articles",
+                    "agent": "news_agent",
+                    "done": False
+                },
+                {
+                    "task": "Create a blog post",
+                    "agent": "blog_agent",
+                    "done": False
+                },
+            ]
+        }
     logging.info(f"response: {response}")
 
     # Convert response to TodoItems
