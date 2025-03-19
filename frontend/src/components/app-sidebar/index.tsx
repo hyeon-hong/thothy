@@ -13,10 +13,10 @@ import {
 import { FileText, Trash2 } from "lucide-react";
 import { agentInboxSvg } from "../agent-inbox/components/agent-inbox-logo";
 import { SettingsPopover } from "../agent-inbox/components/settings-popover";
-import { PillButton } from "../ui/pill-button";
+import { PillButton } from "@/components/ui/pill-button";
 import React from "react";
 import { useSidebar } from "@/components/ui/sidebar";
-import { TooltipIconButton } from "../ui/assistant-ui/tooltip-icon-button";
+import { TooltipIconButton } from "@/components/assistant-ui/tooltip-icon-button";
 import { useThreadsContext } from "../agent-inbox/contexts/ThreadContext";
 import { prettifyText } from "../agent-inbox/utils";
 import { cn } from "@/lib/utils";
