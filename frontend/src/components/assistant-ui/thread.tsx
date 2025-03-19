@@ -5,36 +5,38 @@ import {
   MessagePrimitive,
   ThreadPrimitive,
 } from "@assistant-ui/react";
-import type { FC, ComponentType } from "react";
-import {
-  ArrowDownIcon,
-  CheckIcon,
-  ChevronLeftIcon,
-  ChevronRightIcon,
-  CopyIcon,
-  PencilIcon,
-  RefreshCwIcon,
-  SendHorizontalIcon,
-} from "lucide-react";
-import { cn } from "@/lib/utils";
 import { useEffect } from "react";
+import React from "react";
 
 import { Button } from "@/components/ui/button";
 import { MarkdownText } from "@/components/assistant-ui/markdown-text";
 import { TooltipIconButton } from "@/components/assistant-ui/tooltip-icon-button";
+import { cn } from "@/lib/utils";
+
+// Simple icon components
+const ArrowDownIcon = () => <span>↓</span>;
+const CheckIcon = () => <span>✓</span>;
+const ChevronLeftIcon = () => <span>←</span>;
+const ChevronRightIcon = () => <span>→</span>;
+const CopyIcon = () => <span>📋</span>;
+const PencilIcon = () => <span>✎</span>;
+const RefreshCwIcon = () => <span>🔄</span>;
+const SendHorizontalIcon = () => <span>➤</span>;
+const CircleStopIcon = () => <span>⏹</span>;
 
 type ThreadProps = {
   welcomeSuggestions?: { prompt: string }[];
   toolFallback?: any; // Using any to avoid type issues
 };
 
-export const Thread: FC<ThreadProps> = ({ 
+// Use explicit React function declarations instead of FC
+export function Thread({ 
   welcomeSuggestions = [
     { prompt: "What is the weather in Tokyo?" },
     { prompt: "What is assistant-ui?" }
   ],
   toolFallback
-}) => {
+}: ThreadProps): React.ReactNode {
   // Log when Thread component initializes
   useEffect(() => {
     console.log('[Thread] Thread component initialized');
@@ -53,8 +55,8 @@ export const Thread: FC<ThreadProps> = ({
 
         <ThreadPrimitive.Messages
           components={{
-            UserMessage: UserMessage,
-            EditComposer: EditComposer,
+            UserMessage: (props) => <UserMessage {...props} />,
+            EditComposer: (props) => <EditComposer {...props} />,
             AssistantMessage: (props) => {
               console.log('[Thread] Rendering AssistantMessage');
               return (
@@ -78,9 +80,9 @@ export const Thread: FC<ThreadProps> = ({
       </ThreadPrimitive.Viewport>
     </ThreadPrimitive.Root>
   );
-};
+}
 
-const ThreadScrollToBottom: FC = () => {
+function ThreadScrollToBottom(): React.ReactNode {
   return (
     <ThreadPrimitive.ScrollToBottom asChild>
       <TooltipIconButton
@@ -92,9 +94,9 @@ const ThreadScrollToBottom: FC = () => {
       </TooltipIconButton>
     </ThreadPrimitive.ScrollToBottom>
   );
-};
+}
 
-const ThreadWelcome: FC<{ suggestions: { prompt: string }[] }> = ({ suggestions }) => {
+function ThreadWelcome({ suggestions }: { suggestions: { prompt: string }[] }): React.ReactNode {
   return (
     <ThreadPrimitive.Empty>
       <div className="flex w-full max-w-[var(--thread-max-width)] flex-grow flex-col">
@@ -107,9 +109,9 @@ const ThreadWelcome: FC<{ suggestions: { prompt: string }[] }> = ({ suggestions 
       </div>
     </ThreadPrimitive.Empty>
   );
-};
+}
 
-const ThreadWelcomeSuggestions: FC<{ suggestions: { prompt: string }[] }> = ({ suggestions }) => {
+function ThreadWelcomeSuggestions({ suggestions }: { suggestions: { prompt: string }[] }): React.ReactNode {
   return (
     <div className="mt-3 flex w-full items-stretch justify-center gap-4">
       {suggestions.map((suggestion, index) => (
@@ -127,9 +129,9 @@ const ThreadWelcomeSuggestions: FC<{ suggestions: { prompt: string }[] }> = ({ s
       ))}
     </div>
   );
-};
+}
 
-const Composer: FC = () => {
+function Composer(): React.ReactNode {
   return (
     <ComposerPrimitive.Root className="focus-within:border-ring/20 flex w-full flex-wrap items-end rounded-lg border bg-inherit px-2.5 shadow-sm transition-colors ease-in">
       <ComposerPrimitive.Input
@@ -141,9 +143,9 @@ const Composer: FC = () => {
       <ComposerAction />
     </ComposerPrimitive.Root>
   );
-};
+}
 
-const ComposerAction: FC = () => {
+function ComposerAction(): React.ReactNode {
   return (
     <>
       <ThreadPrimitive.If running={false}>
@@ -170,9 +172,9 @@ const ComposerAction: FC = () => {
       </ThreadPrimitive.If>
     </>
   );
-};
+}
 
-const UserMessage: FC = () => {
+function UserMessage(): React.ReactNode {
   return (
     <MessagePrimitive.Root className="grid auto-rows-auto grid-cols-[minmax(72px,1fr)_auto] gap-y-2 [&:where(>*)]:col-start-2 w-full max-w-[var(--thread-max-width)] py-4">
       <UserActionBar />
@@ -184,9 +186,9 @@ const UserMessage: FC = () => {
       <BranchPicker className="col-span-full col-start-1 row-start-3 -mr-1 justify-end" />
     </MessagePrimitive.Root>
   );
-};
+}
 
-const UserActionBar: FC = () => {
+function UserActionBar(): React.ReactNode {
   return (
     <ActionBarPrimitive.Root
       hideWhenRunning
@@ -200,9 +202,9 @@ const UserActionBar: FC = () => {
       </ActionBarPrimitive.Edit>
     </ActionBarPrimitive.Root>
   );
-};
+}
 
-const EditComposer: FC = () => {
+function EditComposer(): React.ReactNode {
   return (
     <ComposerPrimitive.Root className="bg-muted my-4 flex w-full max-w-[var(--thread-max-width)] flex-col gap-2 rounded-xl">
       <ComposerPrimitive.Input className="text-foreground flex h-8 w-full resize-none bg-transparent p-4 pb-0 outline-none" />
@@ -217,9 +219,9 @@ const EditComposer: FC = () => {
       </div>
     </ComposerPrimitive.Root>
   );
-};
+}
 
-const AssistantMessage: FC<{ toolFallback?: any }> = ({ toolFallback }) => {
+function AssistantMessage({ toolFallback }: { toolFallback?: any }): React.ReactNode {
   useEffect(() => {
     console.log('[AssistantMessage] Component mounted');
   }, []);
@@ -240,72 +242,60 @@ const AssistantMessage: FC<{ toolFallback?: any }> = ({ toolFallback }) => {
       <BranchPicker className="col-start-2 row-start-2 -ml-2 mr-2" />
     </MessagePrimitive.Root>
   );
-};
+}
 
-const AssistantActionBar: FC = () => {
+function AssistantActionBar(): React.ReactNode {
   return (
     <ActionBarPrimitive.Root
       hideWhenRunning
       autohide="not-last"
       autohideFloat="single-branch"
-      className="text-muted-foreground flex gap-1 col-start-3 row-start-2 -ml-1 data-[floating]:bg-background data-[floating]:absolute data-[floating]:rounded-md data-[floating]:border data-[floating]:p-1 data-[floating]:shadow-sm"
+      className="flex flex-col items-end row-start-1 mt-1.5 mr-4"
     >
       <ActionBarPrimitive.Copy asChild>
         <TooltipIconButton tooltip="Copy">
-          <MessagePrimitive.If copied>
-            <CheckIcon />
-          </MessagePrimitive.If>
-          <MessagePrimitive.If copied={false}>
-            <CopyIcon />
-          </MessagePrimitive.If>
+          <CopyIcon />
         </TooltipIconButton>
       </ActionBarPrimitive.Copy>
       <ActionBarPrimitive.Reload asChild>
-        <TooltipIconButton tooltip="Refresh">
+        <TooltipIconButton tooltip="Regenerate">
           <RefreshCwIcon />
         </TooltipIconButton>
       </ActionBarPrimitive.Reload>
     </ActionBarPrimitive.Root>
   );
-};
+}
 
-const BranchPicker: FC<BranchPickerPrimitive.Root.Props> = ({
-  className,
-  ...rest
-}) => {
+function BranchPicker({ className, ...rest }: BranchPickerPrimitive.Root.Props): React.ReactNode {
   return (
     <BranchPickerPrimitive.Root
-      hideWhenSingleBranch
-      className={cn("text-muted-foreground inline-flex items-center text-xs", className)}
+      className={cn("flex items-center", className)}
       {...rest}
     >
-      <BranchPickerPrimitive.Previous asChild>
-        <TooltipIconButton tooltip="Previous">
-          <ChevronLeftIcon />
-        </TooltipIconButton>
-      </BranchPickerPrimitive.Previous>
-      <span className="font-medium">
-        <BranchPickerPrimitive.Number /> / <BranchPickerPrimitive.Count />
-      </span>
-      <BranchPickerPrimitive.Next asChild>
-        <TooltipIconButton tooltip="Next">
-          <ChevronRightIcon />
-        </TooltipIconButton>
-      </BranchPickerPrimitive.Next>
+      <div className="flex flex-col">
+        <BranchPickerPrimitive.Root.Group className="flex items-center overflow-auto py-1">
+          <BranchPickerPrimitive.Previous asChild>
+            <TooltipIconButton tooltip="Previous" variant="ghost">
+              <ChevronLeftIcon />
+            </TooltipIconButton>
+          </BranchPickerPrimitive.Previous>
+
+          <BranchPickerPrimitive.Root.Markers
+            className="mx-2 hidden space-x-1.5 sm:flex"
+            activeClassName="bg-foreground"
+            inactiveClassName="hover:bg-foreground/30 bg-foreground/20"
+            commonClassName="w-1.5 h-1.5 rounded-sm transition-colors duration-100 ease-in-out cursor-pointer"
+          />
+
+          <BranchPickerPrimitive.Root.Progress className="mx-2 sm:hidden" />
+
+          <BranchPickerPrimitive.Next asChild>
+            <TooltipIconButton tooltip="Next" variant="ghost">
+              <ChevronRightIcon />
+            </TooltipIconButton>
+          </BranchPickerPrimitive.Next>
+        </BranchPickerPrimitive.Root.Group>
+      </div>
     </BranchPickerPrimitive.Root>
   );
-};
-
-const CircleStopIcon = () => {
-  return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      viewBox="0 0 16 16"
-      fill="currentColor"
-      width="16"
-      height="16"
-    >
-      <rect width="10" height="10" x="3" y="3" rx="2" />
-    </svg>
-  );
-};
+}

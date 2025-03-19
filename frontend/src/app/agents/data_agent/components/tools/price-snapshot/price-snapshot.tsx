@@ -1,7 +1,5 @@
 "use client";
 
-import { ArrowDownIcon, ArrowUpIcon } from "lucide-react";
-
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 type PriceSnapshotToolArgs = {
@@ -15,6 +13,15 @@ type PriceSnapshotToolResult = {
   time: string;
 };
 
+// Simple arrow components to avoid type issues
+const ArrowUpIndicator = () => (
+  <span className="mr-1 inline-block text-green-500">↑</span>
+);
+
+const ArrowDownIndicator = () => (
+  <span className="mr-1 inline-block text-red-500">↓</span>
+);
+
 export function PriceSnapshot({
   ticker,
   price,
@@ -22,9 +29,8 @@ export function PriceSnapshot({
   day_change_percent,
   time,
 }: PriceSnapshotToolArgs & PriceSnapshotToolResult) {
-  const isPositiveChange = day_change >= 0;
-  const changeColor = isPositiveChange ? "text-green-600" : "text-red-600";
-  const ArrowIcon = isPositiveChange ? ArrowUpIcon : ArrowDownIcon;
+  const isPositive = day_change >= 0;
+  const changeColor = isPositive ? "text-green-500" : "text-red-500";
 
   return (
     <Card className="mx-auto w-full max-w-md">
@@ -38,10 +44,8 @@ export function PriceSnapshot({
           </div>
           <div>
             <p className="text-muted-foreground text-sm">Day Change</p>
-            <p
-              className={`flex items-center text-lg font-medium ${changeColor}`}
-            >
-              <ArrowIcon className="mr-1 h-4 w-4" />$
+            <p className={`flex items-center text-lg font-medium ${changeColor}`}>
+              {isPositive ? <ArrowUpIndicator /> : <ArrowDownIndicator />}$
               {Math.abs(day_change)?.toFixed(2)} (
               {Math.abs(day_change_percent)?.toFixed(2)}%)
             </p>

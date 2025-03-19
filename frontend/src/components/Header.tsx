@@ -24,7 +24,7 @@ import Logout from '@mui/icons-material/Logout';
 import Link from 'next/link';
 
 interface HeaderProps {
-  currentView: 'inbox' | 'find' | 'staff' | 'team' | 'blog' | 'login';
+  currentView: 'inbox' | 'find' | 'staff' | 'team' | 'blog' | 'login' | 'agents';
 }
 
 export default function Header({ currentView }: HeaderProps) {

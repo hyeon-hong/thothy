@@ -1,7 +1,5 @@
 "use client";
 
-import { CheckIcon, XIcon } from "lucide-react";
-
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -33,21 +31,23 @@ export function TransactionConfirmationPending(props: TransactionConfirmation) {
   return (
     <Card className="mx-auto w-full max-w-md">
       <CardHeader>
-        <CardTitle className="text-2xl font-bold">
-          Confirm Transaction
+        <CardTitle className="text-xl font-bold">
+          Confirm Stock Purchase
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="grid grid-cols-2 gap-2">
-          <p className="text-muted-foreground text-sm font-medium">Ticker:</p>
-          <p className="text-sm font-bold">{ticker}</p>
-          <p className="text-muted-foreground text-sm font-medium">Company:</p>
-          <p className="text-sm">{companyName}</p>
-          <p className="text-muted-foreground text-sm font-medium">Quantity:</p>
-          <p className="text-sm">{quantity} shares</p>
-          <p className="text-muted-foreground text-sm font-medium">
-            Max Purchase Price:
+        <div className="grid gap-1">
+          <p className="text-sm font-medium">Company</p>
+          <p className="text-sm">
+            {companyName} ({ticker})
           </p>
+        </div>
+        <div className="grid gap-1">
+          <p className="text-sm font-medium">Quantity</p>
+          <p className="text-sm">{quantity} shares</p>
+        </div>
+        <div className="grid gap-1">
+          <p className="text-sm font-medium">Maximum Price per Share</p>
           <p className="text-sm">${maxPurchasePrice?.toFixed(2)}</p>
         </div>
         <div className="bg-muted rounded-md p-3">
@@ -59,11 +59,11 @@ export function TransactionConfirmationPending(props: TransactionConfirmation) {
       </CardContent>
       <CardFooter className="flex justify-end">
         <Button variant="outline" onClick={onReject}>
-          <XIcon className="mr-2 h-4 w-4" />
+          <span className="mr-2">✕</span>
           Reject
         </Button>
         <Button onClick={onConfirm}>
-          <CheckIcon className="mr-2 h-4 w-4" />
+          <span className="mr-2">✓</span>
           Confirm
         </Button>
       </CardFooter>

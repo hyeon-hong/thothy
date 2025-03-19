@@ -5,17 +5,21 @@ import Header from "@/components/Header";
 import { usePathname } from "next/navigation";
 
 interface AgentLayoutProps {
-  children: ReactNode;
+  children: React.ReactNode;
+  params: { graph_name: string };
 }
 
-export default function AgentLayout({ children }: AgentLayoutProps) {
+export default function AgentLayout({
+  children,
+  params,
+}: AgentLayoutProps) {
   const pathname = usePathname();
   const [currentView, setCurrentView] = useState(() => {
     // Determine initial view based on pathname
     if (pathname?.includes('/agents/')) {
-      return 'agents';
+      return 'agents' as const;
     }
-    return 'find';
+    return 'find' as const;
   });
 
   return (
