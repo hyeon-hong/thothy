@@ -20,7 +20,7 @@ export type TooltipIconButtonProps = ButtonProps & {
 export const TooltipIconButton = forwardRef<
   HTMLButtonElement,
   TooltipIconButtonProps
->(({ children, tooltip, side = "bottom", className, delayDuration, ...rest }, ref) => {
+>(({ children, tooltip, side = "bottom", className, delayDuration, ...buttonProps }, ref) => {
   return (
     <TooltipProvider>
       <Tooltip delayDuration={delayDuration}>
@@ -28,9 +28,9 @@ export const TooltipIconButton = forwardRef<
           <Button
             variant="ghost"
             size="icon"
-            {...rest}
             className={cn("size-6 p-1", className)}
             ref={ref}
+            {...buttonProps}
           >
             {children}
             <span className="sr-only">{tooltip}</span>
