@@ -13,7 +13,6 @@ export function AgentInboxView<
 >() {
   const { searchParams, updateQueryParams, getSearchParam } = useQueryParams();
   const { loading, threadData } = useThreadsContext<ThreadValues>();
-  console.log("threadData: ", threadData);
   const selectedInbox = (getSearchParam(INBOX_PARAM) ||
     "interrupted") as ThreadStatusWithAll;
 
@@ -48,7 +47,6 @@ export function AgentInboxView<
       }),
     [selectedInbox, threadData]
   );
-  console.log("threadDataToRender: ", threadDataToRender);
   const noThreadsFound = !threadDataToRender.length;
 
   return (
