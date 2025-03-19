@@ -1,51 +1,41 @@
 "use client";
 
-import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { useAuth } from '@/contexts/AuthContext';
-import { Container, Typography, Box } from '@mui/material';
-import Header from '@/components/Header';
+import { AgentInbox } from "@/components/agent-inbox";
+import React from "react";
+import { Toaster } from "sonner";
+import { ThreadsProvider } from "@/components/agent-inbox/contexts/ThreadContext";
+import { SidebarProvider } from "@/components/ui/sidebar";
+import Header from "@/components/Header";
+import { AppSidebar, AppSidebarTrigger } from "@/components/app-sidebar";
+import { BreadCrumb } from "@/components/agent-inbox/components/breadcrumb";
+import { cn } from "@/lib/utils";
 
-export default function InboxPage() {
-  const { user, loading } = useAuth();
-  const router = useRouter();
-
-  useEffect(() => {
-    if (!loading && !user) {
-      router.push('/auth/signin');
-    }
-  }, [user, loading, router]);
-
-  if (loading) {
-    return (
-      <>
-        <Header currentView="inbox" />
-        <Container maxWidth="lg">
-          <Box sx={{ mt: 4, textAlign: 'center' }}>
-            <Typography>Loading...</Typography>
-          </Box>
-        </Container>
-      </>
-    );
-  }
-
-  if (!user) {
-    return null;
-  }
-
+export default function InboxPage(): React.ReactNode {
   return (
-    <>
+    <React.Suspense fallback={<div>Loading (layout)...</div>}>
+      <Toaster position="top-right" expand={true} richColors />
       <Header currentView="inbox" />
-      <Container maxWidth="lg">
-        <Box sx={{ mt: 4 }}>
-          <Typography variant="h4" component="h1" gutterBottom>
-            Inbox
-          </Typography>
-          <Typography variant="body1">
-            Welcome to your inbox. Here you'll find your messages and notifications.
-          </Typography>
-        </Box>
-      </Container>
-    </>
+      <ThreadsProvider>
+        <SidebarProvider>
+          <AppSidebar />
+          <main className="flex flex-row w-full min-h-full pt-6 pl-6 gap-6">
+            <AppSidebarTrigger isOutside={true} />
+            <div className="flex flex-col gap-6 w-full min-h-full">
+              <BreadCrumb className="pl-5" />
+              <div
+                className={cn(
+                  "h-full bg-white rounded-tl-[58px]",
+                  "overflow-x-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100"
+                )}
+              >
+                <div className="flex flex-col w-full h-full">
+                  <AgentInbox />
+                </div>
+              </div>
+            </div>
+          </main>
+        </SidebarProvider>
+      </ThreadsProvider>
+    </React.Suspense>
   );
-} 
+}

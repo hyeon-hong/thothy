@@ -1,0 +1,7 @@
+---
+description: Rule for package.json file
+globs:
+alwaysApply: false
+---
+
+Use the "^18.2.0" version for react package.

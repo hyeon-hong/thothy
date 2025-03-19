@@ -1,16 +1,19 @@
 import logging
 from typing import Literal, List, Dict
+from langchain_openai import ChatOpenAI
 from langgraph.graph import StateGraph, START, END
 from langchain_core.messages import HumanMessage
 from langgraph.types import Command
 from langgraph.graph import MessagesState
-from langchain_anthropic import ChatAnthropic
+# from langchain_anthropic import ChatAnthropic
 from typing_extensions import TypedDict
 
 from blog_graph.graph import graph as blog_graph
 from news_graph.graph import graph as news_graph
 
-llm = ChatAnthropic(model="claude-3-5-sonnet-latest")
+# llm = ChatAnthropic(model="claude-3-5-sonnet-latest")
+# Create llm with OpenAI
+llm = ChatOpenAI(model="gpt-4o-mini")
 
 members = ["news_agent", "blog_agent"]
 OptionType = Literal["news_agent", "blog_agent", "FINISH"]
@@ -70,9 +73,7 @@ def init_request_node(state: State) -> Command[Literal["team_supervisor"]]:
     """Initialize the state with the user's request and generate todo list."""
     # Get the initial request from the first message
     initial_request = state["messages"][0].content if state["messages"] else ""
-    logging.info(f"state: {state}")
     logging.info(f"state['messages']: {state['messages']}")
-    logging.info(f"Setting initial request: {initial_request}")
 
     # Generate todo list using LLM
     todo_prompt = get_todo_prompt(initial_request)
@@ -82,9 +83,25 @@ def init_request_node(state: State) -> Command[Literal["team_supervisor"]]:
         )
     except Exception as e:
         logging.error(f"Error generating todo list: {str(e)}")
-        raise RuntimeError(f"Failed to generate todo list: {str(e)}")
+        # TODO: Should handle this better
+        # raise RuntimeError(f"Failed to generate todo list: {str(e)}")
+    finally:
+        # TODO: Remove this
+        response = {
+            "todos": [
+                {
+                    "task": "Fetch news articles",
+                    "agent": "news_agent",
+                    "done": False
+                },
+                {
+                    "task": "Create a blog post",
+                    "agent": "blog_agent",
+                    "done": False
+                },
+            ]
+        }
     logging.info(f"response: {response}")
-    logging.info(f"response['todos']: {response['todos']}")
 
     # Convert response to TodoItems
     todos = [

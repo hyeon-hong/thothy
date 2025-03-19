@@ -18,6 +18,10 @@ src/generated/**
 
 # Node modules
 node_modules/
+/.pnp
+.pnp.js
+.yarn/install-state.gz
+.yarn/cache
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
@@ -189,13 +193,6 @@ cython_debug/
 # code-generator.py
 outputs/
 
-# The following lines are from apps/agents/.gitignore that weren't already in the root gitignore
-# dependencies
-/.pnp
-.pnp.js
-.yarn/install-state.gz
-.yarn/cache
-
 # testing
 /coverage
 
@@ -204,9 +201,9 @@ outputs/
 
 # vercel
 .vercel
-
 # typescript
 *.tsbuildinfo
 
 # credentials
 credentials.json
+

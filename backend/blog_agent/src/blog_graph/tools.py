@@ -1,5 +1,6 @@
 """Blog agent tools."""
 
+import logging
 from typing import Dict, Any
 import os
 from dotenv import load_dotenv
@@ -11,11 +12,7 @@ load_dotenv()
 
 # Initialize Supabase client
 supabase_url = os.getenv("NEXT_PUBLIC_SUPABASE_URL")
-# Check the development mode for supabase_key
-if os.getenv("BLOG_AGENT_DEVELOPMENT_MODE") == "true":
-    supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
-else:
-    supabase_key = os.getenv("NEXT_PUBLIC_SUPABASE_ANON_KEY")
+supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
 
 if not supabase_url or not supabase_key:
     raise ValueError("Supabase environment variables are not set")
@@ -43,6 +40,10 @@ async def post_blog(
         ValueError: If required fields are missing or invalid
         Exception: If there's an error posting to Supabase
     """
+    logging.warning(f"supabase_key: {supabase_key}")
+    logging.warning(f"supabase_url: {supabase_url}")
+    logging.warning(f"supabase: {supabase}")
+
     if not title.strip():
         raise ValueError("Blog title cannot be empty")
 
@@ -60,6 +61,9 @@ async def post_blog(
 
     try:
         # Prepare blog post data
+        logging.warning(f"post_blog title: {title}")
+        logging.warning(f"post_blog content: {content}")
+        logging.warning(f"post_blog user_id: {user_id}")
         blog_data = {
             "title": title,
             "content": content,
@@ -68,6 +72,7 @@ async def post_blog(
 
         # Insert blog post into Supabase
         result = supabase.table('blogs').insert(blog_data).execute()
+        logging.warning(f"post_blog result: {result}")
 
         if not result.data:
             raise Exception("Failed to create blog post")
