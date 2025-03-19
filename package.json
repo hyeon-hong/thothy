@@ -128,6 +128,7 @@
     "rehype-raw": "^7.0.0",
     "remark-gfm": "^4.0.0",
     "remark-math": "^6.0.0",
+    "sonner": "^1.4.3",
     "tailwind-merge": "^2.5.2",
     "tailwind-scrollbar-hide": "^1.1.7",
     "tailwindcss-animate": "^1.0.7",

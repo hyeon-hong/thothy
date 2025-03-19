@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { Inter } from "next/font/google";
-import { Toaster } from "@/components/ui/toaster";
+import { Toaster } from "sonner";
 import { ThreadsProvider } from "@/components/agent-inbox/contexts/ThreadContext";
 import React from "react";
 import { SidebarProvider } from "@/components/ui/sidebar";
@@ -27,7 +27,7 @@ export default function InboxLayout({
 }>) {
   return (
     <React.Suspense fallback={<div>Loading (layout)...</div>}>
-      <Toaster />
+      <Toaster position="top-right" expand={true} richColors />
       <ThreadsProvider>
         <SidebarProvider>
           <AppSidebar />
