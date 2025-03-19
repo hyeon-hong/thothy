@@ -100,7 +100,7 @@ const getClient = async ({ agentInboxes, getItem, toast }: GetClientArgs) => {
   console.log('Selected inbox:', JSON.stringify(selectedInbox, null, 2));
   
   let deploymentUrl = selectedInbox?.deploymentUrl;
-  console.log('Initial deploymentUrl (full):', deploymentUrl);
+  console.log('Initial deploymentUrl:', deploymentUrl);
   
   if (!deploymentUrl) {
     console.error("Deployment URL not found. Please add a deployment URL in settings.");
@@ -114,43 +114,9 @@ const getClient = async ({ agentInboxes, getItem, toast }: GetClientArgs) => {
     return;
   }
 
-  // Ensure the URL has a protocol
-  if (!deploymentUrl.startsWith('http://') && !deploymentUrl.startsWith('https://')) {
-    deploymentUrl = `https://${deploymentUrl}`;
-  }
-
-  console.log('NODE_ENV:', process.env.NODE_ENV);
-  console.log('URL check - includes langgraph.app:', deploymentUrl.includes('langgraph.app'));
-
-  // Use proxy URL in development
-  if (process.env.NODE_ENV === 'development' && deploymentUrl.includes('langgraph.app')) {
-    try {
-      console.log('Attempting to create URL object with (full URL):', deploymentUrl);
-      const urlObject = new URL(deploymentUrl);
-      console.log('URL object created:', {
-        href: urlObject.href,
-        origin: urlObject.origin,
-        protocol: urlObject.protocol,
-        host: urlObject.host,
-        pathname: urlObject.pathname,
-        search: urlObject.search
-      });
-      
-      // Ensure we have a base path even if pathname is just "/"
-      const basePath = urlObject.pathname === '/' ? '' : urlObject.pathname;
-      deploymentUrl = `/api/langgraph${basePath}`;
-      console.log('Modified deploymentUrl (final):', deploymentUrl);
-    } catch (error) {
-      console.error('Error creating URL object:', error);
-      console.error('Invalid deploymentUrl:', deploymentUrl);
-      toast({
-        title: "Error",
-        description: "Invalid deployment URL format",
-        variant: "destructive",
-        duration: 5000,
-      });
-      return;
-    }
+  // In development, route through our API proxy
+  if (process.env.NODE_ENV === 'development') {
+    deploymentUrl = '/api';
   }
 
   const langchainApiKeyLS =
@@ -537,15 +503,13 @@ export function ThreadsProvider<
         setHasMoreThreads(threads.length === limit);
         console.log('Has more threads:', threads.length === limit);
         
-      } catch (error: unknown) {
-        console.error("Failed to fetch threads", error);
-        if (error instanceof Error) {
-          console.error("Error details:", {
-            name: error.name,
-            message: error.message,
-            stack: error.stack
-          });
-        }
+      } catch (e) {
+        console.error("Failed to fetch threads", e);
+        console.error("Error details:", {
+          name: e.name,
+          message: e.message,
+          stack: e.stack
+        });
       }
       setLoading(false);
       console.log('=== fetchThreads End ===');

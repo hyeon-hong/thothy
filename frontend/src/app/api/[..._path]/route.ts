@@ -11,10 +11,8 @@ function getCorsHeaders() {
 }
 
 async function handleRequest(req: NextRequest, method: string) {
-  const LANGGRAPH_API_URL =
-    process.env.NODE_ENV === "development"
-      ? process.env.NEXT_PUBLIC_DEVELOP_LANGGRAPH_API_URL
-      : process.env.NEXT_PUBLIC_MAIN_LANGGRAPH_API_URL;
+  const LANGGRAPH_API_URL = process.env.NEXT_PUBLIC_LANGGRAPH_API_URL;
+  console.log('Incoming request to:', req.nextUrl.pathname);
 
   let session: Session | undefined;
   let user: User | undefined;
@@ -40,11 +38,30 @@ async function handleRequest(req: NextRequest, method: string) {
       ? `?${searchParams.toString()}`
       : "";
 
+    console.log('Forwarding request to:', `${LANGGRAPH_API_URL}/${path}${queryString}`);
+
+    // Create a filtered set of headers
+    const headers: Record<string, string> = {
+      "x-api-key": process.env.NEXT_PUBLIC_LANGSMITH_API_KEY || "",
+    };
+
+    // Only forward essential headers
+    const essentialHeaders = [
+      'content-type',
+      'authorization',
+      'x-api-key',
+      'user-agent'
+    ];
+
+    req.headers.forEach((value, key) => {
+      if (essentialHeaders.includes(key.toLowerCase())) {
+        headers[key] = value;
+      }
+    });
+
     const options: RequestInit = {
       method,
-      headers: {
-        "x-api-key": process.env.NEXT_PUBLIC_LANGSMITH_API_KEY || "",
-      },
+      headers,
     };
 
     if (["POST", "PUT", "PATCH"].includes(method)) {
@@ -52,21 +69,33 @@ async function handleRequest(req: NextRequest, method: string) {
         ...options.headers,
         "Content-Type": "application/json",
       };
-      const bodyText = await req.text();
+      
+      let bodyText = await req.text();
+      console.log('Request body length:', bodyText.length);
 
       if (typeof bodyText === "string" && bodyText.length > 0) {
-        const parsedBody = JSON.parse(bodyText);
-        parsedBody.config = parsedBody.config || {};
-        parsedBody.config.configurable = {
-          ...parsedBody.config.configurable,
-          supabase_session: session,
-          supabase_user_id: user.id,
-        };
-        options.body = JSON.stringify(parsedBody);
-      } else {
-        options.body = bodyText;
+        try {
+          const parsedBody = JSON.parse(bodyText);
+          parsedBody.config = parsedBody.config || {};
+          parsedBody.config.configurable = {
+            ...parsedBody.config.configurable,
+            supabase_session: session,
+            supabase_user_id: user.id,
+          };
+          bodyText = JSON.stringify(parsedBody);
+        } catch (e) {
+          console.error('Error parsing request body:', e);
+        }
       }
+      
+      options.body = bodyText;
     }
+
+    console.log('Sending request with options:', {
+      method: options.method,
+      headers: options.headers,
+      bodyLength: options.body ? (options.body as string).length : 0
+    });
 
     const res = await fetch(
       `${LANGGRAPH_API_URL}/${path}${queryString}`,
@@ -80,34 +109,39 @@ async function handleRequest(req: NextRequest, method: string) {
         res.status,
         res.statusText
       );
-      return new Response(res.body, {
+      const errorBody = await res.text();
+      console.error('Error response body:', errorBody);
+      return new Response(errorBody, {
         status: res.status,
         statusText: res.statusText,
+        headers: getCorsHeaders()
       });
     }
 
-    const headers = new Headers({
+    // Create a minimal set of response headers
+    const responseHeaders = new Headers({
       ...getCorsHeaders(),
-    });
-    // Safely add headers from the original response
-    res.headers.forEach((value, key) => {
-      try {
-        headers.set(key, value);
-      } catch (error) {
-        console.warn(`Failed to set header: ${key}`, error);
-      }
+      'content-type': res.headers.get('content-type') || 'application/json',
     });
 
     return new Response(res.body, {
       status: res.status,
       statusText: res.statusText,
-      headers,
+      headers: responseHeaders,
     });
-  } catch (e: any) {
-    console.error("Error in proxy");
-    console.error(e);
-    console.error("\n\n\nEND ERROR\n\n");
-    return NextResponse.json({ error: e.message }, { status: e.status ?? 500 });
+  } catch (error: unknown) {
+    console.error("Error in proxy", {
+      error,
+      message: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined
+    });
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : String(error) }, 
+      { 
+        status: (error as any)?.status ?? 500,
+        headers: getCorsHeaders()
+      }
+    );
   }
 }
 
