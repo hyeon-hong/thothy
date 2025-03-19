@@ -874,9 +874,9 @@ export default function TeamPage() {
               input: {
                 messages: [{ role: "user", content: teamDescription }],
               },
-              interruptBefore: ["blog_agent"],
-              interruptAfter: ["__end__"],
-              multitaskStrategy: "enqueue",
+              // interruptBefore: ["blog_agent"],
+              // interruptAfter: ["__end__"],
+              // multitaskStrategy: "enqueue",
             });
             console.log("🔍 New cron job:", newCron);
 

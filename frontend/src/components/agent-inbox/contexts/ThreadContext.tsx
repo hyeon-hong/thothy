@@ -396,10 +396,10 @@ export function ThreadsProvider<
         console.log('Metadata input:', metadataInput);
 
         const threadSearchArgs = {
-          offset,
-          limit,
-          ...statusInput,
-          ...(metadataInput ? { metadata: metadataInput } : {}),
+          // offset,
+          // limit,
+          // ...statusInput,
+          // ...(metadataInput ? { metadata: metadataInput } : {}),
         };
         console.log('Final thread search arguments:', JSON.stringify(threadSearchArgs, null, 2));
 

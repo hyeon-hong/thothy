@@ -11,11 +11,7 @@ load_dotenv()
 
 # Initialize Supabase client
 supabase_url = os.getenv("NEXT_PUBLIC_SUPABASE_URL")
-# Check the development mode for supabase_key
-if os.getenv("BLOG_AGENT_DEVELOPMENT_MODE") == "true":
-    supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
-else:
-    supabase_key = os.getenv("NEXT_PUBLIC_SUPABASE_ANON_KEY")
+supabase_key = os.getenv("NEXT_PUBLIC_SUPABASE_ANON_KEY")
 
 if not supabase_url or not supabase_key:
     raise ValueError("Supabase environment variables are not set")
