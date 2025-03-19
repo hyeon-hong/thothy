@@ -1,10 +1,15 @@
 import { useEffect, useRef, useState } from "react";
-import { MessageCircleCode, Code, ScrollText, Bug, BookA } from "lucide-react";
 import { cn } from "../../../../lib/utils";
-import { TooltipIconButton } from "../../../ui/assistant-ui/tooltip-icon-button";
 import { PortToLanguageOptions } from "./PortToLanguage";
 import { ProgrammingLanguageOptions } from "@opencanvas/shared/types";
 import { GraphInput } from "@opencanvas/shared/types";
+
+// Simple icon components to avoid type issues
+const MessageCircleCodeIcon = () => <span>💬</span>;
+const ScrollTextIcon = () => <span>📜</span>;
+const BookAIcon = () => <span>📚</span>;
+const BugIcon = () => <span>🐞</span>;
+const CodeIcon = () => <span>📝</span>;
 
 type SharedComponentProps = {
   handleClose: () => void;
@@ -16,7 +21,7 @@ type ToolbarOption = {
   id: string;
   tooltip: string;
   icon: React.ReactNode;
-  component: ((props: SharedComponentProps) => React.ReactNode) | null;
+  component: ((props: SharedComponentProps & { language?: ProgrammingLanguageOptions }) => React.ReactNode) | null;
 };
 
 export interface CodeToolbarProps {
@@ -29,19 +34,19 @@ const toolbarOptions: ToolbarOption[] = [
   {
     id: "addComments",
     tooltip: "Add comments",
-    icon: <MessageCircleCode className="w-[26px] h-[26px]" />,
+    icon: <MessageCircleCodeIcon />,
     component: null,
   },
   {
     id: "addLogs",
     tooltip: "Add logs",
-    icon: <ScrollText className="w-[26px] h-[26px]" />,
+    icon: <ScrollTextIcon />,
     component: null,
   },
   {
     id: "portLanguage",
     tooltip: "Port language",
-    icon: <BookA className="w-[26px] h-[26px]" />,
+    icon: <BookAIcon />,
     component: (
       props: SharedComponentProps & { language: ProgrammingLanguageOptions }
     ) => <PortToLanguageOptions {...props} />,
@@ -49,24 +54,24 @@ const toolbarOptions: ToolbarOption[] = [
   {
     id: "fixBugs",
     tooltip: "Fix bugs",
-    icon: <Bug className="w-[26px] h-[26px]" />,
+    icon: <BugIcon />,
     component: null,
   },
 ];
 
 export function CodeToolBar(props: CodeToolbarProps) {
-  const { streamMessage } = props;
-  const [isExpanded, setIsExpanded] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  const [expanded, setExpanded] = useState(false);
   const [activeOption, setActiveOption] = useState<string | null>(null);
-  const toolbarRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (
-        toolbarRef.current &&
-        !toolbarRef.current.contains(event.target as Node)
+        ref.current &&
+        !ref.current.contains(event.target as Node) &&
+        expanded
       ) {
-        setIsExpanded(false);
+        setExpanded(false);
         setActiveOption(null);
       }
     };
@@ -75,13 +80,14 @@ export function CodeToolBar(props: CodeToolbarProps) {
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
-  }, []);
+  }, [expanded]);
 
   const toggleExpand = (event: React.MouseEvent) => {
     event.stopPropagation();
-    if (props.isTextSelected) return;
-    setIsExpanded(!isExpanded);
-    setActiveOption(null);
+    setExpanded(!expanded);
+    if (!expanded) {
+      setActiveOption(null);
+    }
   };
 
   const handleOptionClick = async (
@@ -89,90 +95,89 @@ export function CodeToolBar(props: CodeToolbarProps) {
     optionId: string
   ) => {
     event.stopPropagation();
+    event.preventDefault();
 
-    if (optionId === "portLanguage") {
+    const { streamMessage } = props;
+
+    if (
+      toolbarOptions.find((option) => option.id === optionId)?.component === null
+    ) {
+      setExpanded(false);
+      setActiveOption(null);
+
+      if (optionId === "addComments") {
+        await streamMessage({
+          addComments: true,
+        });
+      } else if (optionId === "addLogs") {
+        await streamMessage({
+          addLogs: true,
+        });
+      } else if (optionId === "fixBugs") {
+        await streamMessage({
+          fixBugs: true,
+        });
+      }
+    } else {
       setActiveOption(optionId);
-      return;
-    }
-
-    setIsExpanded(false);
-    setActiveOption(null);
-    if (optionId === "addComments") {
-      await streamMessage({
-        addComments: true,
-      });
-    } else if (optionId === "addLogs") {
-      await streamMessage({
-        addLogs: true,
-      });
-    } else if (optionId === "fixBugs") {
-      await streamMessage({
-        fixBugs: true,
-      });
     }
   };
 
   const handleClose = () => {
-    setIsExpanded(false);
+    setExpanded(false);
     setActiveOption(null);
   };
 
   return (
-    <div
-      ref={toolbarRef}
-      className={cn(
-        "fixed bottom-4 right-4 transition-all duration-300 ease-in-out text-black flex flex-col items-center justify-center bg-white",
-        isExpanded ? "w-26 min-h-fit rounded-3xl" : "w-12 h-12 rounded-full"
-      )}
-      onClick={toggleExpand}
-    >
-      {isExpanded ? (
-        <div className="flex flex-col gap-3 items-center w-full border-[1px] border-gray-200 rounded-3xl py-4 px-3">
-          {activeOption && activeOption !== "addEmojis"
-            ? toolbarOptions
-                .find((option) => option.id === activeOption)
-                ?.component?.({
-                  ...props,
-                  handleClose,
-                })
-            : toolbarOptions.map((option) => (
-                <TooltipIconButton
-                  key={option.id}
-                  tooltip={option.tooltip}
-                  variant="ghost"
-                  className="transition-colors w-[36px] h-[36px]"
-                  delayDuration={400}
-                  onClick={async (e) => await handleOptionClick(e, option.id)}
-                >
-                  {option.icon}
-                </TooltipIconButton>
-              ))}
+    <div ref={ref} className="absolute top-0 right-0 z-10 p-2">
+      {expanded ? (
+        <div className="flex items-center gap-2 bg-white rounded-md p-2 shadow-md">
+          {toolbarOptions.map((option) => (
+            <div
+              key={option.id}
+              className="relative"
+              onClick={(e) => handleOptionClick(e, option.id)}
+            >
+              <button
+                title={option.tooltip}
+                className={cn(
+                  "p-2 rounded hover:bg-gray-100",
+                  activeOption === option.id
+                    ? "text-gray-900 bg-gray-100"
+                    : "text-gray-400 hover:text-gray-900"
+                )}
+              >
+                {option.icon}
+              </button>
+
+              {activeOption === option.id && option.component && (
+                <div className="absolute top-full right-0 mt-2 w-60 p-4 bg-white rounded-md shadow-lg z-20">
+                  {option.component({
+                    handleClose,
+                    streamMessage: props.streamMessage,
+                    language: props.language,
+                  })}
+                </div>
+              )}
+            </div>
+          ))}
         </div>
       ) : (
-        <TooltipIconButton
-          tooltip={
-            props.isTextSelected
-              ? "Quick actions disabled while text is selected"
-              : "Code tools"
-          }
-          variant="outline"
-          className={cn(
-            "transition-colors w-[48px] h-[48px] p-0 rounded-xl",
-            props.isTextSelected
-              ? "cursor-default opacity-50 text-gray-400 hover:bg-background"
-              : "cursor-pointer"
-          )}
-          delayDuration={400}
-        >
-          <Code
-            className={cn(
-              "w-[26px] h-[26px]",
+        <div onClick={toggleExpand}>
+          <button
+            title="Code actions"
+            className="p-2 rounded hover:bg-gray-100"
+          >
+            <span className={cn(
+              "inline-block text-center text-xl",
               props.isTextSelected
                 ? "text-gray-400"
                 : "hover:text-gray-900 transition-colors"
-            )}
-          />
-        </TooltipIconButton>
+            )}>
+              <CodeIcon />
+            </span>
+          </button>
+        </div>
       )}
     </div>
   );

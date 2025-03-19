@@ -1,14 +1,27 @@
 "use client";
 
 import { Login } from "@/app/agents/plan_agent/components/auth/login/Login";
-import { Suspense } from "react";
+import React, { useState, useEffect } from "react";
 
 export default function Page() {
+  const [isLoading, setIsLoading] = useState(true);
+  
+  useEffect(() => {
+    // Simulate a quick loading state
+    const timer = setTimeout(() => {
+      setIsLoading(false);
+    }, 100);
+    
+    return () => clearTimeout(timer);
+  }, []);
+  
   return (
     <main className="h-screen">
-      <Suspense fallback={<div>Loading...</div>}>
+      {isLoading ? (
+        <div>Loading...</div>
+      ) : (
         <Login />
-      </Suspense>
+      )}
     </main>
   );
 }

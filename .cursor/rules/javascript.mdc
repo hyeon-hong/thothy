@@ -3,4 +3,5 @@ description: This tool performs node commands.
 globs:
 alwaysApply: false
 ---
-Use "yarn" instead of "npm" command
+
+You should use "yarn" instead of "npm" for node package manager.

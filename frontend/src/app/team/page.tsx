@@ -642,14 +642,12 @@ const createLangGraphClient = async () => {
   } = await supabase.auth.getSession();
 
   // Get apiUrl as development or production
-  const apiUrl =
-    process.env.NODE_ENV === "development"
-      ? process.env.NEXT_PUBLIC_DEVELOP_LANGGRAPH_API_URL
-      : process.env.NEXT_PUBLIC_MAIN_LANGGRAPH_API_URL;
+  const apiUrl = process.env.NEXT_PUBLIC_LANGGRAPH_API_URL;
+  const apiKey = process.env.NEXT_PUBLIC_LANGSMITH_API_KEY;
 
   return new Client({
     apiUrl: apiUrl,
-    apiKey: process.env.NEXT_PUBLIC_LANGSMITH_API_KEY,
+    apiKey: apiKey,
     defaultHeaders: {
       Authorization: `Bearer ${session?.access_token}`,
     },
@@ -774,14 +772,15 @@ export default function TeamPage() {
 
           const newCron = await client.crons.create("team_graph", {
             schedule: schedule,
-            streamMode: "values",
-            streamSubgraphs: true,
             metadata: {
               team_id: data.id,
               team_name: teamName,
               agent_list: selectedAgents,
             },
             input: createTeamMessage(data.id, teamDescription),
+            interruptBefore: ["blog_agent"],
+            interruptAfter: ["__end__"],
+            multitaskStrategy: "enqueue",
           });
 
           console.log("✅ Successfully created cron job:", {
@@ -866,8 +865,6 @@ export default function TeamPage() {
 
             const newCron = await client.crons.create("team_graph", {
               schedule: schedule,
-              streamMode: "values",
-              streamSubgraphs: true,
               metadata: {
                 team_id: editingTeam.id,
                 team_name: teamName,
@@ -877,6 +874,9 @@ export default function TeamPage() {
               input: {
                 messages: [{ role: "user", content: teamDescription }],
               },
+              // interruptBefore: ["blog_agent"],
+              // interruptAfter: ["__end__"],
+              // multitaskStrategy: "enqueue",
             });
             console.log("🔍 New cron job:", newCron);
 

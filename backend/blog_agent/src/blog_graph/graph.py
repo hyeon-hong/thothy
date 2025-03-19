@@ -61,9 +61,8 @@ async def create_blog_post(
         content: The content of the blog post (HTML format)
         user_id: The ID of the user creating the post
     """
-    # Check the development mode
-    if os.getenv("BLOG_AGENT_DEVELOPMENT_MODE") == "true":
-        user_id = os.getenv("BLOG_AGENT_USER_ID")
+    # TODO: user_id shoud be passed in from the frontend
+    user_id = os.getenv("BLOG_AGENT_USER_ID")
     logging.warning(f"create_blog_post user_id: {user_id}")
     result = await post_blog(title, content, user_id)
     return json.dumps(result, indent=2)

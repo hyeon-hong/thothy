@@ -1,7 +1,5 @@
 "use client";
 
-import { CheckCircle } from "lucide-react";
-
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 type TransactionConfirmation = {
@@ -11,13 +9,20 @@ type TransactionConfirmation = {
   maxPurchasePrice: number;
 };
 
+// Simple check mark component to avoid type issues
+const CheckMarkIcon = () => (
+  <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-green-100 text-green-500">
+    <span className="text-3xl">✓</span>
+  </div>
+);
+
 export function TransactionConfirmationFinal(props: TransactionConfirmation) {
   const { ticker, companyName, quantity, maxPurchasePrice } = props;
 
   return (
     <Card className="mx-auto w-full max-w-md">
       <CardHeader className="text-center">
-        <CheckCircle className="mx-auto mb-4 h-16 w-16 text-green-500" />
+        <CheckMarkIcon />
         <CardTitle className="text-2xl font-bold text-green-700">
           Transaction Confirmed
         </CardTitle>

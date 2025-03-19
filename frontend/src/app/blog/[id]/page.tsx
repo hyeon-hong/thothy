@@ -20,8 +20,7 @@ interface PageParams {
   id: string;
 }
 
-export default function BlogPostPage({ params }: { params: Promise<PageParams> }) {
-  const unwrappedParams = React.use(params) as PageParams;
+export default function BlogPostPage({ params }: { params: PageParams }) {
   const router = useRouter();
   const [blog, setBlog] = useState<BlogPost | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -38,7 +37,7 @@ export default function BlogPostPage({ params }: { params: Promise<PageParams> }
       const { data, error } = await supabase
         .from('blogs')
         .select('*')
-        .eq('id', unwrappedParams.id)
+        .eq('id', params.id)
         .single();
 
       if (error) {
@@ -53,14 +52,14 @@ export default function BlogPostPage({ params }: { params: Promise<PageParams> }
     };
 
     fetchBlog();
-  }, [unwrappedParams.id, router]);
+  }, [params.id, router]);
 
   const handleBack = () => {
     router.push('/blog');
   };
 
   const handleEdit = () => {
-    router.push(`/blog/edit/${unwrappedParams.id}`);
+    router.push(`/blog/edit/${params.id}`);
   };
 
   if (isLoading) {

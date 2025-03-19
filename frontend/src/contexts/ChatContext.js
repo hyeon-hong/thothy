@@ -9,10 +9,10 @@ export function ChatProvider({ children, graph_name }) {
     const DEPLOYMENT_URL =
         process.env.NODE_ENV === "development"
             ? "http://localhost:2024"
-            : process.env.NEXT_PUBLIC_DEPLOYMENT_URL || "";
+            : process.env.NEXT_PUBLIC_LANGGRAPH_API_URL || "";
     console.log("DEPLOYMENT_URL", DEPLOYMENT_URL);
     console.log("process.env.NODE_ENV", process.env.NODE_ENV);
-    console.log("process.env.NEXT_PUBLIC_DEPLOYMENT_URL", process.env.NEXT_PUBLIC_DEPLOYMENT_URL);
+    console.log("process.env.NEXT_PUBLIC_LANGGRAPH_API_URL", process.env.NEXT_PUBLIC_LANGGRAPH_API_URL);
 
     const assistantId = graph_name || "chat_graph";
     const { session } = useAuth();

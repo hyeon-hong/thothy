@@ -1,0 +1,25 @@
+{
+  "dependencies": [
+    "./backend/blog_agent",
+    "./backend/chat_agent",
+    "./backend/news_agent",
+    "./backend/open_deep_research_agent",
+    "./backend/research_agent",
+    "./backend/security",
+    "./backend/team_agent"
+  ],
+  "graphs": {
+    "blog_graph": "./backend/blog_agent/src/blog_graph/graph.py:graph",
+    "chat_graph": "./backend/chat_agent/src/chat_graph/graph.py:graph",
+    "news_graph": "./backend/news_agent/src/news_graph/graph.py:graph",
+    "open_deep_research_graph": "./backend/open_deep_research_agent/src/open_deep_research_graph/graph.py:graph",
+    "research_graph": "./backend/research_agent/src/research_graph/graph.py:graph",
+    "team_graph": "./backend/team_agent/src/team_graph/graph.py:graph"
+  },
+  "auth": {
+    "path": "./backend/security/auth.py:auth",
+    "disable_studio_auth": true
+  },
+  "env": "./.env",
+  "python_version": "3.12"
+}

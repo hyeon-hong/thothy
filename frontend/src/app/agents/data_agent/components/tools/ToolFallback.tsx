@@ -1,7 +1,19 @@
 import { ToolCallContentPartComponent } from "@assistant-ui/react";
-import { CheckIcon, ChevronDownIcon, ChevronUpIcon } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+
+// Simple icon components to avoid type issues
+const CheckMarkIcon = () => (
+  <span className="inline-flex size-4 items-center justify-center">✓</span>
+);
+
+const ChevronUpIcon = () => (
+  <span className="inline-flex items-center justify-center">▲</span>
+);
+
+const ChevronDownIcon = () => (
+  <span className="inline-flex items-center justify-center">▼</span>
+);
 
 export const ToolFallback: ToolCallContentPartComponent = ({
   toolName,
@@ -23,7 +35,7 @@ export const ToolFallback: ToolCallContentPartComponent = ({
   return (
     <div className="mb-4 flex w-full flex-col gap-3 rounded-lg border py-3">
       <div className="flex items-center gap-2 px-4">
-        <CheckIcon className="size-4" />
+        <CheckMarkIcon />
         <p className="">
           Used tool: <b>{toolName}</b>
         </p>
