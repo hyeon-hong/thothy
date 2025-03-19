@@ -82,8 +82,9 @@ interface GetClientArgs {
   toast: (input: ToastInput) => void;
 }
 
-const getClient = ({ agentInboxes, getItem, toast }: GetClientArgs) => {
+const getClient = async ({ agentInboxes, getItem, toast }: GetClientArgs) => {
   if (agentInboxes.length === 0) {
+    console.error("Agent inbox not found. Please add an inbox in settings.");
     toast({
       title: "Error",
       description: "Agent inbox not found. Please add an inbox in settings. (",
@@ -94,6 +95,7 @@ const getClient = ({ agentInboxes, getItem, toast }: GetClientArgs) => {
   }
   const deploymentUrl = agentInboxes.find((i) => i.selected)?.deploymentUrl;
   if (!deploymentUrl) {
+    console.error("Deployment URL not found. Please add a deployment URL in settings.");
     toast({
       title: "Error",
       description:
@@ -105,20 +107,26 @@ const getClient = ({ agentInboxes, getItem, toast }: GetClientArgs) => {
   }
 
   const langchainApiKeyLS =
-    getItem(LANGCHAIN_API_KEY_LOCAL_STORAGE_KEY) || undefined;
+    process.env.NEXT_PUBLIC_LANGGRAPH_API_KEY || undefined;
+  // getItem(LANGCHAIN_API_KEY_LOCAL_STORAGE_KEY) || undefined;
+
   // Only show this error if the deployment URL is for a deployed LangGraph instance.
   // Local graphs do NOT require an API key.
-  if (!langchainApiKeyLS && deploymentUrl.includes("us.langgraph.app")) {
-    toast({
-      title: "Error",
-      description: "Please add your LangSmith API key in settings.",
-      variant: "destructive",
-      duration: 5000,
-    });
-    return;
-  }
+  // if (!langchainApiKeyLS && deploymentUrl.includes("us.langgraph.app")) {
+  //   console.error("LangSmith API key not found. Please add your LangSmith API key in settings.");
+  //   toast({
+  //     title: "Error",
+  //     description: "Please add your LangSmith API key in settings.",
+  //     variant: "destructive",
+  //     duration: 5000,
+  //   });
+  //   return;
+  // }
 
-  return createClient({ deploymentUrl, langchainApiKey: langchainApiKeyLS });
+  return await createClient({
+    deploymentUrl,
+    langchainApiKey: langchainApiKeyLS,
+  });
 };
 
 export function ThreadsProvider<
@@ -323,11 +331,12 @@ export function ThreadsProvider<
   const fetchThreads = React.useCallback(
     async (inbox: ThreadStatusWithAll) => {
       setLoading(true);
-      const client = getClient({
+      const client = await getClient({
         agentInboxes,
         getItem,
         toast,
       });
+      console.log("client: ", client);
       if (!client) {
         return;
       }
