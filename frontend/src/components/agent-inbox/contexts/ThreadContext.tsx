@@ -116,7 +116,7 @@ const getClient = async ({ agentInboxes, getItem, toast }: GetClientArgs) => {
 
   // In development, route through our API proxy
   if (process.env.NODE_ENV === 'development') {
-    deploymentUrl = '/api';
+    deploymentUrl = 'http://localhost:3000/api';
   }
 
   const langchainApiKeyLS =
