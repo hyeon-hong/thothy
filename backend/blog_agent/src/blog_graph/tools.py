@@ -12,7 +12,7 @@ load_dotenv()
 
 # Initialize Supabase client
 supabase_url = os.getenv("NEXT_PUBLIC_SUPABASE_URL")
-supabase_key = os.getenv("NEXT_PUBLIC_SUPABASE_ANON_KEY")
+supabase_key = os.getenv("NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY")
 
 if not supabase_url or not supabase_key:
     raise ValueError("Supabase environment variables are not set")
@@ -40,6 +40,10 @@ async def post_blog(
         ValueError: If required fields are missing or invalid
         Exception: If there's an error posting to Supabase
     """
+    logging.warning(f"supabase_key: {supabase_key}")
+    logging.warning(f"supabase_url: {supabase_url}")
+    logging.warning(f"supabase: {supabase}")
+
     if not title.strip():
         raise ValueError("Blog title cannot be empty")
 
