@@ -10,6 +10,7 @@
     "start": "next start",
     "lint": "next lint"
   },
+  "packageManager": "yarn@1.22.22",
   "dependencies": {
     "@assistant-ui/react": "^0.8.6",
     "@assistant-ui/react-langgraph": "^0.3.0",
@@ -110,7 +111,16 @@
     "tailwindcss-animate": "^1.0.7",
     "uuid": "^11.1.0",
     "zod": "^3.24.2",
-    "zustand": "^5.0.3"
+    "zustand": "^5.0.3",
+    "@langchain/langgraph-api": "^0.0.15",
+    "@langchain/langgraph-cli": "^0.0.15",
+    "@langchain/langgraph-sdk": "^0.0.53",
+    "esbuild": "^0.25.0",
+    "esbuild-plugin-tailwindcss": "^2.0.1",
+    "katex": "^0.16.21",
+    "next-themes": "^0.4.4",
+    "recharts": "^2.15.1",
+    "use-stick-to-bottom": "^1.0.46"
   },
   "devDependencies": {
     "@eslint/js": "^9.22.0",
@@ -147,5 +157,9 @@
       "@types/react": "19.0.1",
       "@types/react-dom": "19.0.2"
     }
+  },
+  "overrides": {
+    "react-is": "^19.0.0-rc-69d4b800-20241021",
+    "@langchain/langgraph-checkpoint": "^0.0.16"
   }
 }
