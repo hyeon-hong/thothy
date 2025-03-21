@@ -25,6 +25,7 @@
       "@/contexts/*": ["./src/contexts/*"],
       "@/hooks/*": ["./src/hooks/*"],
       "@/lib/*": ["./src/lib/*"],
+      "@/providers/*": ["./src/providers/*"],
       "@/utils/*": ["./src/utils/*"]
     }
   },
