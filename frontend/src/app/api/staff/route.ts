@@ -2,7 +2,8 @@ import { createClient } from "@/utils/supabase/server";
 import { NextResponse } from "next/server";
 
 export async function GET(request: Request) {
-  const supabase = createClient();
+  const supabasePromise = createClient();
+  const supabase = await supabasePromise;
 
   // Check authentication
   const {
@@ -14,15 +15,33 @@ export async function GET(request: Request) {
   }
 
   try {
-    // Get all staff members
+    // Get all staff members with agent information
     const { data, error } = await supabase
       .from("staffs")
-      .select("*")
+      .select(`
+        *,
+        agents:agent_id (
+          id,
+          name,
+          description,
+          image_url
+        )
+      `)
+      .eq("user_id", session.user.id)
       .order("created_at", { ascending: false });
 
     if (error) throw error;
 
-    return NextResponse.json(data);
+    // Transform data to match frontend expectations
+    const transformedData = data.map((staff) => ({
+      id: staff.id,
+      name: staff.name || staff.agents?.name || "Unnamed Staff",
+      description: staff.description || staff.agents?.description || "",
+      created_at: staff.created_at,
+      agent_id: staff.agent_id
+    }));
+
+    return NextResponse.json(transformedData);
   } catch (error) {
     console.error("Error fetching staff:", error);
     return NextResponse.json(
@@ -33,7 +52,8 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-  const supabase = createClient();
+  const supabasePromise = createClient();
+  const supabase = await supabasePromise;
 
   // Check authentication
   const {
@@ -45,11 +65,11 @@ export async function POST(request: Request) {
   }
 
   try {
-    const { name, description, role } = await request.json();
+    const { name, description, agent_id } = await request.json();
 
-    if (!name || !role) {
+    if (!agent_id) {
       return NextResponse.json(
-        { error: "Name and role are required" },
+        { error: "Agent ID is required" },
         { status: 400 }
       );
     }
@@ -60,7 +80,7 @@ export async function POST(request: Request) {
       .insert({
         name,
         description,
-        role,
+        agent_id,
         user_id: session.user.id,
       })
       .select()

@@ -258,12 +258,14 @@ export default function StaffPage() {
         
         // First try to fetch agents from the API
         try {
+          console.log("Fetching agents...");
           const agentsResponse = await fetch("/api/agents");
           if (agentsResponse.ok) {
             agentsData = await agentsResponse.json();
+            console.log(`Successfully fetched ${agentsData.length} agents`);
           } else {
             // If API fails, fetch directly from Supabase
-            console.warn("API call failed, fetching directly from Supabase");
+            console.warn(`API call failed with status ${agentsResponse.status}, fetching directly from Supabase`);
             const supabase = createSupabaseClient();
             const { data, error } = await supabase
               .from("agents")
@@ -275,12 +277,14 @@ export default function StaffPage() {
             
             if (data) {
               agentsData = data as Agent[];
+              console.log(`Successfully fetched ${agentsData.length} agents from Supabase`);
             }
           }
         } catch (error) {
           console.error("Error fetching agents:", error);
           // Fetch from Supabase as a fallback
           try {
+            console.log("Attempting Supabase fallback for agents...");
             const supabase = createSupabaseClient();
             const { data, error } = await supabase
               .from("agents")
@@ -292,6 +296,7 @@ export default function StaffPage() {
             
             if (data) {
               agentsData = data as Agent[];
+              console.log(`Successfully fetched ${agentsData.length} agents from Supabase fallback`);
             }
           } catch (supabaseError) {
             console.error("Supabase fetch error:", supabaseError);
@@ -300,28 +305,53 @@ export default function StaffPage() {
         
         // Now try to fetch staff data
         try {
+          console.log("Fetching staff members...");
           const staffResponse = await fetch("/api/staff");
-          if (staffResponse.ok) {
-            staffData = await staffResponse.json();
-          } else {
-            // If API fails, we could try to fetch from Supabase if you have a staff table
-            console.warn("Failed to fetch staff from API");
+          
+          if (!staffResponse.ok) {
+            throw new Error(`API call failed with status ${staffResponse.status}: ${await staffResponse.text()}`);
+          }
+          
+          staffData = await staffResponse.json();
+          console.log(`Successfully fetched ${staffData.length} staff members`);
+        } catch (error) {
+          console.error("Error fetching staff:", error);
+          // Try fetching directly from Supabase as fallback
+          try {
+            console.log("Attempting Supabase fallback for staff...");
             const supabase = createSupabaseClient();
             const { data, error } = await supabase
               .from("staffs")
-              .select("*");
+              .select(`
+                *,
+                agents:agent_id (
+                  id,
+                  name,
+                  description
+                )
+              `);
               
-            if (!error && data) {
-              staffData = data as Staff[];
+            if (error) {
+              throw new Error(`Supabase error: ${error.message}`);
+            }
+            
+            if (data) {
+              // Transform data to match the expected format
+              staffData = data.map(item => ({
+                id: item.id,
+                name: item.name || item.agents?.name || "Unnamed Staff",
+                description: item.description || item.agents?.description || "",
+                created_at: item.created_at,
+                agent_id: item.agent_id
+              })) as Staff[];
+              console.log(`Successfully fetched ${staffData.length} staff members from Supabase fallback`);
             } else {
-              // Initialize with empty array if no staff data
               staffData = [];
             }
+          } catch (supabaseError) {
+            console.error("Supabase staff fetch error:", supabaseError);
+            staffData = [];
           }
-        } catch (error) {
-          console.error("Error fetching staff:", error);
-          // Initialize with empty array if fetching fails
-          staffData = [];
         }
         
         setStaffMembers(staffData);

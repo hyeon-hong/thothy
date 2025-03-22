@@ -6,7 +6,8 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   const id = params.id;
-  const supabase = createClient();
+  const supabasePromise = createClient();
+  const supabase = await supabasePromise;
 
   // Check authentication
   const {
@@ -18,16 +19,33 @@ export async function GET(
   }
 
   try {
-    // Get a specific staff member
+    // Get a specific staff member with agent information
     const { data, error } = await supabase
       .from("staffs")
-      .select("*")
+      .select(`
+        *,
+        agents:agent_id (
+          id,
+          name,
+          description,
+          image_url
+        )
+      `)
       .eq("id", id)
       .single();
 
     if (error) throw error;
 
-    return NextResponse.json(data);
+    // Transform data to match frontend expectations
+    const transformedData = {
+      id: data.id,
+      name: data.name || data.agents?.name || "Unnamed Staff",
+      description: data.description || data.agents?.description || "",
+      created_at: data.created_at,
+      agent_id: data.agent_id
+    };
+
+    return NextResponse.json(transformedData);
   } catch (error) {
     console.error("Error fetching staff:", error);
     return NextResponse.json(
@@ -42,7 +60,8 @@ export async function PUT(
   { params }: { params: { id: string } }
 ) {
   const id = params.id;
-  const supabase = createClient();
+  const supabasePromise = createClient();
+  const supabase = await supabasePromise;
 
   // Check authentication
   const {
@@ -54,11 +73,11 @@ export async function PUT(
   }
 
   try {
-    const { name, description, role } = await request.json();
+    const { name, description, agent_id } = await request.json();
 
-    if (!name || !role) {
+    if (!agent_id) {
       return NextResponse.json(
-        { error: "Name and role are required" },
+        { error: "Agent ID is required" },
         { status: 400 }
       );
     }
@@ -69,7 +88,7 @@ export async function PUT(
       .update({
         name,
         description,
-        role,
+        agent_id,
       })
       .eq("id", id)
       .select()
@@ -92,7 +111,8 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   const id = params.id;
-  const supabase = createClient();
+  const supabasePromise = createClient();
+  const supabase = await supabasePromise;
 
   // Check authentication
   const {
