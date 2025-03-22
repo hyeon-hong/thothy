@@ -79,7 +79,7 @@ export default function AgentHub() {
                     letterSpacing: "-0.02em",
                 }}
             >
-                Find Staff
+                Agent Hub
             </Typography>
             {loading ? (
                 <Box 

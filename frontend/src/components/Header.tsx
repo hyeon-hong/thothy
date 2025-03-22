@@ -24,7 +24,7 @@ import Logout from '@mui/icons-material/Logout';
 import Link from 'next/link';
 
 interface HeaderProps {
-  currentView: 'inbox' | 'find' | 'staff' | 'team' | 'blog' | 'login' | 'agents';
+  currentView: 'inbox' | 'agent' | 'find' | 'staff' | 'team' | 'blog' | 'login' | 'agents';
 }
 
 export default function Header({ currentView }: HeaderProps) {
@@ -68,8 +68,8 @@ export default function Header({ currentView }: HeaderProps) {
     router.push('/');
   };
 
-  const handleFindClick = () => {
-    router.push('/find');
+  const handleAgentClick = () => {
+    router.push('/agent');
   };
 
   const handleStaffClick = () => {
@@ -123,14 +123,14 @@ export default function Header({ currentView }: HeaderProps) {
                 )}
 
                 <Button
-                  color={currentView === 'find' ? 'primary' : 'inherit'}
-                  onClick={handleFindClick}
+                  color={(currentView === 'agent' || currentView === 'find') ? 'primary' : 'inherit'}
+                  onClick={handleAgentClick}
                   sx={{
                     ...navButtonStyle,
-                    fontWeight: currentView === 'find' ? 700 : 400,
+                    fontWeight: (currentView === 'agent' || currentView === 'find') ? 700 : 400,
                   }}
                 >
-                  Find
+                  Agent
                 </Button>
 
                 {user && (

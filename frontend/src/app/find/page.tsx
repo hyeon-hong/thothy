@@ -1,14 +1,14 @@
 "use client";
 
-import React from "react";
-import Header from "@/components/Header";
-import AgentHub from "@/components/AgentHub";
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
 
 export default function FindPage() {
-  return (
-    <div className="w-full">
-      <Header currentView="find" />
-      <AgentHub />
-    </div>
-  );
+  const router = useRouter();
+  
+  useEffect(() => {
+    router.push('/agent');
+  }, [router]);
+  
+  return null;
 } 
