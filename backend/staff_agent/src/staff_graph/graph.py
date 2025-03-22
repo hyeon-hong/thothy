@@ -114,6 +114,7 @@ llm = init_chat_model("gpt-4o-mini", model_provider="openai", temperature=0.8)
 # Use Subject-Predicate-Object Triple data model
 class Triple(BaseModel):
     """Store all new facts, preferences, and relationships as triples."""
+
     subject: str
     predicate: str
     object: str
@@ -144,6 +145,7 @@ async def staff_assistant(
     store: BaseStore
 ) -> dict:
     """Staff assistant node that processes messages and generates responses."""
+
     # Get user_id from config
     configurable = StaffConfigurable.from_runnable_config(config)
     user_id = configurable.user_id

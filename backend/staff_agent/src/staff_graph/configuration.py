@@ -13,7 +13,7 @@ from staff_graph.prompts import SYSTEM_PROMPT
 class StaffConfigurable:
     """The configurable fields for the staff assistant."""
 
-    user_id: str = "default-staff"
+    user_id: str = "default"
     model: str = "anthropic/claude-3-5-sonnet-20240620"
     delay_seconds: int = 1
     system_prompt: str = SYSTEM_PROMPT
@@ -23,6 +23,7 @@ class StaffConfigurable:
         cls, config: Optional[RunnableConfig] = None
     ) -> "StaffConfigurable":
         """Load configuration."""
+
         configurable = (
             config["configurable"] if config and "configurable" in config
             else {}
