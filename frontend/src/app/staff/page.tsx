@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import Header from "@/components/Header";
-import MyAgents from "@/components/MyAgents";
 import {
   Dialog,
   DialogContent,
@@ -630,10 +629,6 @@ export default function StaffPage() {
           </div>
         </>
       )}
-      
-      <div className="mt-6">
-        <MyAgents />
-      </div>
     </div>
   );
 } 
