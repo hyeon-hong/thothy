@@ -14,6 +14,9 @@ class StaffConfigurable:
     """The configurable fields for the staff assistant."""
 
     user_id: str = "default"
+    project_id: str = "default"
+    team_id: str = "default"
+    staff_id: str = "default"
     model: str = "anthropic/claude-3-5-sonnet-20240620"
     delay_seconds: int = 1
     system_prompt: str = SYSTEM_PROMPT
