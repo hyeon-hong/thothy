@@ -176,7 +176,7 @@ async def staff_assistant(
         f"Your memories about the user: {joined_memories}"
     )
     thread_state = {"messages": [
-        {"role": "system", "content": system_msg} + state["messages"]]}
+        {"role": "system", "content": system_msg}] + state["messages"]}
 
     # Route to the appropriate agent based on agent_id
     if agent_id == "blog":
