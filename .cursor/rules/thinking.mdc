@@ -1,0 +1,16 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+1. Starting Prompt
+
+Start by clearly stating your goal. End your prompt with: "But before we start, I want you to fully explore and understand the existing codebase. Don't write code yet—just deeply understand what's currently happening."
+
+2. Understanding Prompt
+
+After it's done with this understanding step, prompt it with: "Now, spend at least 10 minutes deeply reasoning about how a world-class engineer would approach solving this. Generate ideas, critique them, refine your thinking, and then propose an excellent final plan. I'll approve or request changes."
+
+3. Implementation Prompt
+
+Once you're satisfied with the proposed plan, instruct: "Implement this perfectly."
