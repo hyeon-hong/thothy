@@ -1,0 +1,7 @@
+---
+description: Apply this rule to all LangGraph files.
+globs:
+alwaysApply: false
+---
+
+- When you create a new directory for a new LangGraph agent, check the error using "langgraph dev" command.
