@@ -4,6 +4,7 @@ import logging
 import os
 from typing import Any, Dict
 
+# Import agent graphs
 from dotenv import load_dotenv
 from langchain.chat_models import init_chat_model
 from langgraph.checkpoint.memory import MemorySaver
@@ -15,6 +16,9 @@ from psycopg import Connection, OperationalError
 from pydantic import BaseModel
 
 from staff_graph.configuration import StaffConfigurable
+from blog_graph.graph import graph as blog_graph
+from chat_graph.graph import graph as chat_graph
+from news_graph.graph import graph as news_graph
 
 # Configure logging to hide INFO messages
 logging.basicConfig(level=logging.WARNING)
@@ -145,34 +149,49 @@ async def staff_assistant(
     store: BaseStore
 ) -> dict:
     """Staff assistant node that processes messages and generates responses."""
-
-    # Get user_id from config
+    # Get configurable values
     configurable = StaffConfigurable.from_runnable_config(config)
+    project_id = configurable.project_id
+    team_id = configurable.team_id
+    staff_id = configurable.staff_id
+    agent_id = configurable.agent_id
     user_id = configurable.user_id
 
-    # Use the same namespace format as defined above
-    namespace = ("memories", user_id, "triples")
+    # Set namespace for memories
+    namespace = ("memories", user_id, project_id,
+                 team_id, staff_id, agent_id)
 
     # Search for existing memories
     memories = await store.asearch(
         namespace,
         query=str(state["messages"][-1].content)
     )
-    memories = []
 
-    info = "\n".join(
+    joined_memories = "\n".join(
         [d.value.get("data", "") for d in memories if d.value]
     )
+
     system_msg = (
-        f"You are a helpful staff assistant talking to a staff member. "
-        f"Staff info: {info}"
+        f"You are a helpful staff assistant talking to a user. "
+        f"Your memories about the user: {joined_memories}"
     )
+    thread_state = {"messages": [
+        {"role": "system", "content": system_msg} + state["messages"]]}
 
-    # Invoke the LLM
-    response = llm.invoke(
-        [{"role": "system", "content": system_msg}] + state["messages"]
-    )
+    # Route to the appropriate agent based on agent_id
+    if agent_id == "blog":
+        # Call blog agent
+        result = await blog_graph.ainvoke(thread_state, config)
+    elif agent_id == "news":
+        # Call news agent
+        result = await news_graph.ainvoke(thread_state, config)
+    elif agent_id == "chat":
+        # Call chat agent
+        result = await chat_graph.ainvoke(thread_state, config)
+    else:
+        raise ValueError(f"Invalid agent_id: {agent_id}")
 
+    response = result["messages"][-1]
     # Submit memory processing task
     to_process = {
         "messages": [

@@ -17,13 +17,13 @@ class StaffConfigurable:
     model: str = "anthropic/claude-3-5-sonnet-20240620"
     delay_seconds: int = 1
     system_prompt: str = SYSTEM_PROMPT
+    agent_id: str = "default"  # Default to staff agent
 
     @classmethod
     def from_runnable_config(
         cls, config: Optional[RunnableConfig] = None
     ) -> "StaffConfigurable":
         """Load configuration."""
-
         configurable = (
             config["configurable"] if config and "configurable" in config
             else {}
@@ -39,7 +39,7 @@ class StaffConfigurable:
         if "staff_id" not in configurable:
             configurable["staff_id"] = "default"
         if "agent_id" not in configurable:
-            configurable["agent_id"] = "default"
+            configurable["agent_id"] = "staff"
         if "user_id" not in configurable:
             configurable["user_id"] = "default"
 
