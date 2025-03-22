@@ -366,48 +366,50 @@ export default function StaffPage() {
 
       let createdStaff;
       try {
-        const response = await fetch("/api/staff", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
+        // If API fails, insert directly to Supabase
+        console.warn("API failed, inserting directly to Supabase");
+        const supabase = createSupabaseClient();
+        
+        // Get the current user's ID
+        const { data: userData } = await supabase.auth.getUser();
+        if (!userData || !userData.user) {
+          throw new Error("User not authenticated");
+        }
+        
+        // Determine which agent to use (using the first one if multiple are selected)
+        const agentId = selectedAgents.length > 0 ? selectedAgents[0] : null;
+        if (!agentId) {
+          throw new Error("At least one agent must be selected");
+        }
+        
+        // Insert according to the staffs table schema
+        const { data, error } = await supabase
+          .from("staffs")
+          .insert({
+            user_id: userData.user.id,
+            agent_id: agentId,
+            // Note: created_at and updated_at have default values in the database
+          })
+          .select()
+          .single();
+          
+        if (error) {
+          throw new Error(`Supabase error: ${error.message}`);
+        }
+        
+        if (data) {
+          // Add our local fields to the data object for UI rendering
+          createdStaff = {
+            id: data.id,
             name: staffName,
             description: staffDescription,
             role: "default",
-          }),
-        });
-
-        if (response.ok) {
-          createdStaff = await response.json();
+            created_at: data.created_at,
+            agent_list: selectedAgents
+          };
         } else {
-          // If API fails, insert directly to Supabase
-          console.warn("API failed, inserting directly to Supabase");
-          const supabase = createSupabaseClient();
-          const { data, error } = await supabase
-            .from("staffs")
-            .insert({
-              name: staffName,
-              description: staffDescription,
-              role: "default",
-            })
-            .select()
-            .single();
-            
-          if (error) {
-            throw new Error(`Supabase error: ${error.message}`);
-          }
-          
-          if (data) {
-            // Add agent_list to the returned data for our local state
-            createdStaff = {
-              ...data,
-              agent_list: selectedAgents
-            };
-          } else {
-            // Use local object as last resort
-            createdStaff = newStaff;
-          }
+          // Use local object as last resort
+          createdStaff = newStaff;
         }
       } catch (error) {
         console.error("Error creating staff:", error);
@@ -440,49 +442,45 @@ export default function StaffPage() {
 
       let savedStaff;
       try {
-        const response = await fetch(`/api/staff/${editingStaff.id}`, {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
+        // If API fails, update directly in Supabase
+        console.warn("API failed, updating directly in Supabase");
+        const supabase = createSupabaseClient();
+        
+        // Determine which agent to use (first in the list)
+        const agentId = selectedAgents.length > 0 ? selectedAgents[0] : null;
+        if (!agentId) {
+          throw new Error("At least one agent must be selected");
+        }
+        
+        // Update according to the staffs table schema
+        const { data, error } = await supabase
+          .from("staffs")
+          .update({
+            agent_id: agentId,
+            // We can't update user_id as it's likely a foreign key
+            // updated_at will be set automatically
+          })
+          .eq('id', editingStaff.id)
+          .select()
+          .single();
+          
+        if (error) {
+          throw new Error(`Supabase error: ${error.message}`);
+        }
+        
+        if (data) {
+          // Add our local fields to the returned data for our local state
+          savedStaff = {
+            ...editingStaff,
+            id: data.id,
             name: staffName,
             description: staffDescription,
-            role: editingStaff.role,
-          }),
-        });
-
-        if (response.ok) {
-          savedStaff = await response.json();
+            agent_list: selectedAgents,
+            updated_at: data.updated_at
+          };
         } else {
-          // If API fails, update directly in Supabase
-          console.warn("API failed, updating directly in Supabase");
-          const supabase = createSupabaseClient();
-          const { data, error } = await supabase
-            .from("staffs")
-            .update({
-              name: staffName,
-              description: staffDescription,
-              role: editingStaff.role,
-            })
-            .eq('id', editingStaff.id)
-            .select()
-            .single();
-            
-          if (error) {
-            throw new Error(`Supabase error: ${error.message}`);
-          }
-          
-          if (data) {
-            // Add agent_list to the returned data for our local state
-            savedStaff = {
-              ...data,
-              agent_list: selectedAgents
-            };
-          } else {
-            // Use local object as last resort
-            savedStaff = updatedStaff;
-          }
+          // Use local object as last resort
+          savedStaff = updatedStaff;
         }
       } catch (error) {
         console.error("Error updating staff:", error);
