@@ -37,7 +37,7 @@ import {
 } from "@/components/ui/command";
 import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
-import React from "react";
+import React, { forwardRef } from "react";
 
 type Staff = {
   id: string;
@@ -67,16 +67,7 @@ type StaffDialogProps = {
   getAgentName: (id: string) => string;
 };
 
-// Convert components to React.FC to fix type issues
-const DialogContentComponent = DialogContent as unknown as React.FC<React.ComponentPropsWithoutRef<typeof DialogContent>>;
-const DialogTitleComponent = DialogTitle as unknown as React.FC<React.ComponentPropsWithoutRef<typeof DialogTitle>>;
-const DialogDescriptionComponent = DialogDescription as unknown as React.FC<React.ComponentPropsWithoutRef<typeof DialogDescription>>;
-const LabelComponent = Label as unknown as React.FC<React.ComponentPropsWithoutRef<typeof Label>>;
-const InputComponent = Input as unknown as React.FC<React.ComponentPropsWithoutRef<typeof Input>>;
-const TextareaComponent = Textarea as unknown as React.FC<React.ComponentPropsWithoutRef<typeof Textarea>>;
-const UsersComponent = Users as unknown as React.FC<React.ComponentPropsWithoutRef<typeof Users>>;
-const PencilComponent = Pencil as unknown as React.FC<React.ComponentPropsWithoutRef<typeof Pencil>>;
-
+// Don't use the custom component wrapping, let the existing shadcn components handle refs properly
 const StaffDialog = ({
   isEdit = false,
   staffName,
@@ -89,20 +80,20 @@ const StaffDialog = ({
   onSubmit,
   getAgentName,
 }: StaffDialogProps) => (
-  <DialogContentComponent className="sm:max-w-[600px]">
+  <DialogContent className="sm:max-w-[600px]">
     <DialogHeader>
-      <DialogTitleComponent>{isEdit ? "Edit staff" : "Add a staff member"}</DialogTitleComponent>
-      <DialogDescriptionComponent>
+      <DialogTitle>{isEdit ? "Edit staff" : "Add a staff member"}</DialogTitle>
+      <DialogDescription>
         {isEdit
           ? "Update your staff member details."
           : "Create a new staff member for your organization."}
-      </DialogDescriptionComponent>
+      </DialogDescription>
     </DialogHeader>
 
     <div className="space-y-4 mt-2">
       <div className="space-y-2">
-        <LabelComponent htmlFor="staff-name">Name</LabelComponent>
-        <InputComponent
+        <Label htmlFor="staff-name">Name</Label>
+        <Input
           id="staff-name"
           value={staffName}
           onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
@@ -113,8 +104,8 @@ const StaffDialog = ({
       </div>
 
       <div className="space-y-2">
-        <LabelComponent htmlFor="staff-description">Description</LabelComponent>
-        <TextareaComponent
+        <Label htmlFor="staff-description">Description</Label>
+        <Textarea
           id="staff-description"
           value={staffDescription}
           onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
@@ -127,7 +118,7 @@ const StaffDialog = ({
     </div>
 
     <div className="mt-4 flex flex-col" style={{ height: "300px" }}>
-      <LabelComponent htmlFor="selected-agent">Assigned Agent</LabelComponent>
+      <Label htmlFor="selected-agent">Assigned Agent</Label>
       <div className="flex flex-wrap gap-1 p-2 mb-2 border rounded-md min-h-10">
         {!selectedAgent ? (
           <span className="text-sm text-muted-foreground px-1 py-0.5">
@@ -224,7 +215,7 @@ const StaffDialog = ({
         {isEdit ? "Save changes" : "Add staff"}
       </Button>
     </DialogFooter>
-  </DialogContentComponent>
+  </DialogContent>
 );
 
 export default function StaffPage() {
@@ -561,7 +552,7 @@ export default function StaffPage() {
               >
                 <DialogTrigger asChild>
                   <Button onClick={() => setShowDialog(true)}>
-                    <UsersComponent className="mr-2 h-4 w-4" />
+                    <Users className="mr-2 h-4 w-4" />
                     Add Staff
                   </Button>
                 </DialogTrigger>
@@ -609,7 +600,7 @@ export default function StaffPage() {
                         size="icon"
                         variant="outline"
                       >
-                        <PencilComponent className="h-4 w-4" />
+                        <Pencil className="h-4 w-4" />
                       </Button>
                     </CardHeader>
                     <CardContent>
