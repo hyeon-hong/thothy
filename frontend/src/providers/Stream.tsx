@@ -132,7 +132,6 @@ export const StreamProvider: React.FC<{ children: ReactNode }> = ({
   const [accessToken, setAccessToken] = useState<string | null>(null);
   const supabase = createClientComponentClient();
   supabase.auth.getSession().then(({ data }) => {
-    console.log("data: ", data);
     setAccessToken(data.session?.access_token ?? null);
   });
   const [apiUrl, setApiUrl] = useQueryState("apiUrl");
