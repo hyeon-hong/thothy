@@ -1,24 +1,24 @@
 """Simple staff agent using LangGraph."""
 
-import os
 import logging
-from dotenv import load_dotenv
-from pydantic import BaseModel
-from psycopg import Connection, OperationalError
+import os
 from typing import Any, Dict
 
+from dotenv import load_dotenv
 from langchain.chat_models import init_chat_model
-
 from langgraph.checkpoint.memory import MemorySaver
-from langgraph.graph import MessagesState, StateGraph, START, END
+from langgraph.graph import END, START, MessagesState, StateGraph
 from langgraph.store.base import BaseStore
 from langgraph.store.postgres import PostgresStore
-# We're using create_memory_store_manager but not ReflectionExecutor
 from langmem import ReflectionExecutor, create_memory_store_manager
+from psycopg import Connection, OperationalError
+from pydantic import BaseModel
+
 from staff_graph.configuration import StaffConfigurable
 
 # Configure logging to hide INFO messages
 logging.basicConfig(level=logging.WARNING)
+
 # Set specific loggers for langgraph and related libraries to WARNING level
 logging.getLogger("langgraph").setLevel(logging.WARNING)
 logging.getLogger("langchain").setLevel(logging.WARNING)
@@ -55,7 +55,7 @@ class ReconnectingPostgresStore:
             self._connect()
 
     def search(self, *args, **kwargs):
-        """Synchronous version of asearch."""
+        """Search for documents synchronously."""
         self._ensure_connection()
         return self.store.search(*args, **kwargs)
 
@@ -65,7 +65,7 @@ class ReconnectingPostgresStore:
         return await self.store.asearch(*args, **kwargs)
 
     def put(self, *args, **kwargs):
-        """Synchronous version of aput."""
+        """Put documents into store synchronously."""
         self._ensure_connection()
         return self.store.put(*args, **kwargs)
 
@@ -75,7 +75,7 @@ class ReconnectingPostgresStore:
         return await self.store.aput(*args, **kwargs)
 
     def delete(self, *args, **kwargs):
-        """Synchronous version of adelete."""
+        """Delete documents from store synchronously."""
         self._ensure_connection()
         return self.store.delete(*args, **kwargs)
 
@@ -85,7 +85,7 @@ class ReconnectingPostgresStore:
         return await self.store.adelete(*args, **kwargs)
 
     def setup(self):
-        """Setup the store."""
+        """Set up the store."""
         self._ensure_connection()
         self.store.setup()
 
@@ -111,6 +111,7 @@ llm = init_chat_model("gpt-4o-mini", model_provider="openai", temperature=0.8)
 
 
 # Create memory manager to extract memories from conversations
+# Use Subject-Predicate-Object Triple data model
 class Triple(BaseModel):
     """Store all new facts, preferences, and relationships as triples."""
     subject: str
@@ -119,14 +120,16 @@ class Triple(BaseModel):
     context: str | None = None
 
 
-namespace = ("memories", "{user_id}", "triples")
-
+# Namespaces contains template variables to be populated from configurable
+# values at runtime. If id is not provided, it will be set as "default".
+namespace = ("memories", "{user_id}", "{project_id}",
+             "{team_id}", "{staff_id}", "{agent_id}")
 memory_manager = create_memory_store_manager(
     "anthropic:claude-3-5-sonnet-latest",
     schemas=[Triple],
     enable_inserts=True,
     enable_deletes=True,
-    instructions="Extract staff preferences and any other useful information",
+    instructions="Extract user's preferences and any other useful information",
     namespace=namespace,
 )
 
@@ -174,6 +177,9 @@ async def staff_assistant(
             {"role": "user", "content": state["messages"][-1].content}
         ] + [response]
     }
+
+    # config["configurable"] should has user_id, project_id, team_id,
+    # staff_id, agent_id and it will be populated from the namespace
     executor.submit(to_process, after_seconds=0.5, config=config)
 
     return {"messages": response}
@@ -195,4 +201,4 @@ workflow.add_edge("staff_assistant", END)
 graph = workflow.compile(checkpointer=MemorySaver(), store=store.store)
 graph.name = "staff_graph"
 
-__all__ = ["graph"] 
+__all__ = ["graph"]
