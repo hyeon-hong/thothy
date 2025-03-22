@@ -525,6 +525,10 @@ export default function StaffPage() {
     }
   };
 
+  const handleAgentClick = (agentId: string) => {
+    router.push(`/agents/${agentId}?mode=staff`);
+  };
+
   return (
     <div className="container mx-auto px-4">
       <Header currentView="staff" />
@@ -580,7 +584,10 @@ export default function StaffPage() {
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {staffMembers.map((staff) => (
-                  <Card key={staff.id} className="flex flex-col">
+                  <Card 
+                    key={staff.id} 
+                    className={`flex flex-col ${staff.agent_id ? 'hover:shadow-md transition-shadow' : ''}`}
+                  >
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                       <div>
                         <CardTitle>{staff.name}</CardTitle>
@@ -589,7 +596,8 @@ export default function StaffPage() {
                         </CardDescription>
                       </div>
                       <Button
-                        onClick={() => {
+                        onClick={(e) => {
+                          e.stopPropagation();
                           setEditingStaff(staff);
                           setStaffName(staff.name);
                           setStaffDescription(staff.description);
@@ -602,7 +610,10 @@ export default function StaffPage() {
                         <Pencil className="h-4 w-4" />
                       </Button>
                     </CardHeader>
-                    <CardContent>
+                    <CardContent 
+                      className={staff.agent_id ? 'cursor-pointer' : ''}
+                      onClick={() => staff.agent_id ? handleAgentClick(staff.agent_id) : null}
+                    >
                       <p className="text-sm text-muted-foreground mb-2">
                         {staff.description}
                       </p>
@@ -613,7 +624,15 @@ export default function StaffPage() {
                             {(() => {
                               const agent = agents.find((a) => a.id === staff.agent_id);
                               return agent ? (
-                                <Badge key={agent.id} variant="outline">
+                                <Badge 
+                                  key={agent.id} 
+                                  variant="outline"
+                                  className="cursor-pointer hover:bg-gray-100 transition-colors"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleAgentClick(agent.id);
+                                  }}
+                                >
                                   {agent.name}
                                 </Badge>
                               ) : null;
