@@ -313,7 +313,7 @@ export default function StaffPage() {
             console.warn("Failed to fetch staff from API");
             const supabase = createSupabaseClient();
             const { data, error } = await supabase
-              .from("staff")
+              .from("staffs")
               .select("*");
               
             if (!error && data) {
@@ -361,7 +361,6 @@ export default function StaffPage() {
         name: staffName,
         description: staffDescription,
         role: "default",
-        agent_list: selectedAgents,
         created_at: new Date().toISOString()
       };
 
@@ -376,7 +375,6 @@ export default function StaffPage() {
             name: staffName,
             description: staffDescription,
             role: "default",
-            agent_list: selectedAgents,
           }),
         });
 
@@ -387,12 +385,11 @@ export default function StaffPage() {
           console.warn("API failed, inserting directly to Supabase");
           const supabase = createSupabaseClient();
           const { data, error } = await supabase
-            .from("staff")
+            .from("staffs")
             .insert({
               name: staffName,
               description: staffDescription,
               role: "default",
-              agent_list: selectedAgents,
             })
             .select()
             .single();
@@ -402,7 +399,11 @@ export default function StaffPage() {
           }
           
           if (data) {
-            createdStaff = data;
+            // Add agent_list to the returned data for our local state
+            createdStaff = {
+              ...data,
+              agent_list: selectedAgents
+            };
           } else {
             // Use local object as last resort
             createdStaff = newStaff;
@@ -435,7 +436,6 @@ export default function StaffPage() {
         ...editingStaff,
         name: staffName,
         description: staffDescription,
-        agent_list: selectedAgents,
       };
 
       let savedStaff;
@@ -449,7 +449,6 @@ export default function StaffPage() {
             name: staffName,
             description: staffDescription,
             role: editingStaff.role,
-            agent_list: selectedAgents,
           }),
         });
 
@@ -460,12 +459,11 @@ export default function StaffPage() {
           console.warn("API failed, updating directly in Supabase");
           const supabase = createSupabaseClient();
           const { data, error } = await supabase
-            .from("staff")
+            .from("staffs")
             .update({
               name: staffName,
               description: staffDescription,
               role: editingStaff.role,
-              agent_list: selectedAgents,
             })
             .eq('id', editingStaff.id)
             .select()
@@ -476,7 +474,11 @@ export default function StaffPage() {
           }
           
           if (data) {
-            savedStaff = data;
+            // Add agent_list to the returned data for our local state
+            savedStaff = {
+              ...data,
+              agent_list: selectedAgents
+            };
           } else {
             // Use local object as last resort
             savedStaff = updatedStaff;
