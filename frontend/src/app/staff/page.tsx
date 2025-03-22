@@ -43,8 +43,6 @@ type StaffDialogProps = {
   setStaffName: (name: string) => void;
   staffDescription: string;
   setStaffDescription: (desc: string) => void;
-  staffRole: string;
-  setStaffRole: (role: string) => void;
   onSubmit: () => void;
 };
 
@@ -54,8 +52,6 @@ const StaffDialog = ({
   setStaffName,
   staffDescription,
   setStaffDescription,
-  staffRole,
-  setStaffRole,
   onSubmit,
 }: StaffDialogProps) => (
   <DialogContent className="sm:max-w-[600px]">
@@ -93,23 +89,6 @@ const StaffDialog = ({
           rows={3}
         />
       </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="staff-role">Role</Label>
-        <select
-          id="staff-role"
-          value={staffRole}
-          onChange={(e) => setStaffRole(e.target.value)}
-          className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
-        >
-          <option value="">Select a role</option>
-          <option value="manager">Manager</option>
-          <option value="developer">Developer</option>
-          <option value="designer">Designer</option>
-          <option value="content">Content Creator</option>
-          <option value="admin">Administrator</option>
-        </select>
-      </div>
     </div>
 
     <DialogFooter className="mt-4">
@@ -128,7 +107,6 @@ export default function StaffPage() {
   const [showDialog, setShowDialog] = useState(false);
   const [staffName, setStaffName] = useState("");
   const [staffDescription, setStaffDescription] = useState("");
-  const [staffRole, setStaffRole] = useState("");
   const [editingStaff, setEditingStaff] = useState<Staff | null>(null);
 
   useEffect(() => {
@@ -169,7 +147,7 @@ export default function StaffPage() {
         body: JSON.stringify({
           name: staffName,
           description: staffDescription,
-          role: staffRole,
+          role: "default",
         }),
       });
 
@@ -182,7 +160,6 @@ export default function StaffPage() {
       // Reset form
       setStaffName("");
       setStaffDescription("");
-      setStaffRole("");
       setShowDialog(false);
     } catch (error) {
       console.error("Failed to add staff:", error);
@@ -201,7 +178,7 @@ export default function StaffPage() {
         body: JSON.stringify({
           name: staffName,
           description: staffDescription,
-          role: staffRole,
+          role: editingStaff.role,
         }),
       });
 
@@ -218,7 +195,6 @@ export default function StaffPage() {
       // Reset form
       setStaffName("");
       setStaffDescription("");
-      setStaffRole("");
       setEditingStaff(null);
       setShowDialog(false);
     } catch (error) {
@@ -230,7 +206,6 @@ export default function StaffPage() {
     if (!open) {
       setStaffName("");
       setStaffDescription("");
-      setStaffRole("");
       if (isEdit) {
         setEditingStaff(null);
         setShowDialog(false);
@@ -247,7 +222,7 @@ export default function StaffPage() {
       case "developer": return "secondary";
       case "designer": return "destructive";
       case "content": return "outline";
-      case "admin": return "primary";
+      case "admin": return "secondary";
       default: return "secondary";
     }
   };
@@ -288,8 +263,6 @@ export default function StaffPage() {
                   setStaffName={setStaffName}
                   staffDescription={staffDescription}
                   setStaffDescription={setStaffDescription}
-                  staffRole={staffRole}
-                  setStaffRole={setStaffRole}
                   onSubmit={editingStaff ? handleEditStaff : handleAddStaff}
                 />
               </Dialog>
@@ -318,7 +291,6 @@ export default function StaffPage() {
                           setEditingStaff(staff);
                           setStaffName(staff.name);
                           setStaffDescription(staff.description);
-                          setStaffRole(staff.role);
                           setShowDialog(true);
                         }}
                         size="icon"
