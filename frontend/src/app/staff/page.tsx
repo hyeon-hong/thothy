@@ -26,8 +26,17 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import { Users, Pencil } from "lucide-react";
+import { Users, Pencil, X } from "lucide-react";
 import { createClient as createSupabaseClient } from "@/utils/supabase/client";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+} from "@/components/ui/command";
+import { Checkbox } from "@/components/ui/checkbox";
+import { cn } from "@/lib/utils";
 
 type Staff = {
   id: string;
@@ -35,6 +44,14 @@ type Staff = {
   description: string;
   role: string;
   created_at: string;
+  agent_list?: string[];
+};
+
+type Agent = {
+  id: string;
+  name: string;
+  description: string;
+  image_url: string;
 };
 
 type StaffDialogProps = {
@@ -43,7 +60,12 @@ type StaffDialogProps = {
   setStaffName: (name: string) => void;
   staffDescription: string;
   setStaffDescription: (desc: string) => void;
+  selectedAgents: string[];
+  setSelectedAgents: React.Dispatch<React.SetStateAction<string[]>>;
+  agents: Agent[];
   onSubmit: () => void;
+  getAgentName: (id: string) => string;
+  toggleAgent: (id: string) => void;
 };
 
 const StaffDialog = ({
@@ -52,7 +74,12 @@ const StaffDialog = ({
   setStaffName,
   staffDescription,
   setStaffDescription,
+  selectedAgents,
+  setSelectedAgents,
+  agents = [],
   onSubmit,
+  getAgentName,
+  toggleAgent,
 }: StaffDialogProps) => (
   <DialogContent className="sm:max-w-[600px]">
     <DialogHeader>
@@ -91,6 +118,112 @@ const StaffDialog = ({
       </div>
     </div>
 
+    <div className="mt-4 flex flex-col" style={{ height: "300px" }}>
+      <Label htmlFor="selected-agents">Assigned Agents</Label>
+      <div className="flex flex-wrap gap-1 p-2 mb-2 border rounded-md min-h-10">
+        {selectedAgents.length === 0 && (
+          <span className="text-sm text-muted-foreground px-1 py-0.5">
+            No agents selected
+          </span>
+        )}
+        {selectedAgents.map((agentId) => (
+          <Badge
+            key={agentId}
+            variant="secondary"
+            className="flex items-center gap-1 px-2 py-1"
+          >
+            {getAgentName(agentId)}
+            <button
+              type="button"
+              onClick={() =>
+                setSelectedAgents((current) =>
+                  current.filter((id) => id !== agentId)
+                )
+              }
+              className="ml-1 h-4 w-4 rounded-full inline-flex items-center justify-center hover:bg-muted-foreground/20"
+              aria-label={`Remove ${getAgentName(agentId)}`}
+            >
+              <X className="h-3 w-3 text-muted-foreground hover:text-destructive" />
+            </button>
+          </Badge>
+        ))}
+      </div>
+
+      <div className="flex-1 overflow-hidden flex flex-col">
+        {agents ? (
+          <Command
+            className="border rounded-lg flex-1 overflow-hidden"
+            style={{
+              height: "200px",
+            }}
+          >
+            <CommandInput placeholder="Search agents..." />
+            <CommandEmpty>No agents found.</CommandEmpty>
+            <CommandGroup className="overflow-y-auto h-full custom-scrollbar">
+              {agents.map((agent) => (
+                <CommandItem
+                  key={agent.id}
+                  onSelect={() => toggleAgent(agent.id)}
+                  className="cursor-pointer"
+                >
+                  <div className="flex items-center space-x-2 mr-2">
+                    <Checkbox
+                      id={`checkbox-${agent.id}`}
+                      checked={selectedAgents.includes(agent.id)}
+                      onCheckedChange={() => toggleAgent(agent.id)}
+                      onClick={(e: React.MouseEvent) => e.stopPropagation()}
+                      className={cn(
+                        "transition-colors",
+                        selectedAgents.includes(agent.id)
+                          ? "border-primary data-[state=checked]:bg-white data-[state=checked]:text-black"
+                          : ""
+                      )}
+                      style={
+                        {
+                          ...(selectedAgents.includes(agent.id)
+                            ? {
+                                "--tw-checkbox-bg": "white",
+                                "--tw-checkbox-fg": "black",
+                              }
+                            : {}),
+                        } as React.CSSProperties
+                      }
+                    />
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex items-center">
+                      <span
+                        className={
+                          selectedAgents.includes(agent.id) ? "font-medium" : ""
+                        }
+                      >
+                        {agent.name}
+                      </span>
+                      {selectedAgents.includes(agent.id) && (
+                        <Badge
+                          variant="secondary"
+                          className="ml-2 bg-white text-black border border-gray-300"
+                        >
+                          Selected
+                        </Badge>
+                      )}
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      {agent.description}
+                    </p>
+                  </div>
+                </CommandItem>
+              ))}
+            </CommandGroup>
+          </Command>
+        ) : (
+          <div className="border rounded-lg flex-1 flex items-center justify-center p-4 text-muted-foreground text-sm">
+            Loading agents...
+          </div>
+        )}
+      </div>
+    </div>
+
     <DialogFooter className="mt-4">
       <Button onClick={onSubmit}>
         {isEdit ? "Save changes" : "Add staff"}
@@ -103,10 +236,12 @@ export default function StaffPage() {
   const { user, loading } = useAuth();
   const router = useRouter();
   const [staffMembers, setStaffMembers] = useState<Staff[]>([]);
+  const [agents, setAgents] = useState<Agent[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showDialog, setShowDialog] = useState(false);
   const [staffName, setStaffName] = useState("");
   const [staffDescription, setStaffDescription] = useState("");
+  const [selectedAgents, setSelectedAgents] = useState<string[]>([]);
   const [editingStaff, setEditingStaff] = useState<Staff | null>(null);
 
   useEffect(() => {
@@ -119,23 +254,47 @@ export default function StaffPage() {
       return;
     }
 
-    const fetchStaff = async () => {
+    const fetchData = async () => {
       setIsLoading(true);
       try {
-        const response = await fetch("/api/staff");
-        if (!response.ok) throw new Error("Failed to fetch staff data");
+        const [staffResponse, agentsResponse] = await Promise.all([
+          fetch("/api/staff"),
+          fetch("/api/agents"),
+        ]);
         
-        const staffData = await response.json();
+        if (!staffResponse.ok || !agentsResponse.ok) {
+          throw new Error("Failed to fetch data");
+        }
+        
+        const [staffData, agentsData] = await Promise.all([
+          staffResponse.json(),
+          agentsResponse.json(),
+        ]);
+        
         setStaffMembers(staffData);
+        setAgents(agentsData);
       } catch (error) {
-        console.error("Failed to fetch staff:", error);
+        console.error("Failed to fetch data:", error);
       } finally {
         setIsLoading(false);
       }
     };
 
-    fetchStaff();
+    fetchData();
   }, [user, router, loading]);
+
+  const toggleAgent = (agentId: string) => {
+    setSelectedAgents((current) =>
+      current.includes(agentId)
+        ? current.filter((id) => id !== agentId)
+        : [...current, agentId]
+    );
+  };
+
+  const getAgentName = (agentId: string) => {
+    const agent = agents.find((a) => a.id === agentId);
+    return agent ? agent.name : "";
+  };
 
   const handleAddStaff = async () => {
     try {
@@ -148,6 +307,7 @@ export default function StaffPage() {
           name: staffName,
           description: staffDescription,
           role: "default",
+          agent_list: selectedAgents,
         }),
       });
 
@@ -160,6 +320,7 @@ export default function StaffPage() {
       // Reset form
       setStaffName("");
       setStaffDescription("");
+      setSelectedAgents([]);
       setShowDialog(false);
     } catch (error) {
       console.error("Failed to add staff:", error);
@@ -179,6 +340,7 @@ export default function StaffPage() {
           name: staffName,
           description: staffDescription,
           role: editingStaff.role,
+          agent_list: selectedAgents,
         }),
       });
 
@@ -195,6 +357,7 @@ export default function StaffPage() {
       // Reset form
       setStaffName("");
       setStaffDescription("");
+      setSelectedAgents([]);
       setEditingStaff(null);
       setShowDialog(false);
     } catch (error) {
@@ -206,6 +369,7 @@ export default function StaffPage() {
     if (!open) {
       setStaffName("");
       setStaffDescription("");
+      setSelectedAgents([]);
       if (isEdit) {
         setEditingStaff(null);
         setShowDialog(false);
@@ -263,7 +427,12 @@ export default function StaffPage() {
                   setStaffName={setStaffName}
                   staffDescription={staffDescription}
                   setStaffDescription={setStaffDescription}
+                  selectedAgents={selectedAgents}
+                  setSelectedAgents={setSelectedAgents}
+                  agents={agents}
                   onSubmit={editingStaff ? handleEditStaff : handleAddStaff}
+                  getAgentName={getAgentName}
+                  toggleAgent={toggleAgent}
                 />
               </Dialog>
             </div>
@@ -291,6 +460,7 @@ export default function StaffPage() {
                           setEditingStaff(staff);
                           setStaffName(staff.name);
                           setStaffDescription(staff.description);
+                          setSelectedAgents(staff.agent_list || []);
                           setShowDialog(true);
                         }}
                         size="icon"
@@ -303,11 +473,26 @@ export default function StaffPage() {
                       <p className="text-sm text-muted-foreground mb-2">
                         {staff.description}
                       </p>
-                      <div className="flex flex-wrap gap-2">
+                      <div className="flex flex-wrap gap-2 mb-2">
                         <Badge variant={getRoleBadgeVariant(staff.role)}>
                           {staff.role.charAt(0).toUpperCase() + staff.role.slice(1)}
                         </Badge>
                       </div>
+                      {staff.agent_list && staff.agent_list.length > 0 && (
+                        <div>
+                          <p className="text-sm font-medium mb-1">Assigned Agents:</p>
+                          <div className="flex flex-wrap gap-2">
+                            {staff.agent_list.map((agentId) => {
+                              const agent = agents.find((a) => a.id === agentId);
+                              return agent ? (
+                                <Badge key={agentId} variant="outline">
+                                  {agent.name}
+                                </Badge>
+                              ) : null;
+                            })}
+                          </div>
+                        </div>
+                      )}
                     </CardContent>
                   </Card>
                 ))}
