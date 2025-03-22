@@ -51,6 +51,7 @@ type Agent = {
   name: string;
   description: string;
   image_url: string;
+  graph_name?: string;
 };
 
 type StaffDialogProps = {
@@ -259,7 +260,7 @@ export default function StaffPage() {
             const supabase = createSupabaseClient();
             const { data, error } = await supabase
               .from("agents")
-              .select("*");
+              .select("id, name, description, image_url, graph_name");
               
             if (error) {
               throw new Error(`Supabase error: ${error.message}`);
@@ -278,7 +279,7 @@ export default function StaffPage() {
             const supabase = createSupabaseClient();
             const { data, error } = await supabase
               .from("agents")
-              .select("*");
+              .select("id, name, description, image_url, graph_name");
               
             if (error) {
               throw new Error(`Supabase error: ${error.message}`);
@@ -317,7 +318,8 @@ export default function StaffPage() {
                 agents:agent_id (
                   id,
                   name,
-                  description
+                  description,
+                  graph_name
                 )
               `);
               
@@ -526,7 +528,13 @@ export default function StaffPage() {
   };
 
   const handleAgentClick = (agentId: string) => {
-    router.push(`/agents/${agentId}?mode=staff`);
+    const agent = agents.find((a) => a.id === agentId);
+    if (agent && agent.graph_name) {
+      router.push(`/agents/${agent.graph_name}?mode=staff`);
+    } else {
+      // Fallback to id if graph_name is not available
+      router.push(`/agents/${agentId}?mode=staff`);
+    }
   };
 
   return (
