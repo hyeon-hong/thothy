@@ -1,13 +1,36 @@
 "use client";
 
+import { ThreadPrimitive } from "@assistant-ui/react";
 import { PriceSnapshotTool } from "./components/tools/price-snapshot/PriceSnapshotTool";
 import { PurchaseStockTool } from "./components/tools/purchase-stock/PurchaseStockTool";
 import { PricesTool } from "./components/tools/prices/PricesTool";
 import { ToolFallback } from "./components/tools/ToolFallback";
 import { MyRuntimeProvider } from "./MyRuntimeProvider";
 import { useEffect } from "react";
-import { ThreadPrimitive } from "@assistant-ui/react";
 import React from "react";
+import { MarkdownText } from "@/components/assistant-ui/markdown-text";
+import { Thread } from "@/components/assistant-ui/thread";
+
+export default function DataAgentPage() {
+  return (
+    <div className="flex h-full flex-col">
+      <Thread
+        welcomeSuggestions={[
+          {
+            prompt: "How much revenue did Apple make last year?",
+          },
+          {
+            prompt: "Is McDonald's profitable?",
+          },
+          {
+            prompt: "What's the current stock price of Tesla?",
+          },
+        ]}
+        toolFallback={ToolFallback}
+      />
+    </div>
+  );
+}
 
 // Simple Thread component directly in this file to avoid type issues
 const SimpleThread = () => {
@@ -30,7 +53,7 @@ const SimpleThread = () => {
           <h2 className="text-2xl font-bold mb-4">How can I help you today?</h2>
           <div className="flex flex-wrap gap-2 justify-center">
             {welcomeSuggestions.map((suggestion, i) => (
-              <button 
+              <button
                 key={i}
                 className="bg-gray-100 hover:bg-gray-200 rounded-lg px-4 py-2 text-sm"
               >
@@ -44,17 +67,25 @@ const SimpleThread = () => {
   );
 };
 
-export default function DataAgentPage() {
+function DataAgentPageBackUp() {
   // Log that page is rendering and the tools are being loaded
   useEffect(() => {
-    console.log('[DataAgentPage] Page mounted, initializing tools');
-    console.log('[DataAgentPage] Tools being registered with AssistantRuntimeProvider:');
+    console.log("[DataAgentPage] Page mounted, initializing tools");
+    console.log(
+      "[DataAgentPage] Tools being registered with AssistantRuntimeProvider:"
+    );
     // Access toolName using type assertion since it's a property of the component definition
-    console.log('[DataAgentPage] - PriceSnapshotTool:', (PriceSnapshotTool as any).toolName);
-    console.log('[DataAgentPage] - PurchaseStockTool:', (PurchaseStockTool as any).toolName);
-    console.log('[DataAgentPage] - PricesTool:', (PricesTool as any).toolName);
+    console.log(
+      "[DataAgentPage] - PriceSnapshotTool:",
+      (PriceSnapshotTool as any).toolName
+    );
+    console.log(
+      "[DataAgentPage] - PurchaseStockTool:",
+      (PurchaseStockTool as any).toolName
+    );
+    console.log("[DataAgentPage] - PricesTool:", (PricesTool as any).toolName);
   }, []);
-  
+
   return (
     <div className="flex h-full flex-col">
       <MyRuntimeProvider>
@@ -62,7 +93,7 @@ export default function DataAgentPage() {
         <PriceSnapshotTool />
         <PurchaseStockTool />
         <PricesTool />
-        
+
         {/* Use simplified thread component */}
         <SimpleThread />
       </MyRuntimeProvider>
