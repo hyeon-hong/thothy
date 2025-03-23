@@ -9,7 +9,7 @@ import { MyRuntimeProvider } from "./MyRuntimeProvider";
 import { useEffect } from "react";
 import React from "react";
 import { MarkdownText } from "@/components/assistant-ui/markdown-text";
-import { Thread } from "@/components/assistant-ui/thread";
+import { Thread, BranchPicker } from "@/components/assistant-ui/thread";
 
 export default function DataAgentPage() {
   return (

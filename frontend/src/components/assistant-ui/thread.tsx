@@ -299,3 +299,6 @@ function BranchPicker({ className, ...rest }: BranchPickerPrimitive.Root.Props):
     </BranchPickerPrimitive.Root>
   );
 }
+
+// Export BranchPicker to make it available to other components
+export { BranchPicker };
