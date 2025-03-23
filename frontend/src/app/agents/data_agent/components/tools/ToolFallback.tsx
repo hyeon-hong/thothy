@@ -20,15 +20,10 @@ export const ToolFallback: ToolCallContentPartComponent = ({
   argsText,
   result,
 }) => {
-  console.log("[ToolFallback] Render called for tool:", toolName);
-  console.log("[ToolFallback] Args text:", argsText);
-  console.log("[ToolFallback] Result:", result);
-
   const [isCollapsed, setIsCollapsed] = useState(true);
   
   // If no tool name or args, don't render
   if (!toolName) {
-    console.log("[ToolFallback] Missing tool name");
     return null;
   }
 
