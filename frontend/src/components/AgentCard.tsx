@@ -100,7 +100,7 @@ export default function AgentCard({
 
             try {
                 const { data, error } = await supabase
-                    .from("user_agents")
+                    .from("staffs")
                     .select()
                     .eq("user_id", user.id)
                     .eq("agent_id", agent.id)
@@ -128,7 +128,7 @@ export default function AgentCard({
             }
 
             const { error } = await supabase
-                .from("user_agents")
+                .from("staffs")
                 .insert({
                     user_id: user.id,
                     agent_id: agent.id,
@@ -154,7 +154,7 @@ export default function AgentCard({
 
         try {
             const { error } = await supabase
-                .from("user_agents")
+                .from("staffs")
                 .delete()
                 .eq("user_id", user.id)
                 .eq("agent_id", agent.id);

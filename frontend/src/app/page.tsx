@@ -25,7 +25,7 @@ export default function Home() {
 
     const handleGetStarted = () => {
         if (user) {
-            router.push('/find');
+            router.push('/agent');
         } else {
             signIn();
         }
