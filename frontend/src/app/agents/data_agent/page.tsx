@@ -14,20 +14,27 @@ import { Thread } from "@/components/assistant-ui/thread";
 export default function DataAgentPage() {
   return (
     <div className="flex h-full flex-col">
-      <Thread
-        welcomeSuggestions={[
-          {
-            prompt: "How much revenue did Apple make last year?",
-          },
-          {
-            prompt: "Is McDonald's profitable?",
-          },
-          {
-            prompt: "What's the current stock price of Tesla?",
-          },
-        ]}
-        toolFallback={ToolFallback}
-      />
+      <MyRuntimeProvider>
+        {/* Render tool UIs */}
+        <PriceSnapshotTool />
+        <PurchaseStockTool />
+        <PricesTool />
+        
+        <Thread
+          welcomeSuggestions={[
+            {
+              prompt: "How much revenue did Apple make last year?",
+            },
+            {
+              prompt: "Is McDonald's profitable?",
+            },
+            {
+              prompt: "What's the current stock price of Tesla?",
+            },
+          ]}
+          toolFallback={ToolFallback}
+        />
+      </MyRuntimeProvider>
     </div>
   );
 }
