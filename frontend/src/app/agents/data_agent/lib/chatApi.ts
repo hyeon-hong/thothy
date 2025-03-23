@@ -8,9 +8,6 @@ const createClient = async () => {
     data: { session },
     error,
   } = await supabase.auth.getSession();
-  console.log("supabase: ", supabase);
-  console.log("error: ", error);
-  console.log("session: ", session);
 
   // TODO: We don't run the typescript agent in LangGraph Platform, so we need to use the develop api url
   return new Client({

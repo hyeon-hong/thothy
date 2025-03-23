@@ -37,12 +37,6 @@ export function Thread({
   ],
   toolFallback
 }: ThreadProps): React.ReactNode {
-  // Log when Thread component initializes
-  useEffect(() => {
-    console.log('[Thread] Thread component initialized');
-    console.log('[Thread] ToolFallback provided:', !!toolFallback);
-  }, [toolFallback]);
-
   return (
     <ThreadPrimitive.Root
       className="bg-background box-border flex h-full flex-col overflow-hidden"
@@ -57,15 +51,12 @@ export function Thread({
           components={{
             UserMessage: (props) => <UserMessage {...props} />,
             EditComposer: (props) => <EditComposer {...props} />,
-            AssistantMessage: (props) => {
-              console.log('[Thread] Rendering AssistantMessage');
-              return (
-                <AssistantMessage 
-                  {...props} 
-                  toolFallback={toolFallback} 
-                />
-              );
-            },
+            AssistantMessage: (props) => (
+              <AssistantMessage 
+                {...props} 
+                toolFallback={toolFallback} 
+              />
+            ),
           }}
         />
 
@@ -222,10 +213,6 @@ function EditComposer(): React.ReactNode {
 }
 
 function AssistantMessage({ toolFallback }: { toolFallback?: any }): React.ReactNode {
-  useEffect(() => {
-    console.log('[AssistantMessage] Component mounted');
-  }, []);
-
   return (
     <MessagePrimitive.Root className="grid grid-cols-[auto_auto_1fr] grid-rows-[auto_1fr] relative w-full max-w-[var(--thread-max-width)] py-4">
       <div className="text-foreground max-w-[calc(var(--thread-max-width)*0.8)] break-words leading-7 col-span-2 col-start-2 row-start-1 my-1.5">
@@ -269,7 +256,6 @@ function AssistantActionBar(): React.ReactNode {
 function BranchPicker({ className, ...rest }: BranchPickerPrimitive.Root.Props): React.ReactNode {
   // If BranchPickerPrimitive.Root is undefined, return null to avoid the error
   if (!BranchPickerPrimitive || !BranchPickerPrimitive.Root) {
-    console.warn('BranchPickerPrimitive or BranchPickerPrimitive.Root is undefined');
     return null;
   }
 

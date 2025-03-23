@@ -249,11 +249,9 @@ export default function StaffPage() {
         
         // First try to fetch agents from the API
         try {
-          console.log("Fetching agents...");
           const agentsResponse = await fetch("/api/agents");
           if (agentsResponse.ok) {
             agentsData = await agentsResponse.json();
-            console.log(`Successfully fetched ${agentsData.length} agents`);
           } else {
             // If API fails, fetch directly from Supabase
             console.warn(`API call failed with status ${agentsResponse.status}, fetching directly from Supabase`);
@@ -268,14 +266,12 @@ export default function StaffPage() {
             
             if (data) {
               agentsData = data as Agent[];
-              console.log(`Successfully fetched ${agentsData.length} agents from Supabase`);
             }
           }
         } catch (error) {
           console.error("Error fetching agents:", error);
           // Fetch from Supabase as a fallback
           try {
-            console.log("Attempting Supabase fallback for agents...");
             const supabase = createSupabaseClient();
             const { data, error } = await supabase
               .from("agents")
@@ -287,7 +283,6 @@ export default function StaffPage() {
             
             if (data) {
               agentsData = data as Agent[];
-              console.log(`Successfully fetched ${agentsData.length} agents from Supabase fallback`);
             }
           } catch (supabaseError) {
             console.error("Supabase fetch error:", supabaseError);
@@ -296,7 +291,6 @@ export default function StaffPage() {
         
         // Now try to fetch staff data
         try {
-          console.log("Fetching staff members...");
           const staffResponse = await fetch("/api/staff");
           
           if (!staffResponse.ok) {
@@ -304,12 +298,10 @@ export default function StaffPage() {
           }
           
           staffData = await staffResponse.json();
-          console.log(`Successfully fetched ${staffData.length} staff members`);
         } catch (error) {
           console.error("Error fetching staff:", error);
           // Try fetching directly from Supabase as fallback
           try {
-            console.log("Attempting Supabase fallback for staff...");
             const supabase = createSupabaseClient();
             const { data, error } = await supabase
               .from("staffs")
@@ -336,7 +328,6 @@ export default function StaffPage() {
                 created_at: item.created_at,
                 agent_id: item.agent_id
               })) as Staff[];
-              console.log(`Successfully fetched ${staffData.length} staff members from Supabase fallback`);
             } else {
               staffData = [];
             }

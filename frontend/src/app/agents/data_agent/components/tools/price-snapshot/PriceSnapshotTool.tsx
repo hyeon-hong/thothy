@@ -20,12 +20,8 @@ export const PriceSnapshotTool = makeAssistantToolUI<
 >({
   toolName: "price_snapshot",
   render: function PriceSnapshotUI({ args, result }) {
-    console.log("[PriceSnapshotTool] Render called with args:", args);
-    console.log("[PriceSnapshotTool] Result provided:", result ? "yes" : "no");
-    
     // If no arguments yet, don't render anything
     if (!args || !args.ticker) {
-      console.log("[PriceSnapshotTool] Tool not yet called with valid arguments");
       return null;
     }
     
