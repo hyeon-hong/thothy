@@ -31,6 +31,9 @@ export default function DataAgentPage() {
             {
               prompt: "What's the current stock price of Tesla?",
             },
+            {
+              prompt: "Show me the price history of GOOGL for the past month",
+            },
           ]}
           toolFallback={ToolFallback}
         />
