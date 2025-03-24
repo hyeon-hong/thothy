@@ -241,6 +241,129 @@ export default function Home() {
                 </Container>
             </Box>
 
+            {/* Pricing Section */}
+            <Container maxWidth="lg" sx={{ py: 8 }}>
+                <Typography
+                    variant="h3"
+                    component="h2"
+                    align="center"
+                    gutterBottom
+                    sx={{ mb: 6, fontWeight: 700 }}
+                >
+                    Pricing
+                </Typography>
+                <Grid container spacing={4}>
+                    <Grid item xs={12} md={4}>
+                        <Paper
+                            elevation={0}
+                            sx={{
+                                p: 4,
+                                height: "100%",
+                                border: "1px solid #e0e0e0",
+                                borderRadius: 2,
+                            }}
+                        >
+                            <Typography variant="h5" gutterBottom sx={{ fontWeight: 600 }}>
+                                Free
+                            </Typography>
+                            <Typography color="text.secondary">
+                                - No charge. It's totally free.
+                                - User can use only agent menu.
+                                - Limitation on usage
+                                - No memory about user
+                            </Typography>
+                        </Paper>
+                    </Grid>
+                    <Grid item xs={12} md={4}>
+                        <Paper
+                            elevation={0}
+                            sx={{
+                                p: 4,
+                                height: "100%",
+                                border: "1px solid #e0e0e0",
+                                borderRadius: 2,
+                            }}
+                        >
+                            <Typography variant="h5" gutterBottom sx={{ fontWeight: 600 }}>
+                                Personal
+                            </Typography>
+                            <Typography color="text.secondary">
+                                - Include all features in Free.
+                                - Can use staff menu.
+                                - No limitation on usage.
+                                - Memory about user.
+                            </Typography>
+                        </Paper>
+                    </Grid>
+                    <Grid item xs={12} md={4}>
+                        <Paper
+                            elevation={0}
+                            sx={{
+                                p: 4,
+                                height: "100%",
+                                border: "1px solid #e0e0e0",
+                                borderRadius: 2,
+                            }}
+                        >
+                            <Typography variant="h5" gutterBottom sx={{ fontWeight: 600 }}>
+                                Business
+                            </Typography>
+                            <Typography color="text.secondary">
+                                - Include all features in Personal.
+                                - Can use team menu.
+                                - Can use cron job for team
+                                - Can monitor team's work
+                                - Can use inbox menu for team's report
+                            </Typography>
+                        </Paper>
+                    </Grid>
+                    <Grid item xs={12} md={4}>
+                        <Paper
+                            elevation={0}
+                            sx={{
+                                p: 4,
+                                height: "100%",
+                                border: "1px solid #e0e0e0",
+                                borderRadius: 2,
+                            }}
+                        >
+                            <Typography variant="h5" gutterBottom sx={{ fontWeight: 600 }}>
+                                Enterprise
+                            </Typography>
+                            <Typography color="text.secondary">
+                                - Inlcude all features in Business.
+                                - Can use project menu.
+                                - Can use 24/7 project working time.
+                                - Can monitor project's work
+                                - Can use inbox for project's report
+                                - Cooperate with Vercel, Supabase, GitHub platform.
+                                - Can write a code for a running service
+                            </Typography>
+                        </Paper>
+                    </Grid>
+                    <Grid item xs={12} md={4}>
+                        <Paper
+                            elevation={0}
+                            sx={{
+                                p: 4,
+                                height: "100%",
+                                border: "1px solid #e0e0e0",
+                                borderRadius: 2,
+                            }}
+                        >
+                            <Typography variant="h5" gutterBottom sx={{ fontWeight: 600 }}>
+                                Custom
+                            </Typography>
+                            <Typography color="text.secondary">
+                                - Include all features in Enterprise
+                                - Support onpremise
+                                - Support customized development for integration
+                            </Typography>
+                        </Paper>
+                    </Grid>
+                </Grid>
+            </Container>
+
             {/* Disclaimer Snackbar */}
             <Snackbar
                 open={openSnackbar}
