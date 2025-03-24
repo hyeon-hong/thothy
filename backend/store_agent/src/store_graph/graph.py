@@ -1,4 +1,5 @@
 import logging
+import os
 from typing import List
 from pydantic import BaseModel, Field
 from langgraph.graph import StateGraph, START, END, MessagesState
@@ -6,6 +7,7 @@ import requests
 from bs4 import BeautifulSoup
 import uuid
 from langgraph.store.base import BaseStore
+import datetime
 
 # Import utility functions
 try:
@@ -29,6 +31,9 @@ except ImportError:
 # Initialize store with embedding configuration
 store = initialize_store()
 
+# Default UUID for system-level operations
+DEFAULT_USER_ID = os.getenv("DEFAULT_USER_ID")
+
 
 class State(MessagesState):
     urls: List[str] | None = None
@@ -38,6 +43,7 @@ class State(MessagesState):
     user_message: str | None = None
     chunk_count: int | None = None
     namespace: tuple | None = None
+    user_id: str = DEFAULT_USER_ID  # Default to the system UUID
 
 # Schema for URL extraction
 
@@ -114,11 +120,23 @@ def store_chunks(state: State, store: BaseStore):
     # Store each chunk in the ReconnectingPostgresStore
     for chunk in state["chunks"]:
         memory_id = str(uuid.uuid4())
+        # Ensure user_id is a valid UUID, fallback to DEFAULT_USER_ID if not
+        try:
+            user_id = state.get("user_id", DEFAULT_USER_ID)
+            # Validate UUID format
+            uuid.UUID(user_id)
+        except ValueError:
+            user_id = DEFAULT_USER_ID
+
         store.put(
             namespace=state["namespace"],
             key=memory_id,
-            value={"text": chunk},
-            index=["text"]
+            value={
+                "text": chunk,
+                "user_id": user_id,
+                "created_at": datetime.datetime.now().isoformat(),
+            },
+            index=["text", "user_id"]
         )
 
     return {"store_status": "success"}

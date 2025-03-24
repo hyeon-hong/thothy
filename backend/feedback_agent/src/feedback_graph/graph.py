@@ -2,6 +2,7 @@
 
 import logging
 import datetime  # Import datetime for getting current time
+import uuid
 
 from langchain.chat_models import init_chat_model
 
@@ -35,6 +36,9 @@ logging.basicConfig(level=logging.WARNING)
 # Initialize store with embedding configuration
 store = initialize_store()
 
+# Default UUID for system-level operations
+DEFAULT_USER_ID = str(uuid.uuid4())  # Generate a fixed UUID for default user
+
 # Initialize the LLM using the model from configuration
 llm = init_chat_model(
     "gpt-4o-mini", model_provider="openai", temperature=0.8)
@@ -48,10 +52,19 @@ def feedback_bot(state: MessagesState, store: BaseStore):
     logging.info(f"messages: {state['messages']}")
     logging.info(f"messages[-1].content: {state['messages'][-1].content}")
 
-    # Search store for relevant memories using asynchronous search
+    # Get user_id from state and ensure it's a valid UUID
+    try:
+        user_id = state.get("user_id", DEFAULT_USER_ID)
+        # Validate UUID format
+        uuid.UUID(user_id)
+    except ValueError:
+        user_id = DEFAULT_USER_ID
+    
+    # Search store for relevant memories using search
     knowledges = store.search(
         ("knowledges",),
         query=state["messages"][-1].content,
+        where={"user_id": user_id},  # Filter by user_id
         limit=5
     )
     logging.info(f"Knowledges: {knowledges}")
