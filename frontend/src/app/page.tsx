@@ -33,7 +33,6 @@ export default function Home() {
     const { user, signIn, loading, supabase } = useAuth();
     const [currentView, setCurrentView] = useState("landing");
     const [openSnackbar, setOpenSnackbar] = useState(false);
-    // Add state for pricing policies
     const [pricingPolicies, setPricingPolicies] = useState<PricingPolicy[]>([]);
     const [pricingLoading, setPricingLoading] = useState(true);
 
@@ -52,15 +51,20 @@ export default function Home() {
                 setPricingLoading(true);
                 const { data, error } = await supabase
                     .from('pricing_policy')
-                    .select('*')
-                    .order('monthly_price', { ascending: true });
+                    .select('*');
                 
                 if (error) {
                     console.error('Error fetching pricing policies:', error);
                     return;
                 }
                 
-                setPricingPolicies(data || []);
+                // Sort the pricing policies
+                const sortedPolicies = data?.sort((a, b) => {
+                    const order = ['Free', 'Personal', 'Business', 'Enterprise', 'Custom'];
+                    return order.indexOf(a.name) - order.indexOf(b.name);
+                }) || [];
+                
+                setPricingPolicies(sortedPolicies);
             } catch (error) {
                 console.error('Error fetching pricing policies:', error);
             } finally {
@@ -234,14 +238,20 @@ export default function Home() {
                                     <h3 className="text-xl font-semibold mb-4">
                                         {policy.name}
                                     </h3>
-                                    {policy.monthly_price > 0 ? (
+                                    {policy.name === 'Custom' ? (
                                         <div className="mb-4 text-lg font-bold">
-                                            ${policy.monthly_price.toFixed(2)}/month
+                                            Custom Price
                                         </div>
                                     ) : (
-                                        <div className="mb-4 text-lg font-bold">
-                                            Free
-                                        </div>
+                                        policy.monthly_price > 0 ? (
+                                            <div className="mb-4 text-lg font-bold">
+                                                ${policy.monthly_price.toFixed(2)}/month
+                                            </div>
+                                        ) : (
+                                            <div className="mb-4 text-lg font-bold">
+                                                Free
+                                            </div>
+                                        )
                                     )}
                                     <div className="space-y-2 text-gray-600 flex-grow">
                                         {formatDescription(policy.description).map((item, index) => (
