@@ -8,7 +8,7 @@ from bs4 import BeautifulSoup
 import uuid
 from langgraph.store.base import BaseStore
 import datetime
-
+from store_graph.configuration import StoreConfigurable
 # Import utility functions
 try:
     # Try importing normally first (for production)
@@ -31,9 +31,6 @@ except ImportError:
 # Initialize store with embedding configuration
 store = initialize_store()
 
-# Default UUID for system-level operations
-DEFAULT_USER_ID = os.getenv("DEFAULT_USER_ID")
-
 
 class State(MessagesState):
     urls: List[str] | None = None
@@ -43,7 +40,6 @@ class State(MessagesState):
     user_message: str | None = None
     chunk_count: int | None = None
     namespace: tuple | None = None
-    user_id: str = DEFAULT_USER_ID  # Default to the system UUID
 
 # Schema for URL extraction
 
@@ -53,8 +49,21 @@ class URLExtraction(BaseModel):
         description="List of URLs extracted from the message")
 
 
-def extract_urls(state: State):
+def extract_urls(state: State, config: StoreConfigurable):
     """Extract URLs from user message"""
+
+    # Get configurable values
+    configurable = StoreConfigurable.from_runnable_config(config)
+    project_id = configurable.project_id
+    team_id = configurable.team_id
+    staff_id = configurable.staff_id
+    agent_id = configurable.agent_id
+    user_id = configurable.user_id
+
+    # Set namespace for memories
+    namespace = ("knowledges", user_id, project_id,
+                 team_id, staff_id, agent_id)
+
     # You can use your LLM here to extract URLs more intelligently if needed
     # For now using a simple example
     message = state["messages"][-1].content
@@ -63,7 +72,7 @@ def extract_urls(state: State):
         word for word in message.split()
         if word.startswith(("http://", "https://"))
     ]
-    return {"urls": urls, "namespace": ("knowledges", "chunks")}
+    return {"urls": urls, "namespace": namespace}
 
 
 def fetch_content(state: State):
@@ -120,23 +129,12 @@ def store_chunks(state: State, store: BaseStore):
     # Store each chunk in the ReconnectingPostgresStore
     for chunk in state["chunks"]:
         memory_id = str(uuid.uuid4())
-        # Ensure user_id is a valid UUID, fallback to DEFAULT_USER_ID if not
-        try:
-            user_id = state.get("user_id", DEFAULT_USER_ID)
-            # Validate UUID format
-            uuid.UUID(user_id)
-        except ValueError:
-            user_id = DEFAULT_USER_ID
 
         store.put(
             namespace=state["namespace"],
             key=memory_id,
-            value={
-                "text": chunk,
-                "user_id": user_id,
-                "created_at": datetime.datetime.now().isoformat(),
-            },
-            index=["text", "user_id"]
+            value={"text": chunk},
+            index=["text"]
         )
 
     return {"store_status": "success"}
