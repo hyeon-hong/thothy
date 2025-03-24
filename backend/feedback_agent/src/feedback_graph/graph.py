@@ -8,6 +8,7 @@ from langchain.chat_models import init_chat_model
 from langgraph.checkpoint.memory import MemorySaver
 from langgraph.graph import MessagesState, StateGraph, START, END
 from langgraph.store.base import BaseStore
+from feedback_graph.prompts import SYSTEM_PROMPT
 
 # Import utility functions
 try:
@@ -28,8 +29,6 @@ except ImportError:
         initialize_store,
     )
 
-from feedback_graph.configuration import FeedbackConfigurable
-
 # Configure logging to hide INFO messages
 logging.basicConfig(level=logging.WARNING)
 
@@ -41,15 +40,8 @@ llm = init_chat_model(
     "gpt-4o-mini", model_provider="openai", temperature=0.8)
 
 
-async def feedback_bot(
-    state: MessagesState,
-    config: FeedbackConfigurable,
-    *,
-    store: BaseStore
-) -> dict:
+def feedback_bot(state: MessagesState, store: BaseStore):
     """Feedback node that processes messages and generates responses."""
-
-    configurable = FeedbackConfigurable.from_runnable_config(config)
 
     # Get current system time
     current_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -57,7 +49,7 @@ async def feedback_bot(
     logging.info(f"messages[-1].content: {state['messages'][-1].content}")
 
     # Search store for relevant memories using asynchronous search
-    knowledges = await store.asearch(
+    knowledges = store.search(
         ("knowledges",),
         query=state["messages"][-1].content,
         limit=5
@@ -70,7 +62,7 @@ async def feedback_bot(
     ) if knowledges else ""
 
     # Use system prompt from configuration with time and knowledge
-    system_message = configurable.system_prompt.format(
+    system_message = SYSTEM_PROMPT.format(
         time=current_time,
         knowledge_context=knowledge_context
     )
@@ -86,10 +78,13 @@ async def feedback_bot(
 """Build and return the feedback graph."""
 
 # Initialize graph builder with state schema
-workflow = StateGraph(MessagesState, FeedbackConfigurable)
+workflow = StateGraph(MessagesState)
 
 # Add feedback_bot node
-workflow.add_node("feedback_bot", feedback_bot)
+workflow.add_node(
+    "feedback_bot",
+    lambda state: feedback_bot(state, store=store)
+)
 
 # Add edges - start at feedback_bot and can end after feedback_bot
 workflow.add_edge(START, "feedback_bot")

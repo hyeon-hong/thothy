@@ -114,7 +114,7 @@ def initialize_store():
         }
     )
 
-    return store.store
+    return store
 
 
 def initialize_memory_manager(
