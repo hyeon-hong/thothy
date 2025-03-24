@@ -23,7 +23,7 @@ class ChatConfigurable:
         """Load configuration."""
 
         configurable = (
-            config["configurable"] if config and "configurable" in config else {}
+            config.get("configurable", {}) if config else {}
         )
 
         values: dict[str, Any] = {
