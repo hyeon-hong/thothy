@@ -11,7 +11,7 @@ import { useAuth } from "@/contexts/AuthContext";
 export default function ChatAgentPage() {
   // Fetch access token from AuthContext
   const { supabase } = useAuth();
-  const threadIdRef = useRef<string | undefined>();
+  const threadIdRef = useRef<string | undefined>(undefined);
   const accessTokenRef = useRef<string>("");
 
   useEffect(() => {
