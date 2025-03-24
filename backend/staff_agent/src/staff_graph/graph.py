@@ -125,7 +125,7 @@ workflow.add_edge(START, "staff_assistant")
 workflow.add_edge("staff_assistant", END)
 
 # Compile graph
-graph = workflow.compile(checkpointer=MemorySaver(), store=store.store)
+graph = workflow.compile(checkpointer=MemorySaver(), store=store)
 graph.name = "staff_graph"
 
 __all__ = ["graph"]

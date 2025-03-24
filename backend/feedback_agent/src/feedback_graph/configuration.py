@@ -16,6 +16,11 @@ class FeedbackConfigurable:
     model: str = "gpt-4o-mini"
     system_prompt: str = SYSTEM_PROMPT
     read_only: bool = False
+    user_id: str = "default"
+    project_id: str = "default"
+    team_id: str = "default"
+    staff_id: str = "default"
+    agent_id: str = "default"
 
     @classmethod
     def from_runnable_config(

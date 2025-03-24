@@ -1,0 +1,56 @@
+[project]
+name = "store_agent"
+version = "0.0.1"
+description = "An agent that manages the store functionality."
+authors = [
+    { name = "Thothy", email = "ai.thothy@gmail.com" },
+]
+license = { text = "Apache-2.0" }
+requires-python = ">=3.12"
+dependencies = [
+    "langgraph>=0.2.55",
+    "langgraph-checkpoint>=2.0.16",
+    "langgraph-sdk>=0.1.32",
+    "langchain>=0.3.9",
+    "langchain-core>=0.3.9",
+    "langchain-openai>=0.3.7",
+    "langchain-anthropic>=0.3.9",
+    "langmem>=0.0.15",
+    "psycopg[binary,pool]>=3.2.5",
+    "pydantic>=2.0.0",
+    "python-dotenv>=1.0.0",
+]
+
+[project.optional-dependencies]
+dev = ["mypy>=1.11.1", "ruff>=0.6.1", "pytest-asyncio"]
+
+[build-system]
+requires = ["setuptools>=73.0.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = ["store_graph", "thothy.store_graph"]
+[tool.setuptools.package-dir]
+"store_graph" = "src/store_graph"
+"thothy.store_graph" = "src/store_graph"
+
+[tool.setuptools.package-data]
+"*" = ["py.typed"]
+
+[tool.ruff]
+lint.select = [
+    "E",    # pycodestyle
+    "F",    # pyflakes
+    "I",    # isort
+    "D",    # pydocstyle
+    "D401", # First line should be in imperative mood
+    "T201",
+    "UP",
+]
+lint.ignore = ["UP006", "UP007", "UP035", "D417", "E501"]
+include = ["*.py", "*.pyi", "*.ipynb"]
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+[tool.mypy]
+ignore_errors = true 

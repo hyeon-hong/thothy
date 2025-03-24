@@ -6,6 +6,7 @@ from typing import Any, Dict
 
 from dotenv import load_dotenv
 from langgraph.store.postgres import PostgresStore
+from langchain.embeddings import init_embeddings
 from langmem import ReflectionExecutor, create_memory_store_manager
 from psycopg import Connection, OperationalError
 from pydantic import BaseModel
@@ -34,8 +35,7 @@ class ReconnectingPostgresStore:
         """Establish database connection and setup store."""
         try:
             conn = Connection.connect(self.db_url, autocommit=True)
-            self.store = PostgresStore(conn)
-            self.store.index = self.index
+            self.store = PostgresStore(conn, index=self.index)
             self.store.setup()
         except Exception as e:
             raise ValueError(f"Failed to connect to database: {e}")
@@ -100,34 +100,35 @@ def initialize_store():
     load_dotenv()
     db_url = os.getenv("SUPABASE_DATABASE_URL")
     if not db_url:
-        raise ValueError("SUPABASE_DATABASE_URL environment variable is not set")
+        raise ValueError(
+            "SUPABASE_DATABASE_URL environment variable is not set")
 
     # Initialize store with reconnection capability
     store = ReconnectingPostgresStore(
         db_url=db_url,
         index={
             "dims": 1536,
-            "embed": "openai:text-embedding-3-small",
+            "embed": init_embeddings("openai:text-embedding-3-small"),
             # Embed entire document (default)
-            "fields": ["$"],
+            "fields": ["text"],
         }
     )
-    
+
     return store
 
 
 def initialize_memory_manager(
     user_id="{user_id}",
-    project_id="{project_id}", 
+    project_id="{project_id}",
     team_id="{team_id}",
-    staff_id="{staff_id}", 
+    staff_id="{staff_id}",
     agent_id="{agent_id}"
 ):
     """Initialize the memory manager for extracting memories from conversations."""
     # Namespaces contains template variables to be populated from configurable
     # values at runtime. If id is not provided, it will be set as "default".
     namespace = ("memories", user_id, project_id, team_id, staff_id, agent_id)
-    
+
     memory_manager = create_memory_store_manager(
         "anthropic:claude-3-5-sonnet-latest",
         schemas=[Triple],
@@ -136,10 +137,10 @@ def initialize_memory_manager(
         instructions="Extract user's preferences and any other useful information",
         namespace=namespace,
     )
-    
+
     return memory_manager
 
 
 def initialize_executor(memory_manager, store):
     """Initialize the reflection executor with the given memory manager and store."""
-    return ReflectionExecutor(memory_manager, store=store) 
+    return ReflectionExecutor(memory_manager, store=store)
