@@ -6,6 +6,18 @@ import { useAuth } from "@/contexts/AuthContext";
 import Header from "@/components/Header";
 import AgentHub from "@/components/AgentHub";
 import MyAgents from "@/components/MyAgents";
+import { Button } from "@/components/ui/button";
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+    AlertDialogTrigger,
+  } from "@/components/ui/alert-dialog"
 
 export default function Home() {
     const router = useRouter();
@@ -59,10 +71,11 @@ export default function Home() {
                             <p className="text-lg opacity-90 mb-4">
                                 Meet Thothy - your friendly AI companion that helps you get things done faster and smarter. No complex tech talk, just simple solutions for your daily tasks.
                             </p>
-                            <button
+                            <Button
                                 onClick={handleGetStarted}
                                 disabled={loading}
-                                className="px-6 py-3 bg-white text-indigo-600 rounded-md font-medium text-lg hover:bg-gray-100 transition-colors disabled:opacity-70"
+                                variant="default"
+                                size="lg"
                             >
                                 {loading ? (
                                     <div className="flex items-center">
@@ -75,7 +88,7 @@ export default function Home() {
                                 ) : (
                                     "Get Started"
                                 )}
-                            </button>
+                            </Button>
                         </div>
                         <div className="hidden md:block">
                             <img
@@ -132,10 +145,11 @@ export default function Home() {
                     <p className="text-gray-600 mb-8 max-w-2xl mx-auto">
                         Join thousands of users who are already experiencing the power of Thothy.
                     </p>
-                    <button
+                    <Button
                         onClick={handleGetStarted}
                         disabled={loading}
-                        className="px-8 py-3 bg-indigo-600 text-white rounded-md font-medium text-lg hover:bg-indigo-500 transition-colors disabled:opacity-70"
+                        variant="default"
+                        size="lg"
                     >
                         {loading ? (
                             <div className="flex items-center">
@@ -148,7 +162,7 @@ export default function Home() {
                         ) : (
                             "Try Thothy Now"
                         )}
-                    </button>
+                    </Button>
                 </div>
             </div>
 
@@ -223,36 +237,21 @@ export default function Home() {
 
             {/* Disclaimer Snackbar */}
             {openSnackbar && (
-                <div className="fixed bottom-4 inset-x-4 md:max-w-md md:mx-auto z-50">
-                    <div className="bg-amber-50 border border-amber-200 rounded-lg shadow-lg p-4">
-                        <div className="flex items-start">
-                            <div className="flex-shrink-0 text-amber-500">
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                                    <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                                </svg>
-                            </div>
-                            <div className="ml-3 flex-1">
-                                <p className="text-sm text-amber-800 font-medium">
-                                    This is an experimental project with AI agents. Performance may vary and content is not guaranteed to be accurate.
-                                </p>
-                                <div className="mt-2 flex justify-end space-x-3">
-                                    <button
-                                        onClick={() => handleAcknowledgeNotice(false)}
-                                        className="text-sm text-amber-700 font-medium hover:text-amber-800"
-                                    >
-                                        Dismiss
-                                    </button>
-                                    <button
-                                        onClick={() => handleAcknowledgeNotice(true)}
-                                        className="text-sm text-amber-700 font-medium hover:text-amber-800"
-                                    >
-                                        Don't show again
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                <AlertDialog>
+                    <AlertDialogTrigger>Open</AlertDialogTrigger>
+                    <AlertDialogContent>
+                        <AlertDialogHeader>
+                            <AlertDialogTitle>Disclaimer</AlertDialogTitle>
+                            <AlertDialogDescription>
+                                This is an experimental project with AI agents. Performance may vary and content is not guaranteed to be accurate.
+                            </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                            <AlertDialogCancel onClick={() => handleAcknowledgeNotice(false)}>Dismiss</AlertDialogCancel>
+                            <AlertDialogAction onClick={() => handleAcknowledgeNotice(true)}>Don't show again</AlertDialogAction>
+                        </AlertDialogFooter>
+                    </AlertDialogContent>
+                </AlertDialog>
             )}
         </div>
     );
