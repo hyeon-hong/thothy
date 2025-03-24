@@ -1,3 +1,4 @@
+import logging
 from typing import List
 from pydantic import BaseModel, Field
 from langgraph.graph import StateGraph, START, END, MessagesState
@@ -123,11 +124,20 @@ def store_chunks(state: State, store: BaseStore):
     return {"store_status": "success"}
 
 
-def summarize_process(state: State):
+def summarize_process(state: State, store: BaseStore):
     """Summarize the processing results"""
     # Calculate average chunk size
     total_chars = sum(len(chunk) for chunk in state['chunks'])
     avg_chunk_size = total_chars / len(state['chunks'])
+    knowledges = store.search(
+        ("knowledges",),
+        query="What is LangGraph?",
+        limit=5
+    )
+    logging.info(f"Knowledges: {knowledges}")
+    knowledge_context = "\n\nRelevant Knowledge:\n" + "\n".join(
+        [knowledge.value["text"] for knowledge in knowledges]
+    ) if knowledges else ""
 
     summary = f"""
     Processing Complete:
@@ -135,6 +145,7 @@ def summarize_process(state: State):
     - Total content chunks created: {state['chunk_count']}
     - Average chunk size: {avg_chunk_size:.2f} characters
     - URLs processed: {', '.join(state['urls'])}
+    - Knowledge context: {knowledge_context}
     """
     return {"summary": summary}
 
@@ -151,7 +162,12 @@ workflow.add_node(
     "store_chunks",
     lambda state: store_chunks(state, store=store)
 )
-workflow.add_node("summarize", summarize_process)
+workflow.add_node(
+    "summarize",
+    lambda state: summarize_process(state, store=store)
+)
+# workflow.add_node("store_chunks", store_chunks)
+# workflow.add_node("summarize", summarize_process)
 
 # Add edges
 workflow.add_edge(START, "extract_urls")

@@ -66,7 +66,7 @@ async def feedback_bot(
 
     # Format memories into a string if any were found
     knowledge_context = "\n\nRelevant Knowledge:\n" + "\n".join(
-        [knowledge["text"] for knowledge in knowledges]
+        [knowledge.value["text"] for knowledge in knowledges]
     ) if knowledges else ""
 
     # Use system prompt from configuration with time and knowledge
