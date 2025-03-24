@@ -6,6 +6,7 @@ from typing import Any, Dict
 
 from dotenv import load_dotenv
 from langgraph.store.postgres import PostgresStore
+from langchain.embeddings import init_embeddings
 from langmem import ReflectionExecutor, create_memory_store_manager
 from psycopg import Connection, OperationalError
 from pydantic import BaseModel
@@ -107,9 +108,9 @@ def initialize_store():
         db_url=db_url,
         index={
             "dims": 1536,
-            "embed": "openai:text-embedding-3-small",
+            "embed": init_embeddings("openai:text-embedding-3-small"),
             # Embed entire document (default)
-            "fields": ["$"],
+            "fields": ["text"],
         }
     )
 

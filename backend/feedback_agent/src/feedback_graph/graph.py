@@ -53,13 +53,31 @@ async def feedback_bot(
 
     # Get current system time
     current_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    logging.info(f"messages: {state['messages']}")
+    logging.info(f"messages[-1].content: {state['messages'][-1].content}")
 
-    # Use system prompt from configuration with time variable
-    system_msg = configurable.system_prompt.format(time=current_time)
+    # Search store for relevant memories using asynchronous search
+    knowledges = await store.asearch(
+        ("knowledges",),
+        query=state["messages"][-1].content,
+        limit=5
+    )
+    logging.info(f"Knowledges: {knowledges}")
+
+    # Format memories into a string if any were found
+    knowledge_context = "\n\nRelevant Knowledge:\n" + "\n".join(
+        [knowledge["text"] for knowledge in knowledges]
+    ) if knowledges else ""
+
+    # Use system prompt from configuration with time and knowledge
+    system_message = configurable.system_prompt.format(
+        time=current_time,
+        knowledge_context=knowledge_context
+    )
 
     # Invoke the LLM
     response = llm.invoke(
-        [{"role": "system", "content": system_msg}] + state["messages"]
+        [{"role": "system", "content": system_message}] + state["messages"]
     )
 
     return {"messages": response}
