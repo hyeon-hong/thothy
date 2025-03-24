@@ -1,6 +1,5 @@
 import "@/app/globals.css";
 import { Thread } from "@/components/thread";
-import { createRoot } from "react-dom/client";
 import { StreamProvider } from "@/providers/Stream";
 import { ThreadProvider } from "@/providers/Thread";
 import { Toaster } from "@/components/ui/sonner";
