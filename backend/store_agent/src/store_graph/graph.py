@@ -1,11 +1,11 @@
 from typing import List
 from pydantic import BaseModel, Field
 from langgraph.graph import StateGraph, START, END, MessagesState
-from langchain.embeddings import init_embeddings
 import requests
 from bs4 import BeautifulSoup
-from langgraph.store.memory import InMemoryStore
+from thothy.libs.utils import ReconnectingPostgresStore
 import uuid
+import os
 
 # Define the state schema
 
@@ -90,8 +90,8 @@ def chunk_content(state: State):
     }
 
 
-def store_chunks(state: State, store: InMemoryStore):
-    # Store each chunk in the InMemoryStore
+def store_chunks(state: State, store: ReconnectingPostgresStore):
+    # Store each chunk in the ReconnectingPostgresStore
     for chunk in state["chunks"]:
         memory_id = str(uuid.uuid4())
         store.put(
@@ -124,10 +124,11 @@ def summarize_process(state: State):
 workflow = StateGraph(State)
 
 # Initialize store with embedding configuration
-store = InMemoryStore(
+store = ReconnectingPostgresStore(
+    db_url=os.getenv("SUPABASE_DATABASE_URL"),
     index={
-        "embed": init_embeddings("openai:text-embedding-3-small"),
         "dims": 1536,  # OpenAI embedding dimensions
+        "embed": "openai:text-embedding-3-small",
         "fields": ["$"]  # Embed all fields
     }
 )
