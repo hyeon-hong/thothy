@@ -1,8 +1,9 @@
 """Define the configurable parameters for the staff bot."""
 
 import os
-from dataclasses import dataclass, fields
-from typing import Any, Optional
+import copy as copy_module
+from dataclasses import dataclass, fields, asdict
+from typing import Any, Optional, Iterator, Tuple
 
 from langchain_core.runnables import RunnableConfig
 
@@ -21,6 +22,30 @@ class StaffConfigurable:
     delay_seconds: int = 1
     system_prompt: str = SYSTEM_PROMPT
     agent_id: str = "default"  # Default to staff agent
+
+    def copy(self) -> "StaffConfigurable":
+        """Create a copy of this configurable."""
+        return copy_module.deepcopy(self)
+    
+    def __copy__(self):
+        """Support for copy.copy()."""
+        return self.__class__(**asdict(self))
+    
+    def __deepcopy__(self, memo):
+        """Support for copy.deepcopy()."""
+        return self.__class__(**copy_module.deepcopy(asdict(self), memo))
+    
+    def items(self) -> Iterator[Tuple[str, Any]]:
+        """Support dictionary-like access with items() method."""
+        return asdict(self).items()
+    
+    def get(self, key: str, default: Any = None) -> Any:
+        """Support dictionary-like access with get() method."""
+        return asdict(self).get(key, default)
+    
+    def __getitem__(self, key: str) -> Any:
+        """Support dictionary-like access with [] operator."""
+        return asdict(self)[key]
 
     @classmethod
     def from_runnable_config(
