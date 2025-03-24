@@ -1,16 +1,16 @@
 from typing import List
 from pydantic import BaseModel, Field
-from langgraph.graph import StateGraph, START, END, MessageState
+from langgraph.graph import StateGraph, START, END, MessagesState
+from langchain.embeddings import init_embeddings
 import requests
 from bs4 import BeautifulSoup
-from langchain_openai import OpenAIEmbeddings
 from langgraph.store.memory import InMemoryStore
 import uuid
 
 # Define the state schema
 
 
-class State(MessageState):
+class State(MessagesState):
     urls: List[str] | None = None
     content: List[str] | None = None
     chunks: List[str] | None = None
@@ -37,7 +37,7 @@ def extract_urls(state: State):
         word for word in message.split()
         if word.startswith(("http://", "https://"))
     ]
-    return {"urls": urls}
+    return {"urls": urls, "namespace": ("knowledges", "chunks")}
 
 
 def fetch_content(state: State):
@@ -90,18 +90,7 @@ def chunk_content(state: State):
     }
 
 
-def store_chunks(state: State, *, store: InMemoryStore):
-    """Store chunks in vector store"""
-    embeddings = OpenAIEmbeddings()
-
-    # Initialize store with embeddings if not already configured
-    if not hasattr(store, '_index'):
-        store._index = {
-            "embed": embeddings,
-            "dims": 1536,  # OpenAI embedding dimensions
-            "fields": ["$"]  # Embed all fields
-        }
-
+def store_chunks(state: State, store: InMemoryStore):
     # Store each chunk in the InMemoryStore
     for chunk in state["chunks"]:
         memory_id = str(uuid.uuid4())
@@ -109,7 +98,7 @@ def store_chunks(state: State, *, store: InMemoryStore):
             namespace=state["namespace"],
             key=memory_id,
             value={"text": chunk},
-            index=True  # Enable semantic search for this chunk
+            index=["text"]
         )
 
     return {"store_status": "success"}
@@ -120,7 +109,7 @@ def summarize_process(state: State):
     # Calculate average chunk size
     total_chars = sum(len(chunk) for chunk in state['chunks'])
     avg_chunk_size = total_chars / len(state['chunks'])
-    
+
     summary = f"""
     Processing Complete:
     - Number of URLs processed: {len(state['urls'])}
@@ -137,7 +126,7 @@ workflow = StateGraph(State)
 # Initialize store with embedding configuration
 store = InMemoryStore(
     index={
-        "embed": OpenAIEmbeddings(),
+        "embed": init_embeddings("openai:text-embedding-3-small"),
         "dims": 1536,  # OpenAI embedding dimensions
         "fields": ["$"]  # Embed all fields
     }

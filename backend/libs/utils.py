@@ -100,7 +100,8 @@ def initialize_store():
     load_dotenv()
     db_url = os.getenv("SUPABASE_DATABASE_URL")
     if not db_url:
-        raise ValueError("SUPABASE_DATABASE_URL environment variable is not set")
+        raise ValueError(
+            "SUPABASE_DATABASE_URL environment variable is not set")
 
     # Initialize store with reconnection capability
     store = ReconnectingPostgresStore(
@@ -112,22 +113,22 @@ def initialize_store():
             "fields": ["$"],
         }
     )
-    
+
     return store
 
 
 def initialize_memory_manager(
     user_id="{user_id}",
-    project_id="{project_id}", 
+    project_id="{project_id}",
     team_id="{team_id}",
-    staff_id="{staff_id}", 
+    staff_id="{staff_id}",
     agent_id="{agent_id}"
 ):
     """Initialize the memory manager for extracting memories from conversations."""
     # Namespaces contains template variables to be populated from configurable
     # values at runtime. If id is not provided, it will be set as "default".
     namespace = ("memories", user_id, project_id, team_id, staff_id, agent_id)
-    
+
     memory_manager = create_memory_store_manager(
         "anthropic:claude-3-5-sonnet-latest",
         schemas=[Triple],
@@ -136,10 +137,10 @@ def initialize_memory_manager(
         instructions="Extract user's preferences and any other useful information",
         namespace=namespace,
     )
-    
+
     return memory_manager
 
 
 def initialize_executor(memory_manager, store):
     """Initialize the reflection executor with the given memory manager and store."""
-    return ReflectionExecutor(memory_manager, store=store) 
+    return ReflectionExecutor(memory_manager, store=store)
