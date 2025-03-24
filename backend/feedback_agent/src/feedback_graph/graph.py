@@ -2,13 +2,13 @@
 
 import logging
 import datetime  # Import datetime for getting current time
-import uuid
 
 from langchain.chat_models import init_chat_model
 
 from langgraph.checkpoint.memory import MemorySaver
 from langgraph.graph import MessagesState, StateGraph, START, END
 from langgraph.store.base import BaseStore
+from feedback_graph.configuration import FeedbackConfigurable
 from feedback_graph.prompts import SYSTEM_PROMPT
 
 # Import utility functions
@@ -36,38 +36,43 @@ logging.basicConfig(level=logging.WARNING)
 # Initialize store with embedding configuration
 store = initialize_store()
 
-# Default UUID for system-level operations
-DEFAULT_USER_ID = str(uuid.uuid4())  # Generate a fixed UUID for default user
-
 # Initialize the LLM using the model from configuration
 llm = init_chat_model(
     "gpt-4o-mini", model_provider="openai", temperature=0.8)
 
 
-def feedback_bot(state: MessagesState, store: BaseStore):
+def feedback_bot(
+    state: MessagesState,
+    config: FeedbackConfigurable,
+    *,
+    store: BaseStore
+) -> dict:
     """Feedback node that processes messages and generates responses."""
 
+    configurable = FeedbackConfigurable.from_runnable_config(config)
+    project_id = configurable.project_id
+    team_id = configurable.team_id
+    staff_id = configurable.staff_id
+    agent_id = "langgraph-studio-user"
+    user_id = configurable.user_id
     # Get current system time
     current_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    logging.info(f"messages: {state['messages']}")
-    logging.info(f"messages[-1].content: {state['messages'][-1].content}")
+    logging.info("project_id: %s", project_id)
+    logging.info("team_id: %s", team_id)
+    logging.info("staff_id: %s", staff_id)
+    logging.info("agent_id: %s", agent_id)
+    logging.info("user_id: %s", user_id)
 
-    # Get user_id from state and ensure it's a valid UUID
-    try:
-        user_id = state.get("user_id", DEFAULT_USER_ID)
-        # Validate UUID format
-        uuid.UUID(user_id)
-    except ValueError:
-        user_id = DEFAULT_USER_ID
-    
     # Search store for relevant memories using search
     knowledges = store.search(
-        ("knowledges",),
+        # ("knowledges", user_id, project_id, team_id, staff_id, agent_id),
+        ("knowledges", ),
         query=state["messages"][-1].content,
-        where={"user_id": user_id},  # Filter by user_id
         limit=5
     )
     logging.info(f"Knowledges: {knowledges}")
+    logging.info(
+        f"state['messages'][-1].content: {state['messages'][-1].content}")
 
     # Format memories into a string if any were found
     knowledge_context = "\n\nRelevant Knowledge:\n" + "\n".join(
@@ -91,12 +96,12 @@ def feedback_bot(state: MessagesState, store: BaseStore):
 """Build and return the feedback graph."""
 
 # Initialize graph builder with state schema
-workflow = StateGraph(MessagesState)
+workflow = StateGraph(MessagesState, FeedbackConfigurable)
 
 # Add feedback_bot node
 workflow.add_node(
     "feedback_bot",
-    lambda state: feedback_bot(state, store=store)
+    lambda state, config: feedback_bot(state, config, store=store)
 )
 
 # Add edges - start at feedback_bot and can end after feedback_bot
