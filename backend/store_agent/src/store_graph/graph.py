@@ -3,11 +3,30 @@ from pydantic import BaseModel, Field
 from langgraph.graph import StateGraph, START, END, MessagesState
 import requests
 from bs4 import BeautifulSoup
-from thothy.libs.utils import ReconnectingPostgresStore
 import uuid
-import os
+from langgraph.store.base import BaseStore
 
-# Define the state schema
+# Import utility functions
+try:
+    # Try importing normally first (for production)
+    from backend.libs.utils import (
+        initialize_store,
+    )
+except ImportError:
+    # If that fails, try a relative import approach
+    import sys
+    from pathlib import Path
+    # Add the backend directory to sys.path
+    root_dir = Path(__file__).parent.parent.parent.parent
+    if str(root_dir) not in sys.path:
+        sys.path.append(str(root_dir))
+    # Now try the import again
+    from libs.utils import (
+        initialize_store,
+    )
+
+# Initialize store with embedding configuration
+store = initialize_store()
 
 
 class State(MessagesState):
@@ -90,7 +109,7 @@ def chunk_content(state: State):
     }
 
 
-def store_chunks(state: State, store: ReconnectingPostgresStore):
+def store_chunks(state: State, store: BaseStore):
     # Store each chunk in the ReconnectingPostgresStore
     for chunk in state["chunks"]:
         memory_id = str(uuid.uuid4())
@@ -122,16 +141,6 @@ def summarize_process(state: State):
 
 # Create the graph
 workflow = StateGraph(State)
-
-# Initialize store with embedding configuration
-store = ReconnectingPostgresStore(
-    db_url=os.getenv("SUPABASE_DATABASE_URL"),
-    index={
-        "dims": 1536,  # OpenAI embedding dimensions
-        "embed": "openai:text-embedding-3-small",
-        "fields": ["$"]  # Embed all fields
-    }
-)
 
 # Add nodes
 workflow.add_node("extract_urls", extract_urls)

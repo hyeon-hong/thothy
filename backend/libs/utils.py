@@ -34,8 +34,8 @@ class ReconnectingPostgresStore:
         """Establish database connection and setup store."""
         try:
             conn = Connection.connect(self.db_url, autocommit=True)
-            self.store = PostgresStore(conn)
-            self.store.index = self.index
+            self.store = PostgresStore(conn, index=self.index)
+            # self.store.index = self.index
             self.store.setup()
         except Exception as e:
             raise ValueError(f"Failed to connect to database: {e}")
