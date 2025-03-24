@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   AppBar,
   Toolbar,
@@ -27,16 +27,83 @@ interface HeaderProps {
   currentView: 'inbox' | 'agent' | 'find' | 'staff' | 'team' | 'blog' | 'login' | 'agents' | 'project';
 }
 
+interface PricingPolicyData {
+  pricing_policy_id: string;
+  pricing_policy: {
+    name: string;
+  };
+}
+
 export default function Header({ currentView }: HeaderProps) {
-  const { user, signIn, signOut, loading } = useAuth();
+  const { user, signIn, signOut, loading, supabase } = useAuth();
   const router = useRouter();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const [pricingPolicy, setPricingPolicy] = useState<string | null>(null);
+  const [policyLoading, setPolicyLoading] = useState(true);
 
   // Get user's display name and avatar
   const displayName = user?.user_metadata?.full_name || user?.email;
   const avatarUrl = user?.user_metadata?.avatar_url;
+
+  // Fetch user's pricing policy
+  useEffect(() => {
+    const fetchPricingPolicy = async () => {
+      if (!user) {
+        setPolicyLoading(false);
+        setPricingPolicy('Free');
+        return;
+      }
+
+      try {
+        // First try to get the user's pricing policy with a join
+        const { data: policyData, error: policyError } = await supabase
+          .from('user_pricing_policy')
+          .select(`
+            pricing_policy_id,
+            pricing_policy (
+              name
+            )
+          `)
+          .eq('user_id', user.id)
+          .maybeSingle();
+
+        // If there's no data or there's an error, default to Free
+        if (policyError || !policyData) {
+          setPricingPolicy('Free');
+          setPolicyLoading(false);
+          return;
+        }
+
+        // Set the policy name from the joined data
+        setPricingPolicy(policyData.pricing_policy?.name || 'Free');
+        setPolicyLoading(false);
+      } catch (error) {
+        setPricingPolicy('Free');
+        setPolicyLoading(false);
+      }
+    };
+
+    fetchPricingPolicy();
+  }, [user, supabase]);
+
+  // Function to check if a menu should be visible based on pricing policy
+  const isMenuVisible = (menuType: 'project' | 'team' | 'staff') => {
+    if (policyLoading) return false;
+    
+    switch (pricingPolicy) {
+      case 'Enterprise':
+        return true;
+      case 'Business':
+        return menuType !== 'project';
+      case 'Personal':
+        return !['project', 'team'].includes(menuType);
+      case 'Free':
+      default:
+        return !['project', 'team', 'staff'].includes(menuType);
+    }
+  };
 
   const navButtonStyle = {
     textTransform: 'none',
@@ -138,7 +205,7 @@ export default function Header({ currentView }: HeaderProps) {
                   Agent
                 </Button>
 
-                {user && (
+                {user && isMenuVisible('staff') && (
                   <Button
                     color={currentView === 'staff' ? 'primary' : 'inherit'}
                     onClick={handleStaffClick}
@@ -151,7 +218,7 @@ export default function Header({ currentView }: HeaderProps) {
                   </Button>
                 )}
 
-                {user && (
+                {user && isMenuVisible('team') && (
                   <Button
                     color={currentView === 'team' ? 'primary' : 'inherit'}
                     onClick={handleTeamClick}
@@ -164,8 +231,7 @@ export default function Header({ currentView }: HeaderProps) {
                   </Button>
                 )}
 
-                {/* New Project menu button */}
-                {user && (
+                {user && isMenuVisible('project') && (
                   <Button
                     color={currentView === 'project' ? 'primary' : 'inherit'}
                     onClick={handleProjectClick}

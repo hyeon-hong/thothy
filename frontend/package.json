@@ -14,6 +14,7 @@
   "packageManager": "yarn@1.22.22",
   "dependencies": {
     "@assistant-ui/react": "^0.8.6",
+    "@assistant-ui/react-ai-sdk": "^0.8.0",
     "@assistant-ui/react-langgraph": "^0.3.0",
     "@assistant-ui/react-markdown": "^0.8.0",
     "@assistant-ui/react-syntax-highlighter": "^0.8.0",

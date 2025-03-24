@@ -19,7 +19,7 @@
   dependencies:
     json-schema "^0.4.0"
 
-"@ai-sdk/react@1.2.0":
+"@ai-sdk/react@*", "@ai-sdk/react@1.2.0":
   version "1.2.0"
   resolved "https://registry.yarnpkg.com/@ai-sdk/react/-/react-1.2.0.tgz#7b95d03764e79e4611371da3123124a56137d805"
   integrity sha512-fUTZkAsxOMz8ijjWf87E/GfYkgsH4V5MH2yuj7EXh5ShjWe/oayn2ZJkyoqFMr4Jf8m5kptDaivmbIenDq5OXA==
@@ -29,7 +29,7 @@
     swr "^2.2.5"
     throttleit "2.1.0"
 
-"@ai-sdk/ui-utils@1.2.0":
+"@ai-sdk/ui-utils@*", "@ai-sdk/ui-utils@1.2.0":
   version "1.2.0"
   resolved "https://registry.yarnpkg.com/@ai-sdk/ui-utils/-/ui-utils-1.2.0.tgz#1b95b80aa2f837fffe0311537cc4b56799626f06"
   integrity sha512-0IZwCqe7E+GkCASTDPAbzMr+POm9GDzWvFd37FvzpOeKNeibmge/LZEkTDbGSa+3b928H8wPwOLsOXBWPLUPDQ==
@@ -55,6 +55,17 @@
     form-data-encoder "1.7.2"
     formdata-node "^4.3.2"
     node-fetch "^2.6.7"
+
+"@assistant-ui/react-ai-sdk@^0.8.0":
+  version "0.8.0"
+  resolved "https://registry.yarnpkg.com/@assistant-ui/react-ai-sdk/-/react-ai-sdk-0.8.0.tgz#a03193700a1931aa784b26d510df2a0c9948eedb"
+  integrity sha512-QXlzi1UWMXd3FB02XgEixCVYB2bXO+oAewkRNR5ap6lA3GJXeWXFdJ8zUEkh0v3Qc/AveUrd8DLaUUUH/Il5IQ==
+  dependencies:
+    "@ai-sdk/react" "*"
+    "@ai-sdk/ui-utils" "*"
+    "@radix-ui/react-use-callback-ref" "^1.1.0"
+    zod "^3.24.1"
+    zustand "^5.0.3"
 
 "@assistant-ui/react-langgraph@^0.3.0":
   version "0.3.0"

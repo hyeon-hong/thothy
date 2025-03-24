@@ -1,23 +1,63 @@
-import "@/app/globals.css";
-import { Thread } from "@/components/thread";
-import { createRoot } from "react-dom/client";
-import { StreamProvider } from "@/providers/Stream";
-import { ThreadProvider } from "@/providers/Thread";
-import { Toaster } from "@/components/ui/sonner";
-import { NuqsAdapter } from "nuqs/adapters/react-router/v6";
-import { BrowserRouter } from "react-router-dom";
+"use client";
+
+import { AssistantRuntimeProvider } from "@assistant-ui/react";
+import { useLangGraphRuntime } from "@assistant-ui/react-langgraph";
+import { Thread } from "@/components/assistant-ui/thread";
+import { useEffect, useRef } from "react";
+
+import { createThread, getThreadState, sendMessage } from "./chatApi";
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function ChatAgentPage() {
+  // Fetch access token from AuthContext
+  const { supabase } = useAuth();
+  const threadIdRef = useRef<string | undefined>(undefined);
+  const accessTokenRef = useRef<string>("");
+
+  useEffect(() => {
+    const fetchAccessToken = async () => {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (session) {
+        accessTokenRef.current = session.access_token;
+      }
+    };
+    fetchAccessToken();
+  }, [supabase]);
+
+  const runtime = useLangGraphRuntime({
+    threadId: threadIdRef.current,
+    stream: async (messages) => {
+      if (!threadIdRef.current) {
+        const { thread_id } = await createThread(accessTokenRef.current);
+        threadIdRef.current = thread_id;
+      }
+      const threadId = threadIdRef.current;
+      return sendMessage({
+        threadId,
+        messages: messages[0],
+        accessToken: accessTokenRef.current,
+      });
+    },
+    onSwitchToNewThread: async () => {
+      const { thread_id } = await createThread(accessTokenRef.current);
+      threadIdRef.current = thread_id;
+    },
+    onSwitchToThread: async (threadId) => {
+      const state = await getThreadState(threadId, accessTokenRef.current);
+      threadIdRef.current = threadId;
+      return {
+        messages: state.values.messages,
+        // Cast to any to avoid type conflicts with interrupts
+        interrupts: state.tasks[0]?.interrupts as any,
+      };
+    },
+  });
+
   return (
-    <BrowserRouter>
-      <NuqsAdapter>
-        <ThreadProvider>
-          <StreamProvider>
-            <Thread />
-          </StreamProvider>
-        </ThreadProvider>
-        <Toaster />
-      </NuqsAdapter>
-    </BrowserRouter>
+    <AssistantRuntimeProvider runtime={runtime}>
+      <Thread />
+    </AssistantRuntimeProvider>
   );
 }
