@@ -1,4 +1,4 @@
-"""Simple chat agent using LangGraph."""
+"""Simple feedback agent using LangGraph."""
 
 import logging
 import datetime  # Import datetime for getting current time
@@ -8,22 +8,21 @@ from langchain.chat_models import init_chat_model
 from langgraph.checkpoint.memory import MemorySaver
 from langgraph.graph import MessagesState, StateGraph, START, END
 from langgraph.store.base import BaseStore
-from chat_graph.configuration import ChatConfigurable
+from feedback_graph.configuration import FeedbackConfigurable
 
 # Configure logging to hide INFO messages
 logging.basicConfig(level=logging.WARNING)
-logging.getLogger("langgraph").setLevel(logging.WARNING)
 
 
-async def chatbot(
+async def feedback_bot(
     state: MessagesState,
-    config: ChatConfigurable,
+    config: FeedbackConfigurable,
     *,
     store: BaseStore
 ) -> dict:
-    """Chat node that processes messages and generates responses."""
+    """Feedback node that processes messages and generates responses."""
 
-    configurable = ChatConfigurable.from_runnable_config(config)
+    configurable = FeedbackConfigurable.from_runnable_config(config)
 
     # Get current system time
     current_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -43,20 +42,20 @@ async def chatbot(
     return {"messages": response}
 
 
-"""Build and return the chat graph."""
+"""Build and return the feedback graph."""
 
 # Initialize graph builder with state schema
-workflow = StateGraph(MessagesState, ChatConfigurable)
+workflow = StateGraph(MessagesState, FeedbackConfigurable)
 
-# Add chatbot node
-workflow.add_node("chatbot", chatbot)
+# Add feedback_bot node
+workflow.add_node("feedback_bot", feedback_bot)
 
-# Add edges - start at chatbot and can end after chatbot
-workflow.add_edge(START, "chatbot")
-workflow.add_edge("chatbot", END)
+# Add edges - start at feedback_bot and can end after feedback_bot
+workflow.add_edge(START, "feedback_bot")
+workflow.add_edge("feedback_bot", END)
 
 # Compile graph
 graph = workflow.compile(checkpointer=MemorySaver())
-graph.name = "chat_graph"
+graph.name = "feedback_graph"
 
 __all__ = ["graph"]

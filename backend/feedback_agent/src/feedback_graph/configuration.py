@@ -6,20 +6,21 @@ from typing import Any, Optional
 
 from langchain_core.runnables import RunnableConfig
 
-from chat_graph.prompts import SYSTEM_PROMPT
+from feedback_graph.prompts import SYSTEM_PROMPT
 
 
 @dataclass(kw_only=True)
-class ChatConfigurable:
-    """The configurable fields for the chatbot."""
+class FeedbackConfigurable:
+    """The configurable fields for the feedback bot."""
 
     model: str = "gpt-4o-mini"
     system_prompt: str = SYSTEM_PROMPT
+    read_only: bool = False
 
     @classmethod
     def from_runnable_config(
         cls, config: Optional[RunnableConfig] = None
-    ) -> "ChatConfigurable":
+    ) -> "FeedbackConfigurable":
         """Load configuration."""
 
         configurable = (
