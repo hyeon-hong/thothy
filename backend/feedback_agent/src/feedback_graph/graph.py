@@ -12,7 +12,6 @@ from feedback_graph.configuration import FeedbackConfigurable
 
 # Configure logging to hide INFO messages
 logging.basicConfig(level=logging.WARNING)
-logging.getLogger("langgraph").setLevel(logging.WARNING)
 
 
 async def feedback_bot(
