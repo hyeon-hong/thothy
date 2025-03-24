@@ -172,63 +172,63 @@ export default function Home() {
                     <h2 className="text-3xl font-bold text-center mb-12">
                         Pricing
                     </h2>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                        <div className="bg-white p-6 rounded-lg border border-gray-200 flex flex-col h-full">
+                    <div className="grid grid-cols-1 md:grid-cols-5 gap-8">
+                        <div className="bg-white p-6 rounded-lg border border-gray-200 flex flex-col h-full w-full md:w-auto pricing-card">
                             <h3 className="text-xl font-semibold mb-4">
                                 Free
                             </h3>
                             <div className="space-y-2 text-gray-600 flex-grow">
-                                <p>- No charge. It's totally free.</p>
-                                <p>- User can use only agent menu.</p>
-                                <p>- Limitation on usage</p>
-                                <p>- No memory about user</p>
+                                <p>• Free of charge</p>
+                                <p>• Agent menu only</p>
+                                <p>• Limited usage</p>
+                                <p>• No user memory</p>
                             </div>
                         </div>
-                        <div className="bg-white p-6 rounded-lg border border-gray-200 flex flex-col h-full">
+                        <div className="bg-white p-6 rounded-lg border border-gray-200 flex flex-col h-full w-full md:w-auto pricing-card">
                             <h3 className="text-xl font-semibold mb-4">
                                 Personal
                             </h3>
                             <div className="space-y-2 text-gray-600 flex-grow">
-                                <p>- Include all features in Free.</p>
-                                <p>- Can use staff menu.</p>
-                                <p>- No limitation on usage.</p>
-                                <p>- Memory about user.</p>
+                                <p>• All Free features</p>
+                                <p>• Staff menu access</p>
+                                <p>• Unlimited usage</p>
+                                <p>• User memory</p>
                             </div>
                         </div>
-                        <div className="bg-white p-6 rounded-lg border border-gray-200 flex flex-col h-full">
+                        <div className="bg-white p-6 rounded-lg border border-gray-200 flex flex-col h-full w-full md:w-auto pricing-card">
                             <h3 className="text-xl font-semibold mb-4">
                                 Business
                             </h3>
                             <div className="space-y-2 text-gray-600 flex-grow">
-                                <p>- Include all features in Personal.</p>
-                                <p>- Can use team menu.</p>
-                                <p>- Can use cron job for team</p>
-                                <p>- Can monitor team's work</p>
-                                <p>- Can use inbox menu for team's report</p>
+                                <p>• All Personal features</p>
+                                <p>• Team menu access</p>
+                                <p>• Cron jobs for teams</p>
+                                <p>• Team work monitoring</p>
+                                <p>• Team inbox reports</p>
                             </div>
                         </div>
-                        <div className="bg-white p-6 rounded-lg border border-gray-200 flex flex-col h-full">
+                        <div className="bg-white p-6 rounded-lg border border-gray-200 flex flex-col h-full w-full md:w-auto pricing-card">
                             <h3 className="text-xl font-semibold mb-4">
                                 Enterprise
                             </h3>
                             <div className="space-y-2 text-gray-600 flex-grow">
-                                <p>- Include all features in Business.</p>
-                                <p>- Can use project menu.</p>
-                                <p>- Can use 24/7 project working time.</p>
-                                <p>- Can monitor project's work</p>
-                                <p>- Can use inbox for project's report</p>
-                                <p>- Cooperate with Vercel, Supabase, GitHub platform.</p>
-                                <p>- Can write a code for a running service</p>
+                                <p>• All Business features</p>
+                                <p>• Project menu access</p>
+                                <p>• 24/7 project time</p>
+                                <p>• Project work monitoring</p>
+                                <p>• Project inbox reports</p>
+                                <p>• Vercel, Supabase, GitHub</p>
+                                <p>• Code writing support</p>
                             </div>
                         </div>
-                        <div className="bg-white p-6 rounded-lg border border-gray-200 flex flex-col h-full">
+                        <div className="bg-white p-6 rounded-lg border border-gray-200 flex flex-col h-full w-full md:w-auto pricing-card">
                             <h3 className="text-xl font-semibold mb-4">
                                 Custom
                             </h3>
                             <div className="space-y-2 text-gray-600 flex-grow">
-                                <p>- Include all features in Enterprise</p>
-                                <p>- Support onpremise</p>
-                                <p>- Support customized development for integration</p>
+                                <p>• All Enterprise features</p>
+                                <p>• On-premise support</p>
+                                <p>• Custom integration dev</p>
                             </div>
                         </div>
                     </div>
