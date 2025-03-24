@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Container, Typography, Button, Box, Grid, Paper, Snackbar, Alert, CircularProgress } from "@mui/material";
 import { useRouter, usePathname } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import Header from "@/components/Header";
@@ -46,361 +45,215 @@ export default function Home() {
     };
 
     return (
-        <Box>
+        <div className="flex flex-col min-h-screen">
             <Header currentView={currentView} />
+            
             {/* Hero Section */}
-            <Box
-                sx={{
-                    background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
-                    color: "white",
-                    py: 12,
-                    position: "relative",
-                    overflow: "hidden",
-                }}
-            >
-                <Container maxWidth="lg">
-                    <Grid container spacing={4} alignItems="center">
-                        <Grid item xs={12} md={6}>
-                            <Typography
-                                variant="h2"
-                                component="h1"
-                                gutterBottom
-                                sx={{
-                                    fontWeight: 700,
-                                    mb: 3,
-                                    fontSize: { xs: "2.5rem", md: "3.5rem" },
-                                }}
-                            >
+            <div className="relative overflow-hidden bg-gradient-to-r from-purple-500 to-indigo-600 text-white py-12">
+                <div className="container mx-auto px-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
+                        <div>
+                            <h1 className="text-4xl md:text-5xl font-bold mb-3">
                                 Your Personal AI Assistant
-                            </Typography>
-                            <Typography
-                                variant="h5"
-                                sx={{
-                                    mb: 4,
-                                    opacity: 0.9,
-                                }}
-                            >
+                            </h1>
+                            <p className="text-lg opacity-90 mb-4">
                                 Meet Thothy - your friendly AI companion that helps you get things done faster and smarter. No complex tech talk, just simple solutions for your daily tasks.
-                            </Typography>
-                            <Button
-                                variant="contained"
-                                size="large"
+                            </p>
+                            <button
                                 onClick={handleGetStarted}
                                 disabled={loading}
-                                sx={{
-                                    bgcolor: "white",
-                                    color: "#764ba2",
-                                    "&:hover": {
-                                        bgcolor: "#f8f9fa",
-                                    },
-                                    px: 4,
-                                    py: 1.5,
-                                    fontSize: "1.1rem",
-                                }}
+                                className="px-6 py-3 bg-white text-indigo-600 rounded-md font-medium text-lg hover:bg-gray-100 transition-colors disabled:opacity-70"
                             >
                                 {loading ? (
-                                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                                        <CircularProgress size={20} color="inherit" sx={{ mr: 1 }} />
+                                    <div className="flex items-center">
+                                        <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-indigo-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                        </svg>
                                         Checking...
-                                    </Box>
+                                    </div>
                                 ) : (
                                     "Get Started"
                                 )}
-                            </Button>
-                        </Grid>
-                        <Grid item xs={12} md={6}>
-                            <Box
-                                component="img"
+                            </button>
+                        </div>
+                        <div className="hidden md:block">
+                            <img
                                 src="/hero-image.png"
                                 alt="Thothy AI Assistant"
-                                sx={{
-                                    width: "100%",
-                                    maxWidth: 500,
-                                    display: { xs: "none", md: "block" },
-                                    mx: "auto",
-                                }}
+                                className="w-full max-w-md mx-auto"
                             />
-                        </Grid>
-                    </Grid>
-                </Container>
-            </Box>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
             {/* Features Section */}
-            <Container maxWidth="lg" sx={{ py: 8 }}>
-                <Typography
-                    variant="h3"
-                    component="h2"
-                    align="center"
-                    gutterBottom
-                    sx={{ mb: 6, fontWeight: 700 }}
-                >
-                    Why Choose Thothy?
-                </Typography>
-                <Grid container spacing={4}>
-                    <Grid item xs={12} md={4}>
-                        <Paper
-                            elevation={0}
-                            sx={{
-                                p: 4,
-                                height: "100%",
-                                border: "1px solid #e0e0e0",
-                                borderRadius: 2,
-                            }}
-                        >
-                            <Typography variant="h5" gutterBottom sx={{ fontWeight: 600 }}>
+            <div className="py-16">
+                <div className="container mx-auto px-4">
+                    <h2 className="text-3xl font-bold text-center mb-12">
+                        Why Choose Thothy?
+                    </h2>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                        <div className="bg-white p-6 rounded-lg border border-gray-200">
+                            <h3 className="text-xl font-semibold mb-2">
                                 Smart & Simple
-                            </Typography>
-                            <Typography color="text.secondary">
+                            </h3>
+                            <p className="text-gray-600">
                                 No tech jargon here! Thothy speaks your language and helps you accomplish tasks without the complexity.
-                            </Typography>
-                        </Paper>
-                    </Grid>
-                    <Grid item xs={12} md={4}>
-                        <Paper
-                            elevation={0}
-                            sx={{
-                                p: 4,
-                                height: "100%",
-                                border: "1px solid #e0e0e0",
-                                borderRadius: 2,
-                            }}
-                        >
-                            <Typography variant="h5" gutterBottom sx={{ fontWeight: 600 }}>
+                            </p>
+                        </div>
+                        <div className="bg-white p-6 rounded-lg border border-gray-200">
+                            <h3 className="text-xl font-semibold mb-2">
                                 Always Learning
-                            </Typography>
-                            <Typography color="text.secondary">
+                            </h3>
+                            <p className="text-gray-600">
                                 The more you use Thothy, the better it gets at understanding your needs and preferences.
-                            </Typography>
-                        </Paper>
-                    </Grid>
-                    <Grid item xs={12} md={4}>
-                        <Paper
-                            elevation={0}
-                            sx={{
-                                p: 4,
-                                height: "100%",
-                                border: "1px solid #e0e0e0",
-                                borderRadius: 2,
-                            }}
-                        >
-                            <Typography variant="h5" gutterBottom sx={{ fontWeight: 600 }}>
+                            </p>
+                        </div>
+                        <div className="bg-white p-6 rounded-lg border border-gray-200">
+                            <h3 className="text-xl font-semibold mb-2">
                                 Your Time Saver
-                            </Typography>
-                            <Typography color="text.secondary">
+                            </h3>
+                            <p className="text-gray-600">
                                 Let Thothy handle the routine tasks while you focus on what matters most to you.
-                            </Typography>
-                        </Paper>
-                    </Grid>
-                </Grid>
-            </Container>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
             {/* CTA Section */}
-            <Box sx={{ bgcolor: "#f8f9fa", py: 8 }}>
-                <Container maxWidth="md">
-                    <Box textAlign="center">
-                        <Typography
-                            variant="h3"
-                            component="h2"
-                            gutterBottom
-                            sx={{ fontWeight: 700, mb: 3 }}
-                        >
-                            Ready to Get Started?
-                        </Typography>
-                        <Typography
-                            variant="h6"
-                            color="text.secondary"
-                            sx={{ mb: 4 }}
-                        >
-                            Join thousands of users who are already experiencing the power of Thothy.
-                        </Typography>
-                        <Button
-                            variant="contained"
-                            size="large"
-                            onClick={handleGetStarted}
-                            disabled={loading}
-                            sx={{
-                                bgcolor: "#764ba2",
-                                "&:hover": {
-                                    bgcolor: "#667eea",
-                                },
-                                px: 6,
-                                py: 1.5,
-                                fontSize: "1.1rem",
-                            }}
-                        >
-                            {loading ? (
-                                <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                                    <CircularProgress size={20} color="inherit" sx={{ mr: 1 }} />
-                                    Checking...
-                                </Box>
-                            ) : (
-                                "Try Thothy Now"
-                            )}
-                        </Button>
-                    </Box>
-                </Container>
-            </Box>
+            <div className="bg-gray-100 py-16">
+                <div className="container mx-auto px-4 text-center">
+                    <h2 className="text-3xl font-bold mb-4">
+                        Ready to Get Started?
+                    </h2>
+                    <p className="text-gray-600 mb-8 max-w-2xl mx-auto">
+                        Join thousands of users who are already experiencing the power of Thothy.
+                    </p>
+                    <button
+                        onClick={handleGetStarted}
+                        disabled={loading}
+                        className="px-8 py-3 bg-indigo-600 text-white rounded-md font-medium text-lg hover:bg-indigo-500 transition-colors disabled:opacity-70"
+                    >
+                        {loading ? (
+                            <div className="flex items-center">
+                                <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
+                                Checking...
+                            </div>
+                        ) : (
+                            "Try Thothy Now"
+                        )}
+                    </button>
+                </div>
+            </div>
 
             {/* Pricing Section */}
-            <Container maxWidth="lg" sx={{ py: 8 }}>
-                <Typography
-                    variant="h3"
-                    component="h2"
-                    align="center"
-                    gutterBottom
-                    sx={{ mb: 6, fontWeight: 700 }}
-                >
-                    Pricing
-                </Typography>
-                <Grid container spacing={4}>
-                    <Grid item xs={12} md={4}>
-                        <Paper
-                            elevation={0}
-                            sx={{
-                                p: 4,
-                                height: "100%",
-                                border: "1px solid #e0e0e0",
-                                borderRadius: 2,
-                            }}
-                        >
-                            <Typography variant="h5" gutterBottom sx={{ fontWeight: 600 }}>
+            <div className="py-16">
+                <div className="container mx-auto px-4">
+                    <h2 className="text-3xl font-bold text-center mb-12">
+                        Pricing
+                    </h2>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                        <div className="bg-white p-6 rounded-lg border border-gray-200 flex flex-col h-full">
+                            <h3 className="text-xl font-semibold mb-4">
                                 Free
-                            </Typography>
-                            <Typography color="text.secondary">
-                                - No charge. It's totally free.
-                                - User can use only agent menu.
-                                - Limitation on usage
-                                - No memory about user
-                            </Typography>
-                        </Paper>
-                    </Grid>
-                    <Grid item xs={12} md={4}>
-                        <Paper
-                            elevation={0}
-                            sx={{
-                                p: 4,
-                                height: "100%",
-                                border: "1px solid #e0e0e0",
-                                borderRadius: 2,
-                            }}
-                        >
-                            <Typography variant="h5" gutterBottom sx={{ fontWeight: 600 }}>
+                            </h3>
+                            <div className="space-y-2 text-gray-600 flex-grow">
+                                <p>- No charge. It's totally free.</p>
+                                <p>- User can use only agent menu.</p>
+                                <p>- Limitation on usage</p>
+                                <p>- No memory about user</p>
+                            </div>
+                        </div>
+                        <div className="bg-white p-6 rounded-lg border border-gray-200 flex flex-col h-full">
+                            <h3 className="text-xl font-semibold mb-4">
                                 Personal
-                            </Typography>
-                            <Typography color="text.secondary">
-                                - Include all features in Free.
-                                - Can use staff menu.
-                                - No limitation on usage.
-                                - Memory about user.
-                            </Typography>
-                        </Paper>
-                    </Grid>
-                    <Grid item xs={12} md={4}>
-                        <Paper
-                            elevation={0}
-                            sx={{
-                                p: 4,
-                                height: "100%",
-                                border: "1px solid #e0e0e0",
-                                borderRadius: 2,
-                            }}
-                        >
-                            <Typography variant="h5" gutterBottom sx={{ fontWeight: 600 }}>
+                            </h3>
+                            <div className="space-y-2 text-gray-600 flex-grow">
+                                <p>- Include all features in Free.</p>
+                                <p>- Can use staff menu.</p>
+                                <p>- No limitation on usage.</p>
+                                <p>- Memory about user.</p>
+                            </div>
+                        </div>
+                        <div className="bg-white p-6 rounded-lg border border-gray-200 flex flex-col h-full">
+                            <h3 className="text-xl font-semibold mb-4">
                                 Business
-                            </Typography>
-                            <Typography color="text.secondary">
-                                - Include all features in Personal.
-                                - Can use team menu.
-                                - Can use cron job for team
-                                - Can monitor team's work
-                                - Can use inbox menu for team's report
-                            </Typography>
-                        </Paper>
-                    </Grid>
-                    <Grid item xs={12} md={4}>
-                        <Paper
-                            elevation={0}
-                            sx={{
-                                p: 4,
-                                height: "100%",
-                                border: "1px solid #e0e0e0",
-                                borderRadius: 2,
-                            }}
-                        >
-                            <Typography variant="h5" gutterBottom sx={{ fontWeight: 600 }}>
+                            </h3>
+                            <div className="space-y-2 text-gray-600 flex-grow">
+                                <p>- Include all features in Personal.</p>
+                                <p>- Can use team menu.</p>
+                                <p>- Can use cron job for team</p>
+                                <p>- Can monitor team's work</p>
+                                <p>- Can use inbox menu for team's report</p>
+                            </div>
+                        </div>
+                        <div className="bg-white p-6 rounded-lg border border-gray-200 flex flex-col h-full">
+                            <h3 className="text-xl font-semibold mb-4">
                                 Enterprise
-                            </Typography>
-                            <Typography color="text.secondary">
-                                - Inlcude all features in Business.
-                                - Can use project menu.
-                                - Can use 24/7 project working time.
-                                - Can monitor project's work
-                                - Can use inbox for project's report
-                                - Cooperate with Vercel, Supabase, GitHub platform.
-                                - Can write a code for a running service
-                            </Typography>
-                        </Paper>
-                    </Grid>
-                    <Grid item xs={12} md={4}>
-                        <Paper
-                            elevation={0}
-                            sx={{
-                                p: 4,
-                                height: "100%",
-                                border: "1px solid #e0e0e0",
-                                borderRadius: 2,
-                            }}
-                        >
-                            <Typography variant="h5" gutterBottom sx={{ fontWeight: 600 }}>
+                            </h3>
+                            <div className="space-y-2 text-gray-600 flex-grow">
+                                <p>- Include all features in Business.</p>
+                                <p>- Can use project menu.</p>
+                                <p>- Can use 24/7 project working time.</p>
+                                <p>- Can monitor project's work</p>
+                                <p>- Can use inbox for project's report</p>
+                                <p>- Cooperate with Vercel, Supabase, GitHub platform.</p>
+                                <p>- Can write a code for a running service</p>
+                            </div>
+                        </div>
+                        <div className="bg-white p-6 rounded-lg border border-gray-200 flex flex-col h-full">
+                            <h3 className="text-xl font-semibold mb-4">
                                 Custom
-                            </Typography>
-                            <Typography color="text.secondary">
-                                - Include all features in Enterprise
-                                - Support onpremise
-                                - Support customized development for integration
-                            </Typography>
-                        </Paper>
-                    </Grid>
-                </Grid>
-            </Container>
+                            </h3>
+                            <div className="space-y-2 text-gray-600 flex-grow">
+                                <p>- Include all features in Enterprise</p>
+                                <p>- Support onpremise</p>
+                                <p>- Support customized development for integration</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
             {/* Disclaimer Snackbar */}
-            <Snackbar
-                open={openSnackbar}
-                anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
-                onClose={handleCloseSnackbar}
-                sx={{ 
-                    bottom: { xs: 16, sm: 24 },
-                    left: '50%',
-                    transform: 'translateX(-50%)',
-                    width: 'calc(100% - 20px)',
-                    maxWidth: 'none',
-                }}
-            >
-                <Alert
-                    severity="warning"
-                    sx={{ 
-                        width: '100%',
-                        '& .MuiAlert-action': {
-                            alignItems: 'center',
-                            marginTop: 0,
-                            marginLeft: 2,
-                        }
-                    }}
-                    action={
-                        <>
-                            <Button color="inherit" size="small" onClick={() => handleAcknowledgeNotice(false)}>
-                                Dismiss
-                            </Button>
-                            <Button color="inherit" size="small" onClick={() => handleAcknowledgeNotice(true)}>
-                                Don&apos;t show again
-                            </Button>
-                        </>
-                    }
-                >
-                    This is an experimental project with AI agents. Performance may vary and content is not guaranteed to be accurate.
-                </Alert>
-            </Snackbar>
-        </Box>
+            {openSnackbar && (
+                <div className="fixed bottom-4 inset-x-4 md:max-w-md md:mx-auto z-50">
+                    <div className="bg-amber-50 border border-amber-200 rounded-lg shadow-lg p-4">
+                        <div className="flex items-start">
+                            <div className="flex-shrink-0 text-amber-500">
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                                </svg>
+                            </div>
+                            <div className="ml-3 flex-1">
+                                <p className="text-sm text-amber-800 font-medium">
+                                    This is an experimental project with AI agents. Performance may vary and content is not guaranteed to be accurate.
+                                </p>
+                                <div className="mt-2 flex justify-end space-x-3">
+                                    <button
+                                        onClick={() => handleAcknowledgeNotice(false)}
+                                        className="text-sm text-amber-700 font-medium hover:text-amber-800"
+                                    >
+                                        Dismiss
+                                    </button>
+                                    <button
+                                        onClick={() => handleAcknowledgeNotice(true)}
+                                        className="text-sm text-amber-700 font-medium hover:text-amber-800"
+                                    >
+                                        Don't show again
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+        </div>
     );
 }
