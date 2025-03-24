@@ -74,6 +74,9 @@ export function useLangGraphApi() {
       const client = createClient();
       console.log("Calling client.runs.stream()");
       
+      // Log streamMode setting
+      console.log("Using streamMode: 'updates'");
+      
       const stream = await client.runs.stream(threadId, assistantId, {
         input: {
           messages,
@@ -86,6 +89,24 @@ export function useLangGraphApi() {
       // Check if stream has the expected methods
       console.log("Stream has forEach:", typeof stream.forEach === 'function');
       console.log("Stream has [Symbol.asyncIterator]:", typeof stream[Symbol.asyncIterator] === 'function');
+      
+      // Debug helper to preview the first chunk
+      const debugStream = async () => {
+        try {
+          // Create a copy of the stream iterator
+          const iterator = stream[Symbol.asyncIterator]();
+          const firstChunk = await iterator.next();
+          console.log("First stream chunk preview:", firstChunk);
+          
+          // Don't continue, as we're just previewing
+          console.log("Stream preview complete - this was just a test");
+        } catch (error) {
+          console.error("Error previewing stream:", error);
+        }
+      };
+      
+      // Don't actually call this as it would consume the stream
+      // debugStream();
       
       return stream;
     } catch (error) {

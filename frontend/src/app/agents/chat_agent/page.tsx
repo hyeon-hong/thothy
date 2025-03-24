@@ -8,43 +8,14 @@ import { useLangGraphRuntime } from "@assistant-ui/react-langgraph";
 import { useLangGraphApi } from "@/lib/langgraph-api-component";
 import { convertLangChainMessages, LangGraphMessageAccumulator, appendLangChainChunk } from "@assistant-ui/react-langgraph";
 import { DebugPanel } from "@/components/debug-panel";
+import { LangGraphStreamAdapter } from "@/lib/langgraph-stream-adapter";
 
 export default function Home() {
   const threadIdRef = useRef<string | undefined>();
   const assistantId = "chat_graph";
   const { createThread, getThreadState, sendMessage } = useLangGraphApi();
   const [debugInfo, setDebugInfo] = useState<string>("");
-  
-  // Custom stream handler function for debugging
-  const handleStream = async (stream) => {
-    console.log("Starting to process stream");
-    
-    const accumulator = new LangGraphMessageAccumulator({
-      appendMessage: appendLangChainChunk
-    });
-    
-    try {
-      // Process the stream
-      for await (const chunk of stream) {
-        console.log("Stream chunk received:", chunk);
-        
-        if (chunk.event === "messages/partial") {
-          console.log("Adding partial message:", chunk.data);
-          accumulator.addMessages(chunk.data);
-        }
-      }
-      
-      console.log("Stream processing complete");
-      const messages = accumulator.getMessages();
-      console.log("Accumulated messages:", messages);
-      
-      return messages;
-    } catch (error) {
-      console.error("Error processing stream:", error);
-      setDebugInfo(`Stream processing error: ${error.message}`);
-      throw error;
-    }
-  };
+  const streamAdapterRef = useRef<LangGraphStreamAdapter>(new LangGraphStreamAdapter());
   
   const runtime = useLangGraphRuntime({
     threadId: threadIdRef.current,
@@ -83,8 +54,36 @@ export default function Home() {
           }];
         }
         
-        // Return the stream directly
-        return stream;
+        // Reset the stream adapter for a new request
+        streamAdapterRef.current.reset();
+        
+        // Process the stream using our custom adapter
+        try {
+          const processedMessages = await streamAdapterRef.current.processStream(stream);
+          console.log("Processed stream messages:", processedMessages);
+          
+          // If no messages were processed, return a fallback
+          if (!processedMessages || processedMessages.length === 0) {
+            setDebugInfo("No messages were generated from the stream");
+            return [{
+              type: "assistant",
+              content: "No response was generated. Please try again.",
+              id: Date.now().toString()
+            }];
+          }
+          
+          // Return the processed messages
+          return processedMessages;
+        } catch (streamError) {
+          console.error("Error processing stream:", streamError);
+          setDebugInfo(`Stream processing error: ${streamError.message}`);
+          
+          return [{
+            type: "assistant",
+            content: `Error processing response: ${streamError.message}. Please try again.`,
+            id: Date.now().toString()
+          }];
+        }
       } catch (error) {
         console.error("Error in stream function:", error);
         setDebugInfo(`Error: ${error.message}`);
