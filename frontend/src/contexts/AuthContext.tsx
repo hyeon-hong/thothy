@@ -21,6 +21,7 @@ interface AuthContextType {
     signUp: () => Promise<void>;
     signOut: () => Promise<void>;
     loading: boolean;
+    supabase: any;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -227,6 +228,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 signUp,
                 signOut,
                 loading,
+                supabase,
             }}
         >
             {children}
