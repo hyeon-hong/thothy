@@ -22,7 +22,6 @@ import { useRouter } from 'next/navigation';
 import AccountCircle from '@mui/icons-material/AccountCircle';
 import Logout from '@mui/icons-material/Logout';
 import Link from 'next/link';
-import { createClient } from '@supabase/supabase-js';
 
 interface HeaderProps {
   currentView: 'inbox' | 'agent' | 'find' | 'staff' | 'team' | 'blog' | 'login' | 'agents' | 'project';
@@ -35,14 +34,8 @@ interface PricingPolicyData {
   };
 }
 
-// Initialize Supabase client
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
-
 export default function Header({ currentView }: HeaderProps) {
-  const { user, signIn, signOut, loading } = useAuth();
+  const { user, signIn, signOut, loading, supabase } = useAuth();
   const router = useRouter();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
@@ -59,34 +52,41 @@ export default function Header({ currentView }: HeaderProps) {
     const fetchPricingPolicy = async () => {
       if (!user) {
         setPolicyLoading(false);
+        setPricingPolicy('Free');
         return;
       }
 
       try {
-        const { data, error } = await supabase
+        // First try to get the user's pricing policy with a join
+        const { data: policyData, error: policyError } = await supabase
           .from('user_pricing_policy')
           .select(`
             pricing_policy_id,
-            pricing_policy!inner (
+            pricing_policy (
               name
             )
           `)
           .eq('user_id', user.id)
-          .single<PricingPolicyData>();
+          .maybeSingle();
 
-        if (error) throw error;
+        // If there's no data or there's an error, default to Free
+        if (policyError || !policyData) {
+          setPricingPolicy('Free');
+          setPolicyLoading(false);
+          return;
+        }
 
-        setPricingPolicy(data?.pricing_policy?.name || 'Free');
+        // Set the policy name from the joined data
+        setPricingPolicy(policyData.pricing_policy?.name || 'Free');
         setPolicyLoading(false);
       } catch (error) {
-        console.error('Error fetching pricing policy:', error);
-        setPricingPolicy('Free'); // Default to Free if there's an error
+        setPricingPolicy('Free');
         setPolicyLoading(false);
       }
     };
 
     fetchPricingPolicy();
-  }, [user]);
+  }, [user, supabase]);
 
   // Function to check if a menu should be visible based on pricing policy
   const isMenuVisible = (menuType: 'project' | 'team' | 'staff') => {
