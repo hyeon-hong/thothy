@@ -11,7 +11,7 @@ import { DebugPanel } from "@/components/debug-panel";
 
 export default function Home() {
   const threadIdRef = useRef<string | undefined>();
-  const assistantId = process.env.NEXT_PUBLIC_LANGGRAPH_ASSISTANT_ID || "chat_graph";
+  const assistantId = "chat_graph";
   const { createThread, getThreadState, sendMessage } = useLangGraphApi();
   const [debugInfo, setDebugInfo] = useState<string>("");
   
@@ -92,7 +92,7 @@ export default function Home() {
         // Return a minimal message to prevent UI from breaking
         return [{
           type: "assistant",
-          content: "Sorry, there was an error processing your request. Please try again.",
+          content: `Sorry, there was an error: ${error.message}. Please try again.`,
           id: Date.now().toString()
         }];
       }

@@ -8,11 +8,14 @@ export function DebugPanel() {
   const [connectionStatus, setConnectionStatus] = useState<string>("Checking...");
   const [apiResponse, setApiResponse] = useState<string>("");
   const [showPanel, setShowPanel] = useState<boolean>(false);
+  const [assistantId, setAssistantId] = useState<string>("chat_graph");
+  const [customUrl, setCustomUrl] = useState<string>("");
 
   useEffect(() => {
     // Get the API URL from environment
     const url = process.env.NEXT_PUBLIC_LANGGRAPH_API_URL;
     setApiUrl(url || "Not set");
+    setCustomUrl(url || "");
     
     // Check if API key is set (don't show the actual key)
     const key = process.env.NEXT_PUBLIC_LANGGRAPH_API_KEY;
@@ -21,7 +24,8 @@ export function DebugPanel() {
     // Test the connection to the API
     const testConnection = async () => {
       try {
-        const response = await fetch(`${url}/health`, {
+        // Try accessing the threads endpoint instead of health
+        const response = await fetch(`${url}/threads`, {
           method: "GET",
           headers: {
             "Content-Type": "application/json",
@@ -35,6 +39,14 @@ export function DebugPanel() {
           setApiResponse(data);
         } else {
           setConnectionStatus(`Error: ${response.status} ${response.statusText} ❌`);
+          
+          // Try to get error details
+          try {
+            const errorText = await response.text();
+            setApiResponse(errorText);
+          } catch (e) {
+            // Ignore if we can't get error details
+          }
         }
       } catch (error) {
         setConnectionStatus(`Connection failed: ${error.message} ❌`);
@@ -47,6 +59,37 @@ export function DebugPanel() {
       setConnectionStatus("No API URL provided ❌");
     }
   }, []);
+
+  const testCustomEndpoint = async () => {
+    try {
+      setConnectionStatus("Testing...");
+      const response = await fetch(`${customUrl}/graphs/${assistantId}`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${process.env.NEXT_PUBLIC_LANGGRAPH_API_KEY || ''}`
+        }
+      });
+      
+      if (response.ok) {
+        setConnectionStatus("Connected to graph ✅");
+        const data = await response.text();
+        setApiResponse(data);
+      } else {
+        setConnectionStatus(`Error: ${response.status} ${response.statusText} ❌`);
+        
+        // Try to get error details
+        try {
+          const errorText = await response.text();
+          setApiResponse(errorText);
+        } catch (e) {
+          // Ignore if we can't get error details
+        }
+      }
+    } catch (error) {
+      setConnectionStatus(`Connection failed: ${error.message} ❌`);
+    }
+  };
 
   return (
     <>
@@ -74,6 +117,30 @@ export function DebugPanel() {
           <div className="mb-4">
             <div className="font-semibold">Connection Status:</div>
             <div className="text-sm bg-gray-700 p-2 rounded">{connectionStatus}</div>
+          </div>
+          
+          <div className="mb-4">
+            <div className="font-semibold">Test Custom Endpoint:</div>
+            <div className="flex space-x-2 mt-2">
+              <input 
+                value={customUrl}
+                onChange={(e) => setCustomUrl(e.target.value)}
+                placeholder="API URL"
+                className="text-sm bg-gray-700 p-2 rounded flex-grow text-white"
+              />
+              <input 
+                value={assistantId}
+                onChange={(e) => setAssistantId(e.target.value)}
+                placeholder="Graph ID"
+                className="text-sm bg-gray-700 p-2 rounded w-24 text-white"
+              />
+              <button 
+                onClick={testCustomEndpoint}
+                className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded"
+              >
+                Test
+              </button>
+            </div>
           </div>
           
           {apiResponse && (
