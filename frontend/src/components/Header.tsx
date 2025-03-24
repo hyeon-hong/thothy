@@ -24,7 +24,7 @@ import Logout from '@mui/icons-material/Logout';
 import Link from 'next/link';
 
 interface HeaderProps {
-  currentView: 'inbox' | 'agent' | 'find' | 'staff' | 'team' | 'blog' | 'login' | 'agents';
+  currentView: 'inbox' | 'agent' | 'find' | 'staff' | 'team' | 'blog' | 'login' | 'agents' | 'project';
 }
 
 export default function Header({ currentView }: HeaderProps) {
@@ -86,6 +86,11 @@ export default function Header({ currentView }: HeaderProps) {
 
   const handleTeamClick = () => {
     router.push('/team');
+  };
+
+  // New handler for Project menu
+  const handleProjectClick = () => {
+    router.push('/project');
   };
 
   return (
@@ -156,6 +161,20 @@ export default function Header({ currentView }: HeaderProps) {
                     }}
                   >
                     Team
+                  </Button>
+                )}
+
+                {/* New Project menu button */}
+                {user && (
+                  <Button
+                    color={currentView === 'project' ? 'primary' : 'inherit'}
+                    onClick={handleProjectClick}
+                    sx={{
+                      ...navButtonStyle,
+                      fontWeight: currentView === 'project' ? 700 : 400,
+                    }}
+                  >
+                    Project
                   </Button>
                 )}
 
