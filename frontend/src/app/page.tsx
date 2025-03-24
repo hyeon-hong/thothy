@@ -19,12 +19,23 @@ import {
     AlertDialogTrigger,
   } from "@/components/ui/alert-dialog"
 
+// Define pricing policy type
+interface PricingPolicy {
+    id: string;
+    name: string;
+    monthly_price: number;
+    description: string;
+}
+
 export default function Home() {
     const router = useRouter();
     const pathname = usePathname();
-    const { user, signIn, loading } = useAuth();
+    const { user, signIn, loading, supabase } = useAuth();
     const [currentView, setCurrentView] = useState("landing");
     const [openSnackbar, setOpenSnackbar] = useState(false);
+    // Add state for pricing policies
+    const [pricingPolicies, setPricingPolicies] = useState<PricingPolicy[]>([]);
+    const [pricingLoading, setPricingLoading] = useState(true);
 
     useEffect(() => {
         // Check if user has previously acknowledged the notice
@@ -32,7 +43,44 @@ export default function Home() {
         if (!hasAcknowledged) {
             setOpenSnackbar(true);
         }
-    }, []);
+
+        // Fetch pricing policies from Supabase
+        const fetchPricingPolicies = async () => {
+            if (!supabase) return;
+            
+            try {
+                setPricingLoading(true);
+                const { data, error } = await supabase
+                    .from('pricing_policy')
+                    .select('*')
+                    .order('monthly_price', { ascending: true });
+                
+                if (error) {
+                    console.error('Error fetching pricing policies:', error);
+                    return;
+                }
+                
+                setPricingPolicies(data || []);
+            } catch (error) {
+                console.error('Error fetching pricing policies:', error);
+            } finally {
+                setPricingLoading(false);
+            }
+        };
+
+        fetchPricingPolicies();
+    }, [supabase]);
+
+    // Format description into bullet points
+    const formatDescription = (description: string): string[] => {
+        // If description contains bullet points or line breaks, split by them
+        if (description.includes('•') || description.includes('\n')) {
+            return description.split(/[•\n]/).filter(item => item.trim().length > 0).map(item => item.trim());
+        }
+        
+        // Otherwise, split by periods or commas and create bullet points
+        return description.split(/[.,]/).filter(item => item.trim().length > 0).map(item => item.trim());
+    };
 
     const handleGetStarted = () => {
         if (user) {
@@ -172,66 +220,45 @@ export default function Home() {
                     <h2 className="text-3xl font-bold text-center mb-12">
                         Pricing
                     </h2>
-                    <div className="grid grid-cols-1 md:grid-cols-5 gap-8">
-                        <div className="bg-white p-6 rounded-lg border border-gray-200 flex flex-col h-full w-full md:w-auto pricing-card">
-                            <h3 className="text-xl font-semibold mb-4">
-                                Free
-                            </h3>
-                            <div className="space-y-2 text-gray-600 flex-grow">
-                                <p>• Free of charge</p>
-                                <p>• Agent menu only</p>
-                                <p>• Limited usage</p>
-                                <p>• No user memory</p>
-                            </div>
+                    {pricingLoading ? (
+                        <div className="flex justify-center items-center h-64">
+                            <svg className="animate-spin h-8 w-8 text-indigo-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
                         </div>
-                        <div className="bg-white p-6 rounded-lg border border-gray-200 flex flex-col h-full w-full md:w-auto pricing-card">
-                            <h3 className="text-xl font-semibold mb-4">
-                                Personal
-                            </h3>
-                            <div className="space-y-2 text-gray-600 flex-grow">
-                                <p>• All Free features</p>
-                                <p>• Staff menu access</p>
-                                <p>• Unlimited usage</p>
-                                <p>• User memory</p>
-                            </div>
+                    ) : (
+                        <div className="grid grid-cols-1 md:grid-cols-5 gap-8">
+                            {pricingPolicies.map((policy) => (
+                                <div key={policy.id} className="bg-white p-6 rounded-lg border border-gray-200 flex flex-col h-full w-full md:w-auto pricing-card">
+                                    <h3 className="text-xl font-semibold mb-4">
+                                        {policy.name}
+                                    </h3>
+                                    {policy.monthly_price > 0 ? (
+                                        <div className="mb-4 text-lg font-bold">
+                                            ${policy.monthly_price.toFixed(2)}/month
+                                        </div>
+                                    ) : (
+                                        <div className="mb-4 text-lg font-bold">
+                                            Free
+                                        </div>
+                                    )}
+                                    <div className="space-y-2 text-gray-600 flex-grow">
+                                        {formatDescription(policy.description).map((item, index) => (
+                                            <p key={index}>• {item}</p>
+                                        ))}
+                                    </div>
+                                    <Button 
+                                        onClick={handleGetStarted} 
+                                        variant="outline" 
+                                        className="mt-4"
+                                    >
+                                        Get Started
+                                    </Button>
+                                </div>
+                            ))}
                         </div>
-                        <div className="bg-white p-6 rounded-lg border border-gray-200 flex flex-col h-full w-full md:w-auto pricing-card">
-                            <h3 className="text-xl font-semibold mb-4">
-                                Business
-                            </h3>
-                            <div className="space-y-2 text-gray-600 flex-grow">
-                                <p>• All Personal features</p>
-                                <p>• Team menu access</p>
-                                <p>• Cron jobs for teams</p>
-                                <p>• Team work monitoring</p>
-                                <p>• Team inbox reports</p>
-                            </div>
-                        </div>
-                        <div className="bg-white p-6 rounded-lg border border-gray-200 flex flex-col h-full w-full md:w-auto pricing-card">
-                            <h3 className="text-xl font-semibold mb-4">
-                                Enterprise
-                            </h3>
-                            <div className="space-y-2 text-gray-600 flex-grow">
-                                <p>• All Business features</p>
-                                <p>• Project menu access</p>
-                                <p>• 24/7 project time</p>
-                                <p>• Project work monitoring</p>
-                                <p>• Project inbox reports</p>
-                                <p>• Vercel, Supabase, GitHub</p>
-                                <p>• Code writing support</p>
-                            </div>
-                        </div>
-                        <div className="bg-white p-6 rounded-lg border border-gray-200 flex flex-col h-full w-full md:w-auto pricing-card">
-                            <h3 className="text-xl font-semibold mb-4">
-                                Custom
-                            </h3>
-                            <div className="space-y-2 text-gray-600 flex-grow">
-                                <p>• All Enterprise features</p>
-                                <p>• On-premise support</p>
-                                <p>• Custom integration dev</p>
-                            </div>
-                        </div>
-                    </div>
+                    )}
                 </div>
             </div>
 
