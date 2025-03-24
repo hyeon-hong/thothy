@@ -11,9 +11,7 @@ from chat_graph.configuration import ChatConfigurable
 
 # Configure logging to hide INFO messages
 logging.basicConfig(level=logging.WARNING)
-# Set specific loggers for langgraph and related libraries to WARNING level
 logging.getLogger("langgraph").setLevel(logging.WARNING)
-logging.getLogger("langchain").setLevel(logging.WARNING)
 
 llm = init_chat_model("gpt-4o-mini", model_provider="openai", temperature=0.8)
 
