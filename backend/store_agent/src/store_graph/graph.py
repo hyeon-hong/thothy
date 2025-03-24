@@ -1,231 +1,169 @@
-"""Store graph for managing store-related operations."""
-from typing import Annotated, Literal, Sequence
-from typing_extensions import TypedDict
-
-from langchain_core.messages import BaseMessage, HumanMessage
-from langchain_core.output_parsers import StrOutputParser
-from langchain_core.prompts import PromptTemplate
-from langchain_openai import ChatOpenAI
-from langgraph.graph import END, StateGraph, START
-from langgraph.prebuilt import ToolNode
-from langgraph.prebuilt import tools_condition
-from langgraph.prebuilt.messages import MessageGraph
+from typing import List
 from pydantic import BaseModel, Field
+from langgraph.graph import StateGraph, START, END, MessageState
+import requests
+from bs4 import BeautifulSoup
+from langchain_openai import OpenAIEmbeddings
+from langgraph.store.memory import InMemoryStore
+import uuid
+
+# Define the state schema
 
 
-class StoreState(TypedDict):
-    """State for the store graph."""
-    messages: Annotated[Sequence[BaseMessage], "add_messages"]
+class State(MessageState):
+    urls: List[str] | None = None
+    content: List[str] | None = None
+    chunks: List[str] | None = None
+    summary: str | None = None
+    user_message: str | None = None
+    chunk_count: int | None = None
+    namespace: tuple | None = None
+
+# Schema for URL extraction
 
 
-def grade_documents(state) -> Literal["generate", "rewrite"]:
-    """Determines whether the retrieved documents are relevant to the question.
-    
-    Args:
-        state: The current state containing messages
-        
-    Returns:
-        str: Decision for whether documents are relevant ("generate") or not
-        ("rewrite")
-    """
-    print("---CHECK RELEVANCE---")
-
-    class Grade(BaseModel):
-        """Binary score for relevance check."""
-        binary_score: str = Field(
-            description="Relevance score 'yes' or 'no'"
-        )
-
-    model = ChatOpenAI(
-        temperature=0, 
-        model="gpt-4-turbo-preview", 
-        streaming=True
-    )
-    llm_with_tool = model.with_structured_output(Grade)
-
-    prompt = PromptTemplate(
-        template="""You are a grader assessing relevance of retrieved store \
-information to a user question.
-        
-        Here is the retrieved information: \n\n {context} \n\n
-        Here is the user question: {question} \n
-        
-        If the information contains keywords or semantic meaning related to the \
-user's store-related question, grade it as relevant. Give a binary score 'yes' \
-or 'no' to indicate relevance.""",
-        input_variables=["context", "question"],
-    )
-
-    chain = prompt | llm_with_tool
-
-    messages = state["messages"]
-    question = messages[0].content
-    docs = messages[-1].content
-
-    scored_result = chain.invoke({"question": question, "context": docs})
-    score = scored_result.binary_score
-
-    if score == "yes":
-        print("---DECISION: DOCS RELEVANT---")
-        return "generate"
-    else:
-        print("---DECISION: DOCS NOT RELEVANT---")
-        return "rewrite"
+class URLExtraction(BaseModel):
+    urls: List[str] = Field(
+        description="List of URLs extracted from the message")
 
 
-def agent(state):
-    """Invokes the agent to generate a response based on current state.
-    
-    Args:
-        state: The current state containing messages
-        
-    Returns:
-        dict: Updated state with agent response
-    """
-    print("---CALL AGENT---")
-    messages = state["messages"]
-    model = ChatOpenAI(
-        temperature=0, 
-        streaming=True, 
-        model="gpt-4-turbo-preview"
-    )
-    model = model.bind_tools(tools)  # tools will be defined in create_graph()
-    response = model.invoke(messages)
-    return {"messages": [response]}
-
-
-def rewrite(state):
-    """Transform the query to produce a better store-related question.
-    
-    Args:
-        state: The current state containing messages
-        
-    Returns:
-        dict: Updated state with rephrased question
-    """
-    print("---TRANSFORM QUERY---")
-    messages = state["messages"]
-    question = messages[0].content
-
-    msg = [
-        HumanMessage(
-            content=f"""Look at the input and try to reason about the underlying \
-semantic intent for this store-related query.
-            
-            Here is the initial question:
-            \n ------- \n
-            {question} 
-            \n ------- \n
-            
-            Formulate an improved question that will help retrieve relevant \
-store information:"""
-        )
+def extract_urls(state: State):
+    """Extract URLs from user message"""
+    # You can use your LLM here to extract URLs more intelligently if needed
+    # For now using a simple example
+    message = state["messages"][-1].content
+    # Basic URL extraction using simple string matching
+    urls = [
+        word for word in message.split()
+        if word.startswith(("http://", "https://"))
     ]
-
-    model = ChatOpenAI(
-        temperature=0, 
-        model="gpt-4-turbo-preview", 
-        streaming=True
-    )
-    response = model.invoke(msg)
-    return {"messages": [response]}
+    return {"urls": urls}
 
 
-def generate(state):
-    """Generate answer based on retrieved store information.
-    
-    Args:
-        state: The current state containing messages
-        
-    Returns:
-        dict: Updated state with generated answer
-    """
-    print("---GENERATE---")
-    messages = state["messages"]
-    question = messages[0].content
-    docs = messages[-1].content
+def fetch_content(state: State):
+    """Fetch content from each URL"""
+    content_list = []
+    for url in state["urls"]:
+        try:
+            response = requests.get(url)
+            soup = BeautifulSoup(response.text, 'html.parser')
+            # Remove script and style elements
+            for script in soup(["script", "style"]):
+                script.decompose()
+            text = soup.get_text()
+            # Clean up text
+            lines = (line.strip() for line in text.splitlines())
+            chunks = (phrase.strip()
+                      for line in lines for phrase in line.split("  "))
+            text = ' '.join(chunk for chunk in chunks if chunk)
+            content_list.append(text)
+        except Exception as e:
+            content_list.append(f"Error fetching {url}: {str(e)}")
 
-    prompt = PromptTemplate(
-        template="""You are a store assistant. Use the following retrieved store \
-information to answer the question.
-        If you don't know the answer, just say that you don't know. Keep the \
-answer concise and helpful.
-        
-        Question: {question}
-        Store Information: {context}
-        
-        Answer:""",
-        input_variables=["context", "question"],
-    )
-
-    llm = ChatOpenAI(
-        model="gpt-4-turbo-preview", 
-        temperature=0, 
-        streaming=True
-    )
-    chain = prompt | llm | StrOutputParser()
-    
-    response = chain.invoke({"context": docs, "question": question})
-    return {"messages": [response]}
+    return {"content": content_list}
 
 
-def create_graph() -> MessageGraph:
-    """Create the store graph with agentic RAG pattern.
-    
-    Returns:
-        A LangGraph message graph for store operations.
-    """
-    # Create retriever tool (this should be implemented based on your store data source)
-    from langchain.tools.retriever import create_retriever_tool
-    
-    # TODO: Replace this with actual store data retriever implementation
-    retriever_tool = create_retriever_tool(
-        retriever=None,  # Add your store data retriever here
-        name="retrieve_store_info",
-        description="Search and return information about store products, \
-inventory, orders, etc.",
-    )
-    
-    global tools
-    tools = [retriever_tool]
+def chunk_content(state: State):
+    """Split content into manageable chunks"""
+    chunks = []
+    chunk_size = 1000  # Adjust based on your needs
 
-    # Define workflow
-    workflow = StateGraph(StoreState)
+    for content in state["content"]:
+        # Simple chunking by character count
+        # You might want to use more sophisticated chunking methods
+        current_chunk = ""
+        words = content.split()
 
-    # Add nodes
-    workflow.add_node("agent", agent)
-    retrieve = ToolNode([retriever_tool])
-    workflow.add_node("retrieve", retrieve)
-    workflow.add_node("rewrite", rewrite)
-    workflow.add_node("generate", generate)
+        for word in words:
+            if len(current_chunk) + len(word) + 1 <= chunk_size:
+                current_chunk += " " + word if current_chunk else word
+            else:
+                chunks.append(current_chunk)
+                current_chunk = word
 
-    # Add edges
-    workflow.add_edge(START, "agent")
-    
-    # Conditional edges from agent
-    workflow.add_conditional_edges(
-        "agent",
-        tools_condition,
-        {
-            "tools": "retrieve",
-            END: END,
-        },
-    )
+        if current_chunk:
+            chunks.append(current_chunk)
 
-    # Conditional edges from retrieve
-    workflow.add_conditional_edges(
-        "retrieve",
-        grade_documents,
-        {
-            "generate": "generate",
-            "rewrite": "rewrite",
+    return {
+        "chunks": chunks,
+        "chunk_count": len(chunks)
+    }
+
+
+def store_chunks(state: State, *, store: InMemoryStore):
+    """Store chunks in vector store"""
+    embeddings = OpenAIEmbeddings()
+
+    # Initialize store with embeddings if not already configured
+    if not hasattr(store, '_index'):
+        store._index = {
+            "embed": embeddings,
+            "dims": 1536,  # OpenAI embedding dimensions
+            "fields": ["$"]  # Embed all fields
         }
-    )
 
-    workflow.add_edge("generate", END)
-    workflow.add_edge("rewrite", "agent")
+    # Store each chunk in the InMemoryStore
+    for chunk in state["chunks"]:
+        memory_id = str(uuid.uuid4())
+        store.put(
+            namespace=state["namespace"],
+            key=memory_id,
+            value={"text": chunk},
+            index=True  # Enable semantic search for this chunk
+        )
 
-    return workflow.compile()
+    return {"store_status": "success"}
 
 
-graph = create_graph() 
+def summarize_process(state: State):
+    """Summarize the processing results"""
+    # Calculate average chunk size
+    total_chars = sum(len(chunk) for chunk in state['chunks'])
+    avg_chunk_size = total_chars / len(state['chunks'])
+    
+    summary = f"""
+    Processing Complete:
+    - Number of URLs processed: {len(state['urls'])}
+    - Total content chunks created: {state['chunk_count']}
+    - Average chunk size: {avg_chunk_size:.2f} characters
+    - URLs processed: {', '.join(state['urls'])}
+    """
+    return {"summary": summary}
+
+
+# Create the graph
+workflow = StateGraph(State)
+
+# Initialize store with embedding configuration
+store = InMemoryStore(
+    index={
+        "embed": OpenAIEmbeddings(),
+        "dims": 1536,  # OpenAI embedding dimensions
+        "fields": ["$"]  # Embed all fields
+    }
+)
+
+# Add nodes
+workflow.add_node("extract_urls", extract_urls)
+workflow.add_node("fetch_content", fetch_content)
+workflow.add_node("chunk_content", chunk_content)
+# Add store_chunks node with store dependency
+workflow.add_node(
+    "store_chunks",
+    lambda state: store_chunks(state, store=store)
+)
+workflow.add_node("summarize", summarize_process)
+
+# Add edges
+workflow.add_edge(START, "extract_urls")
+workflow.add_edge("extract_urls", "fetch_content")
+workflow.add_edge("fetch_content", "chunk_content")
+workflow.add_edge("chunk_content", "store_chunks")
+workflow.add_edge("store_chunks", "summarize")
+workflow.add_edge("summarize", END)
+
+# Compile the graph
+graph = workflow.compile(store=store)
+graph.name = "store_graph"
+
+__all__ = ["graph"]
