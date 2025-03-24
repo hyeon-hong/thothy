@@ -1,6 +1,7 @@
 """Simple chat agent using LangGraph."""
 
 import logging
+import datetime  # Import datetime for getting current time
 
 from langchain.chat_models import init_chat_model
 
@@ -13,8 +14,6 @@ from chat_graph.configuration import ChatConfigurable
 logging.basicConfig(level=logging.WARNING)
 logging.getLogger("langgraph").setLevel(logging.WARNING)
 
-llm = init_chat_model("gpt-4o-mini", model_provider="openai", temperature=0.8)
-
 
 async def chatbot(
     state: MessagesState,
@@ -24,7 +23,17 @@ async def chatbot(
 ) -> dict:
     """Chat node that processes messages and generates responses."""
 
-    system_msg = ("You are a helpful assistant talking to the user. ")
+    configurable = ChatConfigurable.from_runnable_config(config)
+
+    # Get current system time
+    current_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+    # Use system prompt from configuration with time variable
+    system_msg = configurable.system_prompt.format(time=current_time)
+
+    # Initialize the LLM using the model from configuration
+    llm = init_chat_model(
+        configurable.model, model_provider="openai", temperature=0.8)
 
     # Invoke the LLM
     response = llm.invoke(
