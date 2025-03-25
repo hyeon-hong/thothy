@@ -5,3 +5,4 @@ alwaysApply: false
 ---
 
 - When you create a new directory for a new LangGraph agent, check the error using "langgraph dev" command.
+- If possible, call an interrupt function in the start of node function. (https://langchain-ai.github.io/langgraph/concepts/human_in_the_loop/#common-pitfalls)
