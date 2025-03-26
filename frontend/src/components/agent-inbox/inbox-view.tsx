@@ -40,7 +40,6 @@ export function AgentInboxView<
   }, [searchParams]);
 
   const threadDataToRender = React.useMemo(() => {
-    console.log("threadData: ", threadData);
     const filteredThreadData = threadData.filter((t) => {
       if (selectedInbox === "all") return true;
       return t.status === selectedInbox;
@@ -48,7 +47,6 @@ export function AgentInboxView<
     return filteredThreadData;
   }, [selectedInbox, threadData]);
   const noThreadsFound = !threadDataToRender.length;
-  console.log("threadDataToRender: ", threadDataToRender);
 
   return (
     <div className="min-w-[1000px] h-full overflow-y-auto">
