@@ -9,21 +9,7 @@ from langgraph.checkpoint.memory import MemorySaver
 from langgraph.graph import MessagesState, StateGraph, START, END
 from langgraph.store.base import BaseStore
 from interrupt_graph.configuration import InterruptConfigurable
-
-# Import utility functions
-try:
-    # Try importing normally first (for production)
-    from backend.libs.utils import HumanInterrupt
-except ImportError:
-    # If that fails, try a relative import approach
-    import sys
-    from pathlib import Path
-    # Add the backend directory to sys.path
-    root_dir = Path(__file__).parent.parent.parent.parent
-    if str(root_dir) not in sys.path:
-        sys.path.append(str(root_dir))
-    # Now try the import again
-    from libs.utils import HumanInterrupt
+from thothy.backend.libs.utils import HumanInterrupt
 
 # Configure logging to hide INFO messages
 logging.basicConfig(level=logging.WARNING)

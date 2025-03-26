@@ -5,30 +5,12 @@ from langgraph.graph import StateGraph, START, END
 from langchain_core.messages import HumanMessage
 from langgraph.types import Command, interrupt
 from langgraph.graph import MessagesState
-# from langchain_anthropic import ChatAnthropic
 from typing_extensions import TypedDict
 
 from blog_graph.graph import graph as blog_graph
 from news_graph.graph import graph as news_graph
+from thothy.backend.libs.utils import HumanInterrupt
 
-# TODO: Unify this with the interrupt agent and staff agent
-# Import utility functions
-try:
-    # Try importing normally first (for production)
-    from backend.libs.utils import HumanInterrupt
-except ImportError:
-    # If that fails, try a relative import approach
-    import sys
-    from pathlib import Path
-    # Add the backend directory to sys.path
-    root_dir = Path(__file__).parent.parent.parent.parent
-    if str(root_dir) not in sys.path:
-        sys.path.append(str(root_dir))
-    # Now try the import again
-    from libs.utils import HumanInterrupt
-
-# llm = ChatAnthropic(model="claude-3-5-sonnet-latest")
-# Create llm with OpenAI
 llm = ChatOpenAI(model="gpt-4o-mini")
 
 members = ["news_agent", "blog_agent"]
