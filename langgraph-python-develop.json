@@ -4,6 +4,7 @@
     "./backend/chat_agent",
     "./backend/news_agent",
     "./backend/security",
+    "./backend/staff_agent",
     "./backend/team_agent",
     "./backend/libs"
   ],
