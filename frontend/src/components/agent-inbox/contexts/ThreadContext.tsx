@@ -107,7 +107,7 @@ const getClient = async ({ agentInboxes, getItem, toast }: GetClientArgs) => {
   }
 
   // Use the proxied URL consistently across the application
-  const deploymentUrl = '/api/langgraph';
+  const deploymentUrl = process.env.NEXT_PUBLIC_LANGGRAPH_API_URL;
   const langchainApiKey = process.env.NEXT_PUBLIC_LANGGRAPH_API_KEY || undefined;
 
   try {
@@ -234,8 +234,7 @@ export function ThreadsProvider<
         graphId: team.id, // Using team ID as graph ID
         name: team.name,
         description: team.description,
-        selected: false,
-        deploymentUrl: '/api/langgraph', // Using the proxied URL consistently
+        selected: false
       }));
       console.log('[Debug] Transformed agent inboxes:', parsedAgentInboxes);
 
