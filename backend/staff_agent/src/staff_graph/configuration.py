@@ -14,35 +14,37 @@ from staff_graph.prompts import SYSTEM_PROMPT
 class StaffConfigurable:
     """The configurable fields for the staff assistant."""
 
-    user_id: str = "default"
     project_id: str = "default"
     team_id: str = "default"
     staff_id: str = "default"
+    agent_id: str = "default"
+    user_id: str = "default"
+    graph_name: str = "staff_graph"
+
     model: str = "anthropic/claude-3-5-sonnet-20240620"
     delay_seconds: int = 1
     system_prompt: str = SYSTEM_PROMPT
-    agent_id: str = "default"  # Default to staff agent
 
     def copy(self) -> "StaffConfigurable":
         """Create a copy of this configurable."""
         return copy_module.deepcopy(self)
-    
+
     def __copy__(self):
         """Support for copy.copy()."""
         return self.__class__(**asdict(self))
-    
+
     def __deepcopy__(self, memo):
         """Support for copy.deepcopy()."""
         return self.__class__(**copy_module.deepcopy(asdict(self), memo))
-    
+
     def items(self) -> Iterator[Tuple[str, Any]]:
         """Support dictionary-like access with items() method."""
         return asdict(self).items()
-    
+
     def get(self, key: str, default: Any = None) -> Any:
         """Support dictionary-like access with get() method."""
         return asdict(self).get(key, default)
-    
+
     def __getitem__(self, key: str) -> Any:
         """Support dictionary-like access with [] operator."""
         return asdict(self)[key]
