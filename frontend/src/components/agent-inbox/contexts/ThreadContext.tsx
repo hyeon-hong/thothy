@@ -8,7 +8,7 @@ import {
   ThreadData,
   ThreadStatusWithAll,
 } from "@/components/agent-inbox/types";
-import { useToast, type ToastInput } from "@/hooks/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { createClient } from "@/lib/client";
 import {
   Run,
@@ -35,6 +35,14 @@ import {
 } from "./utils";
 import { useLocalStorage } from "../hooks/use-local-storage";
 
+// Define the ToastInput type that matches what useToast expects
+type ToastInput = {
+  title?: string;
+  description?: React.ReactNode;
+  variant?: "default" | "destructive";
+  duration?: number;
+};
+
 type ThreadContentType<
   ThreadValues extends Record<string, any> = Record<string, any>,
 > = {
@@ -53,14 +61,14 @@ type ThreadContentType<
     options?: {
       stream?: TStream;
     }
-  ) => TStream extends true
-    ?
-        | AsyncGenerator<{
-            event: Record<string, any>;
-            data: any;
-          }>
-        | undefined
-    : Promise<Run> | undefined;
+  ) => Promise<
+    TStream extends true
+      ? AsyncGenerator<{
+          event: Record<string, any>;
+          data: any;
+        }, any, unknown> | undefined
+      : Run | undefined
+  >;
   fetchSingleThread: (threadId: string) => Promise<
     | {
         thread: Thread<ThreadValues>;
@@ -464,13 +472,13 @@ export function ThreadsProvider<
         }
       | undefined
     > => {
-      const client = getClient({
+      const client = await getClient({
         agentInboxes,
         getItem,
         toast,
       });
       if (!client) {
-        return;
+        return undefined;
       }
       const thread = await client.threads.get(threadId);
       let threadInterrupts: HumanInterrupt[] | undefined;
@@ -500,7 +508,7 @@ export function ThreadsProvider<
     ): Promise<
       { thread_id: string; thread_state: ThreadState<ThreadValues> }[]
     > => {
-      const client = getClient({
+      const client = await getClient({
         agentInboxes,
         getItem,
         toast,
@@ -537,7 +545,7 @@ export function ThreadsProvider<
   );
 
   const ignoreThread = async (threadId: string) => {
-    const client = getClient({
+    const client = await getClient({
       agentInboxes,
       getItem,
       toast,
@@ -569,20 +577,20 @@ export function ThreadsProvider<
     }
   };
 
-  const sendHumanResponse = <TStream extends boolean = false>(
+  const sendHumanResponse = async <TStream extends boolean = false>(
     threadId: string,
     response: HumanResponse[],
     options?: {
       stream?: TStream;
     }
-  ): TStream extends true
-    ?
-        | AsyncGenerator<{
-            event: Record<string, any>;
-            data: any;
-          }>
-        | undefined
-    : Promise<Run> | undefined => {
+  ): Promise<
+    TStream extends true
+      ? AsyncGenerator<{
+          event: Record<string, any>;
+          data: any;
+        }, any, unknown> | undefined
+      : Run | undefined
+  > => {
     const graphId = agentInboxes.find((i) => i.selected)?.graphId;
     if (!graphId) {
       toast({
@@ -591,16 +599,16 @@ export function ThreadsProvider<
           "Assistant/graph IDs are required to send responses. Please add an assistant/graph ID in the settings.",
         variant: "destructive",
       });
-      return undefined;
+      return undefined as any;
     }
 
-    const client = getClient({
+    const client = await getClient({
       agentInboxes,
       getItem,
       toast,
     });
     if (!client) {
-      return;
+      return undefined as any;
     }
     try {
       if (options?.stream) {
