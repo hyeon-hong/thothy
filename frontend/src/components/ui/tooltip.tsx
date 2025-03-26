@@ -5,33 +5,62 @@ import * as TooltipPrimitive from "@radix-ui/react-tooltip"
 
 import { cn } from "@/lib/utils"
 
+// Add a helper function to filter tooltip-specific props
+const filterTooltipProps = (props: Record<string, any>) => {
+  const { delayDuration, skipDelayDuration, ...rest } = props
+  return rest
+}
+
+type TooltipProviderProps = React.ComponentProps<typeof TooltipPrimitive.Provider>
+
 function TooltipProvider({
   delayDuration = 0,
+  children,
   ...props
-}: React.ComponentProps<typeof TooltipPrimitive.Provider>) {
+}: TooltipProviderProps) {
   return (
     <TooltipPrimitive.Provider
       data-slot="tooltip-provider"
       delayDuration={delayDuration}
-      {...props}
-    />
+      {...filterTooltipProps(props)}
+    >
+      {children}
+    </TooltipPrimitive.Provider>
   )
 }
+
+type TooltipProps = React.ComponentProps<typeof TooltipPrimitive.Root>
 
 function Tooltip({
+  children,
   ...props
-}: React.ComponentProps<typeof TooltipPrimitive.Root>) {
+}: TooltipProps) {
   return (
-    <TooltipProvider>
-      <TooltipPrimitive.Root data-slot="tooltip" {...props} />
-    </TooltipProvider>
+    <TooltipPrimitive.Root {...filterTooltipProps(props)}>
+      {children}
+    </TooltipPrimitive.Root>
   )
 }
 
+type TooltipTriggerProps = React.ComponentProps<typeof TooltipPrimitive.Trigger>
+
 function TooltipTrigger({
+  children,
   ...props
-}: React.ComponentProps<typeof TooltipPrimitive.Trigger>) {
-  return <TooltipPrimitive.Trigger data-slot="tooltip-trigger" {...props} />
+}: TooltipTriggerProps) {
+  // Make sure we remove ALL tooltip-related props that could leak down
+  return (
+    <TooltipPrimitive.Trigger 
+      data-slot="tooltip-trigger" 
+      {...filterTooltipProps(props)}
+    >
+      {children}
+    </TooltipPrimitive.Trigger>
+  )
+}
+
+type TooltipContentProps = React.ComponentProps<typeof TooltipPrimitive.Content> & {
+  className?: string
 }
 
 function TooltipContent({
@@ -39,7 +68,7 @@ function TooltipContent({
   sideOffset = 0,
   children,
   ...props
-}: React.ComponentProps<typeof TooltipPrimitive.Content>) {
+}: TooltipContentProps) {
   return (
     <TooltipPrimitive.Portal>
       <TooltipPrimitive.Content
@@ -49,7 +78,7 @@ function TooltipContent({
           "bg-primary text-primary-foreground animate-in fade-in-0 zoom-in-95 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 z-50 w-fit rounded-md px-3 py-1.5 text-xs text-balance",
           className
         )}
-        {...props}
+        {...filterTooltipProps(props)}
       >
         {children}
         <TooltipPrimitive.Arrow className="bg-primary fill-primary z-50 size-2.5 translate-y-[calc(-50%_-_2px)] rotate-45 rounded-[2px]" />
@@ -59,3 +88,4 @@ function TooltipContent({
 }
 
 export { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider }
+export type { TooltipProps, TooltipTriggerProps, TooltipContentProps, TooltipProviderProps }
