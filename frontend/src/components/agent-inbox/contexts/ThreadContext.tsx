@@ -188,90 +188,95 @@ export function ThreadsProvider<
 
   const getAgentInboxes = React.useCallback(async () => {
     const agentInboxSearchParam = getSearchParam(AGENT_INBOX_PARAM);
-    const agentInboxes = getItem(AGENT_INBOXES_LOCAL_STORAGE_KEY);
-    if (!agentInboxes || !agentInboxes.length) {
-      updateQueryParams(NO_INBOXES_FOUND_PARAM, "true");
-      return;
-    }
-    let parsedAgentInboxes: AgentInbox[] = [];
+    console.log('[Debug] Fetching agent inboxes, search param:', agentInboxSearchParam);
+
     try {
-      parsedAgentInboxes = JSON.parse(agentInboxes);
-    } catch (error) {
-      console.error("Error parsing agent inboxes", error);
-      toast({
-        title: "Error",
-        description: "Agent inbox not found. Please add an inbox in settings.",
-        variant: "destructive",
-        duration: 3000,
+      // Fetch teams from the database
+      const response = await fetch('/api/supabase', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          action: 'select',
+          table: 'teams',
+          query: {
+            select: '*'
+          }
+        }),
       });
-      return;
-    }
 
-    if (!parsedAgentInboxes.length) {
-      const noInboxesFoundParam = searchParams.get(NO_INBOXES_FOUND_PARAM);
-      if (noInboxesFoundParam !== "true") {
-        updateQueryParams(NO_INBOXES_FOUND_PARAM, "true");
+      if (!response.ok) {
+        throw new Error('Failed to fetch teams');
       }
-      return;
-    }
 
-    // Ensure each agent inbox has an ID, and if not, add one
-    parsedAgentInboxes = parsedAgentInboxes.map((i) => {
-      return {
-        ...i,
-        id: i.id || uuidv4(),
-      };
-    });
+      const data = await response.json();
+      console.log('[Debug] Raw response from Supabase:', data);
+      
+      if (!data || !Array.isArray(data)) {
+        console.log('[Debug] Invalid data format from API:', data);
+        throw new Error('Invalid data format from API');
+      }
 
-    // If there is no agent inbox search param, or the search param is not
-    // a valid UUID, update search param and local storage
-    if (!agentInboxSearchParam || !validate(agentInboxSearchParam)) {
-      const selectedInbox = parsedAgentInboxes.find((i) => i.selected);
-      if (!selectedInbox) {
+      const teams = data;
+      console.log('[Debug] Teams data:', teams);
+
+      if (!teams.length) {
+        console.log('[Debug] No teams found in database');
+        // Don't show welcome dialog even if no teams found
+        setAgentInboxes([]);
+        return;
+      }
+
+      // Transform teams into AgentInbox format
+      const parsedAgentInboxes: AgentInbox[] = teams.map((team: any) => ({
+        id: team.id,
+        graphId: team.id, // Using team ID as graph ID
+        name: team.name,
+        description: team.description,
+        selected: false,
+        deploymentUrl: '/api/langgraph', // Using the proxied URL consistently
+      }));
+      console.log('[Debug] Transformed agent inboxes:', parsedAgentInboxes);
+
+      // If there is no agent inbox search param, or the search param is not
+      // a valid UUID, update search param
+      if (!agentInboxSearchParam || !validate(agentInboxSearchParam)) {
         parsedAgentInboxes[0].selected = true;
         updateQueryParams(AGENT_INBOX_PARAM, parsedAgentInboxes[0].id);
         setAgentInboxes(parsedAgentInboxes);
-        setItem(
-          AGENT_INBOXES_LOCAL_STORAGE_KEY,
-          JSON.stringify(parsedAgentInboxes)
-        );
-      } else {
-        updateQueryParams(AGENT_INBOX_PARAM, selectedInbox.id);
-        setAgentInboxes(parsedAgentInboxes);
-        setItem(
-          AGENT_INBOXES_LOCAL_STORAGE_KEY,
-          JSON.stringify(parsedAgentInboxes)
-        );
+        return;
       }
-      return;
-    }
 
-    const selectedInbox = parsedAgentInboxes.find(
-      (i) =>
-        i.id === agentInboxSearchParam || i.graphId === agentInboxSearchParam
-    );
-    if (!selectedInbox) {
+      const selectedInbox = parsedAgentInboxes.find(
+        (i) =>
+          i.id === agentInboxSearchParam || i.graphId === agentInboxSearchParam
+      );
+
+      if (!selectedInbox) {
+        toast({
+          title: "Error",
+          description: "Agent inbox not found. Please add an inbox in settings.",
+          variant: "destructive",
+          duration: 3000,
+        });
+        return;
+      }
+
+      parsedAgentInboxes.forEach(inbox => {
+        inbox.selected = inbox.id === agentInboxSearchParam || inbox.graphId === agentInboxSearchParam;
+      });
+
+      setAgentInboxes(parsedAgentInboxes);
+    } catch (error) {
+      console.error("Error fetching teams:", error);
       toast({
         title: "Error",
-        description: "Agent inbox not found. Please add an inbox in settings.",
+        description: "Failed to fetch agent inboxes. Please try again.",
         variant: "destructive",
         duration: 3000,
       });
-      return;
     }
-
-    parsedAgentInboxes = parsedAgentInboxes.map((i) => {
-      return {
-        ...i,
-        selected:
-          i.id === agentInboxSearchParam || i.graphId === agentInboxSearchParam,
-      };
-    });
-    setAgentInboxes(parsedAgentInboxes);
-    setItem(
-      AGENT_INBOXES_LOCAL_STORAGE_KEY,
-      JSON.stringify(parsedAgentInboxes)
-    );
   }, []);
 
   const addAgentInbox = React.useCallback((agentInbox: AgentInbox) => {

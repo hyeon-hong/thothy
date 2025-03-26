@@ -71,6 +71,8 @@ export function AppSidebar() {
   const [langchainApiKey, setLangchainApiKey] = React.useState("");
   const { getItem, setItem } = useLocalStorage();
 
+  console.log('[Debug] AppSidebar - Current agentInboxes:', agentInboxes);
+
   React.useEffect(() => {
     try {
       if (typeof window === "undefined" || langchainApiKey) {
