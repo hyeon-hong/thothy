@@ -63,6 +63,34 @@ type Team = {
   cron_id?: string; // Optional cron ID reference
 };
 
+// Add metadata type for crons
+type CronMetadata = {
+  team_id?: string;
+  team_name?: string;
+  agent_list?: string[];
+  [key: string]: any;
+};
+
+// Update the imported Cron type to include metadata
+declare module "@langchain/langgraph-sdk" {
+  interface Cron {
+    cron_id: string;
+    schedule: string;
+    created_at: string;
+    end_time: string | null;
+    metadata?: CronMetadata;
+    payload: Record<string, unknown>;
+  }
+}
+
+// Helper function to safely check team_id in metadata
+const getTeamIdFromMetadata = (metadata: unknown): string | undefined => {
+  if (metadata && typeof metadata === "object" && "team_id" in metadata) {
+    return (metadata as { team_id: string }).team_id;
+  }
+  return undefined;
+};
+
 type TeamDialogProps = {
   isEdit?: boolean;
   teamName: string;
@@ -641,13 +669,13 @@ const createLangGraphClient = async () => {
     data: { session },
   } = await supabase.auth.getSession();
 
-  // Get apiUrl as development or production
   const apiUrl = process.env.NEXT_PUBLIC_LANGGRAPH_API_URL;
   const apiKey = process.env.NEXT_PUBLIC_LANGSMITH_API_KEY;
+  console.log("Using LangGraph API URL:", apiUrl);
 
   return new Client({
-    apiUrl: apiUrl,
-    apiKey: apiKey,
+    apiUrl,
+    apiKey,
     defaultHeaders: {
       Authorization: `Bearer ${session?.access_token}`,
     },
@@ -690,8 +718,24 @@ export default function TeamPage() {
         cronsData = await client.crons.search({
           limit: 100,
         });
-      } catch (error) {
-        throw new Error("Failed to fetch crons data");
+
+        console.log(
+          "📊 Fetched cron jobs:",
+          cronsData.map((cron) => ({
+            cron_id: cron.cron_id,
+            metadata: cron.metadata,
+            schedule: cron.schedule,
+          }))
+        );
+      } catch (error: any) {
+        console.error("❌ Failed to fetch crons:", error.message);
+        if (error.message?.includes("CORS")) {
+          console.error(
+            "CORS Error - Please check API configuration and CORS settings"
+          );
+        }
+        // Don't throw here, just log the error and continue with empty crons
+        cronsData = [];
       } finally {
         const [teamsResponse, agentsResponse] = await Promise.all([
           fetch("/api/teams"),
@@ -707,14 +751,44 @@ export default function TeamPage() {
           agentsResponse.json(),
         ]);
 
-        // Match crons with teams and update team schedules
+        // Match crons with teams based on metadata.team_id
         const teamsWithCrons = teamsData.map((team: Team) => {
-          const matchingCron = cronsData.find(
-            (cron) => cron.cron_id === team.cron_id
-          );
+          // First try to find by cron_id if it exists
+          let matchingCron = team.cron_id
+            ? cronsData.find((cron) => cron.cron_id === team.cron_id)
+            : null;
+
+          // If no match by cron_id, try matching by metadata.team_id
+          if (!matchingCron) {
+            matchingCron = cronsData.find((cron) => {
+              const rootTeamId = getTeamIdFromMetadata(cron.metadata);
+              const payloadTeamId = getTeamIdFromMetadata(
+                cron.payload?.metadata
+              );
+              return rootTeamId === team.id || payloadTeamId === team.id;
+            });
+          }
+
+          const matchSource = matchingCron
+            ? getTeamIdFromMetadata(matchingCron.metadata)
+              ? "root_metadata"
+              : getTeamIdFromMetadata(matchingCron.payload?.metadata)
+                ? "payload_metadata"
+                : "cron_id"
+            : "no_match";
+
+          console.log("🔄 Team-Cron matching:", {
+            team_id: team.id,
+            team_name: team.name,
+            found_cron_id: matchingCron?.cron_id,
+            schedule: matchingCron?.schedule,
+            matched_by: matchSource,
+          });
+
           return {
             ...team,
             schedule: matchingCron ? matchingCron.schedule : team.schedule,
+            cron_id: matchingCron ? matchingCron.cron_id : team.cron_id,
           };
         });
 
@@ -778,8 +852,6 @@ export default function TeamPage() {
               agent_list: selectedAgents,
             },
             input: createTeamMessage(data.id, teamDescription),
-            interruptBefore: ["blog_agent"],
-            interruptAfter: ["__end__"],
             multitaskStrategy: "enqueue",
           });
 

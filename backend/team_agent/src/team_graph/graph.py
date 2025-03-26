@@ -1,19 +1,33 @@
 import logging
 from typing import Literal, List, Dict
-from langchain_openai import ChatOpenAI
 from langgraph.graph import StateGraph, START, END
 from langchain_core.messages import HumanMessage
-from langgraph.types import Command
+from langgraph.types import Command, interrupt
 from langgraph.graph import MessagesState
-# from langchain_anthropic import ChatAnthropic
 from typing_extensions import TypedDict
+from langchain.chat_models import init_chat_model
+from langgraph.checkpoint.memory import MemorySaver
+from langgraph.store.base import BaseStore
 
+from team_graph.configuration import TeamConfigurable
 from blog_graph.graph import graph as blog_graph
 from news_graph.graph import graph as news_graph
+from thothy.backend.libs.utils import (  # type: ignore
+    HumanInterrupt,
+    initialize_store,
+    initialize_memory_manager,
+    initialize_executor
+)
 
-# llm = ChatAnthropic(model="claude-3-5-sonnet-latest")
-# Create llm with OpenAI
-llm = ChatOpenAI(model="gpt-4o-mini")
+# Initialize store with reconnection capability
+store = initialize_store()
+llm = init_chat_model("gpt-4o-mini", model_provider="openai", temperature=0.8)
+
+# Create memory manager
+memory_manager = initialize_memory_manager()
+
+# Wrap memory_manager to handle deferred background processing
+executor = initialize_executor(memory_manager, store)
 
 members = ["news_agent", "blog_agent"]
 OptionType = Literal["news_agent", "blog_agent", "FINISH"]
@@ -64,19 +78,55 @@ def get_system_prompt(initial_request: str, todos: List[TodoItem]) -> str:
         f"\n\n{initial_request}\n\n"
         f"Current todo list status:\n{todo_status}\n\n"
         "Based on the todo list and conversation history, determine the next"
-        " action. If there are pending tasks, assign the next task to the"
-        " appropriate agent. When all tasks are completed, respond with FINISH."
+        "\naction. If there are pending tasks, assign the next task to the"
+        "\nappropriate agent. When all tasks are completed, respond with"
+        " FINISH."
     )
 
 
-def init_request_node(state: State) -> Command[Literal["team_supervisor"]]:
+async def init_request_node(
+    state: State,
+    config: TeamConfigurable,
+    *,
+    store: BaseStore
+) -> Command[Literal["team_supervisor"]]:
     """Initialize the state with the user's request and generate todo list."""
     # Get the initial request from the first message
     initial_request = state["messages"][0].content if state["messages"] else ""
     logging.info(f"state['messages']: {state['messages']}")
 
+    # Get configurable values
+    configurable = TeamConfigurable.from_runnable_config(config)
+    project_id = configurable.project_id
+    team_id = configurable.team_id
+    staff_id = configurable.staff_id
+    agent_id = configurable.agent_id
+    user_id = configurable.user_id
+
+    # Set namespace for memories
+    namespace = ("memories", user_id, project_id,
+                 team_id, staff_id, agent_id)
+
+    # Search for existing memories
+    memories = await store.asearch(
+        namespace,
+        query=str(state["messages"][-1].content)
+    )
+
+    joined_memories = "\n".join(
+        [d.value.get("data", "") for d in memories if d.value]
+    )
+
+    system_msg = (
+        f"You are a helpful team supervisor talking to a user. "
+        f"Your memories about the user: {joined_memories}"
+    )
+    # thread_state = {"messages": [
+    #     {"role": "system", "content": system_msg}] + state["messages"]}
+
     # Generate todo list using LLM
-    todo_prompt = get_todo_prompt(initial_request)
+    # todo_prompt = get_todo_prompt(initial_request)
+    todo_prompt = get_todo_prompt(system_msg + "\n\n" + initial_request)
     try:
         response = llm.with_structured_output(TodoListResponse).invoke(
             [{"role": "user", "content": todo_prompt}]
@@ -102,6 +152,15 @@ def init_request_node(state: State) -> Command[Literal["team_supervisor"]]:
             ]
         }
     logging.info(f"response: {response}")
+
+    # Store only user's request in memory
+    # Don't save the todo list in memory
+    to_process = {
+        "messages": [
+            {"role": "user", "content": state["messages"][-1].content}
+        ]
+    }
+    executor.submit(to_process, after_seconds=0.5, config=config)
 
     # Convert response to TodoItems
     todos = [
@@ -169,7 +228,7 @@ async def news_agent_node(state: State) -> Command[Literal["team_supervisor"]]:
             "messages": [
                 HumanMessage(
                     content=result["messages"][-1].content,
-                    name="news_agent"
+                    name="news_graph"
                 )
             ]
         },
@@ -185,7 +244,7 @@ async def blog_agent_node(state: State) -> Command[Literal["team_supervisor"]]:
             "messages": [
                 HumanMessage(
                     content=result["messages"][-1].content,
-                    name="blog_agent"
+                    name="blog_graph"
                 )
             ]
         },
@@ -193,21 +252,59 @@ async def blog_agent_node(state: State) -> Command[Literal["team_supervisor"]]:
     )
 
 
+async def finish_node(state: State) -> dict:
+    # Create interrupt request following the schema
+    request: HumanInterrupt = {
+        "action_request": {
+            "action": "Review Response",
+            "args": {"messages": state["messages"],
+                     "response": state["messages"][-1].content,
+                     "initial_request": state["initial_request"],
+                     "todos": state["todos"]}
+        },
+        "config": {
+            "allow_ignore": False,  # Don't allow ignoring the review
+            "allow_respond": True,  # Allow responding with feedback
+            "allow_edit": True,     # Allow editing the response
+            "allow_accept": True    # Allow accepting as-is
+        },
+        "description": """Please review this AI response. You can:
+- Accept the response as-is
+- Edit the response before sending
+- Provide feedback or instructions for regeneration
+- Make any necessary corrections
+
+Current response for review:
+```
+{response}
+```
+"""
+    }
+
+    # Send interrupt and get response
+    interrupt(request)
+
+    # TODO: Check the interrupt response and go to the appropriate node
+
+    return {"messages": [HumanMessage(content="Finished", name="team_graph")]}
+
 # Build the graph
-builder = StateGraph(State)
+builder = StateGraph(State, TeamConfigurable)
 
 # Add the nodes
 builder.add_node("init_request", init_request_node)
 builder.add_node("team_supervisor", team_supervisor_node)
 builder.add_node("news_agent", news_agent_node)
 builder.add_node("blog_agent", blog_agent_node)
+builder.add_node("finish_node", finish_node)
 
 # Add the edges
 builder.add_edge(START, "init_request")
 builder.add_edge("init_request", "team_supervisor")
+builder.add_edge("finish_node", END)
 
 # Compile the graph
-graph = builder.compile()
+graph = builder.compile(checkpointer=MemorySaver(), store=store)
 graph.name = "team_graph"
 
 __all__ = ["graph"]

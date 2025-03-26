@@ -191,7 +191,7 @@ export default function useInterruptedActions<
 
         setLoading(true);
         setStreaming(true);
-        const response = sendHumanResponse(
+        const response = await sendHumanResponse(
           threadData.thread.thread_id,
           [input],
           {

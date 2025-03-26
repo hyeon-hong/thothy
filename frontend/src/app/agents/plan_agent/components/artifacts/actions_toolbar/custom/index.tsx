@@ -189,7 +189,7 @@ export function CustomQuickActions(props: CustomQuickActionsProps) {
               ? "cursor-default opacity-50 text-gray-400 hover:bg-background"
               : "cursor-pointer"
           )}
-          delayDuration={400}
+          delayduration={400}
         >
           <WandSparkles
             className={cn(

@@ -1,5 +1,6 @@
 """Common utilities for LangGraph-based agents."""
 
+from typing import TypedDict, Optional
 import logging
 import os
 from typing import Any, Dict
@@ -19,6 +20,26 @@ logging.basicConfig(level=logging.WARNING)
 logging.getLogger("langgraph").setLevel(logging.WARNING)
 logging.getLogger("langchain").setLevel(logging.WARNING)
 logging.getLogger("langmem").setLevel(logging.WARNING)
+
+# Define interrupt schema types
+
+
+class HumanInterruptConfig(TypedDict):
+    allow_ignore: bool
+    allow_respond: bool
+    allow_edit: bool
+    allow_accept: bool
+
+
+class ActionRequest(TypedDict):
+    action: str
+    args: dict
+
+
+class HumanInterrupt(TypedDict):
+    action_request: ActionRequest
+    config: HumanInterruptConfig
+    description: Optional[str]
 
 
 class ReconnectingPostgresStore:

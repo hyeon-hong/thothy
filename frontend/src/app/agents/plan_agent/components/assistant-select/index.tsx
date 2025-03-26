@@ -85,7 +85,7 @@ function AssistantSelectComponent(props: AssistantSelectProps) {
             tooltip="Change assistant"
             variant="ghost"
             className={cn("size-7 mt-1", props.className)}
-            delayDuration={200}
+            delayduration={200}
             style={{ color: metadata?.iconData?.iconColor || "#4b5563" }}
             onClick={(e) => {
               e.preventDefault();

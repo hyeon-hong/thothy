@@ -114,7 +114,7 @@ export const Thread: FC<ThreadProps> = (props: ThreadProps) => {
               tooltip="Collapse Chat"
               variant="ghost"
               className="w-8 h-8"
-              delayDuration={400}
+              delayduration={400}
               onClick={() => props.setChatCollapsed(true)}
             >
               <PanelRightOpen className="text-gray-600" />
@@ -123,7 +123,7 @@ export const Thread: FC<ThreadProps> = (props: ThreadProps) => {
               tooltip="New chat"
               variant="ghost"
               className="w-8 h-8"
-              delayDuration={400}
+              delayduration={400}
               onClick={handleNewSession}
             >
               <SquarePen className="text-gray-600" />

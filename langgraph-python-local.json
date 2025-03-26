@@ -15,10 +15,6 @@
     "staff_graph": "./backend/staff_agent/src/staff_graph/graph.py:graph",
     "team_graph": "./backend/team_agent/src/team_graph/graph.py:graph"
   },
-  "auth": {
-    "path": "./backend/security/auth.py:auth",
-    "disable_studio_auth": false
-  },
   "env": "./.env",
   "python_version": "3.12"
 }

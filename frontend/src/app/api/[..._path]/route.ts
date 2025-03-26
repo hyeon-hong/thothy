@@ -12,8 +12,7 @@ function getCorsHeaders() {
 
 async function handleRequest(req: NextRequest, method: string) {
   const LANGGRAPH_API_URL = process.env.NEXT_PUBLIC_LANGGRAPH_API_URL;
-  console.log('Incoming request to:', req.nextUrl.pathname);
-
+  console.log("LANGGRAPH_API_URL", LANGGRAPH_API_URL);
   let session: Session | undefined;
   let user: User | undefined;
   try {
@@ -38,7 +37,6 @@ async function handleRequest(req: NextRequest, method: string) {
       ? `?${searchParams.toString()}`
       : "";
 
-    console.log('Forwarding request to:', `${LANGGRAPH_API_URL}/${path}${queryString}`);
 
     // Create a filtered set of headers
     const headers: Record<string, string> = {
@@ -71,7 +69,6 @@ async function handleRequest(req: NextRequest, method: string) {
       };
       
       let bodyText = await req.text();
-      console.log('Request body length:', bodyText.length);
 
       if (typeof bodyText === "string" && bodyText.length > 0) {
         try {
@@ -91,16 +88,11 @@ async function handleRequest(req: NextRequest, method: string) {
       options.body = bodyText;
     }
 
-    console.log('Sending request with options:', {
-      method: options.method,
-      headers: options.headers,
-      bodyLength: options.body ? (options.body as string).length : 0
-    });
-
     const res = await fetch(
       `${LANGGRAPH_API_URL}/${path}${queryString}`,
       options
     );
+    console.log("res: ", res);
 
     if (res.status >= 400) {
       console.error(

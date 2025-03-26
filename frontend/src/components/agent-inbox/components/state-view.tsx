@@ -59,7 +59,9 @@ function MessagesRenderer({ messages }: { messages: BaseMessage[] }) {
           >
             <p className="font-medium text-gray-700">{messageTypeLabel}:</p>
             {content && (
-              <MarkdownText className="text-gray-600">{content}</MarkdownText>
+              <div className="text-gray-600">
+                <MarkdownText>{content}</MarkdownText>
+              </div>
             )}
             {"tool_calls" in msg && msg.tool_calls ? (
               <div className="flex flex-col gap-1 items-start w-full">
@@ -86,17 +88,21 @@ function StateViewRecursive(props: StateViewRecursiveProps) {
 
   if (["string", "number"].includes(typeof props.value)) {
     return (
-      <MarkdownText className="font-light text-gray-600">
-        {props.value as string}
-      </MarkdownText>
+      <div className="font-light text-gray-600">
+        <MarkdownText>
+          {props.value as string}
+        </MarkdownText>
+      </div>
     );
   }
 
   if (typeof props.value === "boolean") {
     return (
-      <MarkdownText className="font-light text-gray-600">
-        {JSON.stringify(props.value)}
-      </MarkdownText>
+      <div className="font-light text-gray-600">
+        <MarkdownText>
+          {JSON.stringify(props.value)}
+        </MarkdownText>
+      </div>
     );
   }
 
@@ -260,9 +266,11 @@ export function StateView({
     <div className="overflow-y-auto pl-6 border-t-[1px] lg:border-t-[0px] lg:border-l-[1px] border-gray-100 flex flex-row gap-0 w-full">
       {view === "description" && (
         <div className="pt-6 pb-2">
-          <MarkdownText className="text-wrap break-words whitespace-pre-wrap">
-            {description || "No description provided"}
-          </MarkdownText>
+          <div className="text-wrap break-words whitespace-pre-wrap">
+            <MarkdownText>
+              {description || "No description provided"}
+            </MarkdownText>
+          </div>
         </div>
       )}
       {view === "state" && (

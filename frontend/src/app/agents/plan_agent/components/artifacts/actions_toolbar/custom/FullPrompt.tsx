@@ -57,7 +57,7 @@ const HighlightToDeleteText = (props: HighlightToDeleteTextProps) => {
     <AnimatePresence>
       {props.isVisible && (
         <TooltipProvider>
-          <Tooltip delayDuration={100}>
+          <Tooltip delayduration={100}>
             <TooltipTrigger asChild>
               <motion.span
                 layout

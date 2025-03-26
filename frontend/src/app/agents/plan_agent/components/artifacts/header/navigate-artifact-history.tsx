@@ -19,7 +19,7 @@ export function NavigateArtifactHistory(props: NavigateArtifactHistoryProps) {
         tooltip={prevTooltip}
         side="left"
         variant="ghost"
-        delayDuration={400}
+        delayduration={400}
         onClick={() => {
           if (!props.isBackwardsDisabled) {
             props.setSelectedArtifact(props.currentArtifactIndex - 1);
@@ -37,7 +37,7 @@ export function NavigateArtifactHistory(props: NavigateArtifactHistoryProps) {
         tooltip={nextTooltip}
         variant="ghost"
         side="right"
-        delayDuration={400}
+        delayduration={400}
         onClick={() => {
           if (!props.isForwardDisabled) {
             props.setSelectedArtifact(props.currentArtifactIndex + 1);

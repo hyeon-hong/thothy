@@ -14,16 +14,16 @@ import { cn } from "../../lib/utils";
 export type TooltipIconButtonProps = ButtonProps & {
   tooltip: string;
   side?: "top" | "bottom" | "left" | "right";
-  delayDuration?: number;
+  delayduration?: number;
 };
 
 export const TooltipIconButton = forwardRef<
   HTMLButtonElement,
   TooltipIconButtonProps
->(({ children, tooltip, side = "bottom", className, delayDuration, ...buttonProps }, ref) => {
+>(({ children, tooltip, side = "bottom", className, delayduration, ...buttonProps }, ref) => {
   return (
     <TooltipProvider>
-      <Tooltip delayDuration={delayDuration}>
+      <Tooltip delayduration={delayduration}>
         <TooltipTrigger asChild>
           <Button
             variant="ghost"

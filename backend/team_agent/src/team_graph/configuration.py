@@ -1,4 +1,4 @@
-"""Define the configurable parameters for the staff bot."""
+"""Define the configurable parameters for the team bot."""
 
 import os
 import copy as copy_module
@@ -7,25 +7,30 @@ from typing import Any, Optional, Iterator, Tuple
 
 from langchain_core.runnables import RunnableConfig
 
-from staff_graph.prompts import SYSTEM_PROMPT
+# TODO: Create a prompts.py file and import SYSTEM_PROMPT from there
+SYSTEM_PROMPT = (
+    "You are a team supervisor tasked with managing a conversation between"
+    " multiple agents. Your role is to coordinate tasks and ensure they are"
+    " completed in the correct order."
+)
 
 
 @dataclass(kw_only=True)
-class StaffConfigurable:
-    """The configurable fields for the staff assistant."""
+class TeamConfigurable:
+    """The configurable fields for the team supervisor."""
 
     project_id: str = "default"
     team_id: str = "default"
     staff_id: str = "default"
     agent_id: str = "default"
     user_id: str = "default"
-    graph_name: str = "staff_graph"
+    graph_name: str = "team_graph"
 
     model: str = "anthropic/claude-3-5-sonnet-20240620"
     delay_seconds: int = 1
     system_prompt: str = SYSTEM_PROMPT
 
-    def copy(self) -> "StaffConfigurable":
+    def copy(self) -> "TeamConfigurable":
         """Create a copy of this configurable."""
         return copy_module.deepcopy(self)
 
@@ -52,7 +57,7 @@ class StaffConfigurable:
     @classmethod
     def from_runnable_config(
         cls, config: Optional[RunnableConfig] = None
-    ) -> "StaffConfigurable":
+    ) -> "TeamConfigurable":
         """Load configuration."""
         configurable = (
             config["configurable"] if config and "configurable" in config
@@ -60,7 +65,7 @@ class StaffConfigurable:
         )
 
         # config["configurable"] should has user_id, project_id, team_id,
-        # staff_id, agent_id and it will be populated from the namespace
+        # and agent_id and it will be populated from the namespace
         # If each field is not provided, set each field as "default".
         if "project_id" not in configurable:
             configurable["project_id"] = "default"
@@ -69,7 +74,7 @@ class StaffConfigurable:
         if "staff_id" not in configurable:
             configurable["staff_id"] = "default"
         if "agent_id" not in configurable:
-            configurable["agent_id"] = "staff"
+            configurable["agent_id"] = "team"
         if "user_id" not in configurable:
             configurable["user_id"] = "default"
 

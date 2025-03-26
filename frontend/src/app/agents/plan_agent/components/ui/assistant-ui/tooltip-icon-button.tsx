@@ -17,7 +17,7 @@ export type TooltipIconButtonProps = ButtonProps & {
   /**
    * @default 700
    */
-  delayDuration?: number;
+  delayduration?: number;
 };
 
 export const TooltipIconButton = forwardRef<
@@ -25,12 +25,12 @@ export const TooltipIconButton = forwardRef<
   TooltipIconButtonProps
 >(
   (
-    { children, tooltip, side = "bottom", className, delayDuration, ...rest },
+    { children, tooltip, side = "bottom", className, delayduration, ...rest },
     ref
   ) => {
     return (
       <TooltipProvider>
-        <Tooltip delayDuration={delayDuration ?? 700}>
+        <Tooltip delayduration={delayduration ?? 700}>
           <TooltipTrigger asChild>
             <Button
               variant="ghost"

@@ -16,23 +16,13 @@ export function InboxItem<
   ThreadValues extends Record<string, any> = Record<string, any>,
 >({ threadData, isLast }: InboxItemProps<ThreadValues>) {
   const { searchParams } = useQueryParams();
-
   const inbox = (searchParams.get(INBOX_PARAM) ||
     "interrupted") as ThreadStatusWithAll;
 
   if (inbox === "all") {
     if (threadData.status === "interrupted") {
       if (threadData.interrupts?.length) {
-        return (
-          <InterruptedInboxItem
-            threadData={
-              threadData as ThreadData<ThreadValues> & {
-                interrupts: HumanInterrupt[];
-              }
-            }
-            isLast={isLast}
-          />
-        );
+        return <InterruptedInboxItem threadData={threadData} isLast={isLast} />;
       } else {
         return (
           <GenericInboxItem
@@ -50,16 +40,7 @@ export function InboxItem<
 
   if (inbox === "interrupted" && threadData.status === "interrupted") {
     if (threadData.interrupts?.length) {
-      return (
-        <InterruptedInboxItem
-          threadData={
-            threadData as ThreadData<ThreadValues> & {
-              interrupts: HumanInterrupt[];
-            }
-          }
-          isLast={isLast}
-        />
-      );
+      return <InterruptedInboxItem threadData={threadData} isLast={isLast} />;
     } else {
       return (
         <GenericInboxItem
