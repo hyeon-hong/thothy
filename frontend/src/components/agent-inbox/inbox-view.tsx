@@ -39,15 +39,16 @@ export function AgentInboxView<
     }
   }, [searchParams]);
 
-  const threadDataToRender = React.useMemo(
-    () =>
-      threadData.filter((t) => {
-        if (selectedInbox === "all") return true;
-        return t.status === selectedInbox;
-      }),
-    [selectedInbox, threadData]
-  );
+  const threadDataToRender = React.useMemo(() => {
+    console.log("threadData: ", threadData);
+    const filteredThreadData = threadData.filter((t) => {
+      if (selectedInbox === "all") return true;
+      return t.status === selectedInbox;
+    });
+    return filteredThreadData;
+  }, [selectedInbox, threadData]);
   const noThreadsFound = !threadDataToRender.length;
+  console.log("threadDataToRender: ", threadDataToRender);
 
   return (
     <div className="min-w-[1000px] h-full overflow-y-auto">

@@ -14,6 +14,7 @@ export function AgentInbox<
 
   const selectedThreadIdParam = searchParams.get(VIEW_STATE_THREAD_QUERY_PARAM);
   const isStateViewOpen = !!selectedThreadIdParam;
+  console.log("isStateViewOpen: ", isStateViewOpen);
 
   React.useEffect(() => {
     try {

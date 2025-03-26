@@ -63,10 +63,16 @@ type ThreadContentType<
     }
   ) => Promise<
     TStream extends true
-      ? AsyncGenerator<{
-          event: Record<string, any>;
-          data: any;
-        }, any, unknown> | undefined
+      ?
+          | AsyncGenerator<
+              {
+                event: Record<string, any>;
+                data: any;
+              },
+              any,
+              unknown
+            >
+          | undefined
       : Run | undefined
   >;
   fetchSingleThread: (threadId: string) => Promise<
@@ -421,23 +427,12 @@ export function ThreadsProvider<
 
         threads.forEach((t) => {
           if (t.status === "interrupted") {
-            data.push({
-              status: t.status,
-              thread: t as Thread<ThreadValues>,
-              interrupts: getInterruptFromThread(t),
-            });
             return;
           }
-          if (
-            t.status === "idle" ||
-            t.status === "busy" ||
-            t.status === "error"
-          ) {
-            data.push({
-              status: t.status,
-              thread: t as Thread<ThreadValues>,
-            });
-          }
+          data.push({
+            status: t.status,
+            thread: t as Thread<ThreadValues>,
+          });
         });
 
         const sortedData = data.sort((a, b) => {
@@ -585,10 +580,16 @@ export function ThreadsProvider<
     }
   ): Promise<
     TStream extends true
-      ? AsyncGenerator<{
-          event: Record<string, any>;
-          data: any;
-        }, any, unknown> | undefined
+      ?
+          | AsyncGenerator<
+              {
+                event: Record<string, any>;
+                data: any;
+              },
+              any,
+              unknown
+            >
+          | undefined
       : Run | undefined
   > => {
     const graphId = agentInboxes.find((i) => i.selected)?.graphId;
