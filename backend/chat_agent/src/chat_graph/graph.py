@@ -4,7 +4,7 @@ import logging
 import datetime  # Import datetime for getting current time
 
 from langchain.chat_models import init_chat_model
-
+from langgraph.types import interrupt
 from langgraph.checkpoint.memory import MemorySaver
 from langgraph.graph import MessagesState, StateGraph, START, END
 from langgraph.store.base import BaseStore
@@ -38,6 +38,13 @@ async def chatbot(
     # Invoke the LLM
     response = llm.invoke(
         [{"role": "system", "content": system_msg}] + state["messages"]
+    )
+
+    interrupt(
+        {
+            "description": "Is this correct?",
+            "interrupt_text": response
+        }
     )
 
     return {"messages": response}

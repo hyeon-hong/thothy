@@ -83,8 +83,11 @@ interface GetClientArgs {
 }
 
 const getClient = async ({ agentInboxes, getItem, toast }: GetClientArgs) => {
-  console.log('getClient called with agentInboxes:', JSON.stringify(agentInboxes, null, 2));
-  
+  console.log(
+    "getClient called with agentInboxes:",
+    JSON.stringify(agentInboxes, null, 2)
+  );
+
   if (agentInboxes.length === 0) {
     console.error("Agent inbox not found. Please add an inbox in settings.");
     toast({
@@ -95,15 +98,17 @@ const getClient = async ({ agentInboxes, getItem, toast }: GetClientArgs) => {
     });
     return;
   }
-  
+
   const selectedInbox = agentInboxes.find((i) => i.selected);
-  console.log('Selected inbox:', JSON.stringify(selectedInbox, null, 2));
-  
+  console.log("Selected inbox:", JSON.stringify(selectedInbox, null, 2));
+
   let deploymentUrl = selectedInbox?.deploymentUrl;
-  console.log('Initial deploymentUrl:', deploymentUrl);
-  
+  console.log("Initial deploymentUrl:", deploymentUrl);
+
   if (!deploymentUrl) {
-    console.error("Deployment URL not found. Please add a deployment URL in settings.");
+    console.error(
+      "Deployment URL not found. Please add a deployment URL in settings."
+    );
     toast({
       title: "Error",
       description:
@@ -115,16 +120,16 @@ const getClient = async ({ agentInboxes, getItem, toast }: GetClientArgs) => {
   }
 
   // In development, route through our API proxy
-  if (process.env.NODE_ENV === 'development') {
-    deploymentUrl = 'http://localhost:3000/api';
+  if (process.env.NODE_ENV === "development") {
+    deploymentUrl = "http://localhost:3000/api";
   }
 
   const langchainApiKeyLS =
     process.env.NEXT_PUBLIC_LANGGRAPH_API_KEY || undefined;
-  console.log('LangChain API Key present:', !!langchainApiKeyLS);
+  console.log("LangChain API Key present:", !!langchainApiKeyLS);
 
-  console.log('Creating client with final deploymentUrl:', deploymentUrl);
-  
+  console.log("Creating client with final deploymentUrl:", deploymentUrl);
+
   return await createClient({
     deploymentUrl,
     langchainApiKey: langchainApiKeyLS,
@@ -332,53 +337,56 @@ export function ThreadsProvider<
 
   const fetchThreads = React.useCallback(
     async (inbox: ThreadStatusWithAll) => {
-      console.log('=== fetchThreads Start ===');
-      console.log('Inbox parameter:', inbox);
-      console.log('Current agentInboxes:', JSON.stringify(agentInboxes, null, 2));
-      
+      console.log("=== fetchThreads Start ===");
+      console.log("Inbox parameter:", inbox);
+      console.log(
+        "Current agentInboxes:",
+        JSON.stringify(agentInboxes, null, 2)
+      );
+
       setLoading(true);
-      
+
       try {
-        console.log('Getting client...');
+        console.log("Getting client...");
         const client = await getClient({
           agentInboxes,
           getItem,
           toast,
         });
         console.log("Client creation result:", JSON.stringify(client, null, 2));
-        
+
         if (!client) {
-          console.error('Client creation failed');
+          console.error("Client creation failed");
           return;
         }
 
-        console.log('=== Search Parameters Setup ===');
+        console.log("=== Search Parameters Setup ===");
         const limitQueryParam = getSearchParam(LIMIT_PARAM);
-        console.log('Raw limit param:', limitQueryParam);
-        
+        console.log("Raw limit param:", limitQueryParam);
+
         if (!limitQueryParam) {
           console.error("Limit query param not found");
           throw new Error("Limit query param not found");
         }
-        
+
         const offsetQueryParam = getSearchParam(OFFSET_PARAM);
-        console.log('Raw offset param:', offsetQueryParam);
-        
+        console.log("Raw offset param:", offsetQueryParam);
+
         if (!offsetQueryParam) {
           console.error("Offset query param not found");
           throw new Error("Offset query param not found");
         }
-        
+
         const limit = Number(limitQueryParam);
         const offset = Number(offsetQueryParam);
-        console.log('Parsed parameters:', { limit, offset });
-        console.log('Parameter validation:', {
+        console.log("Parsed parameters:", { limit, offset });
+        console.log("Parameter validation:", {
           isLimitValid: !isNaN(limit),
-          isOffsetValid: !isNaN(offset)
+          isOffsetValid: !isNaN(offset),
         });
 
         if (limit > 100) {
-          console.warn('Limit exceeds maximum allowed value:', limit);
+          console.warn("Limit exceeds maximum allowed value:", limit);
           toast({
             title: "Error",
             description: "Cannot fetch more than 100 threads at a time",
@@ -388,12 +396,12 @@ export function ThreadsProvider<
           return;
         }
 
-        console.log('=== Building Search Arguments ===');
+        console.log("=== Building Search Arguments ===");
         const statusInput = inbox === "all" ? {} : { status: inbox };
-        console.log('Status input:', statusInput);
-        
+        console.log("Status input:", statusInput);
+
         const metadataInput = getThreadFilterMetadata(agentInboxes);
-        console.log('Metadata input:', metadataInput);
+        console.log("Metadata input:", metadataInput);
 
         const threadSearchArgs = {
           // offset,
@@ -401,58 +409,65 @@ export function ThreadsProvider<
           // ...statusInput,
           // ...(metadataInput ? { metadata: metadataInput } : {}),
         };
-        console.log('Final thread search arguments:', JSON.stringify(threadSearchArgs, null, 2));
+        console.log(
+          "Final thread search arguments:",
+          JSON.stringify(threadSearchArgs, null, 2)
+        );
 
-        console.log('=== Executing Search ===');
-        console.log('Client before search:', client);
-        console.log('Client threads API:', client.threads);
+        console.log("=== Executing Search ===");
+        console.log("Client before search:", client);
+        console.log("Client threads API:", client.threads);
         const threads = await client.threads.search(threadSearchArgs);
-        console.log('Search results:', JSON.stringify(threads, null, 2));
-        
+        console.log("Search results:", JSON.stringify(threads, null, 2));
+
         const data: ThreadData<ThreadValues>[] = [];
-        console.log('=== Processing Results ===');
+        console.log("=== Processing Results ===");
 
         if (["interrupted", "all"].includes(inbox)) {
-          console.log('Processing interrupted threads');
+          console.log("Processing interrupted threads");
           const interruptedThreads = threads.filter(
             (t) => t.status === "interrupted"
           );
-          console.log('Found interrupted threads:', interruptedThreads.length);
+          console.log("Found interrupted threads:", interruptedThreads.length);
 
           // Process threads with interrupts in their thread object
-          console.log('Processing threads with existing interrupts');
+          console.log("Processing threads with existing interrupts");
           const processedThreads = interruptedThreads
             .map((t) => {
-              console.log('Processing thread:', t.thread_id);
+              console.log("Processing thread:", t.thread_id);
               return processInterruptedThread(t as Thread<ThreadValues>);
             })
             .filter((t): t is ThreadData<ThreadValues> => {
-              console.log('Thread processing result:', !!t);
+              console.log("Thread processing result:", !!t);
               return !!t;
             });
-          console.log('Processed threads count:', processedThreads.length);
+          console.log("Processed threads count:", processedThreads.length);
           data.push(...processedThreads);
 
           // [LEGACY]: Process threads that need state lookup
-          console.log('Processing legacy threads without interrupts');
-          const threadsWithoutInterrupts = interruptedThreads.filter(
-            (t) => {
-              const hasInterrupts = !getInterruptFromThread(t)?.length;
-              console.log(`Thread ${t.thread_id} has interrupts:`, !hasInterrupts);
-              return hasInterrupts;
-            }
+          console.log("Processing legacy threads without interrupts");
+          const threadsWithoutInterrupts = interruptedThreads.filter((t) => {
+            const hasInterrupts = !getInterruptFromThread(t)?.length;
+            console.log(
+              `Thread ${t.thread_id} has interrupts:`,
+              !hasInterrupts
+            );
+            return hasInterrupts;
+          });
+          console.log(
+            "Threads without interrupts:",
+            threadsWithoutInterrupts.length
           );
-          console.log('Threads without interrupts:', threadsWithoutInterrupts.length);
 
           if (threadsWithoutInterrupts.length > 0) {
-            console.log('Fetching states for threads without interrupts');
+            console.log("Fetching states for threads without interrupts");
             const states = await bulkGetThreadStates(
               threadsWithoutInterrupts.map((t) => t.thread_id)
             );
-            console.log('Retrieved states:', states.length);
+            console.log("Retrieved states:", states.length);
 
             const interruptedData = states.map((state) => {
-              console.log('Processing state for thread:', state.thread_id);
+              console.log("Processing state for thread:", state.thread_id);
               const thread = threadsWithoutInterrupts.find(
                 (t) => t.thread_id === state.thread_id
               );
@@ -465,54 +480,73 @@ export function ThreadsProvider<
                 state
               );
             });
-            console.log('Processed interrupted data count:', interruptedData.length);
+            console.log(
+              "Processed interrupted data count:",
+              interruptedData.length
+            );
 
             data.push(...interruptedData);
           }
         }
 
-        console.log('=== Processing Non-interrupted Threads ===');
+        console.log("=== Processing Non-interrupted Threads ===");
         threads.forEach((t) => {
           if (t.status === "interrupted") {
-            console.log('Skipping interrupted thread:', t.thread_id);
+            console.log("Skipping interrupted thread:", t.thread_id);
+            data.push({
+              status: t.status,
+              thread: t as Thread<ThreadValues>,
+              interrupts: getInterruptFromThread(t),
+            });
             return;
           }
-          console.log('Adding non-interrupted thread:', t.thread_id);
-          data.push({
-            status: t.status,
-            thread: t as Thread<ThreadValues>,
-          });
+          if (
+            t.status === "idle" ||
+            t.status === "busy" ||
+            t.status === "error"
+          ) {
+            console.log("Adding non-interrupted thread:", t.thread_id);
+            data.push({
+              status: t.status,
+              thread: t as Thread<ThreadValues>,
+            });
+          } else {
+            console.log(
+              "Skipping thread with invalid status:",
+              t.thread_id,
+              t.status
+            );
+          }
         });
 
-        console.log('=== Sorting Results ===');
-        console.log('Pre-sort data count:', data.length);
+        console.log("=== Sorting Results ===");
+        console.log("Pre-sort data count:", data.length);
         const sortedData = data.sort((a, b) => {
           const dateA = new Date(b.thread.created_at).getTime();
           const dateB = new Date(a.thread.created_at).getTime();
-          console.log('Comparing dates:', {
+          console.log("Comparing dates:", {
             a: b.thread.created_at,
             b: a.thread.created_at,
-            result: dateA - dateB
+            result: dateA - dateB,
           });
           return dateA - dateB;
         });
-        console.log('Post-sort data count:', sortedData.length);
+        console.log("Post-sort data count:", sortedData.length);
 
-        console.log('=== Updating State ===');
+        console.log("=== Updating State ===");
         setThreadData(sortedData);
         setHasMoreThreads(threads.length === limit);
-        console.log('Has more threads:', threads.length === limit);
-        
+        console.log("Has more threads:", threads.length === limit);
       } catch (e) {
         console.error("Failed to fetch threads", e);
         console.error("Error details:", {
           name: e.name,
           message: e.message,
-          stack: e.stack
+          stack: e.stack,
         });
       }
       setLoading(false);
-      console.log('=== fetchThreads End ===');
+      console.log("=== fetchThreads End ===");
     },
     [agentInboxes]
   );

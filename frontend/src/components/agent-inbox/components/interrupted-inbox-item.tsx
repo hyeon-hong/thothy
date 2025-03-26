@@ -34,6 +34,8 @@ export function InterruptedInboxItem<
     "MM/dd h:mm a"
   );
 
+  console.log("threadData: ", threadData);
+
   return (
     <div
       onClick={() =>
