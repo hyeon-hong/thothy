@@ -1,8 +1,9 @@
 {
-    "typescript.tsdk": "node_modules/typescript/lib",
-    "python.analysis.extraPaths": [
-        "./backend/chat_agent/src",
-        "./backend/news_agent/src",
-        "./backend/blog_agent/src"
-    ]
+  "typescript.tsdk": "node_modules/typescript/lib",
+  "python.analysis.extraPaths": [
+    "./backend/chat_agent/src",
+    "./backend/news_agent/src",
+    "./backend/blog_agent/src",
+    "./backend/team_agent/src",
+  ]
 }

@@ -12,7 +12,7 @@ from langgraph.store.base import BaseStore
 from team_graph.configuration import TeamConfigurable
 from blog_graph.graph import graph as blog_graph
 from news_graph.graph import graph as news_graph
-from thothy.backend.libs.utils import (
+from thothy.backend.libs.utils import (  # type: ignore
     HumanInterrupt,
     initialize_store,
     initialize_memory_manager,
@@ -78,8 +78,9 @@ def get_system_prompt(initial_request: str, todos: List[TodoItem]) -> str:
         f"\n\n{initial_request}\n\n"
         f"Current todo list status:\n{todo_status}\n\n"
         "Based on the todo list and conversation history, determine the next"
-        " action. If there are pending tasks, assign the next task to the"
-        " appropriate agent. When all tasks are completed, respond with FINISH."
+        "\naction. If there are pending tasks, assign the next task to the"
+        "\nappropriate agent. When all tasks are completed, respond with"
+        " FINISH."
     )
 
 
