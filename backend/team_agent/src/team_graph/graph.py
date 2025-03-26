@@ -9,7 +9,7 @@ from langchain.chat_models import init_chat_model
 from langgraph.checkpoint.memory import MemorySaver
 from langgraph.store.base import BaseStore
 
-from backend.staff_agent.src.staff_graph.configuration import StaffConfigurable
+from team_graph.configuration import TeamConfigurable
 from blog_graph.graph import graph as blog_graph
 from news_graph.graph import graph as news_graph
 from thothy.backend.libs.utils import (
@@ -18,7 +18,6 @@ from thothy.backend.libs.utils import (
     initialize_memory_manager,
     initialize_executor
 )
-from team_graph.configuration import TeamConfigurable
 
 # Initialize store with reconnection capability
 store = initialize_store()
