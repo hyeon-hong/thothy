@@ -25,7 +25,6 @@ import {
   OFFSET_PARAM,
   AGENT_INBOX_PARAM,
   AGENT_INBOXES_LOCAL_STORAGE_KEY,
-  LANGCHAIN_API_KEY_LOCAL_STORAGE_KEY,
   NO_INBOXES_FOUND_PARAM,
 } from "../constants";
 import {
@@ -83,13 +82,7 @@ interface GetClientArgs {
 }
 
 const getClient = async ({ agentInboxes, getItem, toast }: GetClientArgs) => {
-  console.log(
-    "getClient called with agentInboxes:",
-    JSON.stringify(agentInboxes, null, 2)
-  );
-
   if (agentInboxes.length === 0) {
-    console.error("Agent inbox not found. Please add an inbox in settings.");
     toast({
       title: "Error",
       description: "Agent inbox not found. Please add an inbox in settings. (",
@@ -100,15 +93,9 @@ const getClient = async ({ agentInboxes, getItem, toast }: GetClientArgs) => {
   }
 
   const selectedInbox = agentInboxes.find((i) => i.selected);
-  console.log("Selected inbox:", JSON.stringify(selectedInbox, null, 2));
-
   let deploymentUrl = selectedInbox?.deploymentUrl;
-  console.log("Initial deploymentUrl:", deploymentUrl);
 
   if (!deploymentUrl) {
-    console.error(
-      "Deployment URL not found. Please add a deployment URL in settings."
-    );
     toast({
       title: "Error",
       description:
@@ -126,9 +113,6 @@ const getClient = async ({ agentInboxes, getItem, toast }: GetClientArgs) => {
 
   const langchainApiKeyLS =
     process.env.NEXT_PUBLIC_LANGGRAPH_API_KEY || undefined;
-  console.log("LangChain API Key present:", !!langchainApiKeyLS);
-
-  console.log("Creating client with final deploymentUrl:", deploymentUrl);
 
   return await createClient({
     deploymentUrl,
@@ -337,56 +321,35 @@ export function ThreadsProvider<
 
   const fetchThreads = React.useCallback(
     async (inbox: ThreadStatusWithAll) => {
-      console.log("=== fetchThreads Start ===");
-      console.log("Inbox parameter:", inbox);
-      console.log(
-        "Current agentInboxes:",
-        JSON.stringify(agentInboxes, null, 2)
-      );
-
       setLoading(true);
 
       try {
-        console.log("Getting client...");
         const client = await getClient({
           agentInboxes,
           getItem,
           toast,
         });
-        console.log("Client creation result:", JSON.stringify(client, null, 2));
 
         if (!client) {
-          console.error("Client creation failed");
           return;
         }
 
-        console.log("=== Search Parameters Setup ===");
         const limitQueryParam = getSearchParam(LIMIT_PARAM);
-        console.log("Raw limit param:", limitQueryParam);
 
         if (!limitQueryParam) {
-          console.error("Limit query param not found");
           throw new Error("Limit query param not found");
         }
 
         const offsetQueryParam = getSearchParam(OFFSET_PARAM);
-        console.log("Raw offset param:", offsetQueryParam);
 
         if (!offsetQueryParam) {
-          console.error("Offset query param not found");
           throw new Error("Offset query param not found");
         }
 
         const limit = Number(limitQueryParam);
         const offset = Number(offsetQueryParam);
-        console.log("Parsed parameters:", { limit, offset });
-        console.log("Parameter validation:", {
-          isLimitValid: !isNaN(limit),
-          isOffsetValid: !isNaN(offset),
-        });
 
         if (limit > 100) {
-          console.warn("Limit exceeds maximum allowed value:", limit);
           toast({
             title: "Error",
             description: "Cannot fetch more than 100 threads at a time",
@@ -396,83 +359,46 @@ export function ThreadsProvider<
           return;
         }
 
-        console.log("=== Building Search Arguments ===");
         const statusInput = inbox === "all" ? {} : { status: inbox };
-        console.log("Status input:", statusInput);
-
         const metadataInput = getThreadFilterMetadata(agentInboxes);
-        console.log("Metadata input:", metadataInput);
-
         const threadSearchArgs = {
           // offset,
           // limit,
           // ...statusInput,
           // ...(metadataInput ? { metadata: metadataInput } : {}),
         };
-        console.log(
-          "Final thread search arguments:",
-          JSON.stringify(threadSearchArgs, null, 2)
-        );
 
-        console.log("=== Executing Search ===");
-        console.log("Client before search:", client);
-        console.log("Client threads API:", client.threads);
         const threads = await client.threads.search(threadSearchArgs);
-        console.log("Search results:", JSON.stringify(threads, null, 2));
-
         const data: ThreadData<ThreadValues>[] = [];
-        console.log("=== Processing Results ===");
 
         if (["interrupted", "all"].includes(inbox)) {
-          console.log("Processing interrupted threads");
           const interruptedThreads = threads.filter(
             (t) => t.status === "interrupted"
           );
-          console.log("Found interrupted threads:", interruptedThreads.length);
 
-          // Process threads with interrupts in their thread object
-          console.log("Processing threads with existing interrupts");
           const processedThreads = interruptedThreads
             .map((t) => {
-              console.log("Processing thread:", t.thread_id);
               return processInterruptedThread(t as Thread<ThreadValues>);
             })
             .filter((t): t is ThreadData<ThreadValues> => {
-              console.log("Thread processing result:", !!t);
               return !!t;
             });
-          console.log("Processed threads count:", processedThreads.length);
           data.push(...processedThreads);
 
-          // [LEGACY]: Process threads that need state lookup
-          console.log("Processing legacy threads without interrupts");
           const threadsWithoutInterrupts = interruptedThreads.filter((t) => {
-            const hasInterrupts = !getInterruptFromThread(t)?.length;
-            console.log(
-              `Thread ${t.thread_id} has interrupts:`,
-              !hasInterrupts
-            );
-            return hasInterrupts;
+            return !getInterruptFromThread(t)?.length;
           });
-          console.log(
-            "Threads without interrupts:",
-            threadsWithoutInterrupts.length
-          );
 
           if (threadsWithoutInterrupts.length > 0) {
-            console.log("Fetching states for threads without interrupts");
             const states = await bulkGetThreadStates(
               threadsWithoutInterrupts.map((t) => t.thread_id)
             );
-            console.log("Retrieved states:", states.length);
 
             const interruptedData = states.map((state) => {
-              console.log("Processing state for thread:", state.thread_id);
               const thread = threadsWithoutInterrupts.find(
                 (t) => t.thread_id === state.thread_id
               );
               if (!thread) {
-                console.error(`Thread not found: ${state.thread_id}`);
                 throw new Error(`Thread not found: ${state.thread_id}`);
               }
               return processThreadWithoutInterrupts(
@@ -480,19 +406,13 @@ export function ThreadsProvider<
                 state
               );
             });
-            console.log(
-              "Processed interrupted data count:",
-              interruptedData.length
-            );
 
             data.push(...interruptedData);
           }
         }
 
-        console.log("=== Processing Non-interrupted Threads ===");
         threads.forEach((t) => {
           if (t.status === "interrupted") {
-            console.log("Skipping interrupted thread:", t.thread_id);
             data.push({
               status: t.status,
               thread: t as Thread<ThreadValues>,
@@ -505,48 +425,30 @@ export function ThreadsProvider<
             t.status === "busy" ||
             t.status === "error"
           ) {
-            console.log("Adding non-interrupted thread:", t.thread_id);
             data.push({
               status: t.status,
               thread: t as Thread<ThreadValues>,
             });
-          } else {
-            console.log(
-              "Skipping thread with invalid status:",
-              t.thread_id,
-              t.status
-            );
           }
         });
 
-        console.log("=== Sorting Results ===");
-        console.log("Pre-sort data count:", data.length);
         const sortedData = data.sort((a, b) => {
           const dateA = new Date(b.thread.created_at).getTime();
           const dateB = new Date(a.thread.created_at).getTime();
-          console.log("Comparing dates:", {
-            a: b.thread.created_at,
-            b: a.thread.created_at,
-            result: dateA - dateB,
-          });
           return dateA - dateB;
         });
-        console.log("Post-sort data count:", sortedData.length);
 
-        console.log("=== Updating State ===");
         setThreadData(sortedData);
         setHasMoreThreads(threads.length === limit);
-        console.log("Has more threads:", threads.length === limit);
       } catch (e) {
-        console.error("Failed to fetch threads", e);
-        console.error("Error details:", {
-          name: e.name,
-          message: e.message,
-          stack: e.stack,
+        toast({
+          title: "Error",
+          description: "Failed to fetch threads",
+          variant: "destructive",
+          duration: 3000,
         });
       }
       setLoading(false);
-      console.log("=== fetchThreads End ===");
     },
     [agentInboxes]
   );
@@ -658,7 +560,6 @@ export function ThreadsProvider<
         duration: 3000,
       });
     } catch (e) {
-      console.error("Error ignoring thread", e);
       toast({
         title: "Error",
         description: "Failed to ignore thread",
@@ -708,15 +609,14 @@ export function ThreadsProvider<
             resume: response,
           },
           streamMode: "events",
-        }) as any; // Type assertion needed due to conditional return type
+        }) as any;
       }
       return client.runs.create(threadId, graphId, {
         command: {
           resume: response,
         },
-      }) as any; // Type assertion needed due to conditional return type
+      }) as any;
     } catch (e: any) {
-      console.error("Error sending human response", e);
       throw e;
     }
   };
