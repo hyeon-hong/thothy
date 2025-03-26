@@ -2,10 +2,8 @@
 
 import logging
 import datetime  # Import datetime for getting current time
-from typing import TypedDict, Optional
 
 from langchain.chat_models import init_chat_model
-from langgraph.types import interrupt
 from langgraph.checkpoint.memory import MemorySaver
 from langgraph.graph import MessagesState, StateGraph, START, END
 from langgraph.store.base import BaseStore
@@ -14,25 +12,6 @@ from chat_graph.configuration import ChatConfigurable
 # Configure logging to hide INFO messages
 logging.basicConfig(level=logging.WARNING)
 logging.getLogger("langgraph").setLevel(logging.WARNING)
-
-
-# Define interrupt schema types
-class HumanInterruptConfig(TypedDict):
-    allow_ignore: bool
-    allow_respond: bool
-    allow_edit: bool
-    allow_accept: bool
-
-
-class ActionRequest(TypedDict):
-    action: str
-    args: dict
-
-
-class HumanInterrupt(TypedDict):
-    action_request: ActionRequest
-    config: HumanInterruptConfig
-    description: Optional[str]
 
 
 async def chatbot(

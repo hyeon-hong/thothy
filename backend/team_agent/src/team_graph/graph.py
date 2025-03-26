@@ -3,11 +3,12 @@ from typing import Literal, List, Dict
 from langchain_openai import ChatOpenAI
 from langgraph.graph import StateGraph, START, END
 from langchain_core.messages import HumanMessage
-from langgraph.types import Command
+from langgraph.types import Command, interrupt
 from langgraph.graph import MessagesState
 # from langchain_anthropic import ChatAnthropic
 from typing_extensions import TypedDict
 
+from libs.utils import HumanInterrupt
 from blog_graph.graph import graph as blog_graph
 from news_graph.graph import graph as news_graph
 
@@ -169,7 +170,7 @@ async def news_agent_node(state: State) -> Command[Literal["team_supervisor"]]:
             "messages": [
                 HumanMessage(
                     content=result["messages"][-1].content,
-                    name="news_agent"
+                    name="news_graph"
                 )
             ]
         },
@@ -185,13 +186,49 @@ async def blog_agent_node(state: State) -> Command[Literal["team_supervisor"]]:
             "messages": [
                 HumanMessage(
                     content=result["messages"][-1].content,
-                    name="blog_agent"
+                    name="blog_graph"
                 )
             ]
         },
         goto="team_supervisor",
     )
 
+
+async def finish_node(state: State) -> dict:
+    # Create interrupt request following the schema
+    request: HumanInterrupt = {
+        "action_request": {
+            "action": "Review Response",
+            "args": {"messages": state["messages"],
+                     "response": state["messages"][-1].content,
+                     "initial_request": state["initial_request"],
+                     "todos": state["todos"]}
+        },
+        "config": {
+            "allow_ignore": False,  # Don't allow ignoring the review
+            "allow_respond": True,  # Allow responding with feedback
+            "allow_edit": True,     # Allow editing the response
+            "allow_accept": True    # Allow accepting as-is
+        },
+        "description": """Please review this AI response. You can:
+- Accept the response as-is
+- Edit the response before sending
+- Provide feedback or instructions for regeneration
+- Make any necessary corrections
+
+Current response for review:
+```
+{response}
+```
+"""
+    }
+
+    # Send interrupt and get response
+    interrupt(request)
+
+    # TODO: Check the interrupt response and go to the appropriate node
+
+    return {"messages": [HumanMessage(content="Finished", name="team_graph")]}
 
 # Build the graph
 builder = StateGraph(State)
@@ -201,10 +238,12 @@ builder.add_node("init_request", init_request_node)
 builder.add_node("team_supervisor", team_supervisor_node)
 builder.add_node("news_agent", news_agent_node)
 builder.add_node("blog_agent", blog_agent_node)
+builder.add_node("finish_node", finish_node)
 
 # Add the edges
 builder.add_edge(START, "init_request")
 builder.add_edge("init_request", "team_supervisor")
+builder.add_edge("finish_node", END)
 
 # Compile the graph
 graph = builder.compile()
