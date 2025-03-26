@@ -131,7 +131,7 @@ export function ActionsToolbar(props: ActionsToolbarProps) {
                   tooltip={option.tooltip}
                   variant="ghost"
                   className="transition-colors w-[36px] h-[36px]"
-                  delayDuration={400}
+                  delayduration={400}
                   onClick={async (e) => await handleOptionClick(e, option.id)}
                 >
                   {option.icon}
@@ -152,7 +152,7 @@ export function ActionsToolbar(props: ActionsToolbarProps) {
               ? "cursor-default opacity-50 text-gray-400 hover:bg-background"
               : "cursor-pointer"
           )}
-          delayDuration={400}
+          delayduration={400}
         >
           <MagicPencilSVG
             className={cn(

@@ -23,7 +23,7 @@ export function CopyText(props: CopyTextProps) {
         tooltip="Copy"
         variant="outline"
         className="transition-colors"
-        delayDuration={400}
+        delayduration={400}
         onClick={() => {
           try {
             const text = isArtifactCodeContent(props.currentArtifactContent)

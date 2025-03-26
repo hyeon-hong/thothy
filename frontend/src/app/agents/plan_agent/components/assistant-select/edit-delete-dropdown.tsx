@@ -44,7 +44,7 @@ export function EditDeleteDropdown({
           disabled={disabled}
           tooltip={tooltipText}
           variant="ghost"
-          delayDuration={200}
+          delayduration={200}
           className="w-8 h-8"
         >
           <EllipsisVertical className="w-4 h-4" />

@@ -497,7 +497,7 @@ const sidebarMenuButtonVariants = cva(
 
 // Define the tooltip-specific props that should never be passed to DOM elements
 type TooltipRelatedProps = {
-  delayDuration?: number;
+  delayduration?: number;
   skipDelayDuration?: number;
 };
 

@@ -7,21 +7,24 @@ import { cn } from "@/lib/utils"
 
 // Add a helper function to filter tooltip-specific props
 const filterTooltipProps = (props: Record<string, any>) => {
-  const { delayDuration, skipDelayDuration, ...rest } = props
+  const { delayduration, skipDelayDuration, ...rest } = props
   return rest
 }
 
-type TooltipProviderProps = React.ComponentProps<typeof TooltipPrimitive.Provider>
+type TooltipProviderProps = Omit<React.ComponentProps<typeof TooltipPrimitive.Provider>, 'delayDuration'> & {
+  delayduration?: number;
+  children: React.ReactNode;
+}
 
 function TooltipProvider({
-  delayDuration = 0,
+  delayduration = 0,
   children,
   ...props
 }: TooltipProviderProps) {
   return (
     <TooltipPrimitive.Provider
       data-slot="tooltip-provider"
-      delayDuration={delayDuration}
+      delayDuration={delayduration}
       {...filterTooltipProps(props)}
     >
       {children}
@@ -29,10 +32,13 @@ function TooltipProvider({
   )
 }
 
-type TooltipProps = React.ComponentProps<typeof TooltipPrimitive.Root>
+type TooltipProps = React.ComponentProps<typeof TooltipPrimitive.Root> & {
+  delayduration?: number;
+}
 
 function Tooltip({
   children,
+  delayduration,
   ...props
 }: TooltipProps) {
   return (

@@ -15,12 +15,12 @@ import { cn } from "@/lib/utils";
 type TooltipProps = {
   tooltip: string;
   side?: "top" | "bottom" | "left" | "right";
-  delayDuration?: number;
+  delayduration?: number;
 };
 
 // Add a whitelist of props we want to pass to Button
 type SafeButtonProps = Omit<ButtonProps, 
-  | 'delayDuration' 
+  | 'delayduration' 
   | 'skipDelayDuration'
   | 'tooltip'
   | 'side'
@@ -31,12 +31,12 @@ export type TooltipIconButtonProps = SafeButtonProps & TooltipProps;
 export const TooltipIconButton = forwardRef<
   HTMLButtonElement,
   TooltipIconButtonProps
->(({ children, tooltip, side = "bottom", className, delayDuration, ...rest }, ref) => {
+>(({ children, tooltip, side = "bottom", className, delayduration, ...rest }, ref) => {
   // Create a clean set of props to pass to Button, explicitly removing tooltip props
   const buttonProps: SafeButtonProps = { ...rest };
   
   return (
-    <TooltipProvider delayDuration={delayDuration}>
+    <TooltipProvider delayduration={delayduration}>
       <Tooltip>
         <TooltipTrigger asChild>
           <Button

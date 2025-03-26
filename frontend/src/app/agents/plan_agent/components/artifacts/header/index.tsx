@@ -28,7 +28,7 @@ export function ArtifactHeader(props: ArtifactHeaderProps) {
             tooltip="Expand Chat"
             variant="ghost"
             className="ml-2 mb-1 w-8 h-8"
-            delayDuration={400}
+            delayduration={400}
             onClick={() => props.setChatCollapsed(false)}
           >
             <PanelRightClose className="text-gray-600" />

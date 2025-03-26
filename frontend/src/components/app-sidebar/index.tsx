@@ -117,7 +117,7 @@ export function AppSidebar() {
                       )}
                     >
                       <TooltipProvider>
-                        <Tooltip delayDuration={200}>
+                        <Tooltip delayduration={200}>
                           <TooltipTrigger asChild>
                             <SidebarMenuButton
                               onClick={() => changeAgentInbox(item.id, true)}
@@ -151,7 +151,7 @@ export function AppSidebar() {
                         variant="ghost"
                         tooltip="Delete"
                         className="text-gray-800 hover:text-red-500 transition-colors ease-in-out duration-200"
-                        delayDuration={100}
+                        delayduration={100}
                         onClick={(e) => {
                           e.stopPropagation();
                           deleteAgentInbox(item.id);

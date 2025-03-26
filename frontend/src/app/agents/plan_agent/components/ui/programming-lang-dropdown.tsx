@@ -23,7 +23,7 @@ export function ProgrammingLanguageList(
         tooltip="PHP"
         variant="ghost"
         className="transition-colors w-full h-fit"
-        delayDuration={400}
+        delayduration={400}
         onClick={async () => await props.handleSubmit("php")}
       >
         <p>PHP</p>
@@ -32,7 +32,7 @@ export function ProgrammingLanguageList(
         tooltip="TypeScript"
         variant="ghost"
         className="transition-colors w-full h-fit px-1 py-1"
-        delayDuration={400}
+        delayduration={400}
         onClick={async () => await props.handleSubmit("typescript")}
       >
         <p>TypeScript</p>
@@ -41,7 +41,7 @@ export function ProgrammingLanguageList(
         tooltip="JavaScript"
         variant="ghost"
         className="transition-colors w-full h-fit"
-        delayDuration={400}
+        delayduration={400}
         onClick={async () => await props.handleSubmit("javascript")}
       >
         <p>JavaScript</p>
@@ -50,7 +50,7 @@ export function ProgrammingLanguageList(
         tooltip="C++"
         variant="ghost"
         className="transition-colors w-full h-fit"
-        delayDuration={400}
+        delayduration={400}
         onClick={async () => await props.handleSubmit("cpp")}
       >
         <p>C++</p>
@@ -59,7 +59,7 @@ export function ProgrammingLanguageList(
         tooltip="Java"
         variant="ghost"
         className="transition-colors w-full h-fit"
-        delayDuration={400}
+        delayduration={400}
         onClick={async () => await props.handleSubmit("java")}
       >
         <p>Java</p>
@@ -68,7 +68,7 @@ export function ProgrammingLanguageList(
         tooltip="Python"
         variant="ghost"
         className="transition-colors w-full h-fit"
-        delayDuration={400}
+        delayduration={400}
         onClick={async () => await props.handleSubmit("python")}
       >
         <p>Python</p>
@@ -77,7 +77,7 @@ export function ProgrammingLanguageList(
         tooltip="HTML"
         variant="ghost"
         className="transition-colors w-full h-fit"
-        delayDuration={400}
+        delayduration={400}
         onClick={async () => await props.handleSubmit("html")}
       >
         <p>HTML</p>
@@ -86,7 +86,7 @@ export function ProgrammingLanguageList(
         tooltip="SQL"
         variant="ghost"
         className="transition-colors w-full h-fit"
-        delayDuration={400}
+        delayduration={400}
         onClick={async () => await props.handleSubmit("sql")}
       >
         <p>SQL</p>

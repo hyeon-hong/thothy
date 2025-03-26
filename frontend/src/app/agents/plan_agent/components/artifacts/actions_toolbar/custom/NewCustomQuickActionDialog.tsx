@@ -51,7 +51,7 @@ const ViewOrHidePromptIcon = (props: ViewOrHidePromptIconProps) => (
     tooltip={props.showFullPrompt ? "Hide prompt" : "View prompt"}
     variant="ghost"
     className="transition-colors"
-    delayDuration={400}
+    delayduration={400}
     onClick={(e) => {
       e.preventDefault();
       e.stopPropagation();
