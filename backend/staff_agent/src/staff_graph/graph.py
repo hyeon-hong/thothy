@@ -10,29 +10,11 @@ from staff_graph.configuration import StaffConfigurable
 from blog_graph.graph import graph as blog_graph
 from chat_graph.graph import graph as chat_graph
 from news_graph.graph import graph as news_graph
-
-# Import utility functions
-try:
-    # Try importing normally first (for production)
-    from backend.libs.utils import (
-        initialize_store,
-        initialize_memory_manager,
-        initialize_executor
-    )
-except ImportError:
-    # If that fails, try a relative import approach
-    import sys
-    from pathlib import Path
-    # Add the backend directory to sys.path
-    root_dir = Path(__file__).parent.parent.parent.parent
-    if str(root_dir) not in sys.path:
-        sys.path.append(str(root_dir))
-    # Now try the import again
-    from libs.utils import (
-        initialize_store,
-        initialize_memory_manager,
-        initialize_executor
-    )
+from thothy.backend.libs.utils import (
+    initialize_store,
+    initialize_memory_manager,
+    initialize_executor
+)
 
 # Configure logging to hide INFO messages
 logging.basicConfig(level=logging.WARNING)
@@ -62,6 +44,7 @@ async def staff_assistant(
     staff_id = configurable.staff_id
     agent_id = configurable.agent_id
     user_id = configurable.user_id
+    graph_name = configurable.graph_name
 
     # Set namespace for memories
     namespace = ("memories", user_id, project_id,
@@ -85,17 +68,17 @@ async def staff_assistant(
         {"role": "system", "content": system_msg}] + state["messages"]}
 
     # Route to the appropriate agent based on agent_id
-    if agent_id == "blog":
+    if graph_name == "blog_graph":
         # Call blog agent
         result = await blog_graph.ainvoke(thread_state, config)
-    elif agent_id == "news":
+    elif graph_name == "news_graph":
         # Call news agent
         result = await news_graph.ainvoke(thread_state, config)
-    elif agent_id == "chat":
+    elif graph_name == "chat_graph":
         # Call chat agent
         result = await chat_graph.ainvoke(thread_state, config)
     else:
-        raise ValueError(f"Invalid agent_id: {agent_id}")
+        raise ValueError(f"Invalid graph_name: {graph_name}")
 
     response = result["messages"][-1]
     # Submit memory processing task

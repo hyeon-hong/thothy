@@ -44,6 +44,7 @@ type Staff = {
   description: string;
   created_at: string;
   agent_id?: string;
+  graph_name?: string;
 };
 
 type Agent = {
@@ -246,7 +247,7 @@ export default function StaffPage() {
         // Initialize empty arrays to store data
         let staffData: Staff[] = [];
         let agentsData: Agent[] = [];
-        
+
         // First try to fetch agents from the API
         try {
           const agentsResponse = await fetch("/api/agents");
@@ -254,16 +255,18 @@ export default function StaffPage() {
             agentsData = await agentsResponse.json();
           } else {
             // If API fails, fetch directly from Supabase
-            console.warn(`API call failed with status ${agentsResponse.status}, fetching directly from Supabase`);
+            console.warn(
+              `API call failed with status ${agentsResponse.status}, fetching directly from Supabase`
+            );
             const supabase = createSupabaseClient();
             const { data, error } = await supabase
               .from("agents")
               .select("id, name, description, image_url, graph_name");
-              
+
             if (error) {
               throw new Error(`Supabase error: ${error.message}`);
             }
-            
+
             if (data) {
               agentsData = data as Agent[];
             }
@@ -276,11 +279,11 @@ export default function StaffPage() {
             const { data, error } = await supabase
               .from("agents")
               .select("id, name, description, image_url, graph_name");
-              
+
             if (error) {
               throw new Error(`Supabase error: ${error.message}`);
             }
-            
+
             if (data) {
               agentsData = data as Agent[];
             }
@@ -288,24 +291,24 @@ export default function StaffPage() {
             console.error("Supabase fetch error:", supabaseError);
           }
         }
-        
+
         // Now try to fetch staff data
         try {
           const staffResponse = await fetch("/api/staff");
-          
+
           if (!staffResponse.ok) {
-            throw new Error(`API call failed with status ${staffResponse.status}: ${await staffResponse.text()}`);
+            throw new Error(
+              `API call failed with status ${staffResponse.status}: ${await staffResponse.text()}`
+            );
           }
-          
+
           staffData = await staffResponse.json();
         } catch (error) {
           console.error("Error fetching staff:", error);
           // Try fetching directly from Supabase as fallback
           try {
             const supabase = createSupabaseClient();
-            const { data, error } = await supabase
-              .from("staffs")
-              .select(`
+            const { data, error } = await supabase.from("staffs").select(`
                 *,
                 agents:agent_id (
                   id,
@@ -314,19 +317,26 @@ export default function StaffPage() {
                   graph_name
                 )
               `);
-              
+
             if (error) {
               throw new Error(`Supabase error: ${error.message}`);
             }
-            
+
             if (data) {
               // Transform data to match the expected format
-              staffData = data.map(item => ({
+              staffData = data.map((item) => ({
                 id: item.id,
                 name: item.name || item.agents?.name || "Unnamed Staff",
                 description: item.description || item.agents?.description || "",
                 created_at: item.created_at,
-                agent_id: item.agent_id
+                agent_id: item.agent_id,
+              })) as Staff[];
+
+              // Add a graph_name field to the staff data
+              staffData = staffData.map((staff) => ({
+                ...staff,
+                graph_name:
+                  agents.find((a) => a.id === staff.agent_id)?.graph_name || "",
               })) as Staff[];
             } else {
               staffData = [];
@@ -336,7 +346,7 @@ export default function StaffPage() {
             staffData = [];
           }
         }
-        
+
         setStaffMembers(staffData);
         setAgents(agentsData);
       } catch (error) {
@@ -366,7 +376,7 @@ export default function StaffPage() {
         name: staffName,
         description: staffDescription,
         created_at: new Date().toISOString(),
-        agent_id: selectedAgent
+        agent_id: selectedAgent,
       };
 
       let createdStaff;
@@ -374,13 +384,13 @@ export default function StaffPage() {
         // If API fails, insert directly to Supabase
         console.warn("API failed, inserting directly to Supabase");
         const supabase = createSupabaseClient();
-        
+
         // Get the current user's ID
         const { data: userData } = await supabase.auth.getUser();
         if (!userData || !userData.user) {
           throw new Error("User not authenticated");
         }
-        
+
         // Insert according to the staffs table schema
         const { data, error } = await supabase
           .from("staffs")
@@ -391,11 +401,11 @@ export default function StaffPage() {
           })
           .select()
           .single();
-          
+
         if (error) {
           throw new Error(`Supabase error: ${error.message}`);
         }
-        
+
         if (data) {
           // Add our local fields to the data object for UI rendering
           createdStaff = {
@@ -403,7 +413,7 @@ export default function StaffPage() {
             name: staffName,
             description: staffDescription,
             created_at: data.created_at,
-            agent_id: selectedAgent
+            agent_id: selectedAgent,
           };
         } else {
           // Use local object as last resort
@@ -430,7 +440,7 @@ export default function StaffPage() {
 
   const handleEditStaff = async () => {
     if (!editingStaff) return;
-    
+
     if (!selectedAgent) {
       alert("Please select an agent for this staff member");
       return;
@@ -441,7 +451,7 @@ export default function StaffPage() {
         ...editingStaff,
         name: staffName,
         description: staffDescription,
-        agent_id: selectedAgent
+        agent_id: selectedAgent,
       };
 
       let savedStaff;
@@ -449,7 +459,7 @@ export default function StaffPage() {
         // If API fails, update directly in Supabase
         console.warn("API failed, updating directly in Supabase");
         const supabase = createSupabaseClient();
-        
+
         // Update according to the staffs table schema
         const { data, error } = await supabase
           .from("staffs")
@@ -458,14 +468,14 @@ export default function StaffPage() {
             // We can't update user_id as it's likely a foreign key
             // updated_at will be set automatically
           })
-          .eq('id', editingStaff.id)
+          .eq("id", editingStaff.id)
           .select()
           .single();
-          
+
         if (error) {
           throw new Error(`Supabase error: ${error.message}`);
         }
-        
+
         if (data) {
           // Add our local fields to the returned data for our local state
           savedStaff = {
@@ -474,7 +484,7 @@ export default function StaffPage() {
             name: staffName,
             description: staffDescription,
             agent_id: selectedAgent,
-            updated_at: data.updated_at
+            updated_at: data.updated_at,
           };
         } else {
           // Use local object as last resort
@@ -531,7 +541,7 @@ export default function StaffPage() {
   return (
     <div className="container mx-auto px-4">
       <Header currentView="staff" />
-      
+
       {isLoading ? (
         <div className="flex justify-center items-center min-h-[200px]">
           <p>Loading...</p>
@@ -578,20 +588,22 @@ export default function StaffPage() {
           <div className="mt-4">
             {staffMembers.length === 0 ? (
               <p className="text-center text-muted-foreground">
-                No staff members added yet. Start by adding your first staff member!
+                No staff members added yet. Start by adding your first staff
+                member!
               </p>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {staffMembers.map((staff) => (
-                  <Card 
-                    key={staff.id} 
-                    className={`flex flex-col ${staff.agent_id ? 'hover:shadow-md transition-shadow' : ''}`}
+                  <Card
+                    key={staff.id}
+                    className={`flex flex-col ${staff.agent_id ? "hover:shadow-md transition-shadow" : ""}`}
                   >
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                       <div>
                         <CardTitle>{staff.name}</CardTitle>
                         <CardDescription>
-                          Added on {new Date(staff.created_at).toLocaleDateString()}
+                          Added on{" "}
+                          {new Date(staff.created_at).toLocaleDateString()}
                         </CardDescription>
                       </div>
                       <Button
@@ -609,22 +621,28 @@ export default function StaffPage() {
                         <Pencil className="h-4 w-4" />
                       </Button>
                     </CardHeader>
-                    <CardContent 
-                      className={staff.agent_id ? 'cursor-pointer' : ''}
-                      onClick={() => staff.agent_id ? handleAgentClick(staff.agent_id) : null}
+                    <CardContent
+                      className={staff.agent_id ? "cursor-pointer" : ""}
+                      onClick={() =>
+                        staff.agent_id ? handleAgentClick(staff.agent_id) : null
+                      }
                     >
                       <p className="text-sm text-muted-foreground mb-2">
                         {staff.description}
                       </p>
                       {staff.agent_id && (
                         <div>
-                          <p className="text-sm font-medium mb-1">Assigned Agent:</p>
+                          <p className="text-sm font-medium mb-1">
+                            Assigned Agent:
+                          </p>
                           <div className="flex flex-wrap gap-2">
                             {(() => {
-                              const agent = agents.find((a) => a.id === staff.agent_id);
+                              const agent = agents.find(
+                                (a) => a.id === staff.agent_id
+                              );
                               return agent ? (
-                                <Badge 
-                                  key={agent.id} 
+                                <Badge
+                                  key={agent.id}
                                   variant="outline"
                                   className="cursor-pointer hover:bg-gray-100 transition-colors"
                                   onClick={(e) => {
@@ -649,4 +667,4 @@ export default function StaffPage() {
       )}
     </div>
   );
-} 
+}

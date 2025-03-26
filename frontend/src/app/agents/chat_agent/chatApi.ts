@@ -33,6 +33,15 @@ export const sendMessage = async (params: {
   return client.runs.stream(params.threadId, "chat_graph", {
     input: {
       messages: params.messages,
+      // TODO: Set each id
+      configurable: {
+        project_id: "default",
+        team_id: "default",
+        staff_id: "default",
+        agent_id: "chat",
+        user_id: "default",
+        graph_name: "chat_graph",
+      },
     },
     streamMode: "messages",
   });

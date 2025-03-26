@@ -1,1 +1,1 @@
-"""Backend utilities package for Thothy project.""" 
+"""Backend utilities package for Thothy project."""
