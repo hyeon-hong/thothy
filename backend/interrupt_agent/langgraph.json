@@ -1,0 +1,10 @@
+{
+  "dependencies": [
+    "."
+  ],
+  "graphs": {
+    "interrupt_graph": "./src/interrupt_graph/graph.py:graph"
+  },
+  "env": ".env",
+  "python_version": "3.12"
+}
