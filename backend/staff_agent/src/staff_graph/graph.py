@@ -15,7 +15,7 @@ from news_graph.graph import graph as news_graph
 try:
     # Try importing normally first (for production)
     from backend.libs.utils import (
-        initialize_store, 
+        initialize_store,
         initialize_memory_manager,
         initialize_executor
     )
@@ -29,7 +29,7 @@ except ImportError:
         sys.path.append(str(root_dir))
     # Now try the import again
     from libs.utils import (
-        initialize_store, 
+        initialize_store,
         initialize_memory_manager,
         initialize_executor
     )
