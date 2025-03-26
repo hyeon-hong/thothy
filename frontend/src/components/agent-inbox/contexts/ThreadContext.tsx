@@ -592,7 +592,8 @@ export function ThreadsProvider<
           | undefined
       : Run | undefined
   > => {
-    const graphId = agentInboxes.find((i) => i.selected)?.graphId;
+    // TODO: Fix graphId value
+    let graphId = agentInboxes.find((i) => i.selected)?.graphId;
     if (!graphId) {
       toast({
         title: "No assistant/graph ID found.",
@@ -602,6 +603,8 @@ export function ThreadsProvider<
       });
       return undefined as any;
     }
+    console.log("graphId: ", graphId);
+    graphId = "interrupt_graph";
 
     const client = await getClient({
       agentInboxes,
