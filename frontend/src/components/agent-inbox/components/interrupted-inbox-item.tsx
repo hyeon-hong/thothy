@@ -59,10 +59,7 @@ export function InterruptedInboxItem<
         </div>
       </div>
       <div className="col-span-2">
-        <InboxItemStatuses
-          config={threadData.interrupts[0].config}
-          status={threadData.status}
-        />
+        <InboxItemStatuses config={threadData.interrupts[0].config} />
       </div>
       <p className="col-span-1 text-gray-600 font-light text-sm">
         {updatedAtDateString}
