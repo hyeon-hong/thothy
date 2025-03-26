@@ -1,17 +1,34 @@
 import logging
 from typing import Literal, List, Dict
-from langchain_openai import ChatOpenAI
 from langgraph.graph import StateGraph, START, END
 from langchain_core.messages import HumanMessage
 from langgraph.types import Command, interrupt
 from langgraph.graph import MessagesState
 from typing_extensions import TypedDict
+from langchain.chat_models import init_chat_model
+from langgraph.checkpoint.memory import MemorySaver
+from langgraph.store.base import BaseStore
 
+from backend.staff_agent.src.staff_graph.configuration import StaffConfigurable
 from blog_graph.graph import graph as blog_graph
 from news_graph.graph import graph as news_graph
-from thothy.backend.libs.utils import HumanInterrupt
+from thothy.backend.libs.utils import (
+    HumanInterrupt,
+    initialize_store,
+    initialize_memory_manager,
+    initialize_executor
+)
+from team_graph.configuration import TeamConfigurable
 
-llm = ChatOpenAI(model="gpt-4o-mini")
+# Initialize store with reconnection capability
+store = initialize_store()
+llm = init_chat_model("gpt-4o-mini", model_provider="openai", temperature=0.8)
+
+# Create memory manager
+memory_manager = initialize_memory_manager()
+
+# Wrap memory_manager to handle deferred background processing
+executor = initialize_executor(memory_manager, store)
 
 members = ["news_agent", "blog_agent"]
 OptionType = Literal["news_agent", "blog_agent", "FINISH"]
@@ -67,14 +84,49 @@ def get_system_prompt(initial_request: str, todos: List[TodoItem]) -> str:
     )
 
 
-def init_request_node(state: State) -> Command[Literal["team_supervisor"]]:
+async def init_request_node(
+    state: State,
+    config: TeamConfigurable,
+    *,
+    store: BaseStore
+) -> Command[Literal["team_supervisor"]]:
     """Initialize the state with the user's request and generate todo list."""
     # Get the initial request from the first message
     initial_request = state["messages"][0].content if state["messages"] else ""
     logging.info(f"state['messages']: {state['messages']}")
 
+    # Get configurable values
+    configurable = TeamConfigurable.from_runnable_config(config)
+    project_id = configurable.project_id
+    team_id = configurable.team_id
+    staff_id = configurable.staff_id
+    agent_id = configurable.agent_id
+    user_id = configurable.user_id
+
+    # Set namespace for memories
+    namespace = ("memories", user_id, project_id,
+                 team_id, staff_id, agent_id)
+
+    # Search for existing memories
+    memories = await store.asearch(
+        namespace,
+        query=str(state["messages"][-1].content)
+    )
+
+    joined_memories = "\n".join(
+        [d.value.get("data", "") for d in memories if d.value]
+    )
+
+    system_msg = (
+        f"You are a helpful team supervisor talking to a user. "
+        f"Your memories about the user: {joined_memories}"
+    )
+    # thread_state = {"messages": [
+    #     {"role": "system", "content": system_msg}] + state["messages"]}
+
     # Generate todo list using LLM
-    todo_prompt = get_todo_prompt(initial_request)
+    # todo_prompt = get_todo_prompt(initial_request)
+    todo_prompt = get_todo_prompt(system_msg + "\n\n" + initial_request)
     try:
         response = llm.with_structured_output(TodoListResponse).invoke(
             [{"role": "user", "content": todo_prompt}]
@@ -100,6 +152,15 @@ def init_request_node(state: State) -> Command[Literal["team_supervisor"]]:
             ]
         }
     logging.info(f"response: {response}")
+
+    # Store only user's request in memory
+    # Don't save the todo list in memory
+    to_process = {
+        "messages": [
+            {"role": "user", "content": state["messages"][-1].content}
+        ]
+    }
+    executor.submit(to_process, after_seconds=0.5, config=config)
 
     # Convert response to TodoItems
     todos = [
@@ -228,7 +289,7 @@ Current response for review:
     return {"messages": [HumanMessage(content="Finished", name="team_graph")]}
 
 # Build the graph
-builder = StateGraph(State)
+builder = StateGraph(State, TeamConfigurable)
 
 # Add the nodes
 builder.add_node("init_request", init_request_node)
@@ -243,7 +304,7 @@ builder.add_edge("init_request", "team_supervisor")
 builder.add_edge("finish_node", END)
 
 # Compile the graph
-graph = builder.compile()
+graph = builder.compile(checkpointer=MemorySaver(), store=store)
 graph.name = "team_graph"
 
 __all__ = ["graph"]
