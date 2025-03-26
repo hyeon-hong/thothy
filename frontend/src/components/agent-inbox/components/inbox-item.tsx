@@ -27,10 +27,9 @@ export function InboxItem<
         return (
           <InterruptedInboxItem
             threadData={
-              // threadData as ThreadData<ThreadValues> & {
-              //   interrupts: HumanInterrupt[];
-              // }
-              threadData as ThreadData<ThreadValues>
+              threadData as ThreadData<ThreadValues> & {
+                interrupts: HumanInterrupt[];
+              }
             }
             isLast={isLast}
           />

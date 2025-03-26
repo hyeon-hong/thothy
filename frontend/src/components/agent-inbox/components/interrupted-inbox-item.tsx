@@ -34,8 +34,6 @@ export function InterruptedInboxItem<
     "MM/dd h:mm a"
   );
 
-  console.log("threadData: ", threadData);
-
   return (
     <div
       onClick={() =>
@@ -61,7 +59,10 @@ export function InterruptedInboxItem<
         </div>
       </div>
       <div className="col-span-2">
-        <InboxItemStatuses config={threadData.interrupts[0].config} />
+        <InboxItemStatuses
+          config={threadData.interrupts[0].config}
+          status={threadData.status}
+        />
       </div>
       <p className="col-span-1 text-gray-600 font-light text-sm">
         {updatedAtDateString}

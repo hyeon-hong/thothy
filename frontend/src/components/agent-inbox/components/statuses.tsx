@@ -9,14 +9,12 @@ export function InboxItemStatuses({
   config?: HumanInterruptConfig;
   status?: "idle" | "busy" | "error" | "interrupted";
 }) {
-  console.log("config: ", config);
-  console.log("status: ", status);
-  // if (!config && !status) {
-  //   throw new Error("Either config or status must be provided");
-  // }
-  // if (config && status) {
-  //   throw new Error("Only one of config or status can be provided");
-  // }
+  if (!config && !status) {
+    throw new Error("Either config or status must be provided");
+  }
+  if (config && status) {
+    throw new Error("Only one of config or status can be provided");
+  }
 
   if (config) {
     const isOnlyIgnoreAllowed =
