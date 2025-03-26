@@ -60,48 +60,6 @@ async def chatbot(
         [{"role": "system", "content": system_msg}] + state["messages"]
     )
 
-    # Create interrupt request following the schema
-    request: HumanInterrupt = {
-        "action_request": {
-            "action": "Review Response",
-            "args": {"response": response}
-        },
-        "config": {
-            "allow_ignore": False,  # Don't allow ignoring the review
-            "allow_respond": True,  # Allow responding with feedback
-            "allow_edit": True,     # Allow editing the response
-            "allow_accept": True    # Allow accepting as-is
-        },
-        "description": """Please review this AI response. You can:
-- Accept the response as-is
-- Edit the response before sending
-- Provide feedback or instructions for regeneration
-- Make any necessary corrections
-
-Current response for review:
-```
-{response}
-```
-"""
-    }
-
-    # Send interrupt and get response
-    interrupt_response = interrupt(request)
-
-    # Process the response based on type
-    if interrupt_response[0]["type"] == "edit":
-        # Use the edited response
-        response = interrupt_response[0]["args"]
-    elif interrupt_response[0]["type"] == "response":
-        # Regenerate with the feedback
-        feedback = interrupt_response[0]["args"]
-        msg = f"Please revise. Feedback: {feedback}"
-        response = llm.invoke(
-            [{"role": "system", "content": system_msg}] +
-            state["messages"] +
-            [{"role": "human", "content": msg}]
-        )
-
     return {"messages": response}
 
 
