@@ -12,7 +12,7 @@ function getCorsHeaders() {
 
 async function handleRequest(req: NextRequest, method: string) {
   const LANGGRAPH_API_URL = process.env.NEXT_PUBLIC_LANGGRAPH_API_URL;
-
+  console.log("LANGGRAPH_API_URL", LANGGRAPH_API_URL);
   let session: Session | undefined;
   let user: User | undefined;
   try {
@@ -92,6 +92,7 @@ async function handleRequest(req: NextRequest, method: string) {
       `${LANGGRAPH_API_URL}/${path}${queryString}`,
       options
     );
+    console.log("res: ", res);
 
     if (res.status >= 400) {
       console.error(

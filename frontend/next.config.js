@@ -17,8 +17,7 @@ const nextConfig = {
     return [
       {
         source: "/api/langgraph/:path*",
-        destination:
-          "https://thothy-main-1-de5fb55cbe095927b7558bbdb47d8a8d.us.langgraph.app/:path*",
+        destination: `${process.env.NEXT_PUBLIC_LANGGRAPH_API_URL}/:path*`,
       },
     ];
   },

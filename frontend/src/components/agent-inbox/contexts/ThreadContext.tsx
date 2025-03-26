@@ -99,39 +99,43 @@ const getClient = async ({ agentInboxes, getItem, toast }: GetClientArgs) => {
   if (agentInboxes.length === 0) {
     toast({
       title: "Error",
-      description: "Agent inbox not found. Please add an inbox in settings. (",
+      description: "Agent inbox not found. Please add an inbox in settings.",
       variant: "destructive",
       duration: 3000,
     });
     return;
   }
 
-  const selectedInbox = agentInboxes.find((i) => i.selected);
-  let deploymentUrl = selectedInbox?.deploymentUrl;
+  // Use the proxied URL consistently across the application
+  const deploymentUrl = '/api/langgraph';
+  const langchainApiKey = process.env.NEXT_PUBLIC_LANGGRAPH_API_KEY || undefined;
 
-  if (!deploymentUrl) {
-    toast({
-      title: "Error",
-      description:
-        "Please ensure your selected agent inbox has a deployment URL.",
-      variant: "destructive",
-      duration: 5000,
+  try {
+    const client = await createClient({
+      deploymentUrl,
+      langchainApiKey,
     });
-    return;
+
+    return client;
+  } catch (error: any) {
+    console.error("Failed to create LangGraph client:", error);
+    if (error.message?.includes('CORS')) {
+      toast({
+        title: "CORS Error",
+        description: "Unable to connect to LangGraph API. Please check your configuration.",
+        variant: "destructive",
+        duration: 5000,
+      });
+    } else {
+      toast({
+        title: "Error",
+        description: "Failed to connect to LangGraph API. Please check your configuration.",
+        variant: "destructive",
+        duration: 5000,
+      });
+    }
+    return undefined;
   }
-
-  // In development, route through our API proxy
-  if (process.env.NODE_ENV === "development") {
-    deploymentUrl = "http://localhost:3000/api";
-  }
-
-  const langchainApiKeyLS =
-    process.env.NEXT_PUBLIC_LANGGRAPH_API_KEY || undefined;
-
-  return await createClient({
-    deploymentUrl,
-    langchainApiKey: langchainApiKeyLS,
-  });
 };
 
 export function ThreadsProvider<

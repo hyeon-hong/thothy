@@ -669,13 +669,15 @@ const createLangGraphClient = async () => {
     data: { session },
   } = await supabase.auth.getSession();
 
-  // Get apiUrl as development or production
+  // Use the proxied URL
+  // const apiUrl = "http://localhost:3000/api/langgraph";
   const apiUrl = process.env.NEXT_PUBLIC_LANGGRAPH_API_URL;
   const apiKey = process.env.NEXT_PUBLIC_LANGSMITH_API_KEY;
+  console.log("Using LangGraph API URL:", apiUrl);
 
   return new Client({
-    apiUrl: apiUrl,
-    apiKey: apiKey,
+    apiUrl,
+    apiKey,
     defaultHeaders: {
       Authorization: `Bearer ${session?.access_token}`,
     },
@@ -725,9 +727,13 @@ export default function TeamPage() {
           schedule: cron.schedule
         })));
 
-      } catch (error) {
-        console.error("❌ Failed to fetch crons:", error);
-        throw new Error("Failed to fetch crons data");
+      } catch (error: any) {
+        console.error("❌ Failed to fetch crons:", error.message);
+        if (error.message?.includes('CORS')) {
+          console.error("CORS Error - Please check API configuration and CORS settings");
+        }
+        // Don't throw here, just log the error and continue with empty crons
+        cronsData = [];
       } finally {
         const [teamsResponse, agentsResponse] = await Promise.all([
           fetch("/api/teams"),
