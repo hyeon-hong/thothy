@@ -1,7 +1,7 @@
 "use client";
 
 import { AgentInbox } from "@/components/agent-inbox";
-import React from "react";
+import React, { useEffect } from "react";
 import { Toaster } from "sonner";
 import { ThreadsProvider } from "@/components/agent-inbox/contexts/ThreadContext";
 import { SidebarProvider } from "@/components/ui/sidebar";
@@ -11,6 +11,10 @@ import { BreadCrumb } from "@/components/agent-inbox/components/breadcrumb";
 import { cn } from "@/lib/utils";
 
 export default function InboxPage(): React.ReactNode {
+  useEffect(() => {
+    console.log("InboxPage mounted");
+  }, []);
+
   return (
     <React.Suspense fallback={<div>Loading (layout)...</div>}>
       <Toaster position="top-right" expand={true} richColors />
