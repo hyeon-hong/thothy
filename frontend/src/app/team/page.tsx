@@ -599,15 +599,16 @@ const CronJobsDialog = ({ crons }: CronJobsDialogProps) => {
   );
 };
 
-const createTeamMessage = (teamId: string, description: string): HumanMessage => new HumanMessage({
-  content: description || "Do your job.",
-  additional_kwargs: {
-    team_id: teamId,
-    action: "run_team",
-    timestamp: new Date().toISOString(),
-    source: "team_page",
-  },
-});
+const createTeamMessage = (teamId: string, description: string): HumanMessage =>
+  new HumanMessage({
+    content: description || "Do your job.",
+    additional_kwargs: {
+      team_id: teamId,
+      action: "run_team",
+      timestamp: new Date().toISOString(),
+      source: "team_page",
+    },
+  });
 
 const createLangGraphClient = async () => {
   const supabase = createSupabaseClient();
@@ -696,15 +697,15 @@ export default function TeamPage() {
   const handleBuildTeam = async () => {
     try {
       const client = await createLangGraphClient();
-      
+
       // Create a new thread first
       const thread = await client.threads.create({
         metadata: {
           team_name: teamName,
           agent_list: selectedAgents,
-        }
+        },
       });
-      
+
       // Create the team with the thread ID
       const response = await fetch("/api/teams", {
         method: "POST",
@@ -722,6 +723,32 @@ export default function TeamPage() {
 
       const responseData = await response.json();
       if (!response.ok) throw new Error(responseData.error);
+
+      // Create a run with the team_graph assistant after we have the team ID
+      const run = await client.runs.create(thread.thread_id, "team_graph", {
+        streamMode: "messages",
+        config: {
+          configurable: {
+            project_id: thread.thread_id,
+            team_id: responseData.id,
+            staff_id: user?.id || "default",
+            agent_id: selectedAgents.join(","),
+            user_id: user?.id || "default",
+          },
+        },
+        input: {
+          messages: [
+            {
+              role: "user",
+              content: teamDescription || "Do your job.",
+            },
+          ],
+        },
+        multitaskStrategy: "enqueue",
+        onDisconnect: "cancel",
+        afterSeconds: 10,
+        ifNotExists: "create",
+      });
 
       // Add the new team to the teams list
       setTeams((prevTeams) => [responseData, ...prevTeams]);
@@ -750,7 +777,33 @@ export default function TeamPage() {
             metadata: {
               team_name: teamName,
               agent_list: selectedAgents,
-            }
+            },
+          });
+
+          // Create a new run with updated team configuration
+          const run = await client.runs.create(editingTeam.thread_id, "team_graph", {
+            streamMode: "messages",
+            config: {
+              configurable: {
+                project_id: editingTeam.thread_id,
+                team_id: editingTeam.id,
+                staff_id: user?.id || "default",
+                agent_id_list: selectedAgents.join(","),
+                user_id: user?.id || "default",
+              },
+            },
+            input: {
+              messages: [
+                {
+                  role: "user",
+                  content: teamDescription || "Do your job.",
+                },
+              ],
+            },
+            multitaskStrategy: "enqueue",
+            onDisconnect: "cancel",
+            afterSeconds: 10,
+            ifNotExists: "create",
           });
         } catch (error) {
           throw new Error("Error updating thread metadata");
@@ -762,7 +815,7 @@ export default function TeamPage() {
             metadata: {
               team_name: teamName,
               agent_list: selectedAgents,
-            }
+            },
           });
 
           editingTeam.thread_id = thread.thread_id;

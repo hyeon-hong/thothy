@@ -97,15 +97,14 @@ async def init_request_node(
 
     # Get configurable values
     configurable = TeamConfigurable.from_runnable_config(config)
-    project_id = configurable.project_id
     team_id = configurable.team_id
-    staff_id = configurable.staff_id
-    agent_id = configurable.agent_id
     user_id = configurable.user_id
+    agent_id_list = configurable.agent_id_list
 
     # Set namespace for memories
-    namespace = ("memories", user_id, project_id,
-                 team_id, staff_id, agent_id)
+    namespace = ("memories", user_id, "default", team_id, "default", "default")
+    agents = agent_id_list.split(",")
+    logging.info(f"agents: {agents}")
 
     # Search for existing memories
     memories = await store.asearch(
