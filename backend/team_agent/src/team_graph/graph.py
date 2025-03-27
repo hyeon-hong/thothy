@@ -331,7 +331,9 @@ Current response for review:
     }
 
     # Send interrupt and get response
-    interrupt(request)
+    logging.info(f"Sending interrupt request: {request}")
+    response = interrupt(request)
+    logging.info(f"Interrupt response: {response}")
 
     # TODO: Check the interrupt response and go to the appropriate node
 
