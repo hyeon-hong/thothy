@@ -151,8 +151,8 @@ def initialize_memory_manager(
     namespace = ("memories", user_id, project_id, team_id, staff_id, agent_id)
 
     memory_manager = create_memory_store_manager(
-        # "anthropic:claude-3-5-sonnet-latest",
-        "openai:gpt-4o-mini",
+        "anthropic:claude-3-5-sonnet-latest",
+        # "openai:gpt-4o-mini",
         schemas=[Triple],
         enable_inserts=True,
         enable_deletes=True,

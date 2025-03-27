@@ -695,8 +695,10 @@ export default function TeamPage() {
   };
 
   const handleBuildTeam = async () => {
+    console.log("handleBuildTeam");
     try {
       const client = await createLangGraphClient();
+      console.log("client: ", client);
 
       // Create a new thread first
       const thread = await client.threads.create({
@@ -705,6 +707,7 @@ export default function TeamPage() {
           agent_list: selectedAgents,
         },
       });
+      console.log("thread: ", thread);
 
       // Create the team with the thread ID
       const response = await fetch("/api/teams", {
@@ -720,6 +723,7 @@ export default function TeamPage() {
           thread_id: thread.thread_id,
         }),
       });
+      console.log("response: ", response);
 
       if (!response.ok) {
         const errorData = await response.json();
@@ -727,6 +731,7 @@ export default function TeamPage() {
       }
 
       const responseData = await response.json();
+      console.log("responseData: ", responseData);
 
       // Create a run with the team_graph assistant
       const run = await client.runs.create(thread.thread_id, "team_graph", {
@@ -735,19 +740,29 @@ export default function TeamPage() {
           configurable: {
             project_id: thread.thread_id,
             team_id: responseData.id,
-            staff_id: user?.id || "default",
-            agent_id_list: selectedAgents.join(","), // Changed from agent_id to agent_id_list
+            staff_id: "default",
+            agent_id_list: selectedAgents.join(","),
             user_id: user?.id || "default",
           },
         },
         input: {
-          messages: [createTeamMessage(responseData.id, teamDescription)], // Using the helper function
+          messages: [{
+            role: "user",
+            content: teamDescription || "Do your job.",
+            additional_kwargs: {
+              team_id: responseData.id,
+              action: "run_team",
+              timestamp: new Date().toISOString(),
+              source: "team_page",
+            }
+          }]
         },
         multitaskStrategy: "enqueue",
         onDisconnect: "cancel",
         afterSeconds: 10,
         ifNotExists: "create",
       });
+      console.log("run: ", run);
 
       // Add the new team to the teams list
       setTeams((prevTeams) => [responseData, ...prevTeams]);
@@ -760,8 +775,6 @@ export default function TeamPage() {
       setShowDialog(false);
     } catch (error) {
       console.error("Error creating team:", error);
-      // Here you would typically show an error message to the user
-      // For example, using a toast notification or alert
       alert(error instanceof Error ? error.message : "Failed to create team");
     }
   };
