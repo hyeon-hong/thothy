@@ -219,8 +219,21 @@ def team_supervisor_node(
     return Command(goto=goto, update=update)
 
 
-async def news_agent_node(state: State) -> Command[Literal["team_supervisor"]]:
-    result = await news_graph.ainvoke(state)
+async def news_agent_node(
+    state: State,
+    config: TeamConfigurable
+) -> Command[Literal["team_supervisor"]]:
+    # Get user_id from configurable
+    configurable = TeamConfigurable.from_runnable_config(config)
+    user_id = configurable.user_id
+
+    # Pass user_id to news_graph
+    result = await news_graph.ainvoke(
+        state,
+        config={"configurable": {
+            "user_id": user_id,
+        }}
+    )
     logging.info(f"News agent result: {result}")
     return Command(
         update={
@@ -235,8 +248,21 @@ async def news_agent_node(state: State) -> Command[Literal["team_supervisor"]]:
     )
 
 
-async def blog_agent_node(state: State) -> Command[Literal["team_supervisor"]]:
-    result = await blog_graph.ainvoke(state)
+async def blog_agent_node(
+    state: State,
+    config: TeamConfigurable
+) -> Command[Literal["team_supervisor"]]:
+    # Get user_id from configurable
+    configurable = TeamConfigurable.from_runnable_config(config)
+    user_id = configurable.user_id
+
+    # Pass user_id and thread_id to blog_graph
+    result = await blog_graph.ainvoke(
+        state,
+        config={"configurable": {
+            "user_id": user_id,
+        }}
+    )
     logging.info(f"Blog agent result: {result}")
     return Command(
         update={

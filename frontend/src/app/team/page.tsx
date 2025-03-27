@@ -721,10 +721,14 @@ export default function TeamPage() {
         }),
       });
 
-      const responseData = await response.json();
-      if (!response.ok) throw new Error(responseData.error);
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to create team');
+      }
 
-      // Create a run with the team_graph assistant after we have the team ID
+      const responseData = await response.json();
+
+      // Create a run with the team_graph assistant
       const run = await client.runs.create(thread.thread_id, "team_graph", {
         streamMode: "messages",
         config: {
@@ -732,17 +736,12 @@ export default function TeamPage() {
             project_id: thread.thread_id,
             team_id: responseData.id,
             staff_id: user?.id || "default",
-            agent_id: selectedAgents.join(","),
+            agent_id_list: selectedAgents.join(","), // Changed from agent_id to agent_id_list
             user_id: user?.id || "default",
           },
         },
         input: {
-          messages: [
-            {
-              role: "user",
-              content: teamDescription || "Do your job.",
-            },
-          ],
+          messages: [createTeamMessage(responseData.id, teamDescription)], // Using the helper function
         },
         multitaskStrategy: "enqueue",
         onDisconnect: "cancel",
@@ -760,7 +759,10 @@ export default function TeamPage() {
       setSchedule("");
       setShowDialog(false);
     } catch (error) {
-      throw new Error("Error creating team");
+      console.error("Error creating team:", error);
+      // Here you would typically show an error message to the user
+      // For example, using a toast notification or alert
+      alert(error instanceof Error ? error.message : "Failed to create team");
     }
   };
 
