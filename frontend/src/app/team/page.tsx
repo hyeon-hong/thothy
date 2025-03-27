@@ -44,7 +44,16 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Client } from "@langchain/langgraph-sdk";
+import { HumanMessage } from "@langchain/core/messages";
 import { createClient as createSupabaseClient } from "@/utils/supabase/client";
+
+type TeamMessage = {
+  content: string | Record<string, any>;
+  role: string;
+  type: string;
+  name?: string;
+  additional_kwargs?: Record<string, any>;
+};
 
 type Agent = {
   id: string;
@@ -53,15 +62,15 @@ type Agent = {
   image_url: string;
 };
 
-type Team = {
+interface Team {
   id: string;
   name: string;
   description: string;
   agent_list: string[];
   created_at: string;
-  schedule: string; // cron expression
-  cron_id?: string; // Optional cron ID reference
-};
+  schedule: string;
+  thread_id?: string;
+}
 
 // Add metadata type for crons
 type CronMetadata = {
@@ -91,7 +100,7 @@ const getTeamIdFromMetadata = (metadata: unknown): string | undefined => {
   return undefined;
 };
 
-type TeamDialogProps = {
+interface TeamDialogProps {
   isEdit?: boolean;
   teamName: string;
   setTeamName: (name: string) => void;
@@ -105,7 +114,7 @@ type TeamDialogProps = {
   onSubmit: () => void;
   getAgentName: (id: string) => string;
   toggleAgent: (id: string) => void;
-};
+}
 
 type Run = {
   run_id: string;
@@ -117,17 +126,9 @@ type Run = {
   metadata: Record<string, any> | null;
 };
 
-type CronJobsDialogProps = {
+interface CronJobsDialogProps {
   crons: import("@langchain/langgraph-sdk").Cron[];
-};
-
-type Message = {
-  content: string | Record<string, any>;
-  role: string;
-  type: string;
-  name?: string;
-  additional_kwargs?: Record<string, any>;
-};
+}
 
 // Add helper function to convert cron to readable text
 const cronToText = (cron: string): string => {
@@ -398,36 +399,9 @@ const CronJobsDialog = ({ crons }: CronJobsDialogProps) => {
   const [localCrons, setLocalCrons] =
     useState<import("@langchain/langgraph-sdk").Cron[]>(crons);
 
-  useEffect(() => {
-    // Log initial cron jobs when dialog opens
-    console.log(
-      "🔄 Loaded Cron Jobs:",
-      crons.map((cron) => ({
-        cron_id: cron.cron_id,
-        thread_id: cron.thread_id,
-        schedule: cron.schedule,
-        created_at: new Date(cron.created_at).toLocaleString(),
-        end_time: cron.end_time
-          ? new Date(cron.end_time).toLocaleString()
-          : "No end time",
-        payload: cron.payload,
-      }))
-    );
-  }, [crons]);
-
   const handleDeleteCron = async (cronId: string) => {
     try {
       const cronToDelete = localCrons.find((cron) => cron.cron_id === cronId);
-      console.log("🗑️ Deleting Cron Job:", {
-        cron_id: cronId,
-        thread_id: cronToDelete?.thread_id,
-        schedule: cronToDelete?.schedule,
-        created_at: cronToDelete?.created_at
-          ? new Date(cronToDelete.created_at).toLocaleString()
-          : undefined,
-        payload: cronToDelete?.payload,
-      });
-
       const client = await createLangGraphClient();
       await client.crons.delete(cronId);
 
@@ -436,14 +410,9 @@ const CronJobsDialog = ({ crons }: CronJobsDialogProps) => {
         const updatedCrons = prevCrons.filter(
           (cron) => cron.cron_id !== cronId
         );
-        console.log(
-          "✅ Successfully deleted cron job. Remaining crons:",
-          updatedCrons.length
-        );
         return updatedCrons;
       });
     } catch (error) {
-      console.error("❌ Failed to delete cron:", error);
       throw new Error("Failed to delete cron job");
     }
   };
@@ -452,7 +421,6 @@ const CronJobsDialog = ({ crons }: CronJobsDialogProps) => {
     if (!threadId) return;
 
     try {
-      console.log("📥 Fetching runs for thread:", threadId);
       setIsLoadingRuns((prev) => ({ ...prev, [threadId]: true }));
       const client = await createLangGraphClient();
       const runsData = await client.runs.list(threadId, {
@@ -470,18 +438,6 @@ const CronJobsDialog = ({ crons }: CronJobsDialogProps) => {
         metadata: run.metadata || null,
       }));
 
-      console.log("📊 Thread Runs Data:", {
-        thread_id: threadId,
-        total_runs: convertedRuns.length,
-        runs: convertedRuns.map((run) => ({
-          run_id: run.run_id,
-          status: run.status,
-          assistant_id: run.assistant_id,
-          created_at: new Date(run.created_at).toLocaleString(),
-          metadata: run.metadata,
-        })),
-      });
-
       setRuns((prev) => ({ ...prev, [threadId]: convertedRuns }));
     } catch (error) {
       console.error("❌ Failed to fetch runs:", {
@@ -497,18 +453,11 @@ const CronJobsDialog = ({ crons }: CronJobsDialogProps) => {
     if (!threadId) return;
 
     if (expandedCron === threadId) {
-      console.log("🔺 Collapsing cron details:", threadId);
       setExpandedCron(null);
     } else {
-      console.log("🔽 Expanding cron details:", threadId);
       setExpandedCron(threadId);
       if (!runs[threadId]) {
         fetchRunsForThread(threadId);
-      } else {
-        console.log("📋 Using cached runs for thread:", {
-          thread_id: threadId,
-          cached_runs: runs[threadId].length,
-        });
       }
     }
   };
@@ -650,11 +599,8 @@ const CronJobsDialog = ({ crons }: CronJobsDialogProps) => {
   );
 };
 
-const createTeamMessage = (teamId: string, description: string): Message => ({
+const createTeamMessage = (teamId: string, description: string): HumanMessage => new HumanMessage({
   content: description || "Do your job.",
-  role: "user",
-  type: "team_action",
-  name: "team_runner",
   additional_kwargs: {
     team_id: teamId,
     action: "run_team",
@@ -671,7 +617,6 @@ const createLangGraphClient = async () => {
 
   const apiUrl = process.env.NEXT_PUBLIC_LANGGRAPH_API_URL;
   const apiKey = process.env.NEXT_PUBLIC_LANGSMITH_API_KEY;
-  console.log("Using LangGraph API URL:", apiUrl);
 
   return new Client({
     apiUrl,
@@ -687,9 +632,6 @@ export default function TeamPage() {
   const router = useRouter();
   const [teams, setTeams] = useState<Team[]>([]);
   const [agents, setAgents] = useState<Agent[]>([]);
-  const [crons, setCrons] = useState<import("@langchain/langgraph-sdk").Cron[]>(
-    []
-  );
   const [isLoading, setIsLoading] = useState(true);
   const [showDialog, setShowDialog] = useState(false);
   const [selectedAgents, setSelectedAgents] = useState<string[]>([]);
@@ -711,32 +653,7 @@ export default function TeamPage() {
 
     const fetchData = async () => {
       setIsLoading(true);
-      const client = await createLangGraphClient();
-      let cronsData: import("@langchain/langgraph-sdk").Cron[] = [];
       try {
-        // Fetch crons using LangGraph client
-        cronsData = await client.crons.search({
-          limit: 100,
-        });
-
-        console.log(
-          "📊 Fetched cron jobs:",
-          cronsData.map((cron) => ({
-            cron_id: cron.cron_id,
-            metadata: cron.metadata,
-            schedule: cron.schedule,
-          }))
-        );
-      } catch (error: any) {
-        console.error("❌ Failed to fetch crons:", error.message);
-        if (error.message?.includes("CORS")) {
-          console.error(
-            "CORS Error - Please check API configuration and CORS settings"
-          );
-        }
-        // Don't throw here, just log the error and continue with empty crons
-        cronsData = [];
-      } finally {
         const [teamsResponse, agentsResponse] = await Promise.all([
           fetch("/api/teams"),
           fetch("/api/agents"),
@@ -751,50 +668,11 @@ export default function TeamPage() {
           agentsResponse.json(),
         ]);
 
-        // Match crons with teams based on metadata.team_id
-        const teamsWithCrons = teamsData.map((team: Team) => {
-          // First try to find by cron_id if it exists
-          let matchingCron = team.cron_id
-            ? cronsData.find((cron) => cron.cron_id === team.cron_id)
-            : null;
-
-          // If no match by cron_id, try matching by metadata.team_id
-          if (!matchingCron) {
-            matchingCron = cronsData.find((cron) => {
-              const rootTeamId = getTeamIdFromMetadata(cron.metadata);
-              const payloadTeamId = getTeamIdFromMetadata(
-                cron.payload?.metadata
-              );
-              return rootTeamId === team.id || payloadTeamId === team.id;
-            });
-          }
-
-          const matchSource = matchingCron
-            ? getTeamIdFromMetadata(matchingCron.metadata)
-              ? "root_metadata"
-              : getTeamIdFromMetadata(matchingCron.payload?.metadata)
-                ? "payload_metadata"
-                : "cron_id"
-            : "no_match";
-
-          console.log("🔄 Team-Cron matching:", {
-            team_id: team.id,
-            team_name: team.name,
-            found_cron_id: matchingCron?.cron_id,
-            schedule: matchingCron?.schedule,
-            matched_by: matchSource,
-          });
-
-          return {
-            ...team,
-            schedule: matchingCron ? matchingCron.schedule : team.schedule,
-            cron_id: matchingCron ? matchingCron.cron_id : team.cron_id,
-          };
-        });
-
-        setTeams(teamsWithCrons);
+        setTeams(teamsData);
         setAgents(agentsData);
-        setCrons(cronsData);
+        setIsLoading(false);
+      } catch (error) {
+        console.error("Failed to fetch data:", error);
         setIsLoading(false);
       }
     };
@@ -817,6 +695,17 @@ export default function TeamPage() {
 
   const handleBuildTeam = async () => {
     try {
+      const client = await createLangGraphClient();
+      
+      // Create a new thread first
+      const thread = await client.threads.create({
+        metadata: {
+          team_name: teamName,
+          agent_list: selectedAgents,
+        }
+      });
+      
+      // Create the team with the thread ID
       const response = await fetch("/api/teams", {
         method: "POST",
         headers: {
@@ -827,51 +716,15 @@ export default function TeamPage() {
           description: teamDescription,
           agent_ids: selectedAgents,
           schedule: schedule,
+          thread_id: thread.thread_id,
         }),
       });
 
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error);
-
-      // If schedule is set, create a cron job
-      if (schedule) {
-        try {
-          const client = await createLangGraphClient();
-          console.log("📅 Creating new cron job for team:", {
-            team_id: data.id,
-            schedule: schedule,
-            agent_count: selectedAgents.length,
-            description: teamDescription,
-          });
-
-          const newCron = await client.crons.create("team_graph", {
-            schedule: schedule,
-            metadata: {
-              team_id: data.id,
-              team_name: teamName,
-              agent_list: selectedAgents,
-            },
-            input: createTeamMessage(data.id, teamDescription),
-            multitaskStrategy: "enqueue",
-          });
-
-          console.log("✅ Successfully created cron job:", {
-            cron_id: newCron.cron_id,
-            schedule: schedule,
-            team_id: data.id,
-            agent_count: selectedAgents.length,
-          });
-
-          // Update the team with the cron ID
-          data.cron_id = newCron.cron_id;
-        } catch (error) {
-          console.error("❌ Failed to create cron job:", error);
-          throw new Error("Error creating cron job");
-        }
-      }
+      const responseData = await response.json();
+      if (!response.ok) throw new Error(responseData.error);
 
       // Add the new team to the teams list
-      setTeams((prevTeams) => [data, ...prevTeams]);
+      setTeams((prevTeams) => [responseData, ...prevTeams]);
 
       // Reset form
       setTeamName("");
@@ -880,7 +733,6 @@ export default function TeamPage() {
       setSchedule("");
       setShowDialog(false);
     } catch (error) {
-      console.error("❌ Failed to build team:", error);
       throw new Error("Error creating team");
     }
   };
@@ -891,79 +743,31 @@ export default function TeamPage() {
     try {
       const client = await createLangGraphClient();
 
-      // If schedule changed, handle cron updates
-      if (editingTeam.schedule !== schedule) {
-        // 1. Delete existing cron if it exists
-        if (editingTeam.cron_id) {
-          try {
-            console.log("🔍 Searching for existing cron:", {
-              team_id: editingTeam.id,
-              cron_id: editingTeam.cron_id,
-            });
-
-            // Search for existing cron
-            const crons = await client.crons.search({
-              limit: 1,
-              threadId: editingTeam.id,
-            });
-
-            const existingCron = crons.find(
-              (cron) => cron.cron_id === editingTeam.cron_id
-            );
-
-            if (existingCron) {
-              console.log("🗑️ Deleting existing cron:", {
-                cron_id: existingCron.cron_id,
-                team_id: editingTeam.id,
-              });
-              // Delete the existing cron
-              await client.crons.delete(existingCron.cron_id);
+      // Update thread metadata if it exists
+      if (editingTeam.thread_id) {
+        try {
+          await client.threads.update(editingTeam.thread_id, {
+            metadata: {
+              team_name: teamName,
+              agent_list: selectedAgents,
             }
-          } catch (error) {
-            console.error("❌ Failed to delete existing cron:", error);
-            throw new Error("Error deleting existing cron");
-          }
+          });
+        } catch (error) {
+          throw new Error("Error updating thread metadata");
         }
+      } else {
+        // Create a new thread if one doesn't exist
+        try {
+          const thread = await client.threads.create({
+            metadata: {
+              team_name: teamName,
+              agent_list: selectedAgents,
+            }
+          });
 
-        // 2. Create new cron if schedule is set
-        if (schedule) {
-          try {
-            console.log("📅 Creating new cron job for team:", {
-              team_id: editingTeam.id,
-              schedule: schedule,
-              agent_count: selectedAgents.length,
-              description: teamDescription,
-            });
-
-            const newCron = await client.crons.create("team_graph", {
-              schedule: schedule,
-              metadata: {
-                team_id: editingTeam.id,
-                team_name: teamName,
-                agent_list: selectedAgents,
-              },
-              // input: createTeamMessage(editingTeam.id, teamDescription),
-              input: {
-                messages: [{ role: "user", content: teamDescription }],
-              },
-              // interruptBefore: ["blog_agent"],
-              // interruptAfter: ["__end__"],
-              // multitaskStrategy: "enqueue",
-            });
-            console.log("🔍 New cron job:", newCron);
-
-            console.log("✅ Successfully created new cron job:", {
-              cron_id: newCron.cron_id,
-              schedule: schedule,
-              team_id: editingTeam.id,
-              agent_count: selectedAgents.length,
-            });
-
-            editingTeam.cron_id = newCron.cron_id;
-          } catch (error) {
-            console.error("❌ Failed to create new cron:", error);
-            throw new Error("Error creating new cron");
-          }
+          editingTeam.thread_id = thread.thread_id;
+        } catch (error) {
+          throw new Error("Error creating thread");
         }
       }
 
@@ -978,20 +782,20 @@ export default function TeamPage() {
           description: teamDescription,
           agent_ids: selectedAgents,
           schedule: schedule,
-          cron_id: editingTeam.cron_id,
+          thread_id: editingTeam.thread_id,
         }),
       });
 
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error);
+      const responseData = await response.json();
+      if (!response.ok) throw new Error(responseData.error);
 
       // Update the team in the teams list
       setTeams((prevTeams) =>
         prevTeams.map((team) =>
           team.id === editingTeam.id
             ? {
-                ...data,
-                schedule: schedule, // Ensure we use the new schedule
+                ...responseData,
+                schedule: schedule,
               }
             : team
         )
@@ -1014,12 +818,11 @@ export default function TeamPage() {
       setTeamName("");
       setTeamDescription("");
       setSelectedAgents([]);
+      setSchedule("");
       if (isEdit) {
         setEditingTeam(null);
-        setShowDialog(false);
-      } else {
-        setShowDialog(false);
       }
+      setShowDialog(false);
     }
   };
 
@@ -1068,7 +871,7 @@ export default function TeamPage() {
                     View jobs
                   </Button>
                 </DialogTrigger>
-                <CronJobsDialog crons={crons} />
+                <CronJobsDialog crons={[]} />
               </Dialog>
               <Dialog
                 open={showDialog}
