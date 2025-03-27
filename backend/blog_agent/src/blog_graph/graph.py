@@ -83,6 +83,7 @@ async def should_continue(state: MessagesState):
     """Determine if we should continue running tools or end."""
     messages = state["messages"]
     last_message = messages[-1]
+    logging.warning(f"should_continue last_message: {last_message}")
     if last_message.tool_calls:
         return "tools"
     return END
@@ -93,6 +94,7 @@ async def call_model(state: MessagesState, config: BlogConfigurable):
     # Get user_id from configurable
     configurable = BlogConfigurable.from_runnable_config(config)
     user_id = configurable.user_id
+    logging.warning(f"blog_graph user_id: {user_id}")
 
     # Pass user_id to create_blog_post tool
     system_msg = (

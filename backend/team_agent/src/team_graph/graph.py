@@ -223,16 +223,28 @@ async def news_agent_node(
     state: State,
     config: TeamConfigurable
 ) -> Command[Literal["team_supervisor"]]:
-    # Get user_id from configurable
+    # Get configurable values
     configurable = TeamConfigurable.from_runnable_config(config)
     user_id = configurable.user_id
+    thread_id = config.get("configurable", {}).get("thread_id")
+    # Use first agent as default
+    agent_id = config.get("configurable", {}).get(
+        "agent_id_list", ""
+    ).split(",")[0]
 
     # Pass user_id to news_graph
     result = await news_graph.ainvoke(
         state,
-        config={"configurable": {
-            "user_id": user_id,
-        }}
+        config={
+            "configurable": {
+                "user_id": user_id,
+                "thread_id": thread_id,
+                "agent_id": agent_id,
+                "project_id": config.get("configurable", {}).get("project_id"),
+                "team_id": config.get("configurable", {}).get("team_id"),
+                "staff_id": config.get("configurable", {}).get("staff_id"),
+            }
+        }
     )
     logging.info(f"News agent result: {result}")
     return Command(
@@ -252,16 +264,28 @@ async def blog_agent_node(
     state: State,
     config: TeamConfigurable
 ) -> Command[Literal["team_supervisor"]]:
-    # Get user_id from configurable
+    # Get configurable values
     configurable = TeamConfigurable.from_runnable_config(config)
     user_id = configurable.user_id
+    thread_id = config.get("configurable", {}).get("thread_id")
+    # Use second agent as default
+    agent_id = config.get("configurable", {}).get(
+        "agent_id_list", ""
+    ).split(",")[1]
 
     # Pass user_id and thread_id to blog_graph
     result = await blog_graph.ainvoke(
         state,
-        config={"configurable": {
-            "user_id": user_id,
-        }}
+        config={
+            "configurable": {
+                "user_id": user_id,
+                "thread_id": thread_id,
+                "agent_id": agent_id,
+                "project_id": config.get("configurable", {}).get("project_id"),
+                "team_id": config.get("configurable", {}).get("team_id"),
+                "staff_id": config.get("configurable", {}).get("staff_id"),
+            }
+        }
     )
     logging.info(f"Blog agent result: {result}")
     return Command(

@@ -759,7 +759,7 @@ export default function TeamPage() {
         },
         multitaskStrategy: "enqueue",
         onDisconnect: "cancel",
-        afterSeconds: 10,
+        afterSeconds: 1,
         ifNotExists: "create",
       });
       console.log("run: ", run);
