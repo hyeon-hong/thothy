@@ -22,7 +22,7 @@ class TeamConfigurable:
     project_id: str = "default"
     team_id: str = "default"
     staff_id: str = "default"
-    agent_id: str = "default"
+    agent_id_list: str = "default"
     user_id: str = "default"
     graph_name: str = "team_graph"
 
@@ -65,7 +65,7 @@ class TeamConfigurable:
         )
 
         # config["configurable"] should has user_id, project_id, team_id,
-        # and agent_id and it will be populated from the namespace
+        # and agent_id_list and it will be populated from the namespace
         # If each field is not provided, set each field as "default".
         if "project_id" not in configurable:
             configurable["project_id"] = "default"
@@ -73,8 +73,8 @@ class TeamConfigurable:
             configurable["team_id"] = "default"
         if "staff_id" not in configurable:
             configurable["staff_id"] = "default"
-        if "agent_id" not in configurable:
-            configurable["agent_id"] = "team"
+        if "agent_id_list" not in configurable:
+            configurable["agent_id_list"] = "default"
         if "user_id" not in configurable:
             configurable["user_id"] = "default"
 

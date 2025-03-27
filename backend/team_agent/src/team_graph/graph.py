@@ -97,15 +97,14 @@ async def init_request_node(
 
     # Get configurable values
     configurable = TeamConfigurable.from_runnable_config(config)
-    project_id = configurable.project_id
     team_id = configurable.team_id
-    staff_id = configurable.staff_id
-    agent_id = configurable.agent_id
     user_id = configurable.user_id
+    agent_id_list = configurable.agent_id_list
 
     # Set namespace for memories
-    namespace = ("memories", user_id, project_id,
-                 team_id, staff_id, agent_id)
+    namespace = ("memories", user_id, "default", team_id, "default", "default")
+    agents = agent_id_list.split(",")
+    logging.info(f"agents: {agents}")
 
     # Search for existing memories
     memories = await store.asearch(
@@ -220,8 +219,33 @@ def team_supervisor_node(
     return Command(goto=goto, update=update)
 
 
-async def news_agent_node(state: State) -> Command[Literal["team_supervisor"]]:
-    result = await news_graph.ainvoke(state)
+async def news_agent_node(
+    state: State,
+    config: TeamConfigurable
+) -> Command[Literal["team_supervisor"]]:
+    # Get configurable values
+    configurable = TeamConfigurable.from_runnable_config(config)
+    user_id = configurable.user_id
+    thread_id = config.get("configurable", {}).get("thread_id")
+    # Use first agent as default
+    agent_id = config.get("configurable", {}).get(
+        "agent_id_list", ""
+    ).split(",")[0]
+
+    # Pass user_id to news_graph
+    result = await news_graph.ainvoke(
+        state,
+        config={
+            "configurable": {
+                "user_id": user_id,
+                "thread_id": thread_id,
+                "agent_id": agent_id,
+                "project_id": config.get("configurable", {}).get("project_id"),
+                "team_id": config.get("configurable", {}).get("team_id"),
+                "staff_id": config.get("configurable", {}).get("staff_id"),
+            }
+        }
+    )
     logging.info(f"News agent result: {result}")
     return Command(
         update={
@@ -236,8 +260,33 @@ async def news_agent_node(state: State) -> Command[Literal["team_supervisor"]]:
     )
 
 
-async def blog_agent_node(state: State) -> Command[Literal["team_supervisor"]]:
-    result = await blog_graph.ainvoke(state)
+async def blog_agent_node(
+    state: State,
+    config: TeamConfigurable
+) -> Command[Literal["team_supervisor"]]:
+    # Get configurable values
+    configurable = TeamConfigurable.from_runnable_config(config)
+    user_id = configurable.user_id
+    thread_id = config.get("configurable", {}).get("thread_id")
+    # Use second agent as default
+    agent_id = config.get("configurable", {}).get(
+        "agent_id_list", ""
+    ).split(",")[1]
+
+    # Pass user_id and thread_id to blog_graph
+    result = await blog_graph.ainvoke(
+        state,
+        config={
+            "configurable": {
+                "user_id": user_id,
+                "thread_id": thread_id,
+                "agent_id": agent_id,
+                "project_id": config.get("configurable", {}).get("project_id"),
+                "team_id": config.get("configurable", {}).get("team_id"),
+                "staff_id": config.get("configurable", {}).get("staff_id"),
+            }
+        }
+    )
     logging.info(f"Blog agent result: {result}")
     return Command(
         update={
@@ -282,7 +331,9 @@ Current response for review:
     }
 
     # Send interrupt and get response
-    interrupt(request)
+    logging.info(f"Sending interrupt request: {request}")
+    response = interrupt(request)
+    logging.info(f"Interrupt response: {response}")
 
     # TODO: Check the interrupt response and go to the appropriate node
 

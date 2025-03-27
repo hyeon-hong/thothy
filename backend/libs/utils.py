@@ -139,11 +139,11 @@ def initialize_store():
 
 
 def initialize_memory_manager(
-    user_id="{user_id}",
-    project_id="{project_id}",
-    team_id="{team_id}",
-    staff_id="{staff_id}",
-    agent_id="{agent_id}"
+    user_id: str = "default",
+    project_id: str = "default",
+    team_id: str = "default",
+    staff_id: str = "default",
+    agent_id: str = "default"
 ):
     """Initialize the memory manager for extracting memories from conversations."""
     # Namespaces contains template variables to be populated from configurable
@@ -151,7 +151,8 @@ def initialize_memory_manager(
     namespace = ("memories", user_id, project_id, team_id, staff_id, agent_id)
 
     memory_manager = create_memory_store_manager(
-        "anthropic:claude-3-5-sonnet-latest",
+        # "anthropic:claude-3-5-sonnet-latest",
+        "openai:gpt-4o-mini",
         schemas=[Triple],
         enable_inserts=True,
         enable_deletes=True,

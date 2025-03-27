@@ -62,7 +62,7 @@ async def create_blog_post(
         user_id: The ID of the user creating the post
     """
     # TODO: user_id shoud be passed in from the frontend
-    user_id = os.getenv("BLOG_AGENT_USER_ID")
+    # user_id = os.getenv("BLOG_AGENT_USER_ID")
     logging.warning(f"create_blog_post user_id: {user_id}")
     result = await post_blog(title, content, user_id)
     return json.dumps(result, indent=2)
@@ -83,19 +83,26 @@ async def should_continue(state: MessagesState):
     """Determine if we should continue running tools or end."""
     messages = state["messages"]
     last_message = messages[-1]
+    logging.warning(f"should_continue last_message: {last_message}")
     if last_message.tool_calls:
         return "tools"
     return END
 
 
-async def call_model(state: MessagesState):
+async def call_model(state: MessagesState, config: BlogConfigurable):
     """Call the model with the current state."""
+    # Get user_id from configurable
+    configurable = BlogConfigurable.from_runnable_config(config)
+    user_id = configurable.user_id
+    logging.warning(f"blog_graph user_id: {user_id}")
+
+    # Pass user_id to create_blog_post tool
     system_msg = (
         "You are a helpful blog assistant with access to the create_blog_post "
         "function that allows you to create new blog posts on Thothy.\n\n"
         "Help users by creating blog posts based on their requests. When "
         "creating blog posts, ensure the content is well-formatted and "
-        "includes proper HTML tags."
+        f"includes proper HTML tags with the user_id of {user_id}."
     )
     messages = [{"role": "system", "content": system_msg}] + state["messages"]
     response = llm.invoke(messages)
