@@ -4,8 +4,6 @@ import tailwindcssAnimate from "tailwindcss-animate";
 // @ts-ignore - Missing type declarations
 import assistantUI from "@assistant-ui/react/tailwindcss";
 import scrollbar from "tailwind-scrollbar";
-// @ts-ignore - Missing type declarations
-import assistantUIMarkdown from "@assistant-ui/react-markdown/tailwindcss";
 
 const config: Config = {
     darkMode: "class",
@@ -195,7 +193,6 @@ const config: Config = {
       shadcn: true,
     }),
     scrollbar,
-    assistantUIMarkdown,
     require('@tailwindcss/typography'),
   ],
 };
