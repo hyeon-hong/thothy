@@ -1,44 +1,29 @@
 "use client";
 
-import { ComponentPropsWithoutRef, forwardRef } from "react";
-
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
-import { Button } from "@/components/ui/button";
+import { ButtonHTMLAttributes, FC } from "react";
 import { cn } from "@/lib/utils";
 
-export type TooltipIconButtonProps = ComponentPropsWithoutRef<typeof Button> & {
-  tooltip: string;
-  side?: "top" | "bottom" | "left" | "right";
-};
+interface TooltipIconButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
+  tooltip?: string;
+}
 
-export const TooltipIconButton = forwardRef<
-  HTMLButtonElement,
-  TooltipIconButtonProps
->(({ children, tooltip, side = "bottom", className, ...rest }, ref) => {
+export const TooltipIconButton: FC<TooltipIconButtonProps> = ({
+  tooltip,
+  className,
+  children,
+  ...props
+}) => {
   return (
-    <TooltipProvider>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <Button
-            variant="ghost"
-            size="icon"
-            {...rest}
-            className={cn("size-6 p-1", className)}
-            ref={ref}
-          >
-            {children}
-            <span className="sr-only">{tooltip}</span>
-          </Button>
-        </TooltipTrigger>
-        <TooltipContent side={side}>{tooltip}</TooltipContent>
-      </Tooltip>
-    </TooltipProvider>
+    <button
+      type="button"
+      className={cn(
+        "inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 hover:bg-accent hover:text-accent-foreground h-6 w-6",
+        className
+      )}
+      title={tooltip}
+      {...props}
+    >
+      {children}
+    </button>
   );
-});
-
-TooltipIconButton.displayName = "TooltipIconButton";
+};

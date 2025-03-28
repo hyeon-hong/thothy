@@ -25,7 +25,7 @@ import DeleteIcon from "@mui/icons-material/Delete";
 import AddIcon from "@mui/icons-material/Add";
 import KeyboardArrowUpIcon from "@mui/icons-material/KeyboardArrowUp";
 import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
-import ReactMarkdown from "react-markdown";
+import { MarkdownText } from "@/components/ui/markdown-text";
 
 const CURRENT_THREAD_ID_KEY = "openDeepResearchCurrentThreadId";
 
@@ -893,11 +893,7 @@ export default function OpenDeepResearchAgentPage() {
                                         }}
                                         className="markdown-content"
                                     >
-                                        <ReactMarkdown
-                                            components={MarkdownComponents}
-                                        >
-                                            {message.content}
-                                        </ReactMarkdown>
+                                        <MarkdownText>{message.content}</MarkdownText>
                                     </div>
 
                                     {/* Only show expand button if content is long enough to need it */}
