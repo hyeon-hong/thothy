@@ -203,7 +203,9 @@ def team_supervisor_node(
 
     # If the goto is FINISH, set the goto to END
     if goto == "FINISH":
-        goto = END
+        # Go to finish node
+        goto = "finish_node"
+        return Command(goto=goto)
 
     # Update todo list if an agent completed a task
     if state["next"] in members:
@@ -301,7 +303,7 @@ async def blog_agent_node(
     )
 
 
-async def finish_node(state: State) -> dict:
+def finish_node(state: State) -> dict:
     # Create interrupt request following the schema
     request: HumanInterrupt = {
         "action_request": {
@@ -338,6 +340,7 @@ Current response for review:
     # TODO: Check the interrupt response and go to the appropriate node
 
     return {"messages": [HumanMessage(content="Finished", name="team_graph")]}
+
 
 # Build the graph
 builder = StateGraph(State, TeamConfigurable)
