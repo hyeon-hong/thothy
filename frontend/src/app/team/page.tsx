@@ -727,7 +727,7 @@ export default function TeamPage() {
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to create team');
+        throw new Error(errorData.error || "Failed to create team");
       }
 
       const responseData = await response.json();
@@ -746,16 +746,18 @@ export default function TeamPage() {
           },
         },
         input: {
-          messages: [{
-            role: "user",
-            content: teamDescription || "Do your job.",
-            additional_kwargs: {
-              team_id: responseData.id,
-              action: "run_team",
-              timestamp: new Date().toISOString(),
-              source: "team_page",
-            }
-          }]
+          messages: [
+            {
+              role: "user",
+              content: teamDescription || "Do your job.",
+              additional_kwargs: {
+                team_id: responseData.id,
+                action: "run_team",
+                timestamp: new Date().toISOString(),
+                source: "team_page",
+              },
+            },
+          ],
         },
         multitaskStrategy: "enqueue",
         onDisconnect: "cancel",
@@ -796,30 +798,34 @@ export default function TeamPage() {
           });
 
           // Create a new run with updated team configuration
-          const run = await client.runs.create(editingTeam.thread_id, "team_graph", {
-            streamMode: "messages",
-            config: {
-              configurable: {
-                project_id: editingTeam.thread_id,
-                team_id: editingTeam.id,
-                staff_id: user?.id || "default",
-                agent_id_list: selectedAgents.join(","),
-                user_id: user?.id || "default",
-              },
-            },
-            input: {
-              messages: [
-                {
-                  role: "user",
-                  content: teamDescription || "Do your job.",
+          const run = await client.runs.create(
+            editingTeam.thread_id,
+            "team_graph",
+            {
+              streamMode: "messages",
+              config: {
+                configurable: {
+                  project_id: editingTeam.thread_id,
+                  team_id: editingTeam.id,
+                  staff_id: user?.id || "default",
+                  agent_id_list: selectedAgents.join(","),
+                  user_id: user?.id || "default",
                 },
-              ],
-            },
-            multitaskStrategy: "enqueue",
-            onDisconnect: "cancel",
-            afterSeconds: 10,
-            ifNotExists: "create",
-          });
+              },
+              input: {
+                messages: [
+                  {
+                    role: "user",
+                    content: teamDescription || "Do your job.",
+                  },
+                ],
+              },
+              multitaskStrategy: "enqueue",
+              onDisconnect: "cancel",
+              afterSeconds: 10,
+              ifNotExists: "create",
+            }
+          );
         } catch (error) {
           throw new Error("Error updating thread metadata");
         }
@@ -891,6 +897,29 @@ export default function TeamPage() {
         setEditingTeam(null);
       }
       setShowDialog(false);
+    }
+  };
+
+  const handleDeleteTeam = async (teamId: string) => {
+    if (!confirm("Are you sure you want to delete this team?")) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/teams/${teamId}`, {
+        method: "DELETE",
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to delete team");
+      }
+
+      // Remove the team from the teams list
+      setTeams((prevTeams) => prevTeams.filter((team) => team.id !== teamId));
+    } catch (error) {
+      console.error("Error deleting team:", error);
+      alert(error instanceof Error ? error.message : "Failed to delete team");
     }
   };
 
@@ -997,20 +1026,30 @@ export default function TeamPage() {
                           {new Date(team.created_at).toLocaleDateString()}
                         </CardDescription>
                       </div>
-                      <Button
-                        onClick={() => {
-                          setEditingTeam(team);
-                          setTeamName(team.name);
-                          setTeamDescription(team.description);
-                          setSelectedAgents(team.agent_list);
-                          setSchedule(team.schedule || "");
-                          setShowDialog(true);
-                        }}
-                        className="h-8 w-8 p-0"
-                        variant="outlined"
-                      >
-                        <Pencil className="h-4 w-4" />
-                      </Button>
+                      <div className="flex gap-2">
+                        <Button
+                          onClick={() => handleDeleteTeam(team.id)}
+                          className="h-8 w-8 p-0"
+                          variant="outlined"
+                          color="error"
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          onClick={() => {
+                            setEditingTeam(team);
+                            setTeamName(team.name);
+                            setTeamDescription(team.description);
+                            setSelectedAgents(team.agent_list);
+                            setSchedule(team.schedule || "");
+                            setShowDialog(true);
+                          }}
+                          className="h-8 w-8 p-0"
+                          variant="outlined"
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                      </div>
                     </CardHeader>
                     <CardContent>
                       <p className="text-sm text-muted-foreground mb-2">
