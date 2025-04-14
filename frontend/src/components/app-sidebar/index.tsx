@@ -1,6 +1,5 @@
 "use client";
 
-import NextLink from "next/link";
 import {
   Sidebar,
   SidebarContent,
@@ -10,7 +9,6 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
-import { agentInboxSvg } from "../agent-inbox/components/agent-inbox-logo";
 import React from "react";
 import { useSidebar } from "@/components/ui/sidebar";
 import { TooltipIconButton } from "@/components/assistant-ui/tooltip-icon-button";
@@ -63,9 +61,7 @@ export function AppSidebar() {
     <Sidebar className="border-r-[0px] bg-[#F9FAFB]">
       <SidebarContent className="flex flex-col h-screen pb-9 pt-6">
         <div className="flex items-center justify-between px-11">
-          <NextLink href="/" className="flex-shrink-0 w-full">
-            {agentInboxSvg}
-          </NextLink>
+          <span className="text-xl font-semibold flex-shrink-0">Inbox</span>
           <AppSidebarTrigger isOutside={false} className="mt-1" />
         </div>
         <SidebarGroup className="flex-1 overflow-y-auto pt-6">
