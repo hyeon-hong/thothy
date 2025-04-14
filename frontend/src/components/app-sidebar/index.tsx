@@ -10,7 +10,6 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
-import { Trash2 } from "lucide-react";
 import { agentInboxSvg } from "../agent-inbox/components/agent-inbox-logo";
 import React from "react";
 import { useSidebar } from "@/components/ui/sidebar";
@@ -58,8 +57,7 @@ function hashString(str: string): number {
 }
 
 export function AppSidebar() {
-  const { agentInboxes, changeAgentInbox, deleteAgentInbox } =
-    useThreadsContext();
+  const { agentInboxes, changeAgentInbox } = useThreadsContext();
 
   return (
     <Sidebar className="border-r-[0px] bg-[#F9FAFB]">
@@ -115,18 +113,6 @@ export function AppSidebar() {
                           <TooltipContent>{label}</TooltipContent>
                         </Tooltip>
                       </TooltipProvider>
-                      <TooltipIconButton
-                        variant="ghost"
-                        tooltip="Delete"
-                        className="text-gray-800 hover:text-red-500 transition-colors ease-in-out duration-200"
-                        delayduration={100}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          deleteAgentInbox(item.id);
-                        }}
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </TooltipIconButton>
                     </SidebarMenuItem>
                   );
                 })}
