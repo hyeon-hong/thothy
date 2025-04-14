@@ -826,6 +826,7 @@ export default function TeamPage() {
           throw new Error("Error updating thread metadata");
         }
       } else {
+        // TODO: Handle the case where the thread id is not found
         console.error("Error creating thread id: ", editingTeam.thread_id);
         throw new Error("Error creating thread");
       }
