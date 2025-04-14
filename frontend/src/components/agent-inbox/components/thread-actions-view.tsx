@@ -2,13 +2,10 @@ import { Button } from "@/components/ui/button";
 import { Thread } from "@langchain/langgraph-sdk";
 import { ArrowLeft } from "lucide-react";
 import { HumanInterrupt, ThreadData } from "../types";
-import { constructOpenInStudioURL } from "../utils";
-import { ThreadIdCopyable } from "./thread-id";
 import { InboxItemInput } from "./inbox-item-input";
 import useInterruptedActions from "../hooks/use-interrupted-actions";
 import { TooltipIconButton } from "@/components/assistant-ui/tooltip-icon-button";
 import { VIEW_STATE_THREAD_QUERY_PARAM } from "../constants";
-import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { useQueryParams } from "../hooks/use-query-params";
 import { useThreadsContext } from "../contexts/ThreadContext";
@@ -99,28 +96,7 @@ export function ThreadActionsView<
     threadData,
     setThreadData,
   });
-  const { agentInboxes } = useThreadsContext<ThreadValues>();
-  const { toast } = useToast();
   const { updateQueryParams } = useQueryParams();
-
-  const deploymentUrl = agentInboxes.find((i) => i.selected)?.deploymentUrl;
-
-  const handleOpenInStudio = () => {
-    if (!deploymentUrl) {
-      toast({
-        title: "Error",
-        description: "Please set the LangGraph deployment URL in settings.",
-        duration: 5000,
-      });
-      return;
-    }
-
-    const studioUrl = constructOpenInStudioURL(
-      deploymentUrl,
-      threadData.thread.thread_id
-    );
-    window.open(studioUrl, "_blank");
-  };
 
   const threadTitle =
     threadData.interrupts[0]?.action_request?.action || "Unknown";
@@ -133,26 +109,15 @@ export function ThreadActionsView<
       <div className="flex flex-wrap items-center justify-between w-full gap-3">
         <div className="flex items-center justify-start gap-3">
           <TooltipIconButton
-            variant="ghost"
             onClick={() => updateQueryParams(VIEW_STATE_THREAD_QUERY_PARAM)}
             tooltip="Back"
+            className="hover:bg-gray-100"
           >
             <ArrowLeft className="w-5 h-5" />
           </TooltipIconButton>
           <p className="text-2xl tracking-tighter text-pretty">{threadTitle}</p>
-          <ThreadIdCopyable threadId={threadData.thread.thread_id} />
         </div>
         <div className="flex flex-row gap-2 items-center justify-start">
-          {deploymentUrl && (
-            <Button
-              size="sm"
-              variant="outline"
-              className="flex items-center gap-1 bg-white"
-              onClick={handleOpenInStudio}
-            >
-              Studio
-            </Button>
-          )}
           <ButtonGroup
             handleShowState={() => handleShowSidePanel(true, false)}
             handleShowDescription={() => handleShowSidePanel(false, true)}
