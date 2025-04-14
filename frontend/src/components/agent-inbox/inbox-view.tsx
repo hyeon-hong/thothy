@@ -49,39 +49,45 @@ export function AgentInboxView<
   const noThreadsFound = !threadDataToRender.length;
 
   return (
-    <div className="min-w-[1000px] h-full overflow-y-auto">
-      <div className="pl-5 pt-4">
-        <InboxButtons changeInbox={changeInbox} />
-      </div>
-      <div className="flex flex-col items-start w-full max-h-fit h-full border-y-[1px] border-gray-50 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100 mt-3">
-        {threadDataToRender.map((threadData, idx) => {
-          return (
-            <InboxItem<ThreadValues>
-              key={`inbox-item-${threadData.thread.thread_id}`}
-              threadData={threadData}
-              isLast={idx === threadDataToRender.length - 1}
-            />
-          );
-        })}
-        {noThreadsFound && !loading && (
-          <div className="w-full flex items-center justify-center p-4">
-            <div className="flex gap-2 items-center justify-center text-gray-700">
-              <InboxIcon className="w-6 h-6" />
-              <p className="font-medium">No threads found</p>
-            </div>
+    <div className="w-full h-full overflow-x-auto min-w-[320px]">
+      <div className="max-w-[2000px] mx-auto">
+        <div className="sticky top-0 bg-white z-10 px-4 sm:px-5 pt-4">
+          <InboxButtons changeInbox={changeInbox} />
+        </div>
+        
+        <div className="flex flex-col w-full h-[calc(100vh-200px)] border-y-[1px] border-gray-50 mt-3">
+          <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
+            {threadDataToRender.map((threadData, idx) => {
+              return (
+                <InboxItem<ThreadValues>
+                  key={`inbox-item-${threadData.thread.thread_id}`}
+                  threadData={threadData}
+                  isLast={idx === threadDataToRender.length - 1}
+                />
+              );
+            })}
+            {noThreadsFound && !loading && (
+              <div className="w-full flex items-center justify-center p-4">
+                <div className="flex gap-2 items-center justify-center text-gray-700">
+                  <InboxIcon className="w-6 h-6" />
+                  <p className="font-medium">No threads found</p>
+                </div>
+              </div>
+            )}
+            {noThreadsFound && loading && (
+              <div className="w-full flex items-center justify-center p-4">
+                <div className="flex gap-2 items-center justify-center text-gray-700">
+                  <p className="font-medium">Loading</p>
+                  <LoaderCircle className="w-6 h-6 animate-spin" />
+                </div>
+              </div>
+            )}
           </div>
-        )}
-        {noThreadsFound && loading && (
-          <div className="w-full flex items-center justify-center p-4">
-            <div className="flex gap-2 items-center justify-center text-gray-700">
-              <p className="font-medium">Loading</p>
-              <LoaderCircle className="w-6 h-6 animate-spin" />
-            </div>
+          
+          <div className="sticky bottom-0 bg-white border-t border-gray-50 px-4 sm:px-5 py-4">
+            <Pagination />
           </div>
-        )}
-      </div>
-      <div className="flex justify-start w-full p-5">
-        <Pagination />
+        </div>
       </div>
     </div>
   );
