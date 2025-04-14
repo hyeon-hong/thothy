@@ -42,11 +42,11 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
-    const { name, description, agent_ids } = await request.json();
+    const { name, description, agent_list, schedule, thread_id } = await request.json();
 
-    if (!name || !description || !agent_ids) {
+    if (!name || !description || !agent_list) {
       return NextResponse.json(
-        { error: "Name, description, and agent_ids are required" },
+        { error: "Name, description, and agent_list are required" },
         { status: 400 }
       );
     }
@@ -69,7 +69,9 @@ export async function POST(request: Request) {
         {
           name,
           description,
-          agent_list: agent_ids,
+          agent_list,
+          schedule,
+          thread_id,
           user_id: user.id,
           created_at: new Date().toISOString()
         }

@@ -713,7 +713,7 @@ export default function TeamPage() {
         body: JSON.stringify({
           name: teamName,
           description: teamDescription,
-          agent_ids: selectedAgents,
+          agent_list: selectedAgents,
           schedule: schedule,
           thread_id: thread.thread_id,
         }),
@@ -777,6 +777,7 @@ export default function TeamPage() {
   };
 
   const handleEditTeam = async () => {
+    console.log("editingTeam: ", editingTeam);
     if (!editingTeam) return;
 
     try {
@@ -838,7 +839,7 @@ export default function TeamPage() {
         body: JSON.stringify({
           name: teamName,
           description: teamDescription,
-          agent_ids: selectedAgents,
+          agent_list: selectedAgents,
           schedule: schedule,
           thread_id: editingTeam.thread_id,
         }),
