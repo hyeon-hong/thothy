@@ -264,12 +264,7 @@ const TeamDialog = ({
           <option value="">Not scheduled</option>
           <option value="* * * * *">Every minute</option>
           <option value="0 * * * *">Every hour</option>
-          <option value="0 0 * * *">Every day at midnight</option>
-          <option value="0 12 * * *">Every day at noon</option>
-          <option value="0 0 * * 0">Every Sunday at midnight</option>
-          <option value="0 0 1 * *">
-            First day of every month at midnight
-          </option>
+          <option value="0 0 * * *">Every day</option>
         </select>
         <p className="text-sm text-muted-foreground mt-1">
           {cronToText(schedule)}
