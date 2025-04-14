@@ -10,10 +10,8 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
-import { FileText, Trash2 } from "lucide-react";
+import { Trash2 } from "lucide-react";
 import { agentInboxSvg } from "../agent-inbox/components/agent-inbox-logo";
-import { SettingsPopover } from "../agent-inbox/components/settings-popover";
-import { PillButton } from "@/components/ui/pill-button";
 import React from "react";
 import { useSidebar } from "@/components/ui/sidebar";
 import { TooltipIconButton } from "@/components/assistant-ui/tooltip-icon-button";
@@ -21,17 +19,11 @@ import { useThreadsContext } from "../agent-inbox/contexts/ThreadContext";
 import { prettifyText } from "../agent-inbox/utils";
 import { cn } from "@/lib/utils";
 import {
-  AGENT_INBOX_GITHUB_README_URL,
-  LANGCHAIN_API_KEY_LOCAL_STORAGE_KEY,
-} from "../agent-inbox/constants";
-import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
 } from "../ui/tooltip";
-import { AddAgentInboxDialog } from "../agent-inbox/components/add-agent-inbox-dialog";
-import { useLocalStorage } from "../agent-inbox/hooks/use-local-storage";
 
 const gradients = [
   "linear-gradient(to right, #FF416C, #FF4B2B)", // Red-Orange
@@ -68,30 +60,6 @@ function hashString(str: string): number {
 export function AppSidebar() {
   const { agentInboxes, changeAgentInbox, deleteAgentInbox } =
     useThreadsContext();
-  const [langchainApiKey, setLangchainApiKey] = React.useState("");
-  const { getItem, setItem } = useLocalStorage();
-
-  React.useEffect(() => {
-    try {
-      if (typeof window === "undefined" || langchainApiKey) {
-        return;
-      }
-
-      const langchainApiKeyLS = getItem(LANGCHAIN_API_KEY_LOCAL_STORAGE_KEY);
-      if (langchainApiKeyLS) {
-        setLangchainApiKey(langchainApiKeyLS);
-      }
-    } catch (e) {
-      console.error("Error getting/setting LangSmith API key", e);
-    }
-  }, [langchainApiKey]);
-
-  const handleChangeLangChainApiKey = (
-    e: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    setLangchainApiKey(e.target.value);
-    setItem(LANGCHAIN_API_KEY_LOCAL_STORAGE_KEY, e.target.value);
-  };
 
   return (
     <Sidebar className="border-r-[0px] bg-[#F9FAFB]">
@@ -162,29 +130,6 @@ export function AppSidebar() {
                     </SidebarMenuItem>
                   );
                 })}
-                <AddAgentInboxDialog
-                  hideTrigger={false}
-                  langchainApiKey={langchainApiKey}
-                  handleChangeLangChainApiKey={handleChangeLangChainApiKey}
-                />
-              </div>
-
-              <div className="flex flex-col gap-3 pl-7">
-                <SettingsPopover />
-                <NextLink
-                  href={AGENT_INBOX_GITHUB_README_URL}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  <PillButton
-                    variant="outline"
-                    className="flex gap-2 items-center justify-center text-gray-800"
-                    size="lg"
-                  >
-                    <FileText />
-                    <span>Documentation</span>
-                  </PillButton>
-                </NextLink>
               </div>
             </SidebarMenu>
           </SidebarGroupContent>
