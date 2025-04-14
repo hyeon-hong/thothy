@@ -263,9 +263,37 @@ export function StateView({
   }
 
   return (
-    <div className="overflow-y-auto pl-6 border-t-[1px] lg:border-t-[0px] lg:border-l-[1px] border-gray-100 flex flex-row gap-0 w-full">
+    <div className="overflow-y-auto pl-6 border-t-[1px] lg:border-t-[0px] lg:border-l-[1px] border-gray-100 flex flex-col w-full">
+      <div className="flex justify-between items-start sticky top-0 bg-white z-10 pt-6 pr-6">
+        <div className="flex-1" />
+        <div className="flex gap-2">
+          {view === "state" && (
+            <Button
+              onClick={() => setExpanded((prev) => !prev)}
+              variant="ghost"
+              className="text-gray-600"
+              size="sm"
+            >
+              {expanded ? (
+                <ChevronsUpDown className="w-4 h-4" />
+              ) : (
+                <ChevronsDownUp className="w-4 h-4" />
+              )}
+            </Button>
+          )}
+          <Button
+            onClick={() => handleShowSidePanel(false, false)}
+            variant="ghost"
+            className="text-gray-600"
+            size="sm"
+          >
+            <X className="w-4 h-4" />
+          </Button>
+        </div>
+      </div>
+
       {view === "description" && (
-        <div className="pt-6 pb-2">
+        <div className="pt-2 pb-2">
           <div className="text-wrap break-words whitespace-pre-wrap">
             <MarkdownText>
               {description || "No description provided"}
@@ -274,7 +302,7 @@ export function StateView({
         </div>
       )}
       {view === "state" && (
-        <div className="flex flex-col items-start justify-start gap-1 pt-6 pb-2">
+        <div className="flex flex-col items-start justify-start gap-1 pt-2 pb-2">
           {Object.entries(threadValues).map(([k, v], idx) => (
             <StateViewObject
               expanded={expanded}
@@ -285,31 +313,6 @@ export function StateView({
           ))}
         </div>
       )}
-      <div className="flex gap-2 items-start justify-end pt-6 pr-6">
-        {view === "state" && (
-          <Button
-            onClick={() => setExpanded((prev) => !prev)}
-            variant="ghost"
-            className="text-gray-600"
-            size="sm"
-          >
-            {expanded ? (
-              <ChevronsUpDown className="w-4 h-4" />
-            ) : (
-              <ChevronsDownUp className="w-4 h-4" />
-            )}
-          </Button>
-        )}
-
-        <Button
-          onClick={() => handleShowSidePanel(false, false)}
-          variant="ghost"
-          className="text-gray-600"
-          size="sm"
-        >
-          <X className="w-4 h-4" />
-        </Button>
-      </div>
     </div>
   );
 }
