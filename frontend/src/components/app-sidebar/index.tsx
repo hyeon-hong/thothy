@@ -54,8 +54,24 @@ function hashString(str: string): number {
   return Math.abs(hash);
 }
 
+function SidebarSkeleton() {
+  return (
+    <div className="flex flex-col gap-2 pl-7">
+      {[1, 2, 3].map((i) => (
+        <div
+          key={i}
+          className="flex items-center gap-2 p-2 animate-pulse"
+        >
+          <div className="w-6 h-6 rounded-md bg-gray-200" />
+          <div className="h-4 bg-gray-200 rounded w-24" />
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export function AppSidebar() {
-  const { agentInboxes, changeAgentInbox } = useThreadsContext();
+  const { agentInboxes, changeAgentInbox, loading } = useThreadsContext();
 
   return (
     <Sidebar className="border-r-[0px] bg-[#F9FAFB]">
@@ -67,52 +83,56 @@ export function AppSidebar() {
         <SidebarGroup className="flex-1 overflow-y-auto pt-6">
           <SidebarGroupContent className="h-full">
             <SidebarMenu className="flex flex-col gap-2 justify-between h-full">
-              <div className="flex flex-col gap-2 pl-7">
-                {agentInboxes.map((item, idx) => {
-                  const label = item.name || prettifyText(item.graphId);
-                  return (
-                    <SidebarMenuItem
-                      key={`graph-id-${item.graphId}-${idx}`}
-                      className={cn(
-                        "flex items-center w-full",
-                        item.selected ? "bg-gray-100 rounded-md" : ""
-                      )}
-                    >
-                      <TooltipProvider>
-                        <Tooltip delayduration={200}>
-                          <TooltipTrigger asChild>
-                            <SidebarMenuButton
-                              onClick={() => changeAgentInbox(item.id, true)}
-                            >
-                              <div
-                                className="w-6 h-6 rounded-md flex-shrink-0 flex items-center justify-center text-white"
-                                style={{
-                                  background:
-                                    gradients[
-                                      hashString(item.graphId) %
-                                        gradients.length
-                                    ],
-                                }}
+              {loading ? (
+                <SidebarSkeleton />
+              ) : (
+                <div className="flex flex-col gap-2 pl-7">
+                  {agentInboxes.map((item, idx) => {
+                    const label = item.name || prettifyText(item.graphId);
+                    return (
+                      <SidebarMenuItem
+                        key={`graph-id-${item.graphId}-${idx}`}
+                        className={cn(
+                          "flex items-center w-full",
+                          item.selected ? "bg-gray-100 rounded-md" : ""
+                        )}
+                      >
+                        <TooltipProvider>
+                          <Tooltip delayduration={200}>
+                            <TooltipTrigger asChild>
+                              <SidebarMenuButton
+                                onClick={() => changeAgentInbox(item.id, true)}
                               >
-                                {label.slice(0, 1).toUpperCase()}
-                              </div>
-                              <span
-                                className={cn(
-                                  "truncate min-w-0 font-medium",
-                                  item.selected ? "text-black" : "text-gray-600"
-                                )}
-                              >
-                                {label}
-                              </span>
-                            </SidebarMenuButton>
-                          </TooltipTrigger>
-                          <TooltipContent>{label}</TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
-                    </SidebarMenuItem>
-                  );
-                })}
-              </div>
+                                <div
+                                  className="w-6 h-6 rounded-md flex-shrink-0 flex items-center justify-center text-white"
+                                  style={{
+                                    background:
+                                      gradients[
+                                        hashString(item.graphId) %
+                                          gradients.length
+                                      ],
+                                  }}
+                                >
+                                  {label.slice(0, 1).toUpperCase()}
+                                </div>
+                                <span
+                                  className={cn(
+                                    "truncate min-w-0 font-medium",
+                                    item.selected ? "text-black" : "text-gray-600"
+                                  )}
+                                >
+                                  {label}
+                                </span>
+                              </SidebarMenuButton>
+                            </TooltipTrigger>
+                            <TooltipContent>{label}</TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      </SidebarMenuItem>
+                    );
+                  })}
+                </div>
+              )}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
