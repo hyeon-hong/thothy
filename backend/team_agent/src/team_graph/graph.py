@@ -218,6 +218,41 @@ def team_supervisor_node(
     else:
         update = {"next": goto}
 
+    if goto == "blog_agent":
+        request: HumanInterrupt = {
+            "action_request": {
+                "action": "Review Blog Post",
+                "args": {
+                    "response": state["messages"][-1].content,
+                    "user_request": state["initial_request"],
+                }
+            },
+            "config": {
+                "allow_ignore": False,  # Don't allow ignoring the review
+                "allow_respond": True,  # Allow responding with feedback
+                "allow_edit": True,     # Allow editing the response
+                "allow_accept": True    # Allow accepting as-is
+            },
+            "description": """Please review this AI response. You can:
+    - Accept the response as-is
+    - Edit the response before sending
+    - Provide feedback or instructions for regeneration
+    - Make any necessary corrections
+
+    Current response for review:
+    ```
+    {response}
+    ```
+    """
+        }
+
+        # Send interrupt and get response
+        logging.info(f"Sending interrupt request: {request}")
+        response = interrupt(request)
+        logging.info(f"Interrupt response: {response}")
+
+    # TODO: Check the interrupt response and go to the appropriate node
+
     return Command(goto=goto, update=update)
 
 
@@ -304,41 +339,6 @@ async def blog_agent_node(
 
 
 def finish_node(state: State) -> dict:
-    # Create interrupt request following the schema
-    request: HumanInterrupt = {
-        "action_request": {
-            "action": "Review Response",
-            "args": {"messages": state["messages"],
-                     "response": state["messages"][-1].content,
-                     "initial_request": state["initial_request"],
-                     "todos": state["todos"]}
-        },
-        "config": {
-            "allow_ignore": False,  # Don't allow ignoring the review
-            "allow_respond": True,  # Allow responding with feedback
-            "allow_edit": True,     # Allow editing the response
-            "allow_accept": True    # Allow accepting as-is
-        },
-        "description": """Please review this AI response. You can:
-- Accept the response as-is
-- Edit the response before sending
-- Provide feedback or instructions for regeneration
-- Make any necessary corrections
-
-Current response for review:
-```
-{response}
-```
-"""
-    }
-
-    # Send interrupt and get response
-    logging.info(f"Sending interrupt request: {request}")
-    response = interrupt(request)
-    logging.info(f"Interrupt response: {response}")
-
-    # TODO: Check the interrupt response and go to the appropriate node
-
     return {"messages": [HumanMessage(content="Finished", name="team_graph")]}
 
 
