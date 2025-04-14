@@ -394,10 +394,10 @@ export function ThreadsProvider<
         const statusInput = inbox === "all" ? {} : { status: inbox };
         const metadataInput = getThreadFilterMetadata(agentInboxes);
         const threadSearchArgs = {
-          // offset,
-          // limit,
-          // ...statusInput,
-          // ...(metadataInput ? { metadata: metadataInput } : {}),
+          offset,
+          limit,
+          ...statusInput,
+          ...(metadataInput ? { metadata: metadataInput } : {}),
         };
 
         const threads = await client.threads.search(threadSearchArgs);
