@@ -612,7 +612,7 @@ export function ThreadsProvider<
       return undefined as any;
     }
     console.log("graphId: ", graphId);
-    graphId = "interrupt_graph";
+    graphId = "team_graph";
 
     const client = await getClient({
       agentInboxes,
