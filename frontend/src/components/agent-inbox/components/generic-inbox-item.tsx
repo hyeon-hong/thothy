@@ -9,6 +9,7 @@ import { constructOpenInStudioURL } from "../utils";
 import { Button } from "@/components/ui/button";
 import NextLink from "next/link";
 import { useThreadsContext } from "../contexts/ThreadContext";
+import { Trash2 } from "lucide-react";
 
 interface GenericInboxItemProps<
   ThreadValues extends Record<string, any> = Record<string, any>,
@@ -24,7 +25,7 @@ interface GenericInboxItemProps<
 export function GenericInboxItem<
   ThreadValues extends Record<string, any> = Record<string, any>,
 >({ threadData, isLast }: GenericInboxItemProps<ThreadValues>) {
-  const { agentInboxes } = useThreadsContext<ThreadValues>();
+  const { agentInboxes, deleteThread } = useThreadsContext<ThreadValues>();
   const { toast } = useToast();
 
   const deploymentUrl = agentInboxes.find((i) => i.selected)?.deploymentUrl;
@@ -46,10 +47,16 @@ export function GenericInboxItem<
     window.open(studioUrl, "_blank");
   };
 
+  const handleDelete = async () => {
+    await deleteThread(threadData.thread.thread_id);
+  };
+
   const updatedAtDateString = format(
     new Date(threadData.thread.updated_at),
     "MM/dd h:mm a"
   );
+
+  const showDeleteButton = threadData.status === "idle" || threadData.status === "error";
 
   return (
     <div
@@ -61,7 +68,7 @@ export function GenericInboxItem<
       <div
         className={cn(
           "flex items-center justify-start gap-2",
-          deploymentUrl ? "col-span-7" : "col-span-9"
+          deploymentUrl ? "col-span-6" : "col-span-8"
         )}
       >
         <p className="text-black text-sm font-semibold">Thread ID:</p>
@@ -94,9 +101,22 @@ export function GenericInboxItem<
         <InboxItemStatuses status={threadData.status} />
       </div>
 
-      <p className="col-span-1 text-gray-600 font-light text-sm">
+      <div className="col-span-1 text-gray-600 font-light text-sm">
         {updatedAtDateString}
-      </p>
+      </div>
+
+      {showDeleteButton && (
+        <div className="col-span-1 flex justify-end">
+          <Button
+            size="icon"
+            variant="ghost"
+            className="h-8 w-8 text-gray-500 hover:text-red-500 hover:bg-red-50"
+            onClick={handleDelete}
+          >
+            <Trash2 className="h-4 w-4" />
+          </Button>
+        </div>
+      )}
     </div>
   );
 }
