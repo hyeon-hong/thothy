@@ -108,7 +108,8 @@ const getClient = async ({ agentInboxes, getItem, toast }: GetClientArgs) => {
 
   // Use the proxied URL consistently across the application
   const deploymentUrl = process.env.NEXT_PUBLIC_LANGGRAPH_API_URL;
-  const langchainApiKey = process.env.NEXT_PUBLIC_LANGGRAPH_API_KEY || undefined;
+  const langchainApiKey =
+    process.env.NEXT_PUBLIC_LANGGRAPH_API_KEY || undefined;
 
   try {
     const client = await createClient({
@@ -119,17 +120,19 @@ const getClient = async ({ agentInboxes, getItem, toast }: GetClientArgs) => {
     return client;
   } catch (error: any) {
     console.error("Failed to create LangGraph client:", error);
-    if (error.message?.includes('CORS')) {
+    if (error.message?.includes("CORS")) {
       toast({
         title: "CORS Error",
-        description: "Unable to connect to LangGraph API. Please check your configuration.",
+        description:
+          "Unable to connect to LangGraph API. Please check your configuration.",
         variant: "destructive",
         duration: 5000,
       });
     } else {
       toast({
         title: "Error",
-        description: "Failed to connect to LangGraph API. Please check your configuration.",
+        description:
+          "Failed to connect to LangGraph API. Please check your configuration.",
         variant: "destructive",
         duration: 5000,
       });
@@ -188,41 +191,44 @@ export function ThreadsProvider<
 
   const getAgentInboxes = React.useCallback(async () => {
     const agentInboxSearchParam = getSearchParam(AGENT_INBOX_PARAM);
-    console.log('[Debug] Fetching agent inboxes, search param:', agentInboxSearchParam);
+    console.log(
+      "[Debug] Fetching agent inboxes, search param:",
+      agentInboxSearchParam
+    );
 
     try {
       // Fetch teams from the database
-      const response = await fetch('/api/supabase', {
-        method: 'POST',
+      const response = await fetch("/api/supabase", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          action: 'select',
-          table: 'teams',
+          action: "select",
+          table: "teams",
           query: {
-            select: '*'
-          }
+            select: "*",
+          },
         }),
       });
 
       if (!response.ok) {
-        throw new Error('Failed to fetch teams');
+        throw new Error("Failed to fetch teams");
       }
 
       const data = await response.json();
-      console.log('[Debug] Raw response from Supabase:', data);
-      
+      console.log("[Debug] Raw response from Supabase:", data);
+
       if (!data || !Array.isArray(data)) {
-        console.log('[Debug] Invalid data format from API:', data);
-        throw new Error('Invalid data format from API');
+        console.log("[Debug] Invalid data format from API:", data);
+        throw new Error("Invalid data format from API");
       }
 
       const teams = data;
-      console.log('[Debug] Teams data:', teams);
+      console.log("[Debug] Teams data:", teams);
 
       if (!teams.length) {
-        console.log('[Debug] No teams found in database');
+        console.log("[Debug] No teams found in database");
         // Don't show welcome dialog even if no teams found
         setAgentInboxes([]);
         return;
@@ -231,12 +237,13 @@ export function ThreadsProvider<
       // Transform teams into AgentInbox format
       const parsedAgentInboxes: AgentInbox[] = teams.map((team: any) => ({
         id: team.id,
-        graphId: team.id, // Using team ID as graph ID
+        // TODO: Handle project_graph later
+        graphId: "team_graph",
         name: team.name,
         description: team.description,
-        selected: false
+        selected: false,
       }));
-      console.log('[Debug] Transformed agent inboxes:', parsedAgentInboxes);
+      console.log("[Debug] Transformed agent inboxes:", parsedAgentInboxes);
 
       // If there is no agent inbox search param, or the search param is not
       // a valid UUID, update search param
@@ -255,15 +262,18 @@ export function ThreadsProvider<
       if (!selectedInbox) {
         toast({
           title: "Error",
-          description: "Agent inbox not found. Please add an inbox in settings.",
+          description:
+            "Agent inbox not found. Please add an inbox in settings.",
           variant: "destructive",
           duration: 3000,
         });
         return;
       }
 
-      parsedAgentInboxes.forEach(inbox => {
-        inbox.selected = inbox.id === agentInboxSearchParam || inbox.graphId === agentInboxSearchParam;
+      parsedAgentInboxes.forEach((inbox) => {
+        inbox.selected =
+          inbox.id === agentInboxSearchParam ||
+          inbox.graphId === agentInboxSearchParam;
       });
 
       setAgentInboxes(parsedAgentInboxes);
@@ -600,7 +610,6 @@ export function ThreadsProvider<
           | undefined
       : Run | undefined
   > => {
-    // TODO: Fix graphId value
     let graphId = agentInboxes.find((i) => i.selected)?.graphId;
     if (!graphId) {
       toast({
@@ -612,7 +621,6 @@ export function ThreadsProvider<
       return undefined as any;
     }
     console.log("graphId: ", graphId);
-    graphId = "team_graph";
 
     const client = await getClient({
       agentInboxes,

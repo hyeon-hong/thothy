@@ -727,7 +727,7 @@ export default function TeamPage() {
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to create team');
+        throw new Error(errorData.error || "Failed to create team");
       }
 
       const responseData = await response.json();
@@ -746,16 +746,18 @@ export default function TeamPage() {
           },
         },
         input: {
-          messages: [{
-            role: "user",
-            content: teamDescription || "Do your job.",
-            additional_kwargs: {
-              team_id: responseData.id,
-              action: "run_team",
-              timestamp: new Date().toISOString(),
-              source: "team_page",
-            }
-          }]
+          messages: [
+            {
+              role: "user",
+              content: teamDescription || "Do your job.",
+              additional_kwargs: {
+                team_id: responseData.id,
+                action: "run_team",
+                timestamp: new Date().toISOString(),
+                source: "team_page",
+              },
+            },
+          ],
         },
         multitaskStrategy: "enqueue",
         onDisconnect: "cancel",
@@ -796,30 +798,34 @@ export default function TeamPage() {
           });
 
           // Create a new run with updated team configuration
-          const run = await client.runs.create(editingTeam.thread_id, "team_graph", {
-            streamMode: "messages",
-            config: {
-              configurable: {
-                project_id: editingTeam.thread_id,
-                team_id: editingTeam.id,
-                staff_id: user?.id || "default",
-                agent_id_list: selectedAgents.join(","),
-                user_id: user?.id || "default",
-              },
-            },
-            input: {
-              messages: [
-                {
-                  role: "user",
-                  content: teamDescription || "Do your job.",
+          const run = await client.runs.create(
+            editingTeam.thread_id,
+            "team_graph",
+            {
+              streamMode: "messages",
+              config: {
+                configurable: {
+                  project_id: editingTeam.thread_id,
+                  team_id: editingTeam.id,
+                  staff_id: user?.id || "default",
+                  agent_id_list: selectedAgents.join(","),
+                  user_id: user?.id || "default",
                 },
-              ],
-            },
-            multitaskStrategy: "enqueue",
-            onDisconnect: "cancel",
-            afterSeconds: 10,
-            ifNotExists: "create",
-          });
+              },
+              input: {
+                messages: [
+                  {
+                    role: "user",
+                    content: teamDescription || "Do your job.",
+                  },
+                ],
+              },
+              multitaskStrategy: "enqueue",
+              onDisconnect: "cancel",
+              afterSeconds: 10,
+              ifNotExists: "create",
+            }
+          );
         } catch (error) {
           throw new Error("Error updating thread metadata");
         }
