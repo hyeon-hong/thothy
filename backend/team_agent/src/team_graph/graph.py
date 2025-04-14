@@ -224,7 +224,7 @@ def team_supervisor_node(
             "action_request": {
                 "action": "Review Blog Post",
                 "args": {
-                    "user_request": state["initial_request"],
+                    "request": state["initial_request"],
                     "response": state["messages"][-1].content,
                 }
             },
