@@ -817,7 +817,7 @@ export default function TeamPage() {
               },
               multitaskStrategy: "enqueue",
               onDisconnect: "cancel",
-              afterSeconds: 10,
+              afterSeconds: 1,
               ifNotExists: "create",
             }
           );
@@ -825,19 +825,8 @@ export default function TeamPage() {
           throw new Error("Error updating thread metadata");
         }
       } else {
-        // Create a new thread if one doesn't exist
-        try {
-          const thread = await client.threads.create({
-            metadata: {
-              team_name: teamName,
-              agent_list: selectedAgents,
-            },
-          });
-
-          editingTeam.thread_id = thread.thread_id;
-        } catch (error) {
-          throw new Error("Error creating thread");
-        }
+        console.error("Error creating thread id: ", editingTeam.thread_id);
+        throw new Error("Error creating thread");
       }
 
       // Update team in database
