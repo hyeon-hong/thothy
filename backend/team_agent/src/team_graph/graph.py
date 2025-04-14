@@ -234,7 +234,7 @@ def team_supervisor_node(
                 "allow_edit": True,     # Allow editing the response
                 "allow_accept": True    # Allow accepting as-is
             },
-            "description": """Please review this AI response. You can:
+            "description": f"""Please review this AI response. You can:
     - Accept the response as-is
     - Edit the response before sending
     - Provide feedback or instructions for regeneration
