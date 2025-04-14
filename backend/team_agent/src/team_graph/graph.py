@@ -218,6 +218,7 @@ def team_supervisor_node(
     else:
         update = {"next": goto}
 
+    # TODO: Generalize this to all agents. Set this interrupt_before in UI
     if goto == "blog_agent":
         request: HumanInterrupt = {
             "action_request": {
