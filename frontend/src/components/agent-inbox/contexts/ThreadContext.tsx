@@ -83,6 +83,12 @@ type ThreadContentType<
       }
     | undefined
   >;
+  bulkGetThreadStates: (
+    threadIds: string[]
+  ) => Promise<
+    { thread_id: string; thread_state: ThreadState<ThreadValues> }[]
+  >;
+  deleteThread: (threadId: string) => Promise<void>;
 };
 
 const ThreadsContext = React.createContext<ThreadContentType | undefined>(
@@ -394,10 +400,10 @@ export function ThreadsProvider<
         const statusInput = inbox === "all" ? {} : { status: inbox };
         const metadataInput = getThreadFilterMetadata(agentInboxes);
         const threadSearchArgs = {
-          // offset,
-          // limit,
-          // ...statusInput,
-          // ...(metadataInput ? { metadata: metadataInput } : {}),
+          offset,
+          limit,
+          ...statusInput,
+          ...(metadataInput ? { metadata: metadataInput } : {}),
         };
 
         const threads = await client.threads.search(threadSearchArgs);
@@ -590,6 +596,36 @@ export function ThreadsProvider<
     }
   };
 
+  const deleteThread = async (threadId: string) => {
+    const client = await getClient({
+      agentInboxes,
+      getItem,
+      toast,
+    });
+    if (!client) {
+      return;
+    }
+    try {
+      await client.threads.delete(threadId);
+
+      setThreadData((prev) => {
+        return prev.filter((p) => p.thread.thread_id !== threadId);
+      });
+      toast({
+        title: "Success",
+        description: "Thread deleted successfully",
+        duration: 3000,
+      });
+    } catch (e) {
+      toast({
+        title: "Error",
+        description: "Failed to delete thread",
+        variant: "destructive",
+        duration: 3000,
+      });
+    }
+  };
+
   const sendHumanResponse = async <TStream extends boolean = false>(
     threadId: string,
     response: HumanResponse[],
@@ -661,6 +697,8 @@ export function ThreadsProvider<
     sendHumanResponse,
     fetchThreads,
     fetchSingleThread,
+    bulkGetThreadStates,
+    deleteThread,
   };
 
   return (

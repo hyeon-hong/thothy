@@ -224,8 +224,8 @@ def team_supervisor_node(
             "action_request": {
                 "action": "Review Blog Post",
                 "args": {
+                    "request": state["initial_request"],
                     "response": state["messages"][-1].content,
-                    "user_request": state["initial_request"],
                 }
             },
             "config": {
@@ -234,7 +234,7 @@ def team_supervisor_node(
                 "allow_edit": True,     # Allow editing the response
                 "allow_accept": True    # Allow accepting as-is
             },
-            "description": """Please review this AI response. You can:
+            "description": f"""Please review this AI response. You can:
     - Accept the response as-is
     - Edit the response before sending
     - Provide feedback or instructions for regeneration

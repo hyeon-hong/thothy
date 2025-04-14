@@ -264,12 +264,7 @@ const TeamDialog = ({
           <option value="">Not scheduled</option>
           <option value="* * * * *">Every minute</option>
           <option value="0 * * * *">Every hour</option>
-          <option value="0 0 * * *">Every day at midnight</option>
-          <option value="0 12 * * *">Every day at noon</option>
-          <option value="0 0 * * 0">Every Sunday at midnight</option>
-          <option value="0 0 1 * *">
-            First day of every month at midnight
-          </option>
+          <option value="0 0 * * *">Every day</option>
         </select>
         <p className="text-sm text-muted-foreground mt-1">
           {cronToText(schedule)}
@@ -718,7 +713,7 @@ export default function TeamPage() {
         body: JSON.stringify({
           name: teamName,
           description: teamDescription,
-          agent_ids: selectedAgents,
+          agent_list: selectedAgents,
           schedule: schedule,
           thread_id: thread.thread_id,
         }),
@@ -782,6 +777,7 @@ export default function TeamPage() {
   };
 
   const handleEditTeam = async () => {
+    console.log("editingTeam: ", editingTeam);
     if (!editingTeam) return;
 
     try {
@@ -822,7 +818,7 @@ export default function TeamPage() {
               },
               multitaskStrategy: "enqueue",
               onDisconnect: "cancel",
-              afterSeconds: 10,
+              afterSeconds: 1,
               ifNotExists: "create",
             }
           );
@@ -830,19 +826,9 @@ export default function TeamPage() {
           throw new Error("Error updating thread metadata");
         }
       } else {
-        // Create a new thread if one doesn't exist
-        try {
-          const thread = await client.threads.create({
-            metadata: {
-              team_name: teamName,
-              agent_list: selectedAgents,
-            },
-          });
-
-          editingTeam.thread_id = thread.thread_id;
-        } catch (error) {
-          throw new Error("Error creating thread");
-        }
+        // TODO: Handle the case where the thread id is not found
+        console.error("Error creating thread id: ", editingTeam.thread_id);
+        throw new Error("Error creating thread");
       }
 
       // Update team in database
@@ -854,7 +840,7 @@ export default function TeamPage() {
         body: JSON.stringify({
           name: teamName,
           description: teamDescription,
-          agent_ids: selectedAgents,
+          agent_list: selectedAgents,
           schedule: schedule,
           thread_id: editingTeam.thread_id,
         }),

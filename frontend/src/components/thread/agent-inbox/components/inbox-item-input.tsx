@@ -107,7 +107,7 @@ function ResponseComponent({
     <div className="flex flex-col gap-4 p-6 items-start w-full rounded-xl border-[1px] border-gray-300">
       <div className="flex items-center justify-between w-full">
         <p className="font-semibold text-black text-base">
-          Respond to assistant
+          Respond to team
         </p>
         <ResetButton
           handleReset={() => {

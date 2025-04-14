@@ -115,7 +115,7 @@ function ResponseComponent({
     <div className="flex flex-col gap-4 p-6 items-start w-full rounded-xl border-[1px] border-gray-300">
       <div className="flex items-center justify-between w-full">
         <p className="font-semibold text-black text-base">
-          Respond to assistant
+          Respond to team
         </p>
         <ResetButton
           handleReset={() => {
@@ -511,10 +511,10 @@ export function InboxItemInput({
           handleSubmit={handleSubmit}
         />
         {supportsMultipleMethods ? (
-          <div className="flex gap-3 items-center w-full mt-3">
-            <Separator className="w-1/2" />
-            <p className="text-sm text-gray-500">Or</p>
-            <Separator className="w-1/2" />
+          <div className="flex gap-3 items-center justify-center w-full mt-3">
+            <Separator className="flex-1" />
+            <p className="text-sm text-gray-500 flex-shrink-0">Or</p>
+            <Separator className="flex-1" />
           </div>
         ) : null}
         <Response

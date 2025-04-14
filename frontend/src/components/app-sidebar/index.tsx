@@ -1,6 +1,5 @@
 "use client";
 
-import NextLink from "next/link";
 import {
   Sidebar,
   SidebarContent,
@@ -10,10 +9,6 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
-import { FileText, Trash2 } from "lucide-react";
-import { agentInboxSvg } from "../agent-inbox/components/agent-inbox-logo";
-import { SettingsPopover } from "../agent-inbox/components/settings-popover";
-import { PillButton } from "@/components/ui/pill-button";
 import React from "react";
 import { useSidebar } from "@/components/ui/sidebar";
 import { TooltipIconButton } from "@/components/assistant-ui/tooltip-icon-button";
@@ -21,17 +16,11 @@ import { useThreadsContext } from "../agent-inbox/contexts/ThreadContext";
 import { prettifyText } from "../agent-inbox/utils";
 import { cn } from "@/lib/utils";
 import {
-  AGENT_INBOX_GITHUB_README_URL,
-  LANGCHAIN_API_KEY_LOCAL_STORAGE_KEY,
-} from "../agent-inbox/constants";
-import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
 } from "../ui/tooltip";
-import { AddAgentInboxDialog } from "../agent-inbox/components/add-agent-inbox-dialog";
-import { useLocalStorage } from "../agent-inbox/hooks/use-local-storage";
 
 const gradients = [
   "linear-gradient(to right, #FF416C, #FF4B2B)", // Red-Orange
@@ -65,127 +54,85 @@ function hashString(str: string): number {
   return Math.abs(hash);
 }
 
+function SidebarSkeleton() {
+  return (
+    <div className="flex flex-col gap-2 pl-7">
+      {[1, 2, 3].map((i) => (
+        <div
+          key={i}
+          className="flex items-center gap-2 p-2 animate-pulse"
+        >
+          <div className="w-6 h-6 rounded-md bg-gray-200" />
+          <div className="h-4 bg-gray-200 rounded w-24" />
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export function AppSidebar() {
-  const { agentInboxes, changeAgentInbox, deleteAgentInbox } =
-    useThreadsContext();
-  const [langchainApiKey, setLangchainApiKey] = React.useState("");
-  const { getItem, setItem } = useLocalStorage();
-
-  React.useEffect(() => {
-    try {
-      if (typeof window === "undefined" || langchainApiKey) {
-        return;
-      }
-
-      const langchainApiKeyLS = getItem(LANGCHAIN_API_KEY_LOCAL_STORAGE_KEY);
-      if (langchainApiKeyLS) {
-        setLangchainApiKey(langchainApiKeyLS);
-      }
-    } catch (e) {
-      console.error("Error getting/setting LangSmith API key", e);
-    }
-  }, [langchainApiKey]);
-
-  const handleChangeLangChainApiKey = (
-    e: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    setLangchainApiKey(e.target.value);
-    setItem(LANGCHAIN_API_KEY_LOCAL_STORAGE_KEY, e.target.value);
-  };
+  const { agentInboxes, changeAgentInbox, loading } = useThreadsContext();
 
   return (
     <Sidebar className="border-r-[0px] bg-[#F9FAFB]">
       <SidebarContent className="flex flex-col h-screen pb-9 pt-6">
         <div className="flex items-center justify-between px-11">
-          <NextLink href="/" className="flex-shrink-0 w-full">
-            {agentInboxSvg}
-          </NextLink>
+          <span className="text-xl font-semibold flex-shrink-0">Inbox</span>
           <AppSidebarTrigger isOutside={false} className="mt-1" />
         </div>
         <SidebarGroup className="flex-1 overflow-y-auto pt-6">
           <SidebarGroupContent className="h-full">
             <SidebarMenu className="flex flex-col gap-2 justify-between h-full">
-              <div className="flex flex-col gap-2 pl-7">
-                {agentInboxes.map((item, idx) => {
-                  const label = item.name || prettifyText(item.graphId);
-                  return (
-                    <SidebarMenuItem
-                      key={`graph-id-${item.graphId}-${idx}`}
-                      className={cn(
-                        "flex items-center w-full",
-                        item.selected ? "bg-gray-100 rounded-md" : ""
-                      )}
-                    >
-                      <TooltipProvider>
-                        <Tooltip delayduration={200}>
-                          <TooltipTrigger asChild>
-                            <SidebarMenuButton
-                              onClick={() => changeAgentInbox(item.id, true)}
-                            >
-                              <div
-                                className="w-6 h-6 rounded-md flex-shrink-0 flex items-center justify-center text-white"
-                                style={{
-                                  background:
-                                    gradients[
-                                      hashString(item.graphId) %
-                                        gradients.length
-                                    ],
-                                }}
-                              >
-                                {label.slice(0, 1).toUpperCase()}
-                              </div>
-                              <span
-                                className={cn(
-                                  "truncate min-w-0 font-medium",
-                                  item.selected ? "text-black" : "text-gray-600"
-                                )}
-                              >
-                                {label}
-                              </span>
-                            </SidebarMenuButton>
-                          </TooltipTrigger>
-                          <TooltipContent>{label}</TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
-                      <TooltipIconButton
-                        variant="ghost"
-                        tooltip="Delete"
-                        className="text-gray-800 hover:text-red-500 transition-colors ease-in-out duration-200"
-                        delayduration={100}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          deleteAgentInbox(item.id);
-                        }}
+              {loading ? (
+                <SidebarSkeleton />
+              ) : (
+                <div className="flex flex-col gap-2 pl-7">
+                  {agentInboxes.map((item, idx) => {
+                    const label = item.name || prettifyText(item.graphId);
+                    return (
+                      <SidebarMenuItem
+                        key={`graph-id-${item.graphId}-${idx}`}
+                        className={cn(
+                          "flex items-center w-full",
+                          item.selected ? "bg-gray-100 rounded-md" : ""
+                        )}
                       >
-                        <Trash2 className="w-4 h-4" />
-                      </TooltipIconButton>
-                    </SidebarMenuItem>
-                  );
-                })}
-                <AddAgentInboxDialog
-                  hideTrigger={false}
-                  langchainApiKey={langchainApiKey}
-                  handleChangeLangChainApiKey={handleChangeLangChainApiKey}
-                />
-              </div>
-
-              <div className="flex flex-col gap-3 pl-7">
-                <SettingsPopover />
-                <NextLink
-                  href={AGENT_INBOX_GITHUB_README_URL}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  <PillButton
-                    variant="outline"
-                    className="flex gap-2 items-center justify-center text-gray-800"
-                    size="lg"
-                  >
-                    <FileText />
-                    <span>Documentation</span>
-                  </PillButton>
-                </NextLink>
-              </div>
+                        <TooltipProvider>
+                          <Tooltip delayduration={200}>
+                            <TooltipTrigger asChild>
+                              <SidebarMenuButton
+                                onClick={() => changeAgentInbox(item.id, true)}
+                              >
+                                <div
+                                  className="w-6 h-6 rounded-md flex-shrink-0 flex items-center justify-center text-white"
+                                  style={{
+                                    background:
+                                      gradients[
+                                        hashString(item.graphId) %
+                                          gradients.length
+                                      ],
+                                  }}
+                                >
+                                  {label.slice(0, 1).toUpperCase()}
+                                </div>
+                                <span
+                                  className={cn(
+                                    "truncate min-w-0 font-medium",
+                                    item.selected ? "text-black" : "text-gray-600"
+                                  )}
+                                >
+                                  {label}
+                                </span>
+                              </SidebarMenuButton>
+                            </TooltipTrigger>
+                            <TooltipContent>{label}</TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      </SidebarMenuItem>
+                    );
+                  })}
+                </div>
+              )}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>

@@ -1,7 +1,7 @@
 "use client";
 
 import { AgentInbox } from "@/components/agent-inbox";
-import React, { useEffect } from "react";
+import React from "react";
 import { Toaster } from "sonner";
 import { ThreadsProvider } from "@/components/agent-inbox/contexts/ThreadContext";
 import { SidebarProvider } from "@/components/ui/sidebar";
