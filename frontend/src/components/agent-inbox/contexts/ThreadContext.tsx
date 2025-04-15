@@ -177,24 +177,18 @@ export function ThreadsProvider<
 
     const init = async () => {
       try {
-        await getAgentInboxes();
-        
-        if (!mounted) return;
-
-        const inboxSearchParam = getSearchParam(INBOX_PARAM) as ThreadStatusWithAll;
-        if (!inboxSearchParam) {
-          console.log("inboxSearchParam is empty");
-          console.log("inboxSearchParam: ", inboxSearchParam);
-          return;
-        }
-
-        try {
-          await fetchThreads(inboxSearchParam);
-        } catch (e) {
-          console.error("Error occurred while fetching threads", e);
+        // Only fetch agent inboxes if we don't have any yet
+        if (agentInboxes.length === 0) {
+          await getAgentInboxes();
+        } else {
+          // If we already have agent inboxes, just fetch threads if needed
+          const inboxSearchParam = getSearchParam(INBOX_PARAM) as ThreadStatusWithAll;
+          if (inboxSearchParam && mounted) {
+            await fetchThreads(inboxSearchParam);
+          }
         }
       } catch (e) {
-        console.error("Error occurred while fetching agent inboxes", e);
+        console.error("Error occurred during initialization", e);
       }
     };
 
@@ -213,6 +207,7 @@ export function ThreadsProvider<
     );
 
     try {
+      setLoading(true);
       // Fetch teams from the database with detailed error logging
       const requestBody = {
         action: "select",
@@ -253,6 +248,7 @@ export function ThreadsProvider<
         console.log("[Debug] No teams found in database");
         // Don't show welcome dialog even if no teams found
         setAgentInboxes([]);
+        setLoading(false);
         return;
       }
 
@@ -273,6 +269,12 @@ export function ThreadsProvider<
         parsedAgentInboxes[0].selected = true;
         updateQueryParams(AGENT_INBOX_PARAM, parsedAgentInboxes[0].id);
         setAgentInboxes(parsedAgentInboxes);
+        
+        // Fetch threads for the first inbox
+        const inboxSearchParam = getSearchParam(INBOX_PARAM) as ThreadStatusWithAll;
+        if (inboxSearchParam) {
+          await fetchThreads(inboxSearchParam);
+        }
         return;
       }
 
@@ -289,6 +291,7 @@ export function ThreadsProvider<
           variant: "destructive",
           duration: 3000,
         });
+        setLoading(false);
         return;
       }
 
@@ -299,6 +302,12 @@ export function ThreadsProvider<
       });
 
       setAgentInboxes(parsedAgentInboxes);
+      
+      // Fetch threads for the selected inbox
+      const inboxSearchParam = getSearchParam(INBOX_PARAM) as ThreadStatusWithAll;
+      if (inboxSearchParam) {
+        await fetchThreads(inboxSearchParam);
+      }
     } catch (error) {
       console.error("[Debug] Error fetching teams:", error);
       toast({
@@ -307,6 +316,8 @@ export function ThreadsProvider<
         variant: "destructive",
         duration: 3000,
       });
+    } finally {
+      setLoading(false);
     }
   }, []);
 
