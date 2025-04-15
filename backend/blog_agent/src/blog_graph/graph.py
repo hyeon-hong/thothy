@@ -2,7 +2,6 @@
 
 import logging
 import json
-import os
 from typing import Sequence, TypedDict, Union
 from pydantic import BaseModel
 
@@ -16,11 +15,12 @@ from blog_graph.tools import post_blog
 from langgraph.prebuilt import ToolNode
 
 # Configure logging to hide INFO messages
-logging.basicConfig(level=logging.WARNING)
+logging.basicConfig(level=logging.INFO)
+
 # Set specific loggers for langgraph and related libraries to WARNING level
-logging.getLogger("langgraph").setLevel(logging.WARNING)
-logging.getLogger("langchain").setLevel(logging.WARNING)
-logging.getLogger("langmem").setLevel(logging.WARNING)
+logging.getLogger("langgraph").setLevel(logging.INFO)
+logging.getLogger("langchain").setLevel(logging.INFO)
+logging.getLogger("langmem").setLevel(logging.INFO)
 
 
 class BlogPost(BaseModel):
@@ -61,9 +61,10 @@ async def create_blog_post(
         content: The content of the blog post (HTML format)
         user_id: The ID of the user creating the post
     """
+
     # TODO: user_id shoud be passed in from the frontend
     # user_id = os.getenv("BLOG_AGENT_USER_ID")
-    logging.warning(f"create_blog_post user_id: {user_id}")
+    logging.info(f"create_blog_post user_id: {user_id}")
     result = await post_blog(title, content, user_id)
     return json.dumps(result, indent=2)
 
@@ -83,7 +84,7 @@ async def should_continue(state: MessagesState):
     """Determine if we should continue running tools or end."""
     messages = state["messages"]
     last_message = messages[-1]
-    logging.warning(f"should_continue last_message: {last_message}")
+    logging.info(f"should_continue last_message: {last_message}")
     if last_message.tool_calls:
         return "tools"
     return END
@@ -94,7 +95,7 @@ async def call_model(state: MessagesState, config: BlogConfigurable):
     # Get user_id from configurable
     configurable = BlogConfigurable.from_runnable_config(config)
     user_id = configurable.user_id
-    logging.warning(f"blog_graph user_id: {user_id}")
+    logging.info(f"blog_graph user_id: {user_id}")
 
     # Pass user_id to create_blog_post tool
     system_msg = (
