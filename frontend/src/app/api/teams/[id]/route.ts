@@ -7,11 +7,11 @@ export async function PUT(
 ) {
   try {
     const id = params.id;  // Extract ID early to avoid repeated access
-    const { name, description, agent_ids } = await request.json();
+    const { name, description, agent_list } = await request.json();
 
-    if (!name || !description || !agent_ids) {
+    if (!name || !description || !agent_list) {
       return NextResponse.json(
-        { error: "Name, description, and agent_ids are required" },
+        { error: "Name, description, and agent_list are required" },
         { status: 400 }
       );
     }
@@ -33,7 +33,7 @@ export async function PUT(
       .update({
         name,
         description,
-        agent_list: agent_ids,
+        agent_list,
         updated_at: new Date().toISOString()
       })
       .eq('id', id)  // Use the extracted ID
