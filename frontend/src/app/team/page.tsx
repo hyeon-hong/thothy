@@ -728,38 +728,72 @@ export default function TeamPage() {
       const responseData = await response.json();
       console.log("responseData: ", responseData);
 
-      // Create a run with the team_graph assistant
-      const run = await client.runs.create(thread.thread_id, "team_graph", {
-        streamMode: "messages",
-        config: {
-          configurable: {
-            project_id: thread.thread_id,
-            team_id: responseData.id,
-            staff_id: "default",
-            agent_id_list: selectedAgents.join(","),
-            user_id: user?.id || "default",
+      // Create initial run with the team_graph assistant
+      // const run = await client.runs.create(thread.thread_id, "team_graph", {
+      //   streamMode: "messages",
+      //   config: {
+      //     configurable: {
+      //       project_id: thread.thread_id,
+      //       team_id: responseData.id,
+      //       staff_id: "default",
+      //       agent_id_list: selectedAgents.join(","),
+      //       user_id: user?.id || "default",
+      //     },
+      //   },
+      //   input: {
+      //     messages: [createTeamMessage(responseData.id, teamDescription)],
+      //   },
+      //   multitaskStrategy: "enqueue",
+      //   onDisconnect: "cancel",
+      //   afterSeconds: 1,
+      //   ifNotExists: "create",
+      // });
+      // console.log("run: ", run);
+
+      // TODO: Check the schedule is valid
+      // Create a cron job
+      const cronJob = await client.crons.createForThread(
+        thread.thread_id,
+        "team_graph",
+        {
+          schedule: schedule,
+          streamMode: "messages",
+          input: {
+            messages: [createTeamMessage(responseData.id, teamDescription)],
           },
-        },
-        input: {
-          messages: [
-            {
-              role: "user",
-              content: teamDescription || "Do your job.",
-              additional_kwargs: {
-                team_id: responseData.id,
-                action: "run_team",
-                timestamp: new Date().toISOString(),
-                source: "team_page",
-              },
+          metadata: {
+            team_id: responseData.id,
+            team_name: teamName,
+            agent_list: selectedAgents,
+          },
+          config: {
+            configurable: {
+              project_id: "default",
+              team_id: responseData.id,
+              staff_id: "default",
+              user_id: user?.id || "default",
+              agent_id_list: selectedAgents.join(","),
             },
-          ],
+          },
+          multitaskStrategy: "enqueue",
+          onCompletion: "continue",
+          onDisconnect: "continue",
+          afterSeconds: 1,
+          ifNotExists: "reject",
+        }
+      );
+      console.log("cronJob: ", cronJob);
+
+      // Update the cron job id in the teams table
+      await fetch(`/api/teams/${responseData.id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
         },
-        multitaskStrategy: "enqueue",
-        onDisconnect: "cancel",
-        afterSeconds: 1,
-        ifNotExists: "create",
+        body: JSON.stringify({
+          cron_id: cronJob.cron_id,
+        }),
       });
-      console.log("run: ", run);
 
       // Add the new team to the teams list
       setTeams((prevTeams) => [responseData, ...prevTeams]);
@@ -785,50 +819,50 @@ export default function TeamPage() {
 
       // Update thread metadata if it exists
       if (editingTeam.thread_id) {
-        try {
-          await client.threads.update(editingTeam.thread_id, {
+        // Search for the cron job with editingTeam.thread_id and delete it
+        const cronJobs = await client.crons.search({
+          assistantId: "team_graph",
+          threadId: editingTeam.thread_id,
+        });
+        if (cronJobs.length > 0) {
+          await client.crons.delete(cronJobs[0].cron_id);
+        }
+
+        // TODO: Check the schedule is valid
+        // Create a cron job
+        const cronJob = await client.crons.createForThread(
+          editingTeam.thread_id,
+          "team_graph",
+          {
+            schedule: schedule,
+            streamMode: "messages",
+            input: {
+              messages: [createTeamMessage(editingTeam.id, teamDescription)],
+            },
             metadata: {
+              team_id: editingTeam.id,
               team_name: teamName,
               agent_list: selectedAgents,
             },
-          });
-
-          // Create a new run with updated team configuration
-          const run = await client.runs.create(
-            editingTeam.thread_id,
-            "team_graph",
-            {
-              streamMode: "messages",
-              config: {
-                configurable: {
-                  project_id: editingTeam.thread_id,
-                  team_id: editingTeam.id,
-                  staff_id: user?.id || "default",
-                  agent_id_list: selectedAgents.join(","),
-                  user_id: user?.id || "default",
-                },
+            config: {
+              configurable: {
+                project_id: "default",
+                team_id: editingTeam.id,
+                staff_id: "default",
+                user_id: user?.id || "default",
+                agent_id_list: selectedAgents.join(","),
               },
-              input: {
-                messages: [
-                  {
-                    role: "user",
-                    content: teamDescription || "Do your job.",
-                  },
-                ],
-              },
-              multitaskStrategy: "enqueue",
-              onDisconnect: "cancel",
-              afterSeconds: 1,
-              ifNotExists: "create",
-            }
-          );
-        } catch (error) {
-          throw new Error("Error updating thread metadata");
-        }
+            },
+            multitaskStrategy: "enqueue",
+            onCompletion: "continue",
+            onDisconnect: "continue",
+            afterSeconds: 1,
+            ifNotExists: "reject",
+          }
+        );
+        console.log("cronJob: ", cronJob);
       } else {
-        // TODO: Handle the case where the thread id is not found
-        console.error("Error creating thread id: ", editingTeam.thread_id);
-        throw new Error("Error creating thread");
+        throw new Error("Thread ID not found");
       }
 
       // Update team in database
@@ -869,7 +903,8 @@ export default function TeamPage() {
       setEditingTeam(null);
       setShowDialog(false);
     } catch (error) {
-      throw new Error("Error updating team");
+      console.error("Error updating team:", error);
+      alert(error instanceof Error ? error.message : "Failed to update team");
     }
   };
 
