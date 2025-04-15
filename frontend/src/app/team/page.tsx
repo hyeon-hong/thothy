@@ -977,7 +977,6 @@ export default function TeamPage() {
     try {
       // Find the team to get its cron_id
       const team = teams.find(t => t.id === teamId);
-      console.log("team: ", team);
       if (team?.thread_id) {
         // Get the client and search for crons associated with this thread
         const client = await createLangGraphClient();
@@ -995,7 +994,6 @@ export default function TeamPage() {
       const response = await fetch(`/api/teams/${teamId}`, {
         method: "DELETE",
       });
-      console.log("response: ", response);
 
       if (!response.ok) {
         const errorData = await response.json();
