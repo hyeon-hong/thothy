@@ -249,7 +249,6 @@ const TeamDialog = ({
           placeholder="Describe your team's purpose"
           rows={3}
           autoComplete="on"
-          defaultValue={teamDescription}
         />
       </div>
 
@@ -780,6 +779,7 @@ export default function TeamPage() {
       // Only create cron job if schedule is set
       if (schedule) {
         // Create a cron job
+        console.log("Creating cron job...");
         const cronJob = await client.crons.createForThread(
           thread.thread_id,
           "team_graph",

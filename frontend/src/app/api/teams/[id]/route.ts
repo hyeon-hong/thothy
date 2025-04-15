@@ -7,14 +7,7 @@ export async function PUT(
 ) {
   try {
     const id = params.id;  // Extract ID early to avoid repeated access
-    const { name, description, agent_list } = await request.json();
-
-    if (!name || !description || !agent_list) {
-      return NextResponse.json(
-        { error: "Name, description, and agent_list are required" },
-        { status: 400 }
-      );
-    }
+    const updateData = await request.json();
 
     // Get the authenticated user's ID
     const supabase = await createClient();
@@ -27,15 +20,16 @@ export async function PUT(
       );
     }
 
+    // Add updated_at timestamp to the update data
+    const dataToUpdate = {
+      ...updateData,
+      updated_at: new Date().toISOString()
+    };
+
     // Update the team in the database
     const { data, error } = await supabase
       .from('teams')
-      .update({
-        name,
-        description,
-        agent_list,
-        updated_at: new Date().toISOString()
-      })
+      .update(dataToUpdate)
       .eq('id', id)  // Use the extracted ID
       .eq('user_id', user.id)
       .select()
