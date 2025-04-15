@@ -126,7 +126,10 @@ type Run = {
   metadata: Record<string, any> | null;
 };
 
-interface CronJobsDialogProps {}
+interface CronJobsDialogProps {
+  localCrons: import("@langchain/langgraph-sdk").Cron[];
+  setLocalCrons: React.Dispatch<React.SetStateAction<import("@langchain/langgraph-sdk").Cron[]>>;
+}
 
 // Add helper function to convert cron to readable text
 const cronToText = (cron: string): string => {
@@ -384,35 +387,40 @@ const TeamDialog = ({
   </DialogContent>
 );
 
-const CronJobsDialog = ({}: CronJobsDialogProps) => {
+// Move fetchCrons before CronJobsDialog
+const fetchCrons = async (setIsLoading?: (loading: boolean) => void) => {
+  try {
+    if (setIsLoading) setIsLoading(true);
+    const client = await createLangGraphClient();
+    const cronJobs = await client.crons.search();
+    console.log("cronJobs: ", cronJobs);
+    return cronJobs;
+  } catch (error) {
+    console.error("Failed to fetch cron jobs:", error);
+    throw error;
+  } finally {
+    if (setIsLoading) setIsLoading(false);
+  }
+};
+
+const CronJobsDialog = ({ localCrons, setLocalCrons }: CronJobsDialogProps) => {
   const [expandedCron, setExpandedCron] = useState<string | null>(null);
   const [runs, setRuns] = useState<Record<string, Run[]>>({});
-  const [isLoadingRuns, setIsLoadingRuns] = useState<Record<string, boolean>>(
-    {}
-  );
-  const [localCrons, setLocalCrons] = useState<
-    import("@langchain/langgraph-sdk").Cron[]
-  >([]);
+  const [isLoadingRuns, setIsLoadingRuns] = useState<Record<string, boolean>>({});
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const fetchCrons = async () => {
+    const loadCrons = async () => {
       try {
-        setIsLoading(true);
-        const client = await createLangGraphClient();
-        const cronJobs = await client.crons.search();
-        console.log("cronJobs: ", cronJobs);
+        const cronJobs = await fetchCrons(setIsLoading);
         setLocalCrons(cronJobs);
       } catch (error) {
-        console.error("Failed to fetch cron jobs:", error);
+        console.error("Failed to load scheduled tasks:", error);
         alert("Failed to load scheduled tasks");
-      } finally {
-        setIsLoading(false);
       }
     };
-
-    fetchCrons();
-  }, []);
+    loadCrons();
+  }, [setLocalCrons]);
 
   const handleDeleteCron = async (cronId: string) => {
     try {
@@ -679,6 +687,7 @@ export default function TeamPage() {
   const [schedule, setSchedule] = useState("");
   const [editingTeam, setEditingTeam] = useState<Team | null>(null);
   const [showCronJobsDialog, setShowCronJobsDialog] = useState(false);
+  const [localCrons, setLocalCrons] = useState<import("@langchain/langgraph-sdk").Cron[]>([]);
 
   useEffect(() => {
     // Don't redirect while auth is loading
@@ -966,9 +975,27 @@ export default function TeamPage() {
     }
 
     try {
+      // Find the team to get its cron_id
+      const team = teams.find(t => t.id === teamId);
+      console.log("team: ", team);
+      if (team?.thread_id) {
+        // Get the client and search for crons associated with this thread
+        const client = await createLangGraphClient();
+        const cronJobs = await client.crons.search({
+          threadId: team.thread_id
+        });
+
+        // Delete any found crons
+        for (const cron of cronJobs) {
+          await client.crons.delete(cron.cron_id);
+        }
+      }
+
+      // Now delete the team
       const response = await fetch(`/api/teams/${teamId}`, {
         method: "DELETE",
       });
+      console.log("response: ", response);
 
       if (!response.ok) {
         const errorData = await response.json();
@@ -977,6 +1004,10 @@ export default function TeamPage() {
 
       // Remove the team from the teams list
       setTeams((prevTeams) => prevTeams.filter((team) => team.id !== teamId));
+
+      // Refresh crons list
+      const newCrons = await fetchCrons();
+      setLocalCrons(newCrons);
     } catch (error) {
       console.error("Error deleting team:", error);
       alert(error instanceof Error ? error.message : "Failed to delete team");
@@ -1028,7 +1059,10 @@ export default function TeamPage() {
                     View jobs
                   </Button>
                 </DialogTrigger>
-                <CronJobsDialog />
+                <CronJobsDialog 
+                  localCrons={localCrons} 
+                  setLocalCrons={setLocalCrons} 
+                />
               </Dialog>
               <Dialog
                 open={showDialog}
