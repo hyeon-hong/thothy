@@ -11,7 +11,7 @@ const createClient = async () => {
 
   // TODO: We don't run the typescript agent in LangGraph Platform, so we need to use the develop api url
   return new Client({
-    apiUrl: process.env.NEXT_PUBLIC_LOCAL_LANGGRAPH_API_URL,
+    apiUrl: process.env.NEXT_PUBLIC_LANGGRAPH_API_URL,
     apiKey: process.env.NEXT_PUBLIC_LANGSMITH_API_KEY,
     defaultHeaders: {
       Authorization: `Bearer ${session?.access_token}`,
