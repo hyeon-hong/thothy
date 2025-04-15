@@ -126,9 +126,7 @@ type Run = {
   metadata: Record<string, any> | null;
 };
 
-interface CronJobsDialogProps {
-  crons: import("@langchain/langgraph-sdk").Cron[];
-}
+interface CronJobsDialogProps {}
 
 // Add helper function to convert cron to readable text
 const cronToText = (cron: string): string => {
@@ -385,30 +383,58 @@ const TeamDialog = ({
   </DialogContent>
 );
 
-const CronJobsDialog = ({ crons }: CronJobsDialogProps) => {
+const CronJobsDialog = ({}: CronJobsDialogProps) => {
   const [expandedCron, setExpandedCron] = useState<string | null>(null);
   const [runs, setRuns] = useState<Record<string, Run[]>>({});
-  const [isLoadingRuns, setIsLoadingRuns] = useState<Record<string, boolean>>(
-    {}
-  );
-  const [localCrons, setLocalCrons] =
-    useState<import("@langchain/langgraph-sdk").Cron[]>(crons);
+  const [isLoadingRuns, setIsLoadingRuns] = useState<Record<string, boolean>>({});
+  const [localCrons, setLocalCrons] = useState<import("@langchain/langgraph-sdk").Cron[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchCrons = async () => {
+      try {
+        setIsLoading(true);
+        const client = await createLangGraphClient();
+        const cronJobs = await client.crons.search();
+        console.log("cronJobs: ", cronJobs);
+        setLocalCrons(cronJobs);
+      } catch (error) {
+        console.error("Failed to fetch cron jobs:", error);
+        alert("Failed to load scheduled tasks");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchCrons();
+  }, []);
 
   const handleDeleteCron = async (cronId: string) => {
     try {
-      const cronToDelete = localCrons.find((cron) => cron.cron_id === cronId);
       const client = await createLangGraphClient();
       await client.crons.delete(cronId);
 
       // Update local state to remove the deleted cron
-      setLocalCrons((prevCrons) => {
-        const updatedCrons = prevCrons.filter(
-          (cron) => cron.cron_id !== cronId
-        );
-        return updatedCrons;
-      });
+      setLocalCrons((prevCrons) =>
+        prevCrons.filter((cron) => cron.cron_id !== cronId)
+      );
+
+      // Also update the team's cron_id in the database
+      const cronToDelete = localCrons.find((cron) => cron.cron_id === cronId);
+      if (cronToDelete?.metadata?.team_id) {
+        await fetch(`/api/teams/${cronToDelete.metadata.team_id}`, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            cron_id: null,
+          }),
+        });
+      }
     } catch (error) {
-      throw new Error("Failed to delete cron job");
+      console.error("Failed to delete cron job:", error);
+      alert("Failed to delete scheduled task");
     }
   };
 
@@ -514,16 +540,20 @@ const CronJobsDialog = ({ crons }: CronJobsDialogProps) => {
   return (
     <DialogContent className="sm:max-w-[800px]">
       <DialogHeader>
-        <DialogTitle>Scheduled Jobs</DialogTitle>
+        <DialogTitle>Scheduled Tasks</DialogTitle>
         <DialogDescription>
-          View all scheduled jobs and their status
+          View all scheduled tasks and their status
         </DialogDescription>
       </DialogHeader>
 
       <div className="space-y-4 mt-2">
-        {localCrons.length === 0 ? (
+        {isLoading ? (
           <div className="text-center text-muted-foreground py-8">
-            No scheduled jobs found
+            Loading scheduled tasks...
+          </div>
+        ) : localCrons.length === 0 ? (
+          <div className="text-center text-muted-foreground py-8">
+            No scheduled tasks found
           </div>
         ) : (
           <div className="space-y-4">
@@ -550,6 +580,11 @@ const CronJobsDialog = ({ crons }: CronJobsDialogProps) => {
                           ? new Date(cron.end_time).toLocaleString()
                           : "No end time"}
                       </p>
+                      {cron.metadata?.team_name && (
+                        <p className="text-sm">
+                          Team: {cron.metadata.team_name}
+                        </p>
+                      )}
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
@@ -557,7 +592,7 @@ const CronJobsDialog = ({ crons }: CronJobsDialogProps) => {
                       type="button"
                       onClick={() => handleDeleteCron(cron.cron_id)}
                       className="p-2 hover:bg-red-100 rounded-full text-red-500 transition-colors"
-                      title="Delete cron job"
+                      title="Delete scheduled task"
                     >
                       <X className="h-4 w-4" />
                     </button>
@@ -674,7 +709,7 @@ export default function TeamPage() {
     };
 
     fetchData();
-  }, [user, router]);
+  }, [user, router, loading]);
 
   const toggleAgent = (agentId: string) => {
     setSelectedAgents((current) =>
@@ -989,7 +1024,7 @@ export default function TeamPage() {
                     View jobs
                   </Button>
                 </DialogTrigger>
-                <CronJobsDialog crons={[]} />
+                <CronJobsDialog />
               </Dialog>
               <Dialog
                 open={showDialog}
