@@ -217,175 +217,238 @@ const TeamDialog = ({
   onSubmit,
   getAgentName,
   toggleAgent,
-}: TeamDialogProps) => (
-  <DialogContent className="sm:max-w-[600px]">
-    <DialogHeader>
-      <DialogTitle>{isEdit ? "Edit team" : "Build a team"}</DialogTitle>
-      <DialogDescription>
-        {isEdit
-          ? "Update your team details and agents."
-          : "Create your team and choose the agents you want to work with."}
-      </DialogDescription>
-    </DialogHeader>
+}: TeamDialogProps) => {
+  // Add validation state
+  const [errors, setErrors] = useState({
+    name: false,
+    description: false,
+    agents: false
+  });
 
-    <div className="space-y-4 mt-2">
-      <div className="space-y-2">
-        <Label htmlFor="team-name">Team name</Label>
-        <Input
-          id="team-name"
-          value={teamName}
-          onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-            setTeamName(e.target.value)
-          }
-          placeholder="Enter team name"
-        />
-      </div>
+  // Validation function
+  const validateForm = () => {
+    const newErrors = {
+      name: !teamName.trim(),
+      description: !teamDescription.trim(),
+      agents: selectedAgents.length === 0
+    };
+    setErrors(newErrors);
+    return !Object.values(newErrors).some(error => error);
+  };
 
-      <div className="space-y-2">
-        <Label htmlFor="team-description">Team description</Label>
-        <Textarea
-          id="team-description"
-          value={teamDescription}
-          onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
-            setTeamDescription(e.target.value)
-          }
-          placeholder="Describe your team's purpose"
-          rows={3}
-          autoComplete="on"
-        />
-      </div>
+  // Wrap onSubmit with validation
+  const handleSubmit = () => {
+    if (validateForm()) {
+      onSubmit();
+    }
+  };
 
-      <div className="space-y-2">
-        <Label htmlFor="team-schedule">Schedule</Label>
-        <select
-          id="team-schedule"
-          value={schedule}
-          onChange={(e) => setSchedule(e.target.value)}
-          className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
-        >
-          <option value="">Not scheduled</option>
-          <option value="* * * * *">Every minute</option>
-          <option value="0 * * * *">Every hour</option>
-          <option value="0 0 * * *">Every day</option>
-        </select>
-        <p className="text-sm text-muted-foreground mt-1">
-          {cronToText(schedule)}
-        </p>
-      </div>
-    </div>
+  return (
+    <DialogContent className="sm:max-w-[600px]">
+      <DialogHeader>
+        <DialogTitle>{isEdit ? "Edit team" : "Build a team"}</DialogTitle>
+        <DialogDescription>
+          {isEdit
+            ? "Update your team details and agents."
+            : "Create your team and choose the agents you want to work with."}
+        </DialogDescription>
+      </DialogHeader>
 
-    <div className="mt-4 flex flex-col" style={{ height: "400px" }}>
-      <div className="flex flex-wrap gap-1 p-2 mb-2 border rounded-md min-h-10">
-        {selectedAgents.length === 0 && (
-          <span className="text-sm text-muted-foreground px-1 py-0.5">
-            No agents selected
-          </span>
-        )}
-        {selectedAgents.map((agentId) => (
-          <Badge
-            key={agentId}
-            variant="secondary"
-            className="flex items-center gap-1 px-2 py-1"
-          >
-            {getAgentName(agentId)}
-            <button
-              type="button"
-              onClick={() =>
-                setSelectedAgents((current) =>
-                  current.filter((id) => id !== agentId)
-                )
+      <div className="space-y-4 mt-2">
+        <div className="space-y-2">
+          <Label htmlFor="team-name" className={errors.name ? "text-red-500" : ""}>
+            Team name{errors.name && " *"}
+          </Label>
+          <Input
+            id="team-name"
+            value={teamName}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+              setTeamName(e.target.value);
+              if (errors.name) {
+                setErrors(prev => ({ ...prev, name: false }));
               }
-              className="ml-1 h-4 w-4 rounded-full inline-flex items-center justify-center hover:bg-muted-foreground/20"
-              aria-label={`Remove ${getAgentName(agentId)}`}
-            >
-              <X className="h-3 w-3 text-muted-foreground hover:text-destructive" />
-            </button>
-          </Badge>
-        ))}
-      </div>
-
-      <div className="flex-1 overflow-hidden flex flex-col">
-        {agents ? (
-          <Command
-            className="border rounded-lg flex-1 overflow-hidden"
-            style={{
-              height: "300px",
             }}
-          >
-            <CommandInput placeholder="Search agents..." />
-            <CommandEmpty>No agents found.</CommandEmpty>
-            <CommandGroup className="overflow-y-auto h-full custom-scrollbar">
-              {agents.map((agent) => (
-                <CommandItem
-                  key={agent.id}
-                  onSelect={() => toggleAgent(agent.id)}
-                  className="cursor-pointer"
-                >
-                  <div className="flex items-center space-x-2 mr-2">
-                    <Checkbox
-                      id={`checkbox-${agent.id}`}
-                      checked={selectedAgents.includes(agent.id)}
-                      onCheckedChange={() => toggleAgent(agent.id)}
-                      onClick={(e: React.MouseEvent) => e.stopPropagation()}
-                      className={cn(
-                        "transition-colors",
-                        selectedAgents.includes(agent.id)
-                          ? "border-primary data-[state=checked]:bg-white data-[state=checked]:text-black"
-                          : ""
-                      )}
-                      style={
-                        {
-                          ...(selectedAgents.includes(agent.id)
-                            ? {
-                                "--tw-checkbox-bg": "white",
-                                "--tw-checkbox-fg": "black",
-                              }
-                            : {}),
-                        } as React.CSSProperties
-                      }
-                    />
-                  </div>
-                  <div className="flex-1">
-                    <div className="flex items-center">
-                      <span
-                        className={
-                          selectedAgents.includes(agent.id) ? "font-medium" : ""
-                        }
-                      >
-                        {agent.name}
-                      </span>
-                      {selectedAgents.includes(agent.id) && (
-                        <Badge
-                          variant="secondary"
-                          className="ml-2 bg-white text-black border border-gray-300"
-                        >
-                          Selected
-                        </Badge>
-                      )}
-                    </div>
-                    <p className="text-sm text-muted-foreground">
-                      {agent.description}
-                    </p>
-                  </div>
-                </CommandItem>
-              ))}
-            </CommandGroup>
-          </Command>
-        ) : (
-          <div className="border rounded-lg flex-1 flex items-center justify-center p-4 text-muted-foreground text-sm">
-            Loading agents...
-          </div>
-        )}
-      </div>
-    </div>
+            placeholder="Enter team name"
+            className={errors.name ? "border-red-500" : ""}
+          />
+          {errors.name && (
+            <p className="text-sm text-red-500">Team name is required</p>
+          )}
+        </div>
 
-    <DialogFooter className="mt-4">
-      <Button variant="contained" onClick={onSubmit}>
-        {isEdit ? "Save changes" : "Build"}
-      </Button>
-    </DialogFooter>
-  </DialogContent>
-);
+        <div className="space-y-2">
+          <Label htmlFor="team-description" className={errors.description ? "text-red-500" : ""}>
+            Team description{errors.description && " *"}
+          </Label>
+          <Textarea
+            id="team-description"
+            value={teamDescription}
+            onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => {
+              setTeamDescription(e.target.value);
+              if (errors.description) {
+                setErrors(prev => ({ ...prev, description: false }));
+              }
+            }}
+            placeholder="Describe your team's purpose"
+            rows={3}
+            className={errors.description ? "border-red-500" : ""}
+          />
+          {errors.description && (
+            <p className="text-sm text-red-500">Team description is required</p>
+          )}
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="team-schedule">Schedule</Label>
+          <select
+            id="team-schedule"
+            value={schedule}
+            onChange={(e) => setSchedule(e.target.value)}
+            className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
+          >
+            <option value="">Not scheduled</option>
+            <option value="* * * * *">Every minute</option>
+            <option value="0 * * * *">Every hour</option>
+            <option value="0 0 * * *">Every day</option>
+          </select>
+          <p className="text-sm text-muted-foreground mt-1">
+            {cronToText(schedule)}
+          </p>
+        </div>
+      </div>
+
+      <div className="mt-4 flex flex-col" style={{ height: "400px" }}>
+        <Label className={errors.agents ? "text-red-500" : ""}>
+          Select agents{errors.agents && " *"}
+        </Label>
+        <div className={`flex flex-wrap gap-1 p-2 mb-2 border rounded-md min-h-10 ${errors.agents ? "border-red-500" : ""}`}>
+          {selectedAgents.length === 0 && (
+            <span className={`text-sm px-1 py-0.5 ${errors.agents ? "text-red-500" : "text-muted-foreground"}`}>
+              No agents selected
+            </span>
+          )}
+          {selectedAgents.map((agentId) => (
+            <Badge
+              key={agentId}
+              variant="secondary"
+              className="flex items-center gap-1 px-2 py-1"
+            >
+              {getAgentName(agentId)}
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedAgents((current) =>
+                    current.filter((id) => id !== agentId)
+                  );
+                  if (selectedAgents.length === 1) {
+                    setErrors(prev => ({ ...prev, agents: true }));
+                  }
+                }}
+                className="ml-1 h-4 w-4 rounded-full inline-flex items-center justify-center hover:bg-muted-foreground/20"
+                aria-label={`Remove ${getAgentName(agentId)}`}
+              >
+                <X className="h-3 w-3 text-muted-foreground hover:text-destructive" />
+              </button>
+            </Badge>
+          ))}
+        </div>
+        {errors.agents && (
+          <p className="text-sm text-red-500 mb-2">Please select at least one agent</p>
+        )}
+
+        <div className="flex-1 overflow-hidden flex flex-col">
+          {agents ? (
+            <Command
+              className="border rounded-lg flex-1 overflow-hidden"
+              style={{
+                height: "300px",
+              }}
+            >
+              <CommandInput placeholder="Search agents..." />
+              <CommandEmpty>No agents found.</CommandEmpty>
+              <CommandGroup className="overflow-y-auto h-full custom-scrollbar">
+                {agents.map((agent) => (
+                  <CommandItem
+                    key={agent.id}
+                    onSelect={() => {
+                      toggleAgent(agent.id);
+                      if (errors.agents) {
+                        setErrors(prev => ({ ...prev, agents: false }));
+                      }
+                    }}
+                    className="cursor-pointer"
+                  >
+                    <div className="flex items-center space-x-2 mr-2">
+                      <Checkbox
+                        id={`checkbox-${agent.id}`}
+                        checked={selectedAgents.includes(agent.id)}
+                        onCheckedChange={() => {
+                          toggleAgent(agent.id);
+                          if (errors.agents) {
+                            setErrors(prev => ({ ...prev, agents: false }));
+                          }
+                        }}
+                        onClick={(e: React.MouseEvent) => e.stopPropagation()}
+                        className={cn(
+                          "transition-colors",
+                          selectedAgents.includes(agent.id)
+                            ? "border-primary data-[state=checked]:bg-white data-[state=checked]:text-black"
+                            : ""
+                        )}
+                        style={
+                          {
+                            ...(selectedAgents.includes(agent.id)
+                              ? {
+                                  "--tw-checkbox-bg": "white",
+                                  "--tw-checkbox-fg": "black",
+                                }
+                              : {}),
+                          } as React.CSSProperties
+                        }
+                      />
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center">
+                        <span
+                          className={
+                            selectedAgents.includes(agent.id) ? "font-medium" : ""
+                          }
+                        >
+                          {agent.name}
+                        </span>
+                        {selectedAgents.includes(agent.id) && (
+                          <Badge
+                            variant="secondary"
+                            className="ml-2 bg-white text-black border border-gray-300"
+                          >
+                            Selected
+                          </Badge>
+                        )}
+                      </div>
+                      <p className="text-sm text-muted-foreground">
+                        {agent.description}
+                      </p>
+                    </div>
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+            </Command>
+          ) : (
+            <div className="border rounded-lg flex-1 flex items-center justify-center p-4 text-muted-foreground text-sm">
+              Loading agents...
+            </div>
+          )}
+        </div>
+      </div>
+
+      <DialogFooter className="mt-4">
+        <Button variant="contained" onClick={handleSubmit}>
+          {isEdit ? "Save changes" : "Build"}
+        </Button>
+      </DialogFooter>
+    </DialogContent>
+  );
+};
 
 // Move fetchCrons before CronJobsDialog
 const fetchCrons = async (setIsLoading?: (loading: boolean) => void) => {
