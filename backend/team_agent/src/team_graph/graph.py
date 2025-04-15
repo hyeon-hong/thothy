@@ -32,6 +32,9 @@ executor = initialize_executor(memory_manager, store)
 members = ["news_agent", "blog_agent"]
 OptionType = Literal["news_agent", "blog_agent", "FINISH"]
 
+# Set logging level
+logging.basicConfig(level=logging.INFO)
+
 
 class TodoItem(TypedDict):
     """A todo item with task description and completion status."""
@@ -93,7 +96,8 @@ async def init_request_node(
     """Initialize the state with the user's request and generate todo list."""
     # Get the initial request from the first message
     initial_request = state["messages"][0].content if state["messages"] else ""
-    logging.info(f"state['messages']: {state['messages']}")
+    logging.info(f"initial_request: {initial_request}")
+    logging.debug(f"state['messages']: {state['messages']}")
 
     # Get configurable values
     configurable = TeamConfigurable.from_runnable_config(config)
@@ -104,7 +108,8 @@ async def init_request_node(
     # Set namespace for memories
     namespace = ("memories", user_id, "default", team_id, "default", "default")
     agents = agent_id_list.split(",")
-    logging.info(f"agents: {agents}")
+    logging.info(f"agent_id_list: {agent_id_list}")
+    logging.debug(f"agents: {agents}")
 
     # Search for existing memories
     memories = await store.asearch(
@@ -120,11 +125,8 @@ async def init_request_node(
         f"You are a helpful team supervisor talking to a user. "
         f"Your memories about the user: {joined_memories}"
     )
-    # thread_state = {"messages": [
-    #     {"role": "system", "content": system_msg}] + state["messages"]}
 
     # Generate todo list using LLM
-    # todo_prompt = get_todo_prompt(initial_request)
     todo_prompt = get_todo_prompt(system_msg + "\n\n" + initial_request)
     try:
         response = llm.with_structured_output(TodoListResponse).invoke(
@@ -150,7 +152,7 @@ async def init_request_node(
                 },
             ]
         }
-    logging.info(f"response: {response}")
+    logging.info(f"llm response: {response}")
 
     # Store only user's request in memory
     # Don't save the todo list in memory
@@ -166,7 +168,7 @@ async def init_request_node(
         TodoItem(task=item["task"], agent=item["agent"], done=False)
         for item in response["todos"]
     ]
-    logging.info(f"Generated todos: {todos}")
+    logging.debug(f"Generated todos: {todos}")
 
     return Command(
         goto="team_supervisor",
@@ -186,8 +188,9 @@ def team_supervisor_node(
         {"role": "system", "content": system_prompt},
     ] + state["messages"]
 
-    logging.info(f"Team supervisor state['messages']: {state['messages']}")
-    logging.info(f"Team supervisor messages: {messages}")
+    logging.info("Team supervisor")
+    logging.debug(f"state['messages']: {state['messages']}")
+    logging.debug(f"messages: {messages}")
     try:
         response = llm.with_structured_output(Router).invoke(messages)
     except Exception as e:
@@ -195,7 +198,7 @@ def team_supervisor_node(
         raise RuntimeError(f"Failed to determine next action: {str(e)}")
 
     goto = response["next"]
-    logging.info(f"Team supervisor goto: {goto}")
+    logging.info(f"goto: {goto}")
 
     # Check if the goto is a valid option
     if goto not in members + ["FINISH"]:
@@ -218,42 +221,6 @@ def team_supervisor_node(
     else:
         update = {"next": goto}
 
-    # TODO: Generalize this to all agents. Set this interrupt_before in UI
-    if goto == "blog_agent":
-        request: HumanInterrupt = {
-            "action_request": {
-                "action": "Review Blog Post",
-                "args": {
-                    "request": state["initial_request"],
-                    "response": state["messages"][-1].content,
-                }
-            },
-            "config": {
-                "allow_ignore": False,  # Don't allow ignoring the review
-                "allow_respond": True,  # Allow responding with feedback
-                "allow_edit": True,     # Allow editing the response
-                "allow_accept": True    # Allow accepting as-is
-            },
-            "description": f"""Please review this AI response. You can:
-    - Accept the response as-is
-    - Edit the response before sending
-    - Provide feedback or instructions for regeneration
-    - Make any necessary corrections
-
-    Current response for review:
-    ```
-    {response}
-    ```
-    """
-        }
-
-        # Send interrupt and get response
-        logging.info(f"Sending interrupt request: {request}")
-        response = interrupt(request)
-        logging.info(f"Interrupt response: {response}")
-
-    # TODO: Check the interrupt response and go to the appropriate node
-
     return Command(goto=goto, update=update)
 
 
@@ -261,30 +228,40 @@ async def news_agent_node(
     state: State,
     config: TeamConfigurable
 ) -> Command[Literal["team_supervisor"]]:
+    logging.info("News agent")
+
     # Get configurable values
     configurable = TeamConfigurable.from_runnable_config(config)
-    user_id = configurable.user_id
-    thread_id = config.get("configurable", {}).get("thread_id")
+
+    project_id = config.get("configurable", {}).get("project_id")
+    team_id = config.get("configurable", {}).get("team_id")
+    staff_id = config.get("configurable", {}).get("staff_id")
+
+    # TODO: Handle this better
     # Use first agent as default
     agent_id = config.get("configurable", {}).get(
         "agent_id_list", ""
     ).split(",")[0]
+
+    user_id = configurable.user_id
+    thread_id = config.get("configurable", {}).get("thread_id")
 
     # Pass user_id to news_graph
     result = await news_graph.ainvoke(
         state,
         config={
             "configurable": {
+                "project_id": project_id,
+                "team_id": team_id,
+                "staff_id": staff_id,
+                "agent_id": agent_id,
                 "user_id": user_id,
                 "thread_id": thread_id,
-                "agent_id": agent_id,
-                "project_id": config.get("configurable", {}).get("project_id"),
-                "team_id": config.get("configurable", {}).get("team_id"),
-                "staff_id": config.get("configurable", {}).get("staff_id"),
             }
         }
     )
-    logging.info(f"News agent result: {result}")
+    logging.debug(f"result: {result}")
+
     return Command(
         update={
             "messages": [
@@ -302,30 +279,40 @@ async def blog_agent_node(
     state: State,
     config: TeamConfigurable
 ) -> Command[Literal["team_supervisor"]]:
+    logging.info("Blog agent")
+
     # Get configurable values
     configurable = TeamConfigurable.from_runnable_config(config)
-    user_id = configurable.user_id
-    thread_id = config.get("configurable", {}).get("thread_id")
+
+    project_id = config.get("configurable", {}).get("project_id")
+    team_id = config.get("configurable", {}).get("team_id")
+    staff_id = config.get("configurable", {}).get("staff_id")
+
+    # TODO: Handle this better
     # Use second agent as default
     agent_id = config.get("configurable", {}).get(
         "agent_id_list", ""
     ).split(",")[1]
+
+    user_id = configurable.user_id
+    thread_id = config.get("configurable", {}).get("thread_id")
 
     # Pass user_id and thread_id to blog_graph
     result = await blog_graph.ainvoke(
         state,
         config={
             "configurable": {
+                "project_id": project_id,
+                "team_id": team_id,
+                "staff_id": staff_id,
+                "agent_id": agent_id,
                 "user_id": user_id,
                 "thread_id": thread_id,
-                "agent_id": agent_id,
-                "project_id": config.get("configurable", {}).get("project_id"),
-                "team_id": config.get("configurable", {}).get("team_id"),
-                "staff_id": config.get("configurable", {}).get("staff_id"),
             }
         }
     )
-    logging.info(f"Blog agent result: {result}")
+    logging.debug(f"result: {result}")
+
     return Command(
         update={
             "messages": [
@@ -340,6 +327,36 @@ async def blog_agent_node(
 
 
 def finish_node(state: State) -> dict:
+    # TODO: Generalize this to all agents. Set this interrupt_before in UI
+    request: HumanInterrupt = {
+        "action_request": {
+            "action": "Check Blog Post",
+            "args": {
+                "request": state["initial_request"],
+                "response": state["messages"][-1].content,
+            }
+        },
+        "config": {
+            "allow_ignore": True,
+            "allow_respond": False,
+            "allow_edit": False,
+            "allow_accept": True
+        },
+        "description": """Please review this AI response. You can:
+- Accept the response as-is
+- Edit the response before sending
+- Provide feedback or instructions for regeneration
+- Make any necessary corrections
+"""
+    }
+
+    # Send interrupt and get response
+    logging.info(f"Sending interrupt request: {request}")
+    response = interrupt(request)
+    logging.info(f"Interrupt response: {response}")
+
+    # TODO: Check the interrupt response and go to the appropriate node
+
     return {"messages": [HumanMessage(content="Finished", name="team_graph")]}
 
 

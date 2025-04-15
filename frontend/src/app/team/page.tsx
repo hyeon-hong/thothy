@@ -127,7 +127,10 @@ type Run = {
 };
 
 interface CronJobsDialogProps {
-  crons: import("@langchain/langgraph-sdk").Cron[];
+  localCrons: import("@langchain/langgraph-sdk").Cron[];
+  setLocalCrons: React.Dispatch<
+    React.SetStateAction<import("@langchain/langgraph-sdk").Cron[]>
+  >;
 }
 
 // Add helper function to convert cron to readable text
@@ -216,199 +219,316 @@ const TeamDialog = ({
   onSubmit,
   getAgentName,
   toggleAgent,
-}: TeamDialogProps) => (
-  <DialogContent className="sm:max-w-[600px]">
-    <DialogHeader>
-      <DialogTitle>{isEdit ? "Edit team" : "Build a team"}</DialogTitle>
-      <DialogDescription>
-        {isEdit
-          ? "Update your team details and agents."
-          : "Create your team and choose the agents you want to work with."}
-      </DialogDescription>
-    </DialogHeader>
+}: TeamDialogProps) => {
+  // Add validation state
+  const [errors, setErrors] = useState({
+    name: false,
+    description: false,
+    agents: false,
+  });
 
-    <div className="space-y-4 mt-2">
-      <div className="space-y-2">
-        <Label htmlFor="team-name">Team name</Label>
-        <Input
-          id="team-name"
-          value={teamName}
-          onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-            setTeamName(e.target.value)
-          }
-          placeholder="Enter team name"
-        />
-      </div>
+  // Validation function
+  const validateForm = () => {
+    const newErrors = {
+      name: !teamName.trim(),
+      description: !teamDescription.trim(),
+      agents: selectedAgents.length === 0,
+    };
+    setErrors(newErrors);
+    return !Object.values(newErrors).some((error) => error);
+  };
 
-      <div className="space-y-2">
-        <Label htmlFor="team-description">Team description</Label>
-        <Textarea
-          id="team-description"
-          value={teamDescription}
-          onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
-            setTeamDescription(e.target.value)
-          }
-          placeholder="Describe your team's purpose"
-          rows={3}
-        />
-      </div>
+  // Wrap onSubmit with validation
+  const handleSubmit = () => {
+    if (validateForm()) {
+      onSubmit();
+    }
+  };
 
-      <div className="space-y-2">
-        <Label htmlFor="team-schedule">Schedule</Label>
-        <select
-          id="team-schedule"
-          value={schedule}
-          onChange={(e) => setSchedule(e.target.value)}
-          className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
-        >
-          <option value="">Not scheduled</option>
-          <option value="* * * * *">Every minute</option>
-          <option value="0 * * * *">Every hour</option>
-          <option value="0 0 * * *">Every day</option>
-        </select>
-        <p className="text-sm text-muted-foreground mt-1">
-          {cronToText(schedule)}
-        </p>
-      </div>
-    </div>
+  return (
+    <DialogContent className="sm:max-w-[600px]">
+      <DialogHeader>
+        <DialogTitle>{isEdit ? "Edit team" : "Build a team"}</DialogTitle>
+        <DialogDescription>
+          {isEdit
+            ? "Update your team details and agents."
+            : "Create your team and choose the agents you want to work with."}
+        </DialogDescription>
+      </DialogHeader>
 
-    <div className="mt-4 flex flex-col" style={{ height: "400px" }}>
-      <div className="flex flex-wrap gap-1 p-2 mb-2 border rounded-md min-h-10">
-        {selectedAgents.length === 0 && (
-          <span className="text-sm text-muted-foreground px-1 py-0.5">
-            No agents selected
-          </span>
-        )}
-        {selectedAgents.map((agentId) => (
-          <Badge
-            key={agentId}
-            variant="secondary"
-            className="flex items-center gap-1 px-2 py-1"
+      <div className="space-y-4 mt-2">
+        <div className="space-y-2">
+          <Label
+            htmlFor="team-name"
+            className={errors.name ? "text-red-500" : ""}
           >
-            {getAgentName(agentId)}
-            <button
-              type="button"
-              onClick={() =>
-                setSelectedAgents((current) =>
-                  current.filter((id) => id !== agentId)
-                )
+            Team name{errors.name && " *"}
+          </Label>
+          <Input
+            id="team-name"
+            value={teamName}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+              setTeamName(e.target.value);
+              if (errors.name) {
+                setErrors((prev) => ({ ...prev, name: false }));
               }
-              className="ml-1 h-4 w-4 rounded-full inline-flex items-center justify-center hover:bg-muted-foreground/20"
-              aria-label={`Remove ${getAgentName(agentId)}`}
-            >
-              <X className="h-3 w-3 text-muted-foreground hover:text-destructive" />
-            </button>
-          </Badge>
-        ))}
-      </div>
-
-      <div className="flex-1 overflow-hidden flex flex-col">
-        {agents ? (
-          <Command
-            className="border rounded-lg flex-1 overflow-hidden"
-            style={{
-              height: "300px",
             }}
+            placeholder="Enter team name"
+            className={errors.name ? "border-red-500" : ""}
+          />
+          {errors.name && (
+            <p className="text-sm text-red-500">Team name is required</p>
+          )}
+        </div>
+
+        <div className="space-y-2">
+          <Label
+            htmlFor="team-description"
+            className={errors.description ? "text-red-500" : ""}
           >
-            <CommandInput placeholder="Search agents..." />
-            <CommandEmpty>No agents found.</CommandEmpty>
-            <CommandGroup className="overflow-y-auto h-full custom-scrollbar">
-              {agents.map((agent) => (
-                <CommandItem
-                  key={agent.id}
-                  onSelect={() => toggleAgent(agent.id)}
-                  className="cursor-pointer"
-                >
-                  <div className="flex items-center space-x-2 mr-2">
-                    <Checkbox
-                      id={`checkbox-${agent.id}`}
-                      checked={selectedAgents.includes(agent.id)}
-                      onCheckedChange={() => toggleAgent(agent.id)}
-                      onClick={(e: React.MouseEvent) => e.stopPropagation()}
-                      className={cn(
-                        "transition-colors",
-                        selectedAgents.includes(agent.id)
-                          ? "border-primary data-[state=checked]:bg-white data-[state=checked]:text-black"
-                          : ""
-                      )}
-                      style={
-                        {
-                          ...(selectedAgents.includes(agent.id)
-                            ? {
-                                "--tw-checkbox-bg": "white",
-                                "--tw-checkbox-fg": "black",
-                              }
-                            : {}),
-                        } as React.CSSProperties
-                      }
-                    />
-                  </div>
-                  <div className="flex-1">
-                    <div className="flex items-center">
-                      <span
-                        className={
-                          selectedAgents.includes(agent.id) ? "font-medium" : ""
-                        }
-                      >
-                        {agent.name}
-                      </span>
-                      {selectedAgents.includes(agent.id) && (
-                        <Badge
-                          variant="secondary"
-                          className="ml-2 bg-white text-black border border-gray-300"
-                        >
-                          Selected
-                        </Badge>
-                      )}
-                    </div>
-                    <p className="text-sm text-muted-foreground">
-                      {agent.description}
-                    </p>
-                  </div>
-                </CommandItem>
-              ))}
-            </CommandGroup>
-          </Command>
-        ) : (
-          <div className="border rounded-lg flex-1 flex items-center justify-center p-4 text-muted-foreground text-sm">
-            Loading agents...
-          </div>
-        )}
+            Team description{errors.description && " *"}
+          </Label>
+          <Textarea
+            id="team-description"
+            value={teamDescription}
+            onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => {
+              setTeamDescription(e.target.value);
+              if (errors.description) {
+                setErrors((prev) => ({ ...prev, description: false }));
+              }
+            }}
+            placeholder="Describe your team's purpose"
+            rows={3}
+            className={errors.description ? "border-red-500" : ""}
+          />
+          {errors.description && (
+            <p className="text-sm text-red-500">Team description is required</p>
+          )}
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="team-schedule">Schedule</Label>
+          <select
+            id="team-schedule"
+            value={schedule}
+            onChange={(e) => setSchedule(e.target.value)}
+            className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
+          >
+            <option value="">Not scheduled</option>
+            <option value="* * * * *">Every minute</option>
+            <option value="0 * * * *">Every hour</option>
+            <option value="0 0 * * *">Every day</option>
+          </select>
+          <p className="text-sm text-muted-foreground mt-1">
+            {cronToText(schedule)}
+          </p>
+        </div>
       </div>
-    </div>
 
-    <DialogFooter className="mt-4">
-      <Button variant="contained" onClick={onSubmit}>
-        {isEdit ? "Save changes" : "Build"}
-      </Button>
-    </DialogFooter>
-  </DialogContent>
-);
+      <div className="mt-4 flex flex-col" style={{ height: "400px" }}>
+        <Label className={errors.agents ? "text-red-500" : ""}>
+          Select agents{errors.agents && " *"}
+        </Label>
+        <div
+          className={`flex flex-wrap gap-1 p-2 mb-2 border rounded-md min-h-10 ${errors.agents ? "border-red-500" : ""}`}
+        >
+          {selectedAgents.length === 0 && (
+            <span
+              className={`text-sm px-1 py-0.5 ${errors.agents ? "text-red-500" : "text-muted-foreground"}`}
+            >
+              No agents selected
+            </span>
+          )}
+          {selectedAgents.map((agentId) => (
+            <Badge
+              key={agentId}
+              variant="secondary"
+              className="flex items-center gap-1 px-2 py-1"
+            >
+              {getAgentName(agentId)}
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedAgents((current) =>
+                    current.filter((id) => id !== agentId)
+                  );
+                  if (selectedAgents.length === 1) {
+                    setErrors((prev) => ({ ...prev, agents: true }));
+                  }
+                }}
+                className="ml-1 h-4 w-4 rounded-full inline-flex items-center justify-center hover:bg-muted-foreground/20"
+                aria-label={`Remove ${getAgentName(agentId)}`}
+              >
+                <X className="h-3 w-3 text-muted-foreground hover:text-destructive" />
+              </button>
+            </Badge>
+          ))}
+        </div>
+        {errors.agents && (
+          <p className="text-sm text-red-500 mb-2">
+            Please select at least one agent
+          </p>
+        )}
 
-const CronJobsDialog = ({ crons }: CronJobsDialogProps) => {
+        <div className="flex-1 overflow-hidden flex flex-col">
+          {agents ? (
+            <Command
+              className="border rounded-lg flex-1 overflow-hidden"
+              style={{
+                height: "300px",
+              }}
+            >
+              <CommandInput placeholder="Search agents..." />
+              <CommandEmpty>No agents found.</CommandEmpty>
+              <CommandGroup className="overflow-y-auto h-full custom-scrollbar">
+                {agents.map((agent) => (
+                  <CommandItem
+                    key={agent.id}
+                    onSelect={() => {
+                      toggleAgent(agent.id);
+                      if (errors.agents) {
+                        setErrors((prev) => ({ ...prev, agents: false }));
+                      }
+                    }}
+                    className="cursor-pointer"
+                  >
+                    <div className="flex items-center space-x-2 mr-2">
+                      <Checkbox
+                        id={`checkbox-${agent.id}`}
+                        checked={selectedAgents.includes(agent.id)}
+                        onCheckedChange={() => {
+                          toggleAgent(agent.id);
+                          if (errors.agents) {
+                            setErrors((prev) => ({ ...prev, agents: false }));
+                          }
+                        }}
+                        onClick={(e: React.MouseEvent) => e.stopPropagation()}
+                        className={cn(
+                          "transition-colors",
+                          selectedAgents.includes(agent.id)
+                            ? "border-primary data-[state=checked]:bg-white data-[state=checked]:text-black"
+                            : ""
+                        )}
+                        style={
+                          {
+                            ...(selectedAgents.includes(agent.id)
+                              ? {
+                                  "--tw-checkbox-bg": "white",
+                                  "--tw-checkbox-fg": "black",
+                                }
+                              : {}),
+                          } as React.CSSProperties
+                        }
+                      />
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center">
+                        <span
+                          className={
+                            selectedAgents.includes(agent.id)
+                              ? "font-medium"
+                              : ""
+                          }
+                        >
+                          {agent.name}
+                        </span>
+                        {selectedAgents.includes(agent.id) && (
+                          <Badge
+                            variant="secondary"
+                            className="ml-2 bg-white text-black border border-gray-300"
+                          >
+                            Selected
+                          </Badge>
+                        )}
+                      </div>
+                      <p className="text-sm text-muted-foreground">
+                        {agent.description}
+                      </p>
+                    </div>
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+            </Command>
+          ) : (
+            <div className="border rounded-lg flex-1 flex items-center justify-center p-4 text-muted-foreground text-sm">
+              Loading agents...
+            </div>
+          )}
+        </div>
+      </div>
+
+      <DialogFooter className="mt-4">
+        <Button variant="contained" onClick={handleSubmit}>
+          {isEdit ? "Save changes" : "Build"}
+        </Button>
+      </DialogFooter>
+    </DialogContent>
+  );
+};
+
+// Move fetchCrons before CronJobsDialog
+const fetchCrons = async (setIsLoading?: (loading: boolean) => void) => {
+  try {
+    if (setIsLoading) setIsLoading(true);
+    const client = await createLangGraphClient();
+    const cronJobs = await client.crons.search();
+    console.log("cronJobs: ", cronJobs);
+    return cronJobs;
+  } catch (error) {
+    console.error("Failed to fetch cron jobs:", error);
+    throw error;
+  } finally {
+    if (setIsLoading) setIsLoading(false);
+  }
+};
+
+const CronJobsDialog = ({ localCrons, setLocalCrons }: CronJobsDialogProps) => {
   const [expandedCron, setExpandedCron] = useState<string | null>(null);
   const [runs, setRuns] = useState<Record<string, Run[]>>({});
   const [isLoadingRuns, setIsLoadingRuns] = useState<Record<string, boolean>>(
     {}
   );
-  const [localCrons, setLocalCrons] =
-    useState<import("@langchain/langgraph-sdk").Cron[]>(crons);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const loadCrons = async () => {
+      try {
+        const cronJobs = await fetchCrons(setIsLoading);
+        setLocalCrons(cronJobs);
+      } catch (error) {
+        console.error("Failed to load scheduled tasks:", error);
+        alert("Failed to load scheduled tasks");
+      }
+    };
+    loadCrons();
+  }, [setLocalCrons]);
 
   const handleDeleteCron = async (cronId: string) => {
     try {
-      const cronToDelete = localCrons.find((cron) => cron.cron_id === cronId);
       const client = await createLangGraphClient();
       await client.crons.delete(cronId);
 
       // Update local state to remove the deleted cron
-      setLocalCrons((prevCrons) => {
-        const updatedCrons = prevCrons.filter(
-          (cron) => cron.cron_id !== cronId
-        );
-        return updatedCrons;
-      });
+      setLocalCrons((prevCrons) =>
+        prevCrons.filter((cron) => cron.cron_id !== cronId)
+      );
+
+      // Also update the team's cron_id in the database
+      const cronToDelete = localCrons.find((cron) => cron.cron_id === cronId);
+      if (cronToDelete?.metadata?.team_id) {
+        await fetch(`/api/teams/${cronToDelete.metadata.team_id}`, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            cron_id: null,
+          }),
+        });
+      }
     } catch (error) {
-      throw new Error("Failed to delete cron job");
+      console.error("Failed to delete cron job:", error);
+      alert("Failed to delete scheduled task");
     }
   };
 
@@ -514,16 +634,20 @@ const CronJobsDialog = ({ crons }: CronJobsDialogProps) => {
   return (
     <DialogContent className="sm:max-w-[800px]">
       <DialogHeader>
-        <DialogTitle>Scheduled Jobs</DialogTitle>
+        <DialogTitle>Scheduled Tasks</DialogTitle>
         <DialogDescription>
-          View all scheduled jobs and their status
+          View all scheduled tasks and their status
         </DialogDescription>
       </DialogHeader>
 
       <div className="space-y-4 mt-2">
-        {localCrons.length === 0 ? (
+        {isLoading ? (
           <div className="text-center text-muted-foreground py-8">
-            No scheduled jobs found
+            Loading scheduled tasks...
+          </div>
+        ) : localCrons.length === 0 ? (
+          <div className="text-center text-muted-foreground py-8">
+            No scheduled tasks found
           </div>
         ) : (
           <div className="space-y-4">
@@ -550,17 +674,14 @@ const CronJobsDialog = ({ crons }: CronJobsDialogProps) => {
                           ? new Date(cron.end_time).toLocaleString()
                           : "No end time"}
                       </p>
+                      {cron.metadata?.team_name && (
+                        <p className="text-sm">
+                          Team: {cron.metadata.team_name}
+                        </p>
+                      )}
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={() => handleDeleteCron(cron.cron_id)}
-                      className="p-2 hover:bg-red-100 rounded-full text-red-500 transition-colors"
-                      title="Delete cron job"
-                    >
-                      <X className="h-4 w-4" />
-                    </button>
                     <button
                       type="button"
                       className="p-2 hover:bg-muted rounded-full"
@@ -594,16 +715,19 @@ const CronJobsDialog = ({ crons }: CronJobsDialogProps) => {
   );
 };
 
-const createTeamMessage = (teamId: string, description: string): HumanMessage =>
-  new HumanMessage({
-    content: description || "Do your job.",
-    additional_kwargs: {
-      team_id: teamId,
-      action: "run_team",
-      timestamp: new Date().toISOString(),
-      source: "team_page",
-    },
-  });
+const createTeamMessage = (
+  teamId: string,
+  description: string
+): Record<string, any> => ({
+  role: "human",
+  content: description || "Do your job.",
+  additional_kwargs: {
+    team_id: teamId,
+    action: "run_team",
+    timestamp: new Date().toISOString(),
+    source: "team_page",
+  },
+});
 
 const createLangGraphClient = async () => {
   const supabase = createSupabaseClient();
@@ -636,6 +760,12 @@ export default function TeamPage() {
   const [schedule, setSchedule] = useState("");
   const [editingTeam, setEditingTeam] = useState<Team | null>(null);
   const [showCronJobsDialog, setShowCronJobsDialog] = useState(false);
+  const [localCrons, setLocalCrons] = useState<
+    import("@langchain/langgraph-sdk").Cron[]
+  >([]);
+  const [deletingTeams, setDeletingTeams] = useState<Record<string, boolean>>(
+    {}
+  );
 
   useEffect(() => {
     // Don't redirect while auth is loading
@@ -674,7 +804,7 @@ export default function TeamPage() {
     };
 
     fetchData();
-  }, [user, router]);
+  }, [user, router, loading]);
 
   const toggleAgent = (agentId: string) => {
     setSelectedAgents((current) =>
@@ -705,64 +835,88 @@ export default function TeamPage() {
       console.log("thread: ", thread);
 
       // Create the team with the thread ID
+      const teamData = {
+        name: teamName,
+        description: teamDescription,
+        agent_list: selectedAgents,
+        schedule: schedule,
+        thread_id: thread.thread_id,
+      };
+      console.log("Creating team with data:", teamData);
+
       const response = await fetch("/api/teams", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          name: teamName,
-          description: teamDescription,
-          agent_list: selectedAgents,
-          schedule: schedule,
-          thread_id: thread.thread_id,
-        }),
+        body: JSON.stringify(teamData),
       });
       console.log("response: ", response);
 
       if (!response.ok) {
         const errorData = await response.json();
+        console.error("Server error response:", errorData);
         throw new Error(errorData.error || "Failed to create team");
       }
 
       const responseData = await response.json();
       console.log("responseData: ", responseData);
 
-      // Create a run with the team_graph assistant
-      const run = await client.runs.create(thread.thread_id, "team_graph", {
-        streamMode: "messages",
-        config: {
-          configurable: {
-            project_id: thread.thread_id,
-            team_id: responseData.id,
-            staff_id: "default",
-            agent_id_list: selectedAgents.join(","),
-            user_id: user?.id || "default",
-          },
-        },
-        input: {
-          messages: [
-            {
-              role: "user",
-              content: teamDescription || "Do your job.",
-              additional_kwargs: {
+      let cronId = null;
+      // Only create cron job if schedule is set
+      if (schedule) {
+        // Create a cron job
+        console.log("Creating cron job...");
+        const cronJob = await client.crons.createForThread(
+          thread.thread_id,
+          "team_graph",
+          {
+            schedule: schedule,
+            streamMode: "messages",
+            input: {
+              messages: [createTeamMessage(responseData.id, teamDescription)],
+            },
+            metadata: {
+              team_id: responseData.id,
+              team_name: teamName,
+              agent_list: selectedAgents,
+            },
+            config: {
+              configurable: {
+                project_id: "default",
                 team_id: responseData.id,
-                action: "run_team",
-                timestamp: new Date().toISOString(),
-                source: "team_page",
+                staff_id: "default",
+                user_id: user?.id || "default",
+                agent_id_list: selectedAgents.join(","),
               },
             },
-          ],
-        },
-        multitaskStrategy: "enqueue",
-        onDisconnect: "cancel",
-        afterSeconds: 1,
-        ifNotExists: "create",
-      });
-      console.log("run: ", run);
+            multitaskStrategy: "enqueue",
+            onCompletion: "continue",
+            onDisconnect: "continue",
+            afterSeconds: 1,
+            ifNotExists: "reject",
+          }
+        );
+        console.log("cronJob: ", cronJob);
+        cronId = cronJob.cron_id;
+
+        // Update the cron job id in the teams table
+        await fetch(`/api/teams/${responseData.id}`, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            cron_id: cronId,
+          }),
+        });
+      }
 
       // Add the new team to the teams list
-      setTeams((prevTeams) => [responseData, ...prevTeams]);
+      setTeams((prevTeams) => [
+        { ...responseData, cron_id: cronId },
+        ...prevTeams,
+      ]);
 
       // Reset form
       setTeamName("");
@@ -785,91 +939,101 @@ export default function TeamPage() {
 
       // Update thread metadata if it exists
       if (editingTeam.thread_id) {
-        try {
-          await client.threads.update(editingTeam.thread_id, {
-            metadata: {
-              team_name: teamName,
-              agent_list: selectedAgents,
-            },
-          });
+        // Search for existing cron jobs and delete them
+        const cronJobs = await client.crons.search({
+          threadId: editingTeam.thread_id,
+        });
+        if (cronJobs.length > 0) {
+          await client.crons.delete(cronJobs[0].cron_id);
+        }
 
-          // Create a new run with updated team configuration
-          const run = await client.runs.create(
+        let cronId = null;
+        // Only create new cron job if schedule is set
+        if (schedule) {
+          // Create a cron job
+          const cronJob = await client.crons.createForThread(
             editingTeam.thread_id,
             "team_graph",
             {
+              schedule: schedule,
               streamMode: "messages",
+              input: {
+                messages: [createTeamMessage(editingTeam.id, teamDescription)],
+              },
+              metadata: {
+                team_id: editingTeam.id,
+                team_name: teamName,
+                agent_list: selectedAgents,
+              },
               config: {
                 configurable: {
-                  project_id: editingTeam.thread_id,
+                  project_id: "default",
                   team_id: editingTeam.id,
-                  staff_id: user?.id || "default",
-                  agent_id_list: selectedAgents.join(","),
+                  staff_id: "default",
                   user_id: user?.id || "default",
+                  agent_id_list: selectedAgents.join(","),
                 },
               },
-              input: {
-                messages: [
-                  {
-                    role: "user",
-                    content: teamDescription || "Do your job.",
-                  },
-                ],
-              },
               multitaskStrategy: "enqueue",
-              onDisconnect: "cancel",
+              onCompletion: "continue",
+              onDisconnect: "continue",
               afterSeconds: 1,
-              ifNotExists: "create",
+              ifNotExists: "reject",
             }
           );
-        } catch (error) {
-          throw new Error("Error updating thread metadata");
+          console.log("cronJob: ", cronJob);
+          cronId = cronJob.cron_id;
+
+          // Update local crons state
+          const updatedCronJobs = await client.crons.search();
+          setLocalCrons(updatedCronJobs);
         }
+
+        // Update team in database
+        const response = await fetch(`/api/teams/${editingTeam.id}`, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            name: teamName,
+            description: teamDescription,
+            agent_list: selectedAgents,
+            schedule: schedule,
+            thread_id: editingTeam.thread_id,
+            cron_id: cronId, // Will be null if no schedule is set
+          }),
+        });
+
+        const responseData = await response.json();
+        if (!response.ok) throw new Error(responseData.error);
+
+        // Update the team in the teams list
+        setTeams((prevTeams) =>
+          prevTeams.map((team) =>
+            team.id === editingTeam.id
+              ? {
+                  ...responseData,
+                  schedule: schedule,
+                  cron_id: cronId,
+                }
+              : team
+          )
+        );
+
+        // Reset form
+        setTeamName("");
+        setTeamDescription("");
+        setSelectedAgents([]);
+        setSchedule("");
+        setEditingTeam(null);
+        setShowDialog(false);
       } else {
-        // TODO: Handle the case where the thread id is not found
-        console.error("Error creating thread id: ", editingTeam.thread_id);
-        throw new Error("Error creating thread");
+        throw new Error("Thread ID not found");
       }
-
-      // Update team in database
-      const response = await fetch(`/api/teams/${editingTeam.id}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          name: teamName,
-          description: teamDescription,
-          agent_list: selectedAgents,
-          schedule: schedule,
-          thread_id: editingTeam.thread_id,
-        }),
-      });
-
-      const responseData = await response.json();
-      if (!response.ok) throw new Error(responseData.error);
-
-      // Update the team in the teams list
-      setTeams((prevTeams) =>
-        prevTeams.map((team) =>
-          team.id === editingTeam.id
-            ? {
-                ...responseData,
-                schedule: schedule,
-              }
-            : team
-        )
-      );
-
-      // Reset form
-      setTeamName("");
-      setTeamDescription("");
-      setSelectedAgents([]);
-      setSchedule("");
-      setEditingTeam(null);
-      setShowDialog(false);
     } catch (error) {
-      throw new Error("Error updating team");
+      console.error("Error updating team:", error);
+      alert(error instanceof Error ? error.message : "Failed to update team");
     }
   };
 
@@ -891,7 +1055,26 @@ export default function TeamPage() {
       return;
     }
 
+    // Set the deleting state for this team
+    setDeletingTeams((prev) => ({ ...prev, [teamId]: true }));
+
     try {
+      // Find the team to get its cron_id
+      const team = teams.find((t) => t.id === teamId);
+      if (team?.thread_id) {
+        // Get the client and search for crons associated with this thread
+        const client = await createLangGraphClient();
+        const cronJobs = await client.crons.search({
+          threadId: team.thread_id,
+        });
+
+        // Delete any found crons
+        for (const cron of cronJobs) {
+          await client.crons.delete(cron.cron_id);
+        }
+      }
+
+      // Now delete the team
       const response = await fetch(`/api/teams/${teamId}`, {
         method: "DELETE",
       });
@@ -901,11 +1084,28 @@ export default function TeamPage() {
         throw new Error(errorData.error || "Failed to delete team");
       }
 
-      // Remove the team from the teams list
-      setTeams((prevTeams) => prevTeams.filter((team) => team.id !== teamId));
+      // Remove the team from the teams list with a slight delay for animation
+      setTimeout(() => {
+        setTeams((prevTeams) => prevTeams.filter((team) => team.id !== teamId));
+        setDeletingTeams((prev) => {
+          const newState = { ...prev };
+          delete newState[teamId];
+          return newState;
+        });
+      }, 300);
+
+      // Refresh crons list
+      const newCrons = await fetchCrons();
+      setLocalCrons(newCrons);
     } catch (error) {
       console.error("Error deleting team:", error);
       alert(error instanceof Error ? error.message : "Failed to delete team");
+      // Reset the deleting state on error
+      setDeletingTeams((prev) => {
+        const newState = { ...prev };
+        delete newState[teamId];
+        return newState;
+      });
     }
   };
 
@@ -954,7 +1154,10 @@ export default function TeamPage() {
                     View jobs
                   </Button>
                 </DialogTrigger>
-                <CronJobsDialog crons={[]} />
+                <CronJobsDialog
+                  localCrons={localCrons}
+                  setLocalCrons={setLocalCrons}
+                />
               </Dialog>
               <Dialog
                 open={showDialog}
@@ -1003,7 +1206,14 @@ export default function TeamPage() {
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {teams.map((team) => (
-                  <Card key={team.id} className="flex flex-col">
+                  <Card
+                    key={team.id}
+                    className={`flex flex-col transition-opacity duration-300 ${
+                      deletingTeams[team.id]
+                        ? "opacity-50 pointer-events-none"
+                        : "opacity-100"
+                    }`}
+                  >
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                       <div>
                         <CardTitle>{team.name}</CardTitle>
@@ -1018,8 +1228,13 @@ export default function TeamPage() {
                           className="h-8 w-8 p-0"
                           variant="outlined"
                           color="error"
+                          disabled={deletingTeams[team.id]}
                         >
-                          <X className="h-4 w-4" />
+                          {deletingTeams[team.id] ? (
+                            <span className="animate-spin">⏳</span>
+                          ) : (
+                            <X className="h-4 w-4" />
+                          )}
                         </Button>
                         <Button
                           onClick={() => {
@@ -1032,6 +1247,7 @@ export default function TeamPage() {
                           }}
                           className="h-8 w-8 p-0"
                           variant="outlined"
+                          disabled={deletingTeams[team.id]}
                         >
                           <Pencil className="h-4 w-4" />
                         </Button>

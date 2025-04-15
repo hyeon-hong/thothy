@@ -9,7 +9,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { useSidebar } from "@/components/ui/sidebar";
 import { TooltipIconButton } from "@/components/assistant-ui/tooltip-icon-button";
 import { useThreadsContext } from "../agent-inbox/contexts/ThreadContext";
@@ -21,6 +21,16 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "../ui/tooltip";
+
+interface Team {
+  id: string;
+  name: string;
+  description: string;
+  agent_list: string[];
+  created_at: string;
+  schedule: string;
+  thread_id?: string;
+}
 
 const gradients = [
   "linear-gradient(to right, #FF416C, #FF4B2B)", // Red-Orange
@@ -72,6 +82,27 @@ function SidebarSkeleton() {
 
 export function AppSidebar() {
   const { agentInboxes, changeAgentInbox, loading } = useThreadsContext();
+  const [teams, setTeams] = useState<Team[]>([]);
+  const [isLoadingTeams, setIsLoadingTeams] = useState(true);
+
+  useEffect(() => {
+    const fetchTeams = async () => {
+      try {
+        const response = await fetch("/api/teams");
+        if (!response.ok) {
+          throw new Error("Failed to fetch teams");
+        }
+        const data = await response.json();
+        setTeams(data);
+      } catch (error) {
+        console.error("Error fetching teams:", error);
+      } finally {
+        setIsLoadingTeams(false);
+      }
+    };
+
+    fetchTeams();
+  }, []);
 
   return (
     <Sidebar className="border-r-[0px] bg-[#F9FAFB]">
@@ -86,52 +117,108 @@ export function AppSidebar() {
               {loading ? (
                 <SidebarSkeleton />
               ) : (
-                <div className="flex flex-col gap-2 pl-7">
-                  {agentInboxes.map((item, idx) => {
-                    const label = item.name || prettifyText(item.graphId);
-                    return (
-                      <SidebarMenuItem
-                        key={`graph-id-${item.graphId}-${idx}`}
-                        className={cn(
-                          "flex items-center w-full",
-                          item.selected ? "bg-gray-100 rounded-md" : ""
-                        )}
-                      >
-                        <TooltipProvider>
-                          <Tooltip delayduration={200}>
-                            <TooltipTrigger asChild>
-                              <SidebarMenuButton
-                                onClick={() => changeAgentInbox(item.id, true)}
-                              >
-                                <div
-                                  className="w-6 h-6 rounded-md flex-shrink-0 flex items-center justify-center text-white"
-                                  style={{
-                                    background:
-                                      gradients[
-                                        hashString(item.graphId) %
-                                          gradients.length
-                                      ],
+                <>
+                  {/* Teams Section - Moved up */}
+                  <div className="flex flex-col gap-2 pl-7 mb-6">
+                    <div className="text-sm font-medium text-gray-500 mb-2 pl-2">Teams</div>
+                    {isLoadingTeams ? (
+                      <div className="flex flex-col gap-2">
+                        {[1, 2, 3].map((i) => (
+                          <div
+                            key={i}
+                            className="h-8 bg-gray-100 rounded-md animate-pulse"
+                          />
+                        ))}
+                      </div>
+                    ) : teams.length === 0 ? (
+                      <div className="text-sm text-gray-500 pl-2">No teams found</div>
+                    ) : (
+                      teams.map((team) => (
+                        <SidebarMenuItem
+                          key={`team-${team.id}`}
+                          className="flex items-center w-full"
+                        >
+                          <TooltipProvider>
+                            <Tooltip delayduration={200}>
+                              <TooltipTrigger asChild>
+                                <SidebarMenuButton
+                                  onClick={() => {
+                                    // TODO: Handle team selection
+                                    console.log("Selected team:", team);
                                   }}
                                 >
-                                  {label.slice(0, 1).toUpperCase()}
-                                </div>
-                                <span
-                                  className={cn(
-                                    "truncate min-w-0 font-medium",
-                                    item.selected ? "text-black" : "text-gray-600"
-                                  )}
+                                  <div
+                                    className="w-6 h-6 rounded-md flex-shrink-0 flex items-center justify-center text-white"
+                                    style={{
+                                      background:
+                                        gradients[
+                                          hashString(team.id) %
+                                            gradients.length
+                                        ],
+                                    }}
+                                  >
+                                    {team.name.slice(0, 1).toUpperCase()}
+                                  </div>
+                                  <span className="truncate min-w-0 font-medium text-gray-600">
+                                    {team.name}
+                                  </span>
+                                </SidebarMenuButton>
+                              </TooltipTrigger>
+                              <TooltipContent>{team.name}</TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        </SidebarMenuItem>
+                      ))
+                    )}
+                  </div>
+
+                  <div className="flex flex-col gap-2 pl-7">
+                    {agentInboxes.map((item, idx) => {
+                      const label = item.name || prettifyText(item.graphId);
+                      return (
+                        <SidebarMenuItem
+                          key={`graph-id-${item.graphId}-${idx}`}
+                          className={cn(
+                            "flex items-center w-full",
+                            item.selected ? "bg-gray-100 rounded-md" : ""
+                          )}
+                        >
+                          <TooltipProvider>
+                            <Tooltip delayduration={200}>
+                              <TooltipTrigger asChild>
+                                <SidebarMenuButton
+                                  onClick={() => changeAgentInbox(item.id, true)}
                                 >
-                                  {label}
-                                </span>
-                              </SidebarMenuButton>
-                            </TooltipTrigger>
-                            <TooltipContent>{label}</TooltipContent>
-                          </Tooltip>
-                        </TooltipProvider>
-                      </SidebarMenuItem>
-                    );
-                  })}
-                </div>
+                                  <div
+                                    className="w-6 h-6 rounded-md flex-shrink-0 flex items-center justify-center text-white"
+                                    style={{
+                                      background:
+                                        gradients[
+                                          hashString(item.graphId) %
+                                            gradients.length
+                                        ],
+                                    }}
+                                  >
+                                    {label.slice(0, 1).toUpperCase()}
+                                  </div>
+                                  <span
+                                    className={cn(
+                                      "truncate min-w-0 font-medium",
+                                      item.selected ? "text-black" : "text-gray-600"
+                                    )}
+                                  >
+                                    {label}
+                                  </span>
+                                </SidebarMenuButton>
+                              </TooltipTrigger>
+                              <TooltipContent>{label}</TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        </SidebarMenuItem>
+                      );
+                    })}
+                  </div>
+                </>
               )}
             </SidebarMenu>
           </SidebarGroupContent>

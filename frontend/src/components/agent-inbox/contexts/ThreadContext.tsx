@@ -165,35 +165,39 @@ export function ThreadsProvider<
   const inboxParam = searchParams.get(INBOX_PARAM);
 
   React.useEffect(() => {
-    if (typeof window === "undefined") {
-      return;
-    }
-    if (!agentInboxes.length) {
-      return;
-    }
-    const inboxSearchParam = getSearchParam(INBOX_PARAM) as ThreadStatusWithAll;
-    if (!inboxSearchParam) {
-      return;
-    }
-    try {
-      fetchThreads(inboxSearchParam);
-    } catch (e) {
-      console.error("Error occurred while fetching threads", e);
-    }
-  }, [limitParam, offsetParam, inboxParam, agentInboxes]);
+    console.log("call useEffect");
 
-  const agentInboxParam = searchParams.get(AGENT_INBOX_PARAM);
-
-  React.useEffect(() => {
     if (typeof window === "undefined") {
+      console.log("window is undefined");
+      console.log("window: ", window);
       return;
     }
-    try {
-      getAgentInboxes();
-    } catch (e) {
-      console.error("Error occurred while fetching agent inboxes", e);
-    }
-  }, [agentInboxParam]);
+
+    let mounted = true;
+
+    const init = async () => {
+      try {
+        // Only fetch agent inboxes if we don't have any yet
+        if (agentInboxes.length === 0) {
+          await getAgentInboxes();
+        } else {
+          // If we already have agent inboxes, just fetch threads if needed
+          const inboxSearchParam = getSearchParam(INBOX_PARAM) as ThreadStatusWithAll;
+          if (inboxSearchParam && mounted) {
+            await fetchThreads(inboxSearchParam);
+          }
+        }
+      } catch (e) {
+        console.error("Error occurred during initialization", e);
+      }
+    };
+
+    init();
+
+    return () => {
+      mounted = false;
+    };
+  }, [limitParam, offsetParam, inboxParam]);
 
   const getAgentInboxes = React.useCallback(async () => {
     const agentInboxSearchParam = getSearchParam(AGENT_INBOX_PARAM);
@@ -203,40 +207,48 @@ export function ThreadsProvider<
     );
 
     try {
-      // Fetch teams from the database
+      setLoading(true);
+      // Fetch teams from the database with detailed error logging
+      const requestBody = {
+        action: "select",
+        table: "teams",
+        query: {
+          select: "*",
+          order: [{ column: "created_at", order: "desc" }]
+        },
+      };
+
+      console.log("[Debug] Sending request to /api/supabase:", requestBody);
+
       const response = await fetch("/api/supabase", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          action: "select",
-          table: "teams",
-          query: {
-            select: "*",
-          },
-        }),
+        body: JSON.stringify(requestBody),
       });
 
+      console.log("[Debug] Response status:", response.status);
+      
       if (!response.ok) {
-        throw new Error("Failed to fetch teams");
+        const errorText = await response.text();
+        console.error("[Debug] API Error response:", errorText);
+        throw new Error(`Failed to fetch teams: ${response.status} ${errorText}`);
       }
 
-      const data = await response.json();
-      console.log("[Debug] Raw response from Supabase:", data);
+      const teams = await response.json();
+      console.log("[Debug] Teams data:", teams);
 
-      if (!data || !Array.isArray(data)) {
-        console.log("[Debug] Invalid data format from API:", data);
+      if (!teams || !Array.isArray(teams)) {
+        console.error("[Debug] Invalid data format:", teams);
         throw new Error("Invalid data format from API");
       }
-
-      const teams = data;
-      console.log("[Debug] Teams data:", teams);
 
       if (!teams.length) {
         console.log("[Debug] No teams found in database");
         // Don't show welcome dialog even if no teams found
         setAgentInboxes([]);
+        setLoading(false);
         return;
       }
 
@@ -257,6 +269,12 @@ export function ThreadsProvider<
         parsedAgentInboxes[0].selected = true;
         updateQueryParams(AGENT_INBOX_PARAM, parsedAgentInboxes[0].id);
         setAgentInboxes(parsedAgentInboxes);
+        
+        // Fetch threads for the first inbox
+        const inboxSearchParam = getSearchParam(INBOX_PARAM) as ThreadStatusWithAll;
+        if (inboxSearchParam) {
+          await fetchThreads(inboxSearchParam);
+        }
         return;
       }
 
@@ -273,6 +291,7 @@ export function ThreadsProvider<
           variant: "destructive",
           duration: 3000,
         });
+        setLoading(false);
         return;
       }
 
@@ -283,14 +302,22 @@ export function ThreadsProvider<
       });
 
       setAgentInboxes(parsedAgentInboxes);
+      
+      // Fetch threads for the selected inbox
+      const inboxSearchParam = getSearchParam(INBOX_PARAM) as ThreadStatusWithAll;
+      if (inboxSearchParam) {
+        await fetchThreads(inboxSearchParam);
+      }
     } catch (error) {
-      console.error("Error fetching teams:", error);
+      console.error("[Debug] Error fetching teams:", error);
       toast({
         title: "Error",
         description: "Failed to fetch agent inboxes. Please try again.",
         variant: "destructive",
         duration: 3000,
       });
+    } finally {
+      setLoading(false);
     }
   }, []);
 
@@ -359,6 +386,7 @@ export function ThreadsProvider<
 
   const fetchThreads = React.useCallback(
     async (inbox: ThreadStatusWithAll) => {
+      console.log("call fetchThreads");
       setLoading(true);
 
       try {
@@ -405,6 +433,7 @@ export function ThreadsProvider<
           ...statusInput,
           ...(metadataInput ? { metadata: metadataInput } : {}),
         };
+        console.log("threadSearchArgs: ", threadSearchArgs);
 
         const threads = await client.threads.search(threadSearchArgs);
         const data: ThreadData<ThreadValues>[] = [];
