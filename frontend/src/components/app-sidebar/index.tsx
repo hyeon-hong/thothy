@@ -118,55 +118,8 @@ export function AppSidebar() {
                 <SidebarSkeleton />
               ) : (
                 <>
-                  <div className="flex flex-col gap-2 pl-7">
-                    {agentInboxes.map((item, idx) => {
-                      const label = item.name || prettifyText(item.graphId);
-                      return (
-                        <SidebarMenuItem
-                          key={`graph-id-${item.graphId}-${idx}`}
-                          className={cn(
-                            "flex items-center w-full",
-                            item.selected ? "bg-gray-100 rounded-md" : ""
-                          )}
-                        >
-                          <TooltipProvider>
-                            <Tooltip delayduration={200}>
-                              <TooltipTrigger asChild>
-                                <SidebarMenuButton
-                                  onClick={() => changeAgentInbox(item.id, true)}
-                                >
-                                  <div
-                                    className="w-6 h-6 rounded-md flex-shrink-0 flex items-center justify-center text-white"
-                                    style={{
-                                      background:
-                                        gradients[
-                                          hashString(item.graphId) %
-                                            gradients.length
-                                        ],
-                                    }}
-                                  >
-                                    {label.slice(0, 1).toUpperCase()}
-                                  </div>
-                                  <span
-                                    className={cn(
-                                      "truncate min-w-0 font-medium",
-                                      item.selected ? "text-black" : "text-gray-600"
-                                    )}
-                                  >
-                                    {label}
-                                  </span>
-                                </SidebarMenuButton>
-                              </TooltipTrigger>
-                              <TooltipContent>{label}</TooltipContent>
-                            </Tooltip>
-                          </TooltipProvider>
-                        </SidebarMenuItem>
-                      );
-                    })}
-                  </div>
-                  
-                  {/* Teams Section */}
-                  <div className="flex flex-col gap-2 pl-7 mt-6">
+                  {/* Teams Section - Moved up */}
+                  <div className="flex flex-col gap-2 pl-7 mb-6">
                     <div className="text-sm font-medium text-gray-500 mb-2 pl-2">Teams</div>
                     {isLoadingTeams ? (
                       <div className="flex flex-col gap-2">
@@ -217,6 +170,53 @@ export function AppSidebar() {
                         </SidebarMenuItem>
                       ))
                     )}
+                  </div>
+
+                  <div className="flex flex-col gap-2 pl-7">
+                    {agentInboxes.map((item, idx) => {
+                      const label = item.name || prettifyText(item.graphId);
+                      return (
+                        <SidebarMenuItem
+                          key={`graph-id-${item.graphId}-${idx}`}
+                          className={cn(
+                            "flex items-center w-full",
+                            item.selected ? "bg-gray-100 rounded-md" : ""
+                          )}
+                        >
+                          <TooltipProvider>
+                            <Tooltip delayduration={200}>
+                              <TooltipTrigger asChild>
+                                <SidebarMenuButton
+                                  onClick={() => changeAgentInbox(item.id, true)}
+                                >
+                                  <div
+                                    className="w-6 h-6 rounded-md flex-shrink-0 flex items-center justify-center text-white"
+                                    style={{
+                                      background:
+                                        gradients[
+                                          hashString(item.graphId) %
+                                            gradients.length
+                                        ],
+                                    }}
+                                  >
+                                    {label.slice(0, 1).toUpperCase()}
+                                  </div>
+                                  <span
+                                    className={cn(
+                                      "truncate min-w-0 font-medium",
+                                      item.selected ? "text-black" : "text-gray-600"
+                                    )}
+                                  >
+                                    {label}
+                                  </span>
+                                </SidebarMenuButton>
+                              </TooltipTrigger>
+                              <TooltipContent>{label}</TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        </SidebarMenuItem>
+                      );
+                    })}
                   </div>
                 </>
               )}
