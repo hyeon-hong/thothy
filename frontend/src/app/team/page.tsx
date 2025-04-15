@@ -249,6 +249,7 @@ const TeamDialog = ({
           placeholder="Describe your team's purpose"
           rows={3}
           autoComplete="on"
+          defaultValue={teamDescription}
         />
       </div>
 
