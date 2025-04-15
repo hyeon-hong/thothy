@@ -387,8 +387,12 @@ const TeamDialog = ({
 const CronJobsDialog = ({}: CronJobsDialogProps) => {
   const [expandedCron, setExpandedCron] = useState<string | null>(null);
   const [runs, setRuns] = useState<Record<string, Run[]>>({});
-  const [isLoadingRuns, setIsLoadingRuns] = useState<Record<string, boolean>>({});
-  const [localCrons, setLocalCrons] = useState<import("@langchain/langgraph-sdk").Cron[]>([]);
+  const [isLoadingRuns, setIsLoadingRuns] = useState<Record<string, boolean>>(
+    {}
+  );
+  const [localCrons, setLocalCrons] = useState<
+    import("@langchain/langgraph-sdk").Cron[]
+  >([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -630,16 +634,19 @@ const CronJobsDialog = ({}: CronJobsDialogProps) => {
   );
 };
 
-const createTeamMessage = (teamId: string, description: string): HumanMessage =>
-  new HumanMessage({
-    content: description || "Do your job.",
-    additional_kwargs: {
-      team_id: teamId,
-      action: "run_team",
-      timestamp: new Date().toISOString(),
-      source: "team_page",
-    },
-  });
+const createTeamMessage = (
+  teamId: string,
+  description: string
+): Record<string, any> => ({
+  role: "human",
+  content: description || "Do your job.",
+  additional_kwargs: {
+    team_id: teamId,
+    action: "run_team",
+    timestamp: new Date().toISOString(),
+    source: "team_page",
+  },
+});
 
 const createLangGraphClient = async () => {
   const supabase = createSupabaseClient();
