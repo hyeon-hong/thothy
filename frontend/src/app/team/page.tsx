@@ -248,6 +248,7 @@ const TeamDialog = ({
           }
           placeholder="Describe your team's purpose"
           rows={3}
+          autoComplete="on"
         />
       </div>
 
@@ -740,98 +741,87 @@ export default function TeamPage() {
       console.log("thread: ", thread);
 
       // Create the team with the thread ID
+      const teamData = {
+        name: teamName,
+        description: teamDescription,
+        agent_list: selectedAgents,
+        schedule: schedule,
+        thread_id: thread.thread_id,
+      };
+      console.log("Creating team with data:", teamData);
+
       const response = await fetch("/api/teams", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          name: teamName,
-          description: teamDescription,
-          agent_list: selectedAgents,
-          schedule: schedule,
-          thread_id: thread.thread_id,
-        }),
+        body: JSON.stringify(teamData),
       });
       console.log("response: ", response);
 
       if (!response.ok) {
         const errorData = await response.json();
+        console.error("Server error response:", errorData);
         throw new Error(errorData.error || "Failed to create team");
       }
 
       const responseData = await response.json();
       console.log("responseData: ", responseData);
 
-      // Create initial run with the team_graph assistant
-      // const run = await client.runs.create(thread.thread_id, "team_graph", {
-      //   streamMode: "messages",
-      //   config: {
-      //     configurable: {
-      //       project_id: thread.thread_id,
-      //       team_id: responseData.id,
-      //       staff_id: "default",
-      //       agent_id_list: selectedAgents.join(","),
-      //       user_id: user?.id || "default",
-      //     },
-      //   },
-      //   input: {
-      //     messages: [createTeamMessage(responseData.id, teamDescription)],
-      //   },
-      //   multitaskStrategy: "enqueue",
-      //   onDisconnect: "cancel",
-      //   afterSeconds: 1,
-      //   ifNotExists: "create",
-      // });
-      // console.log("run: ", run);
-
-      // TODO: Check the schedule is valid
-      // Create a cron job
-      const cronJob = await client.crons.createForThread(
-        thread.thread_id,
-        "team_graph",
-        {
-          schedule: schedule,
-          streamMode: "messages",
-          input: {
-            messages: [createTeamMessage(responseData.id, teamDescription)],
-          },
-          metadata: {
-            team_id: responseData.id,
-            team_name: teamName,
-            agent_list: selectedAgents,
-          },
-          config: {
-            configurable: {
-              project_id: "default",
-              team_id: responseData.id,
-              staff_id: "default",
-              user_id: user?.id || "default",
-              agent_id_list: selectedAgents.join(","),
+      let cronId = null;
+      // Only create cron job if schedule is set
+      if (schedule) {
+        // Create a cron job
+        const cronJob = await client.crons.createForThread(
+          thread.thread_id,
+          "team_graph",
+          {
+            schedule: schedule,
+            streamMode: "messages",
+            input: {
+              messages: [createTeamMessage(responseData.id, teamDescription)],
             },
-          },
-          multitaskStrategy: "enqueue",
-          onCompletion: "continue",
-          onDisconnect: "continue",
-          afterSeconds: 1,
-          ifNotExists: "reject",
-        }
-      );
-      console.log("cronJob: ", cronJob);
+            metadata: {
+              team_id: responseData.id,
+              team_name: teamName,
+              agent_list: selectedAgents,
+            },
+            config: {
+              configurable: {
+                project_id: "default",
+                team_id: responseData.id,
+                staff_id: "default",
+                user_id: user?.id || "default",
+                agent_id_list: selectedAgents.join(","),
+              },
+            },
+            multitaskStrategy: "enqueue",
+            onCompletion: "continue",
+            onDisconnect: "continue",
+            afterSeconds: 1,
+            ifNotExists: "reject",
+          }
+        );
+        console.log("cronJob: ", cronJob);
+        cronId = cronJob.cron_id;
 
-      // Update the cron job id in the teams table
-      await fetch(`/api/teams/${responseData.id}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          cron_id: cronJob.cron_id,
-        }),
-      });
+        // Update the cron job id in the teams table
+        await fetch(`/api/teams/${responseData.id}`, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            cron_id: cronId,
+          }),
+        });
+      }
 
       // Add the new team to the teams list
-      setTeams((prevTeams) => [responseData, ...prevTeams]);
+      setTeams((prevTeams) => [
+        { ...responseData, cron_id: cronId },
+        ...prevTeams,
+      ]);
 
       // Reset form
       setTeamName("");
@@ -854,7 +844,7 @@ export default function TeamPage() {
 
       // Update thread metadata if it exists
       if (editingTeam.thread_id) {
-        // Search for the cron job with editingTeam.thread_id and delete it
+        // Search for existing cron jobs and delete them
         const cronJobs = await client.crons.search({
           assistantId: "team_graph",
           threadId: editingTeam.thread_id,
@@ -863,80 +853,86 @@ export default function TeamPage() {
           await client.crons.delete(cronJobs[0].cron_id);
         }
 
-        // TODO: Check the schedule is valid
-        // Create a cron job
-        const cronJob = await client.crons.createForThread(
-          editingTeam.thread_id,
-          "team_graph",
-          {
-            schedule: schedule,
-            streamMode: "messages",
-            input: {
-              messages: [createTeamMessage(editingTeam.id, teamDescription)],
-            },
-            metadata: {
-              team_id: editingTeam.id,
-              team_name: teamName,
-              agent_list: selectedAgents,
-            },
-            config: {
-              configurable: {
-                project_id: "default",
-                team_id: editingTeam.id,
-                staff_id: "default",
-                user_id: user?.id || "default",
-                agent_id_list: selectedAgents.join(","),
+        let cronId = null;
+        // Only create new cron job if schedule is set
+        if (schedule) {
+          // Create a cron job
+          const cronJob = await client.crons.createForThread(
+            editingTeam.thread_id,
+            "team_graph",
+            {
+              schedule: schedule,
+              streamMode: "messages",
+              input: {
+                messages: [createTeamMessage(editingTeam.id, teamDescription)],
               },
-            },
-            multitaskStrategy: "enqueue",
-            onCompletion: "continue",
-            onDisconnect: "continue",
-            afterSeconds: 1,
-            ifNotExists: "reject",
-          }
+              metadata: {
+                team_id: editingTeam.id,
+                team_name: teamName,
+                agent_list: selectedAgents,
+              },
+              config: {
+                configurable: {
+                  project_id: "default",
+                  team_id: editingTeam.id,
+                  staff_id: "default",
+                  user_id: user?.id || "default",
+                  agent_id_list: selectedAgents.join(","),
+                },
+              },
+              multitaskStrategy: "enqueue",
+              onCompletion: "continue",
+              onDisconnect: "continue",
+              afterSeconds: 1,
+              ifNotExists: "reject",
+            }
+          );
+          console.log("cronJob: ", cronJob);
+          cronId = cronJob.cron_id;
+        }
+
+        // Update team in database
+        const response = await fetch(`/api/teams/${editingTeam.id}`, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            name: teamName,
+            description: teamDescription,
+            agent_list: selectedAgents,
+            schedule: schedule,
+            thread_id: editingTeam.thread_id,
+            cron_id: cronId, // Will be null if no schedule is set
+          }),
+        });
+
+        const responseData = await response.json();
+        if (!response.ok) throw new Error(responseData.error);
+
+        // Update the team in the teams list
+        setTeams((prevTeams) =>
+          prevTeams.map((team) =>
+            team.id === editingTeam.id
+              ? {
+                  ...responseData,
+                  schedule: schedule,
+                  cron_id: cronId,
+                }
+              : team
+          )
         );
-        console.log("cronJob: ", cronJob);
+
+        // Reset form
+        setTeamName("");
+        setTeamDescription("");
+        setSelectedAgents([]);
+        setSchedule("");
+        setEditingTeam(null);
+        setShowDialog(false);
       } else {
         throw new Error("Thread ID not found");
       }
-
-      // Update team in database
-      const response = await fetch(`/api/teams/${editingTeam.id}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          name: teamName,
-          description: teamDescription,
-          agent_list: selectedAgents,
-          schedule: schedule,
-          thread_id: editingTeam.thread_id,
-        }),
-      });
-
-      const responseData = await response.json();
-      if (!response.ok) throw new Error(responseData.error);
-
-      // Update the team in the teams list
-      setTeams((prevTeams) =>
-        prevTeams.map((team) =>
-          team.id === editingTeam.id
-            ? {
-                ...responseData,
-                schedule: schedule,
-              }
-            : team
-        )
-      );
-
-      // Reset form
-      setTeamName("");
-      setTeamDescription("");
-      setSelectedAgents([]);
-      setSchedule("");
-      setEditingTeam(null);
-      setShowDialog(false);
     } catch (error) {
       console.error("Error updating team:", error);
       alert(error instanceof Error ? error.message : "Failed to update team");
