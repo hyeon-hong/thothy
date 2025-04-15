@@ -751,6 +751,7 @@ export default function TeamPage() {
   const [editingTeam, setEditingTeam] = useState<Team | null>(null);
   const [showCronJobsDialog, setShowCronJobsDialog] = useState(false);
   const [localCrons, setLocalCrons] = useState<import("@langchain/langgraph-sdk").Cron[]>([]);
+  const [deletingTeams, setDeletingTeams] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     // Don't redirect while auth is loading
@@ -1037,6 +1038,9 @@ export default function TeamPage() {
       return;
     }
 
+    // Set the deleting state for this team
+    setDeletingTeams(prev => ({ ...prev, [teamId]: true }));
+
     try {
       // Find the team to get its cron_id
       const team = teams.find(t => t.id === teamId);
@@ -1063,8 +1067,15 @@ export default function TeamPage() {
         throw new Error(errorData.error || "Failed to delete team");
       }
 
-      // Remove the team from the teams list
-      setTeams((prevTeams) => prevTeams.filter((team) => team.id !== teamId));
+      // Remove the team from the teams list with a slight delay for animation
+      setTimeout(() => {
+        setTeams((prevTeams) => prevTeams.filter((team) => team.id !== teamId));
+        setDeletingTeams(prev => {
+          const newState = { ...prev };
+          delete newState[teamId];
+          return newState;
+        });
+      }, 300);
 
       // Refresh crons list
       const newCrons = await fetchCrons();
@@ -1072,6 +1083,12 @@ export default function TeamPage() {
     } catch (error) {
       console.error("Error deleting team:", error);
       alert(error instanceof Error ? error.message : "Failed to delete team");
+      // Reset the deleting state on error
+      setDeletingTeams(prev => {
+        const newState = { ...prev };
+        delete newState[teamId];
+        return newState;
+      });
     }
   };
 
@@ -1172,7 +1189,12 @@ export default function TeamPage() {
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {teams.map((team) => (
-                  <Card key={team.id} className="flex flex-col">
+                  <Card 
+                    key={team.id} 
+                    className={`flex flex-col transition-opacity duration-300 ${
+                      deletingTeams[team.id] ? 'opacity-50 pointer-events-none' : 'opacity-100'
+                    }`}
+                  >
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                       <div>
                         <CardTitle>{team.name}</CardTitle>
@@ -1187,8 +1209,13 @@ export default function TeamPage() {
                           className="h-8 w-8 p-0"
                           variant="outlined"
                           color="error"
+                          disabled={deletingTeams[team.id]}
                         >
-                          <X className="h-4 w-4" />
+                          {deletingTeams[team.id] ? (
+                            <span className="animate-spin">⏳</span>
+                          ) : (
+                            <X className="h-4 w-4" />
+                          )}
                         </Button>
                         <Button
                           onClick={() => {
@@ -1201,6 +1228,7 @@ export default function TeamPage() {
                           }}
                           className="h-8 w-8 p-0"
                           variant="outlined"
+                          disabled={deletingTeams[team.id]}
                         >
                           <Pencil className="h-4 w-4" />
                         </Button>
