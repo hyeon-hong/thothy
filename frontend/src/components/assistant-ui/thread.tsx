@@ -32,8 +32,8 @@ type ThreadProps = {
 // Use explicit React function declarations instead of FC
 export function Thread({ 
   welcomeSuggestions = [
-    { prompt: "What is the weather in Tokyo?" },
-    { prompt: "What is assistant-ui?" }
+    { prompt: "What is the weather in Seoul?" },
+    { prompt: "What is Thothy?" }
   ],
   toolFallback
 }: ThreadProps): React.ReactNode {

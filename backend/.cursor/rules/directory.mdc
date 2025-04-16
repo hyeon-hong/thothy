@@ -1,0 +1,23 @@
+---
+description: Apply this rule to make the initial directory structure for the agent project.
+globs:
+  - "**/*.*"
+alwaysApply: false
+---
+
+- [agent_name]
+  - src/
+    - [graph_name]/
+      - __init__.py
+      - configuration.py
+      - graph.py
+      - prompts.py
+      - state.py
+      - utils.py
+  - tests/
+    - test_agent.py
+  - .env
+  - env.example
+  - langgraph.yaml
+  - README.md
+  - pyproject.toml

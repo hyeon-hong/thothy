@@ -2,8 +2,10 @@
 
 import logging
 import datetime  # Import datetime for getting current time
+import os
+from typing import Optional
 
-from langchain.chat_models import init_chat_model
+from langchain_ollama import ChatOllama
 from langgraph.checkpoint.memory import MemorySaver
 from langgraph.graph import MessagesState, StateGraph, START, END
 from langgraph.store.base import BaseStore
@@ -12,6 +14,22 @@ from chat_graph.configuration import ChatConfigurable
 # Configure logging to hide INFO messages
 logging.basicConfig(level=logging.WARNING)
 logging.getLogger("langgraph").setLevel(logging.WARNING)
+
+# Initialize global LLM
+OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
+llm: Optional[ChatOllama] = None
+
+
+def get_llm() -> ChatOllama:
+    """Get or initialize the LLM."""
+    global llm
+    if llm is None:
+        llm = ChatOllama(
+            model="gemma3:12b",
+            base_url=OLLAMA_BASE_URL,
+            temperature=0.8
+        )
+    return llm
 
 
 async def chatbot(
@@ -30,12 +48,11 @@ async def chatbot(
     # Use system prompt from configuration with time variable
     system_msg = configurable.system_prompt.format(time=current_time)
 
-    # Initialize the LLM using the model from configuration
-    llm = init_chat_model(
-        configurable.model, model_provider="openai", temperature=0.8)
+    # Get the LLM instance
+    chat_model = get_llm()
 
     # Invoke the LLM
-    response = llm.invoke(
+    response = chat_model.invoke(
         [{"role": "system", "content": system_msg}] + state["messages"]
     )
 

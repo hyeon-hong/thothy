@@ -9,6 +9,6 @@
     "path": "../security/auth.py:auth",
     "disable_studio_auth": false
   },
-  "env": "../../.env",
+  "env": ".env",
   "python_version": "3.12"
 }
