@@ -1,4 +1,5 @@
 import json
+import logging
 
 from typing_extensions import Literal
 
@@ -56,10 +57,15 @@ def generate_query(state: SummaryState, config: RunnableConfig):
             format="json"
         )
 
+    logging.info(
+        f"configurable.ollama_base_url: {configurable.ollama_base_url}")
+    logging.info(f"configurable.local_llm: {configurable.local_llm}")
+    logging.info(f"llm_json_mode: {llm_json_mode}")
     result = llm_json_mode.invoke(
         [SystemMessage(content=formatted_prompt),
          HumanMessage(content="Generate a query for web search:")]
     )
+    logging.info(f"result: {result}")
 
     # Get the content
     content = result.content
