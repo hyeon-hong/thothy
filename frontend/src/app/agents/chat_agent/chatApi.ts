@@ -5,16 +5,15 @@ export class LangGraphClient {
   private static instance: Client | null = null;
   private static currentAccessToken: string | undefined;
 
-  private static getInstance(accessToken?: string): Client {
+  private static getInstance(): Client {
     const apiUrl = process.env["NEXT_PUBLIC_LANGGRAPH_API_URL"] || "/api";
     
     // Create new instance if none exists or if access token has changed
-    if (!this.instance || this.currentAccessToken !== accessToken) {
-      this.currentAccessToken = accessToken;
+    if (!this.instance) {
       this.instance = new Client({
         apiUrl,
         defaultHeaders: {
-          Authorization: `Bearer ${accessToken || process.env["NEXT_PUBLIC_LANGGRAPH_API_KEY"]}`,
+          Authorization: `Bearer ${this.currentAccessToken || process.env["NEXT_PUBLIC_LANGGRAPH_API_KEY"]}`,
         },
       });
     }
@@ -26,33 +25,31 @@ export class LangGraphClient {
     // Force creation of new instance with new token
     this.currentAccessToken = accessToken;
     this.instance = null;
-    return this.getInstance(accessToken);
+    return this.getInstance();
   }
 
-  static getClient(accessToken?: string): Client {
-    return this.getInstance(accessToken);
+  static getClient(): Client {
+    return this.getInstance();
   }
 }
 
-export const createThread = async (accessToken?: string) => {
-  const client = LangGraphClient.getClient(accessToken);
+export const createThread = async () => {
+  const client = LangGraphClient.getClient();
   return client.threads.create();
 };
 
 export const getThreadState = async (
-  threadId: string,
-  accessToken?: string
+  threadId: string
 ): Promise<ThreadState<{ messages: LangChainMessage[] }>> => {
-  const client = LangGraphClient.getClient(accessToken);
+  const client = LangGraphClient.getClient();
   return client.threads.getState(threadId);
 };
 
 export const sendMessage = async (params: {
   threadId: string;
   messages: LangChainMessage;
-  accessToken?: string;
 }) => {
-  const client = LangGraphClient.getClient(params.accessToken);
+  const client = LangGraphClient.getClient();
   return client.runs.stream(params.threadId, "chat_graph", {
     input: {
       messages: params.messages,

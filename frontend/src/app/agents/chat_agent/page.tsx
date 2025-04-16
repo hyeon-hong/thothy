@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useRef, useEffect } from "react";
 
 import { AssistantRuntimeProvider } from "@assistant-ui/react";
 import { useLangGraphRuntime } from "@assistant-ui/react-langgraph";
@@ -12,12 +12,10 @@ import { useAuth } from "@/contexts/AuthContext";
 export default function ChatAgentPage() {
   const { session } = useAuth();
   const threadIdRef = useRef<string | undefined>(undefined);
-  const accessTokenRef = useRef<string>(session?.access_token || "");
 
-  // Update accessTokenRef when session changes
+  // Update LangGraphClient token when session changes
   useEffect(() => {
     const newToken = session?.access_token || "";
-    accessTokenRef.current = newToken;
     LangGraphClient.updateAccessToken(newToken);
   }, [session]);
 
@@ -25,22 +23,21 @@ export default function ChatAgentPage() {
     threadId: threadIdRef.current,
     stream: async (messages) => {
       if (!threadIdRef.current) {
-        const { thread_id } = await createThread(accessTokenRef.current);
+        const { thread_id } = await createThread();
         threadIdRef.current = thread_id;
       }
       const threadId = threadIdRef.current;
       return sendMessage({
         threadId,
         messages: messages[0],
-        accessToken: accessTokenRef.current,
       });
     },
     onSwitchToNewThread: async () => {
-      const { thread_id } = await createThread(accessTokenRef.current);
+      const { thread_id } = await createThread();
       threadIdRef.current = thread_id;
     },
     onSwitchToThread: async (threadId) => {
-      const state = await getThreadState(threadId, accessTokenRef.current);
+      const state = await getThreadState(threadId);
       threadIdRef.current = threadId;
       return {
         messages: state.values.messages,
