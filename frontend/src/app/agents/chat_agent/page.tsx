@@ -10,22 +10,14 @@ import { createThread, getThreadState, sendMessage } from "./chatApi";
 import { useAuth } from "@/contexts/AuthContext";
 
 export default function ChatAgentPage() {
-  // Fetch access token from AuthContext
-  const { supabase } = useAuth();
+  const { session } = useAuth();
   const threadIdRef = useRef<string | undefined>(undefined);
-  const accessTokenRef = useRef<string>("");
+  const accessTokenRef = useRef<string>(session?.access_token || "");
 
+  // Update accessTokenRef when session changes
   useEffect(() => {
-    const fetchAccessToken = async () => {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-      if (session) {
-        accessTokenRef.current = session.access_token;
-      }
-    };
-    fetchAccessToken();
-  }, [supabase]);
+    accessTokenRef.current = session?.access_token || "";
+  }, [session]);
 
   const runtime = useLangGraphRuntime({
     threadId: threadIdRef.current,
