@@ -1,4 +1,4 @@
-"""Chat agent."""
+"""Chat Agent"""
 
 from chat_graph.graph import graph
 

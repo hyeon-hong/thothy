@@ -1,9 +1,10 @@
 "use client";
 
+import { useEffect, useRef } from "react";
+
 import { AssistantRuntimeProvider } from "@assistant-ui/react";
 import { useLangGraphRuntime } from "@assistant-ui/react-langgraph";
 import { Thread } from "@/components/assistant-ui/thread";
-import { useEffect, useRef } from "react";
 
 import { createThread, getThreadState, sendMessage } from "./chatApi";
 import { useAuth } from "@/contexts/AuthContext";
