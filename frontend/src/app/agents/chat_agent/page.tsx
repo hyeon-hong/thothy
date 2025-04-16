@@ -6,7 +6,7 @@ import { AssistantRuntimeProvider } from "@assistant-ui/react";
 import { useLangGraphRuntime } from "@assistant-ui/react-langgraph";
 import { Thread } from "@/components/assistant-ui/thread";
 
-import { createThread, getThreadState, sendMessage } from "./chatApi";
+import { createThread, getThreadState, sendMessage, LangGraphClient } from "./chatApi";
 import { useAuth } from "@/contexts/AuthContext";
 
 export default function ChatAgentPage() {
@@ -16,7 +16,9 @@ export default function ChatAgentPage() {
 
   // Update accessTokenRef when session changes
   useEffect(() => {
-    accessTokenRef.current = session?.access_token || "";
+    const newToken = session?.access_token || "";
+    accessTokenRef.current = newToken;
+    LangGraphClient.updateAccessToken(newToken);
   }, [session]);
 
   const runtime = useLangGraphRuntime({
