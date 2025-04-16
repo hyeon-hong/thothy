@@ -8,12 +8,12 @@ export class LangGraphClient {
   private static getInstance(): Client {
     const apiUrl = process.env["NEXT_PUBLIC_LANGGRAPH_API_URL"] || "/api";
     
-    // Create new instance if none exists or if access token has changed
+    // Create new instance if none exists
     if (!this.instance) {
       this.instance = new Client({
         apiUrl,
         defaultHeaders: {
-          Authorization: `Bearer ${this.currentAccessToken || process.env["NEXT_PUBLIC_LANGGRAPH_API_KEY"]}`,
+          Authorization: `Bearer ${this.currentAccessToken || ""}`,
         },
       });
     }
