@@ -19,6 +19,8 @@ export const generateFollowup = async (
   state: typeof OpenCanvasGraphAnnotation.State,
   config: LangGraphRunnableConfig
 ): Promise<OpenCanvasGraphReturnType> => {
+  console.log("call generateFollowup()");
+
   const smallModel = await getModelFromConfig(config, {
     maxTokens: 250,
     // We say tool calling is true here because that'll cause it to use a small model
@@ -65,6 +67,7 @@ export const generateFollowup = async (
   const response = await smallModel.invoke([
     { role: "user", content: formattedPrompt },
   ]);
+  console.log("response: ", response);
 
   return {
     messages: [response],

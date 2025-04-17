@@ -6,6 +6,8 @@ export const reflectNode = async (
   state: typeof OpenCanvasGraphAnnotation.State,
   config: LangGraphRunnableConfig
 ) => {
+  console.log("call reflectNode()");
+
   try {
     const langGraphClient = new Client({
       apiUrl: `http://localhost:${process.env.PORT}`,

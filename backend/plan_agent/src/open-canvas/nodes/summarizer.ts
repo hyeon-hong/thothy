@@ -6,6 +6,8 @@ export async function summarizer(
   state: typeof OpenCanvasGraphAnnotation.State,
   config: LangGraphRunnableConfig
 ) {
+  console.log("call summarizer()");
+
   if (!config.configurable?.thread_id) {
     throw new Error("Missing thread_id in summarizer config.");
   }

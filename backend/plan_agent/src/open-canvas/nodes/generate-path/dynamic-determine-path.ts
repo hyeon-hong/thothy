@@ -16,6 +16,7 @@ import { getArtifactContent } from "@opencanvas/shared/utils/artifacts";
 import z from "zod";
 import { BaseMessage } from "@langchain/core/messages";
 import { traceable } from "langsmith/traceable";
+import { tool } from "@langchain/core/tools";
 
 interface DynamicDeterminePathParams {
   state: typeof OpenCanvasGraphAnnotation.State;
@@ -31,6 +32,8 @@ async function dynamicDeterminePathFunc({
   newMessages,
   config,
 }: DynamicDeterminePathParams) {
+  console.log("call dynamicDeterminePathFunc()");
+
   const currentArtifactContent = state.artifact
     ? getArtifactContent(state.artifact)
     : undefined;
@@ -67,6 +70,7 @@ async function dynamicDeterminePathFunc({
     temperature: 0,
     isToolCalling: true,
   });
+  console.log("model: ", model);
 
   const schema = z.object({
     route: z
@@ -74,20 +78,17 @@ async function dynamicDeterminePathFunc({
       .describe("The route to take based on the user's query."),
   });
 
-  const modelWithTool = model.bindTools(
-    [
-      {
-        name: "route_query",
-        description: "The route to take based on the user's query.",
-        schema,
-      },
-    ],
-    {
-      tool_choice: "route_query",
-    }
-  );
+  const routeQueryTool = tool((_) => "", {
+    name: "route_query",
+    description: "The route to take based on the user's query.",
+    schema,
+  });
+  const modelWithTool = model.bindTools([routeQueryTool]);
 
   const contextDocumentMessages = await createContextDocumentMessages(config);
+  console.log("contextDocumentMessages: ", contextDocumentMessages);
+  console.log("newMessages: ", newMessages);
+  console.log("formattedPrompt: ", formattedPrompt);
   const result = await modelWithTool.invoke([
     ...contextDocumentMessages,
     ...(newMessages.length ? newMessages : []),
@@ -96,6 +97,7 @@ async function dynamicDeterminePathFunc({
       content: formattedPrompt,
     },
   ]);
+  console.log("result: ", result);
 
   return result.tool_calls?.[0]?.args as z.infer<typeof schema> | undefined;
 }

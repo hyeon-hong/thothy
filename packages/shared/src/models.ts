@@ -131,6 +131,66 @@ const OPENAI_MODELS: ModelConfigurationParams[] = [
  */
 const OLLAMA_MODELS = [
   {
+    name: "ollama-gemma3:12b",
+    label: "Gemma 3.1 12B (local)",
+    config: {
+      provider: "ollama",
+      temperatureRange: {
+        min: 0,
+        max: 1,
+        default: 0.5,
+        current: 0.5,
+      },
+      maxTokens: {
+        min: 1,
+        max: 16384,
+        default: 16384,
+        current: 16384,
+      },
+    },
+    isNew: true,
+  },
+  {
+    name: "ollama-qwen2.5-coder:32b",
+    label: "Qwen 2.5 Coder 32B (local)",
+    config: {
+      provider: "ollama",
+      temperatureRange: {
+        min: 0,
+        max: 1,
+        default: 0.5,
+        current: 0.5,
+      },
+      maxTokens: {
+        min: 1,
+        max: 16384,
+        default: 16384,
+        current: 16384,
+      },
+    },
+    isNew: true,
+  },
+  {
+    name: "ollama-llama3.2",
+    label: "Llama 3.2 3B (local)",
+    config: {
+      provider: "ollama",
+      temperatureRange: {
+        min: 0,
+        max: 1,
+        default: 0.5,
+        current: 0.5,
+      },
+      maxTokens: {
+        min: 1,
+        max: 16384,
+        default: 16384,
+        current: 16384,
+      },
+    },
+    isNew: true,
+  },
+  {
     name: "ollama-llama3.3",
     label: "Llama 3.3 70B (local)",
     config: {

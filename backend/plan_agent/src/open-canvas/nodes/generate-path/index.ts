@@ -27,12 +27,16 @@ export async function generatePath(
   state: typeof OpenCanvasGraphAnnotation.State,
   config: LangGraphRunnableConfig
 ): Promise<OpenCanvasGraphReturnType> {
+  console.log("call generatePath()");
+
   const { _messages } = state;
   const newMessages: BaseMessage[] = [];
   const docMessage = await convertContextDocumentToHumanMessage(
     _messages,
     config
   );
+  console.log("docMessage: ", docMessage);
+
   const existingDocMessage = newMessages.find(
     (m) =>
       Array.isArray(m.content) &&
@@ -40,6 +44,7 @@ export async function generatePath(
         (c) => c.type === "document" || c.type === "application/pdf"
       )
   );
+  console.log("existingDocMessage: ", existingDocMessage);
 
   if (docMessage) {
     newMessages.push(docMessage);
@@ -52,8 +57,10 @@ export async function generatePath(
       newMessages.push(...fixedMessages);
     }
   }
+  console.log("newMessages: ", newMessages);
 
   if (state.highlightedCode) {
+    console.log("highlightedCode");
     return {
       next: "updateArtifact",
       ...(newMessages.length
@@ -62,6 +69,7 @@ export async function generatePath(
     };
   }
   if (state.highlightedText) {
+    console.log("highlightedText");
     return {
       next: "updateHighlightedText",
       ...(newMessages.length
@@ -76,6 +84,7 @@ export async function generatePath(
     state.regenerateWithEmojis ||
     state.readingLevel
   ) {
+    console.log("rewriteArtifactTheme");
     return {
       next: "rewriteArtifactTheme",
       ...(newMessages.length
@@ -90,6 +99,7 @@ export async function generatePath(
     state.portLanguage ||
     state.fixBugs
   ) {
+    console.log("rewriteCodeArtifactTheme");
     return {
       next: "rewriteCodeArtifactTheme",
       ...(newMessages.length
@@ -99,6 +109,7 @@ export async function generatePath(
   }
 
   if (state.customQuickActionId) {
+    console.log("customAction");
     return {
       next: "customAction",
       ...(newMessages.length
@@ -108,6 +119,7 @@ export async function generatePath(
   }
 
   if (state.webSearchEnabled) {
+    console.log("webSearch");
     return {
       next: "webSearch",
       ...(newMessages.length
@@ -126,17 +138,21 @@ export async function generatePath(
       messageUrls
     );
   }
+  console.log("updatedMessageWithContents: ", updatedMessageWithContents);
 
   // Update the internal message list with the new message, if one was generated
   const newInternalMessageList = updatedMessageWithContents
     ? state._messages.map((m) => {
         if (m.id === updatedMessageWithContents.id) {
+          console.log("updatedMessageWithContents");
           return updatedMessageWithContents;
         } else {
+          console.log("m: ", m);
           return m;
         }
       })
     : state._messages;
+  console.log("newInternalMessageList: ", newInternalMessageList);
 
   const routingResult = await dynamicDeterminePath({
     state: {
@@ -146,7 +162,11 @@ export async function generatePath(
     newMessages,
     config,
   });
+  console.log("routingResult: ", routingResult);
+
   const route = routingResult?.route;
+  console.log("route: ", route);
+
   if (!route) {
     throw new Error("Route not found");
   }
@@ -161,6 +181,7 @@ export async function generatePath(
         _messages: newInternalMessageList,
       };
 
+  console.log("returning from generatePath()");
   return {
     next: route,
     ...messages,
