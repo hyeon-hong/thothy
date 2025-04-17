@@ -456,6 +456,7 @@ export const TEMPERATURE_EXCLUDED_MODELS = ["o1-mini", "o3-mini", "o1"];
 
 // Models which do NOT stream back tool calls.
 export const NON_STREAMING_TOOL_CALLING_MODELS = [
+  "ollama-qwen2.5-coder:32b",
   "gemini-2.0-flash-exp",
   "gemini-1.5-flash",
 ];

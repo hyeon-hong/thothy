@@ -25,21 +25,20 @@ export const generateArtifact = async (
   state: typeof OpenCanvasGraphAnnotation.State,
   config: LangGraphRunnableConfig
 ): Promise<OpenCanvasGraphReturnType> => {
-  console.log("call generateArtifact()");
-
   const { modelName } = getModelConfig(config, {
     isToolCalling: true,
   });
-  const smallModel = await getModelFromConfig(config, {
-    temperature: 0,
-    isToolCalling: true,
-  });
-  // const smallModel = new ChatOllama({
-  //   model: "qwen2.5-coder:32b",
-  //   baseUrl: "http://192.168.75.101:11434",
+  // TODO: Handle this in the config
+  // const smallModel = await getModelFromConfig(config, {
   //   temperature: 0.5,
+  //   isToolCalling: true,
   // });
-  console.log("smallModel: ", smallModel);
+  const smallModel = new ChatOllama({
+    model: "qwen2.5-coder:32b",
+    baseUrl: "http://192.168.75.101:11434",
+    temperature: 0.5,
+    format: "json",
+  });
 
   const generateArtifactTool = tool((_) => "", {
     name: "generate_artifact",
@@ -60,9 +59,6 @@ export const generateArtifact = async (
 
   const contextDocumentMessages = await createContextDocumentMessages(config);
   const isO1MiniModel = isUsingO1MiniModel(config);
-  console.log("fullSystemPrompt: ", fullSystemPrompt);
-  console.log("contextDocumentMessages: ", contextDocumentMessages);
-  console.log("state._messages: ", state._messages);
 
   const response = await modelWithArtifactTool.invoke(
     [
@@ -72,23 +68,17 @@ export const generateArtifact = async (
     ],
     { runName: "generate_artifact" }
   );
-  console.log("response: ", response);
-
-  // const content = (response as unknown as { content: string }).content;
-  // console.log("content: ", content);
 
   // Extract the arguments object portion using regex
   const args = response.tool_calls?.[0]?.args as
     | z.infer<typeof ARTIFACT_TOOL_SCHEMA>
     | undefined;
-  console.log("Extracted args:", args);
 
   if (!args) {
     throw new Error("No args found in response");
   }
 
   const newArtifactContent = createArtifactContent(args);
-  console.log("newArtifactContent: ", newArtifactContent);
 
   const newArtifact: ArtifactV3 = {
     currentIndex: 1,

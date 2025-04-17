@@ -349,8 +349,6 @@ export function GraphProvider({ children }: { children: ReactNode }) {
 
     try {
       const workerService = new StreamWorkerService();
-      console.log("threadData.modelName: ", threadData.modelName);
-      console.log("threadData.modelConfigs: ", threadData.modelConfigs);
       const stream = workerService.streamData({
         threadId: newThread.thread_id,
         assistantId: assistantsData.selectedAssistant.assistant_id,
@@ -401,7 +399,6 @@ export function GraphProvider({ children }: { children: ReactNode }) {
         if (chunk.event === "error") {
           const errorMessage =
             chunk?.data?.message || "Unknown error. Please try again.";
-          console.log("Error generating content: ", errorMessage);
           toast({
             title: "Error generating content",
             description: errorMessage,
@@ -473,29 +470,20 @@ export function GraphProvider({ children }: { children: ReactNode }) {
             }
 
             if (langgraphNode === "generateArtifact") {
-              console.log("generateArtifact");
-              console.log("nodeChunk: ", nodeChunk);
               const message = extractStreamDataChunk(nodeChunk);
-              console.log("message: ", message);
 
               // Accumulate content
               if (
                 message?.tool_call_chunks?.length > 0 &&
                 typeof message?.tool_call_chunks?.[0]?.args === "string"
               ) {
-                console.log("tool_call_chunks: ", message.tool_call_chunks);
                 generateArtifactToolCallStr += message.tool_call_chunks[0].args;
               } else if (
                 message?.content &&
                 typeof message?.content === "string"
               ) {
-                console.log("content: ", message.content);
                 generateArtifactToolCallStr += message.content;
               }
-              console.log(
-                "generateArtifactToolCallStr: ",
-                generateArtifactToolCallStr
-              );
 
               // Process accumulated content with rate limiting
               const result = handleGenerateArtifactToolCallChunk(
@@ -1226,16 +1214,23 @@ export function GraphProvider({ children }: { children: ReactNode }) {
               )
             ) {
               const message = nodeOutput;
-              generateArtifactToolCallStr +=
-                message?.tool_call_chunks?.[0]?.args || message?.content || "";
-              const result = handleGenerateArtifactToolCallChunk(
-                generateArtifactToolCallStr
-              );
-              if (result && result === "continue") {
-                continue;
-              } else if (result && typeof result === "object") {
-                setFirstTokenReceived(true);
-                setArtifact(result);
+              if (message.artifact && typeof message.artifact === "object") {
+                // This is the case of ollama streaming back the artifact
+                setArtifact(message.artifact);
+              } else {
+                generateArtifactToolCallStr +=
+                  message?.tool_call_chunks?.[0]?.args ||
+                  message?.content ||
+                  "";
+                const result = handleGenerateArtifactToolCallChunk(
+                  generateArtifactToolCallStr
+                );
+                if (result && result === "continue") {
+                  continue;
+                } else if (result && typeof result === "object") {
+                  setFirstTokenReceived(true);
+                  setArtifact(result);
+                }
               }
             }
           }
@@ -1252,7 +1247,6 @@ export function GraphProvider({ children }: { children: ReactNode }) {
             errorMessage = e.message;
           }
 
-          console.log("Error generating content: ", errorMessage);
           toast({
             title: "Error generating content",
             description: errorMessage,
