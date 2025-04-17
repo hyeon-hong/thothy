@@ -18,6 +18,9 @@ import { graph as webSearchGraph } from "../web-search/index.js";
 import { createAIMessageFromWebResults } from "../utils.js";
 
 const routeNode = (state: typeof OpenCanvasGraphAnnotation.State) => {
+  console.log("call routeNode()");
+  console.log("state.next: ", state.next);
+
   if (!state.next) {
     throw new Error("'next' state field not set.");
   }
@@ -64,6 +67,8 @@ function simpleTokenCalculator(
 const conditionallyGenerateTitle = (
   state: typeof OpenCanvasGraphAnnotation.State
 ): "generateTitle" | "summarizer" | typeof END => {
+  console.log("call conditionallyGenerateTitle()");
+
   if (state.messages.length > 2) {
     // Do not generate if there are more than two messages (meaning it's not the first human-AI conversation)
     return simpleTokenCalculator(state);

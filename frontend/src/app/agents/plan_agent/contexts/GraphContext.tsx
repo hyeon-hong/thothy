@@ -211,14 +211,12 @@ export function GraphProvider({ children }: { children: ReactNode }) {
 
   // Attempt to load the thread if an ID is present in query params.
   useEffect(() => {
-    console.log("Get thread ID defined!!");
     if (
       typeof window === "undefined" ||
       !userData.user ||
       threadData.createThreadLoading ||
       !threadData.threadId
     ) {
-      console.log("Returning early");
       return;
     }
 
@@ -1214,16 +1212,23 @@ export function GraphProvider({ children }: { children: ReactNode }) {
               )
             ) {
               const message = nodeOutput;
-              generateArtifactToolCallStr +=
-                message?.tool_call_chunks?.[0]?.args || message?.content || "";
-              const result = handleGenerateArtifactToolCallChunk(
-                generateArtifactToolCallStr
-              );
-              if (result && result === "continue") {
-                continue;
-              } else if (result && typeof result === "object") {
-                setFirstTokenReceived(true);
-                setArtifact(result);
+              if (message.artifact && typeof message.artifact === "object") {
+                // This is the case of ollama streaming back the artifact
+                setArtifact(message.artifact);
+              } else {
+                generateArtifactToolCallStr +=
+                  message?.tool_call_chunks?.[0]?.args ||
+                  message?.content ||
+                  "";
+                const result = handleGenerateArtifactToolCallChunk(
+                  generateArtifactToolCallStr
+                );
+                if (result && result === "continue") {
+                  continue;
+                } else if (result && typeof result === "object") {
+                  setFirstTokenReceived(true);
+                  setArtifact(result);
+                }
               }
             }
           }

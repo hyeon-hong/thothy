@@ -8,6 +8,7 @@ import {
 } from "../../../utils.js";
 import { ArtifactV3 } from "@opencanvas/shared/types";
 import { LangGraphRunnableConfig } from "@langchain/langgraph";
+import { tool } from "@langchain/core/tools";
 import {
   OpenCanvasGraphAnnotation,
   OpenCanvasGraphReturnType,
@@ -15,6 +16,7 @@ import {
 import { ARTIFACT_TOOL_SCHEMA } from "./schemas.js";
 import { createArtifactContent, formatNewArtifactPrompt } from "./utils.js";
 import { z } from "zod";
+import { ChatOllama } from "@langchain/ollama";
 
 /**
  * Generate a new artifact based on the user's query.
@@ -26,24 +28,24 @@ export const generateArtifact = async (
   const { modelName } = getModelConfig(config, {
     isToolCalling: true,
   });
-  const smallModel = await getModelFromConfig(config, {
+  // TODO: Handle this in the config
+  // const smallModel = await getModelFromConfig(config, {
+  //   temperature: 0.5,
+  //   isToolCalling: true,
+  // });
+  const smallModel = new ChatOllama({
+    model: "qwen2.5-coder:32b",
+    baseUrl: "http://192.168.75.101:11434",
     temperature: 0.5,
-    isToolCalling: true,
+    format: "json",
   });
 
-  const modelWithArtifactTool = smallModel.bindTools(
-    [
-      {
-        name: "generate_artifact",
-        description: ARTIFACT_TOOL_SCHEMA.description,
-        schema: ARTIFACT_TOOL_SCHEMA,
-      },
-    ],
-    {
-      tool_choice: "generate_artifact",
-    }
-  );
-
+  const generateArtifactTool = tool((_) => "", {
+    name: "generate_artifact",
+    description: ARTIFACT_TOOL_SCHEMA.description,
+    schema: ARTIFACT_TOOL_SCHEMA,
+  });
+  const modelWithArtifactTool = smallModel.bindTools([generateArtifactTool]);
   const memoriesAsString = await getFormattedReflections(config);
   const formattedNewArtifactPrompt = formatNewArtifactPrompt(
     memoriesAsString,
@@ -57,6 +59,7 @@ export const generateArtifact = async (
 
   const contextDocumentMessages = await createContextDocumentMessages(config);
   const isO1MiniModel = isUsingO1MiniModel(config);
+
   const response = await modelWithArtifactTool.invoke(
     [
       { role: isO1MiniModel ? "user" : "system", content: fullSystemPrompt },
@@ -65,14 +68,18 @@ export const generateArtifact = async (
     ],
     { runName: "generate_artifact" }
   );
-  const args = response.tool_calls?.[0].args as
+
+  // Extract the arguments object portion using regex
+  const args = response.tool_calls?.[0]?.args as
     | z.infer<typeof ARTIFACT_TOOL_SCHEMA>
     | undefined;
+
   if (!args) {
     throw new Error("No args found in response");
   }
 
   const newArtifactContent = createArtifactContent(args);
+
   const newArtifact: ArtifactV3 = {
     currentIndex: 1,
     contents: [newArtifactContent],
