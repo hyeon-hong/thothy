@@ -27,6 +27,7 @@ import {
   LANGCHAIN_USER_ONLY_MODELS,
 } from "@opencanvas/shared/models";
 import { createClient, Session, User } from "@supabase/supabase-js";
+import { ChatOpenAI } from "@langchain/openai";
 
 export const formatReflections = (
   reflections: Reflections,
@@ -213,7 +214,8 @@ export const getModelConfig = (
   if (
     customModelName.includes("gpt-") ||
     customModelName.includes("o1") ||
-    customModelName.includes("o3")
+    customModelName.includes("o3") ||
+    customModelName.includes("Qwen/")
   ) {
     let actualModelName = providerConfig.modelName;
     if (extra?.isToolCalling && actualModelName.includes("o1")) {
@@ -338,24 +340,30 @@ export function isUsingO1MiniModel(config: LangGraphRunnableConfig) {
   return modelName.includes("o1-mini");
 }
 
-export async function getModelFromConfig(
+export async function getModelFromConfigBackUp(
   config: LangGraphRunnableConfig,
   extra?: {
     temperature?: number;
     maxTokens?: number;
     isToolCalling?: boolean;
+    baseUrl?: string;
+    modelName?: string;
   }
 ): Promise<ReturnType<typeof initChatModel>> {
   const {
-    modelName,
+    modelName: configModelName,
     modelProvider,
     azureConfig,
     apiKey,
-    baseUrl,
+    baseUrl: configBaseUrl,
     modelConfig,
   } = getModelConfig(config, {
     isToolCalling: extra?.isToolCalling,
   });
+
+  const finalModelName = extra?.modelName || configModelName;
+  const finalBaseUrl = extra?.baseUrl || configBaseUrl;
+
   const { temperature = 0.5, maxTokens } = {
     temperature: modelConfig?.temperatureRange.current,
     maxTokens: modelConfig?.maxTokens.current,
@@ -363,7 +371,7 @@ export async function getModelFromConfig(
   };
 
   const isLangChainUserModel = LANGCHAIN_USER_ONLY_MODELS.some(
-    (m) => m === modelName
+    (m) => m === finalModelName
   );
   if (isLangChainUserModel) {
     const user = await getUserFromConfig(config);
@@ -380,20 +388,18 @@ export async function getModelFromConfig(
   }
 
   const includeStandardParams = !TEMPERATURE_EXCLUDED_MODELS.some(
-    (m) => m === modelName
+    (m) => m === finalModelName
   );
 
-  return await initChatModel(modelName, {
+  return await initChatModel(finalModelName, {
     modelProvider,
     // Certain models (e.g., OpenAI o1) do not support passing the temperature param.
     ...(includeStandardParams
       ? { maxTokens, temperature }
       : {
           max_completion_tokens: maxTokens,
-          // streaming: false,
-          // disableStreaming: true,
         }),
-    ...(baseUrl ? { baseUrl } : {}),
+    ...(finalBaseUrl ? { baseUrl: finalBaseUrl } : {}),
     ...(apiKey ? { apiKey } : {}),
     ...(azureConfig != null
       ? {
@@ -405,6 +411,28 @@ export async function getModelFromConfig(
           azureOpenAIBasePath: azureConfig.azureOpenAIBasePath,
         }
       : {}),
+  });
+}
+
+export async function getModelFromConfig(
+  config: LangGraphRunnableConfig,
+  extra?: {
+    temperature?: number;
+    maxTokens?: number;
+    isToolCalling?: boolean;
+    baseUrl?: string;
+    modelName?: string;
+  }
+): Promise<ChatOpenAI> {
+  return new ChatOpenAI({
+    // modelName: extra?.modelName || "Qwen/Qwen2.5-1.5B-Instruct",
+    modelName: extra?.modelName || "Qwen/Qwen2.5-Coder-7B-Instruct",
+    temperature: extra?.temperature || 0,
+    openAIApiKey: "EMPTY",
+    maxTokens: extra?.maxTokens || 1024,
+    configuration: {
+      baseURL: extra?.baseUrl || process.env.VLLM_API_URL,
+    },
   });
 }
 

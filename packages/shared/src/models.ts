@@ -25,6 +25,26 @@ const AZURE_MODELS: ModelConfigurationParams[] = [
 
 const OPENAI_MODELS: ModelConfigurationParams[] = [
   {
+    name: "Qwen/Qwen2.5-1.5B-Instruct",
+    label: "Qwen 2.5 1.5B Instruct",
+    config: {
+      provider: "openai",
+      temperatureRange: {
+        min: 0,
+        max: 1,
+        default: 0.5,
+        current: 0.5,
+      },
+      maxTokens: {
+        min: 1,
+        max: 16384,
+        default: 4096,
+        current: 4096,
+      },
+    },
+    isNew: false,
+  },
+  {
     name: "gpt-4o",
     label: "GPT-4o",
     config: {

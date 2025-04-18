@@ -70,7 +70,6 @@ async function dynamicDeterminePathFunc({
     temperature: 0,
     isToolCalling: true,
   });
-  console.log("model: ", model);
 
   const schema = z.object({
     route: z
@@ -83,7 +82,10 @@ async function dynamicDeterminePathFunc({
     description: "The route to take based on the user's query.",
     schema,
   });
-  const modelWithTool = model.bindTools([routeQueryTool]);
+  const modelWithTool = model.bindTools([routeQueryTool], {
+    strict: true,
+    tool_choice: routeQueryTool.name,
+  });
 
   const contextDocumentMessages = await createContextDocumentMessages(config);
   console.log("contextDocumentMessages: ", contextDocumentMessages);
