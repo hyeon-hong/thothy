@@ -431,7 +431,7 @@ export async function getModelFromConfig(
     openAIApiKey: "EMPTY",
     maxTokens: extra?.maxTokens || 1024,
     configuration: {
-      baseURL: extra?.baseUrl || "http://192.168.75.101:8000/v1",
+      baseURL: extra?.baseUrl || process.env.VLLM_API_URL,
     },
   });
 }
