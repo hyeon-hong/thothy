@@ -16,7 +16,7 @@ import {
 import { ARTIFACT_TOOL_SCHEMA } from "./schemas.js";
 import { createArtifactContent, formatNewArtifactPrompt } from "./utils.js";
 import { z } from "zod";
-import { ChatOllama } from "@langchain/ollama";
+import { ChatOpenAI } from "@langchain/openai";
 
 /**
  * Generate a new artifact based on the user's query.
@@ -29,15 +29,20 @@ export const generateArtifact = async (
     isToolCalling: true,
   });
   // TODO: Handle this in the config
-  // const smallModel = await getModelFromConfig(config, {
+  // console.log("config: ", config);
+  // const smallModel = new ChatOpenAI({
+  //   modelName: "gpt-3.5-turbo",
   //   temperature: 0.5,
-  //   isToolCalling: true,
+  //   openAIApiKey: process.env.OPENAI_API_KEY,
+  //   baseURL: "http://192.168.75.101:8000/v1",
   // });
-  const smallModel = new ChatOllama({
-    model: "qwen2.5-coder:32b",
-    baseUrl: "http://192.168.75.101:11434",
+  const smallModel = new ChatOpenAI({
+    modelName: "Qwen/Qwen2.5-1.5B-Instruct",
     temperature: 0.5,
-    format: "json",
+    openAIApiKey: "EMPTY",
+    configuration: {
+      baseURL: "http://192.168.75.101:8000/v1",
+    },
   });
 
   const generateArtifactTool = tool((_) => "", {
@@ -45,7 +50,10 @@ export const generateArtifact = async (
     description: ARTIFACT_TOOL_SCHEMA.description,
     schema: ARTIFACT_TOOL_SCHEMA,
   });
-  const modelWithArtifactTool = smallModel.bindTools([generateArtifactTool]);
+  const modelWithArtifactTool = smallModel.bindTools([generateArtifactTool], {
+    strict: true,
+    tool_choice: generateArtifactTool.name,
+  });
   const memoriesAsString = await getFormattedReflections(config);
   const formattedNewArtifactPrompt = formatNewArtifactPrompt(
     memoriesAsString,

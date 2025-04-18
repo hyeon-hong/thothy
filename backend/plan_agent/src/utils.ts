@@ -213,7 +213,8 @@ export const getModelConfig = (
   if (
     customModelName.includes("gpt-") ||
     customModelName.includes("o1") ||
-    customModelName.includes("o3")
+    customModelName.includes("o3") ||
+    customModelName.includes("Qwen/")
   ) {
     let actualModelName = providerConfig.modelName;
     if (extra?.isToolCalling && actualModelName.includes("o1")) {
@@ -344,18 +345,24 @@ export async function getModelFromConfig(
     temperature?: number;
     maxTokens?: number;
     isToolCalling?: boolean;
+    baseUrl?: string;
+    modelName?: string;
   }
 ): Promise<ReturnType<typeof initChatModel>> {
   const {
-    modelName,
+    modelName: configModelName,
     modelProvider,
     azureConfig,
     apiKey,
-    baseUrl,
+    baseUrl: configBaseUrl,
     modelConfig,
   } = getModelConfig(config, {
     isToolCalling: extra?.isToolCalling,
   });
+
+  const finalModelName = extra?.modelName || configModelName;
+  const finalBaseUrl = extra?.baseUrl || configBaseUrl;
+
   const { temperature = 0.5, maxTokens } = {
     temperature: modelConfig?.temperatureRange.current,
     maxTokens: modelConfig?.maxTokens.current,
@@ -363,7 +370,7 @@ export async function getModelFromConfig(
   };
 
   const isLangChainUserModel = LANGCHAIN_USER_ONLY_MODELS.some(
-    (m) => m === modelName
+    (m) => m === finalModelName
   );
   if (isLangChainUserModel) {
     const user = await getUserFromConfig(config);
@@ -380,20 +387,20 @@ export async function getModelFromConfig(
   }
 
   const includeStandardParams = !TEMPERATURE_EXCLUDED_MODELS.some(
-    (m) => m === modelName
+    (m) => m === finalModelName
   );
 
-  return await initChatModel(modelName, {
+  console.log("finalModelName: ", finalModelName);
+  console.log("finalBaseUrl: ", finalBaseUrl);
+  return await initChatModel(finalModelName, {
     modelProvider,
     // Certain models (e.g., OpenAI o1) do not support passing the temperature param.
     ...(includeStandardParams
       ? { maxTokens, temperature }
       : {
           max_completion_tokens: maxTokens,
-          // streaming: false,
-          // disableStreaming: true,
         }),
-    ...(baseUrl ? { baseUrl } : {}),
+    ...(finalBaseUrl ? { baseUrl: finalBaseUrl } : {}),
     ...(apiKey ? { apiKey } : {}),
     ...(azureConfig != null
       ? {

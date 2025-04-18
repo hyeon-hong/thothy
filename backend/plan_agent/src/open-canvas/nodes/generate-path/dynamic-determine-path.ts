@@ -17,6 +17,7 @@ import z from "zod";
 import { BaseMessage } from "@langchain/core/messages";
 import { traceable } from "langsmith/traceable";
 import { tool } from "@langchain/core/tools";
+import { ChatOpenAI } from "@langchain/openai";
 
 interface DynamicDeterminePathParams {
   state: typeof OpenCanvasGraphAnnotation.State;
@@ -66,11 +67,20 @@ async function dynamicDeterminePathFunc({
     ? "rewriteArtifact"
     : "generateArtifact";
 
-  const model = await getModelFromConfig(config, {
+  // const model = await getModelFromConfig(config, {
+  //   temperature: 0,
+  //   isToolCalling: true,
+  //   modelName: "Qwen/Qwen2.5-1.5B-Instruct",
+  //   baseUrl: "http://192.168.75.101:8000/v1",
+  // });
+  const model = new ChatOpenAI({
+    modelName: "Qwen/Qwen2.5-1.5B-Instruct",
     temperature: 0,
-    isToolCalling: true,
+    openAIApiKey: "EMPTY",
+    configuration: {
+      baseURL: "http://192.168.75.101:8000/v1",
+    },
   });
-  console.log("model: ", model);
 
   const schema = z.object({
     route: z
@@ -83,7 +93,10 @@ async function dynamicDeterminePathFunc({
     description: "The route to take based on the user's query.",
     schema,
   });
-  const modelWithTool = model.bindTools([routeQueryTool]);
+  const modelWithTool = model.bindTools([routeQueryTool], {
+    strict: true,
+    tool_choice: routeQueryTool.name,
+  });
 
   const contextDocumentMessages = await createContextDocumentMessages(config);
   console.log("contextDocumentMessages: ", contextDocumentMessages);
