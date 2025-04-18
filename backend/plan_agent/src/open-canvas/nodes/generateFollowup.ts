@@ -11,7 +11,6 @@ import {
   OpenCanvasGraphAnnotation,
   OpenCanvasGraphReturnType,
 } from "../state.js";
-import { ChatOpenAI } from "@langchain/openai";
 
 /**
  * Generate a followup message after generating or updating an artifact.
@@ -22,19 +21,10 @@ export const generateFollowup = async (
 ): Promise<OpenCanvasGraphReturnType> => {
   console.log("call generateFollowup()");
 
-  // const smallModel = await getModelFromConfig(config, {
-  //   maxTokens: 250,
-  //   // We say tool calling is true here because that'll cause it to use a small model
-  //   isToolCalling: true,
-  // });
-  const smallModel = new ChatOpenAI({
-    modelName: "Qwen/Qwen2.5-1.5B-Instruct",
+  const smallModel = await getModelFromConfig(config, {
     maxTokens: 250,
-    temperature: 0.5,
-    openAIApiKey: "EMPTY",
-    configuration: {
-      baseURL: "http://192.168.75.101:8000/v1",
-    },
+    // We say tool calling is true here because that'll cause it to use a small model
+    isToolCalling: true,
   });
 
   const store = ensureStoreInConfig(config);

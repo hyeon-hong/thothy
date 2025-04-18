@@ -16,7 +16,6 @@ import {
 import { ARTIFACT_TOOL_SCHEMA } from "./schemas.js";
 import { createArtifactContent, formatNewArtifactPrompt } from "./utils.js";
 import { z } from "zod";
-import { ChatOpenAI } from "@langchain/openai";
 
 /**
  * Generate a new artifact based on the user's query.
@@ -28,21 +27,9 @@ export const generateArtifact = async (
   const { modelName } = getModelConfig(config, {
     isToolCalling: true,
   });
-  // TODO: Handle this in the config
-  // console.log("config: ", config);
-  // const smallModel = new ChatOpenAI({
-  //   modelName: "gpt-3.5-turbo",
-  //   temperature: 0.5,
-  //   openAIApiKey: process.env.OPENAI_API_KEY,
-  //   baseURL: "http://192.168.75.101:8000/v1",
-  // });
-  const smallModel = new ChatOpenAI({
-    modelName: "Qwen/Qwen2.5-1.5B-Instruct",
+  const smallModel = await getModelFromConfig(config, {
     temperature: 0.5,
-    openAIApiKey: "EMPTY",
-    configuration: {
-      baseURL: "http://192.168.75.101:8000/v1",
-    },
+    isToolCalling: true,
   });
 
   const generateArtifactTool = tool((_) => "", {

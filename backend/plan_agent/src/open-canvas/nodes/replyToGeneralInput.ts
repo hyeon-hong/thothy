@@ -14,7 +14,6 @@ import {
   OpenCanvasGraphAnnotation,
   OpenCanvasGraphReturnType,
 } from "../state.js";
-import { ChatOpenAI } from "@langchain/openai";
 
 /**
  * Generate responses to questions. Does not generate artifacts.
@@ -25,14 +24,7 @@ export const replyToGeneralInput = async (
 ): Promise<OpenCanvasGraphReturnType> => {
   console.log("call replyToGeneralInput()");
 
-  // const smallModel = await getModelFromConfig(config);
-  const smallModel = new ChatOpenAI({
-    modelName: "Qwen/Qwen2.5-1.5B-Instruct",
-    openAIApiKey: "EMPTY",
-    configuration: {
-      baseURL: "http://192.168.75.101:8000/v1",
-    },
-  });
+  const smallModel = await getModelFromConfig(config);
   const prompt = `You are an AI assistant tasked with responding to the users question.
   
 The user has generated artifacts in the past. Use the following artifacts as context when responding to the users question.

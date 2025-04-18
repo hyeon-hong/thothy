@@ -27,6 +27,7 @@ import {
   LANGCHAIN_USER_ONLY_MODELS,
 } from "@opencanvas/shared/models";
 import { createClient, Session, User } from "@supabase/supabase-js";
+import { ChatOpenAI } from "@langchain/openai";
 
 export const formatReflections = (
   reflections: Reflections,
@@ -339,7 +340,7 @@ export function isUsingO1MiniModel(config: LangGraphRunnableConfig) {
   return modelName.includes("o1-mini");
 }
 
-export async function getModelFromConfig(
+export async function getModelFromConfigBackUp(
   config: LangGraphRunnableConfig,
   extra?: {
     temperature?: number;
@@ -390,8 +391,6 @@ export async function getModelFromConfig(
     (m) => m === finalModelName
   );
 
-  console.log("finalModelName: ", finalModelName);
-  console.log("finalBaseUrl: ", finalBaseUrl);
   return await initChatModel(finalModelName, {
     modelProvider,
     // Certain models (e.g., OpenAI o1) do not support passing the temperature param.
@@ -412,6 +411,28 @@ export async function getModelFromConfig(
           azureOpenAIBasePath: azureConfig.azureOpenAIBasePath,
         }
       : {}),
+  });
+}
+
+export async function getModelFromConfig(
+  config: LangGraphRunnableConfig,
+  extra?: {
+    temperature?: number;
+    maxTokens?: number;
+    isToolCalling?: boolean;
+    baseUrl?: string;
+    modelName?: string;
+  }
+): Promise<ChatOpenAI> {
+  return new ChatOpenAI({
+    // modelName: extra?.modelName || "Qwen/Qwen2.5-1.5B-Instruct",
+    modelName: extra?.modelName || "Qwen/Qwen2.5-Coder-7B-Instruct",
+    temperature: extra?.temperature || 0,
+    openAIApiKey: "EMPTY",
+    maxTokens: extra?.maxTokens || 1024,
+    configuration: {
+      baseURL: extra?.baseUrl || "http://192.168.75.101:8000/v1",
+    },
   });
 }
 
