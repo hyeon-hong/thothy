@@ -424,6 +424,7 @@ export async function getModelFromConfig(
     modelName?: string;
   }
 ): Promise<ChatOpenAI> {
+  console.log("config: ", config);
   return new ChatOpenAI({
     // modelName: extra?.modelName || "Qwen/Qwen2.5-1.5B-Instruct",
     modelName: extra?.modelName || "Qwen/Qwen2.5-Coder-7B-Instruct",
