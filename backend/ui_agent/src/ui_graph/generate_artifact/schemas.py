@@ -2,6 +2,7 @@ from typing import Optional
 from pydantic import BaseModel, Field
 from opencanvas.shared.constants import PROGRAMMING_LANGUAGES
 
+
 class ArtifactToolSchema(BaseModel):
     type: str = Field(
         ...,
@@ -28,4 +29,4 @@ class ArtifactToolSchema(BaseModel):
     title: str = Field(
         ...,
         description="A short title to give to the artifact. Should be less than 5 words."
-    ) 
+    )

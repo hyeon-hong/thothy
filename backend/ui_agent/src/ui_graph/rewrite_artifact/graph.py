@@ -10,7 +10,7 @@ from opencanvas.shared.utils.thinking import (
     is_thinking_model,
 )
 
-from ...utils import (
+from ..utils import (
     create_context_document_messages,
     format_reflections,
     get_model_config,
