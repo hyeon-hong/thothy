@@ -1,5 +1,6 @@
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Separator } from "@/components/ui/separator"
+import Header from "@/components/Header"
 
 interface DocsSidebarProps {
   className?: string
@@ -63,31 +64,34 @@ function DocsSidebar({ className }: DocsSidebarProps) {
 
 export default function DocsPage() {
   return (
-    <div className="flex min-h-screen">
-      {/* Sidebar */}
-      <aside className="w-64 border-r">
-        <DocsSidebar className="sticky top-14" />
-      </aside>
+    <>
+      <Header currentView="docs" />
+      <div className="flex min-h-screen">
+        {/* Sidebar */}
+        <aside className="w-64 border-r">
+          <DocsSidebar className="sticky top-14" />
+        </aside>
 
-      {/* Main content */}
-      <main className="flex-1 px-8 py-6">
-        <div className="mx-auto max-w-3xl">
-          <h1 className="scroll-m-20 text-4xl font-bold tracking-tight">Documentation</h1>
-          <p className="mt-6 leading-7 text-muted-foreground">
-            Welcome to the documentation. Here you'll find comprehensive guides and documentation to help you start working with our platform as quickly as possible.
-          </p>
-          
-          {/* Add your documentation content here */}
-          <div className="mt-10 space-y-8">
-            <section>
-              <h2 className="scroll-m-20 text-2xl font-semibold tracking-tight">Getting Started</h2>
-              <p className="mt-4 leading-7">
-                Learn how to get started with our platform and explore its features.
-              </p>
-            </section>
+        {/* Main content */}
+        <main className="flex-1 px-8 py-6">
+          <div className="mx-auto max-w-3xl">
+            <h1 className="scroll-m-20 text-4xl font-bold tracking-tight">Documentation</h1>
+            <p className="mt-6 leading-7 text-muted-foreground">
+              Welcome to the documentation. Here you'll find comprehensive guides and documentation to help you start working with our platform as quickly as possible.
+            </p>
+            
+            {/* Add your documentation content here */}
+            <div className="mt-10 space-y-8">
+              <section>
+                <h2 className="scroll-m-20 text-2xl font-semibold tracking-tight">Getting Started</h2>
+                <p className="mt-4 leading-7">
+                  Learn how to get started with our platform and explore its features.
+                </p>
+              </section>
+            </div>
           </div>
-        </div>
-      </main>
-    </div>
+        </main>
+      </div>
+    </>
   )
 } 
