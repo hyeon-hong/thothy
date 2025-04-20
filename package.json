@@ -23,6 +23,8 @@
     "lint": "turbo lint",
     "lint:fix": "turbo lint:fix"
   },
-  "devDependencies": {},
-  "dependencies": {}
+  "dependencies": {
+    "react-markdown": "^10.1.0",
+    "react-syntax-highlighter": "^15.6.1"
+  }
 }
