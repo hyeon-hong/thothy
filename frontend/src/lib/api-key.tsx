@@ -1,4 +1,5 @@
 export function getApiKey(): string | null {
+  // TODO: Get from backend API (Don't use NEXT_PUBLIC_ variable)
   return process.env.NEXT_PUBLIC_LANGGRAPH_API_KEY ?? null;
 
   try {
