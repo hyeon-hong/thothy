@@ -999,7 +999,7 @@
     "@jridgewell/resolve-uri" "^3.1.0"
     "@jridgewell/sourcemap-codec" "^1.4.14"
 
-"@langchain/anthropic@^0.3.15", "@langchain/anthropic@^0.3.20":
+"@langchain/anthropic@^0.3.20":
   version "0.3.20"
   resolved "https://registry.yarnpkg.com/@langchain/anthropic/-/anthropic-0.3.20.tgz#45b2285506674bdc7ca81c57ca7d5611e3d6049e"
   integrity sha512-er/mdxdSs8BlQeH5GQtvEIBxf2slge3gsF7CW88S23xfASn6bnjAisQGQwRmvD+X0do7G526W7lNP93u6dMJ0A==
@@ -1025,7 +1025,7 @@
     zod "^3.22.3"
     zod-to-json-schema "^3.22.5"
 
-"@langchain/core@^0.3.42":
+"@langchain/core@^0.3.42", "@langchain/core@^0.3.55":
   version "0.3.55"
   resolved "https://registry.yarnpkg.com/@langchain/core/-/core-0.3.55.tgz#e8a0d60833cb709ce6ab2ac2d348683b439c9856"
   integrity sha512-SojY2ugpT6t9eYfFB9Ysvyhhyh+KJTGXs50hdHUE9tAEQWp3WAwoxe4djwJnOZ6fSpWYdpFt2UT2ksHVDy2vXA==
@@ -1371,9 +1371,9 @@
     zod-to-json-schema "^3.23.0"
 
 "@modelcontextprotocol/sdk@^1.8.0":
-  version "1.11.1"
-  resolved "https://registry.yarnpkg.com/@modelcontextprotocol/sdk/-/sdk-1.11.1.tgz#c7f4a1432872ef10130f5d9b0072060c17a3946b"
-  integrity sha512-9LfmxKTb1v+vUS1/emSk1f5ePmTLkb9Le9AxOB5T0XM59EUumwcS45z05h7aiZx3GI0Bl7mjb3FMEglYj+acuQ==
+  version "1.11.2"
+  resolved "https://registry.yarnpkg.com/@modelcontextprotocol/sdk/-/sdk-1.11.2.tgz#d81784c140d1a9cc937f61af9f071d8b78befe30"
+  integrity sha512-H9vwztj5OAqHg9GockCQC06k1natgcxWQSRpQcPJf6i5+MWBzfKkRtxGbjQf0X2ihii0ffLZCRGbYV2f2bjNCQ==
   dependencies:
     content-type "^1.0.5"
     cors "^2.8.5"
@@ -5359,11 +5359,11 @@ fraction.js@^4.3.7:
   integrity sha512-ZsDfxO51wGAXREY55a7la9LScWpwv9RxIrYABrlvOFBlH/ShPnrtsXeuUIfXKKOVicNxQ+o8JTbJvjS4M89yew==
 
 framer-motion@^12.4.12, framer-motion@^12.5.0:
-  version "12.10.5"
-  resolved "https://registry.yarnpkg.com/framer-motion/-/framer-motion-12.10.5.tgz#51f137959eca52e3c3d62a58136da09ffa0dd214"
-  integrity sha512-p6VF1YkwWvNDFzg5IQ5lqPx11Td4TQ6LqDnshV7sWj0Nrp4dwz2/aEzmgh9WA9ridcTIJ625Fr0oiuhgqIoFwQ==
+  version "12.10.6"
+  resolved "https://registry.yarnpkg.com/framer-motion/-/framer-motion-12.10.6.tgz#3157ef3554ec117940244fa5e0670577814d90de"
+  integrity sha512-2R9hNtpuNXbaMxI+AoEGydWK3emWcrXx8MpeMxnAps3s70ymeUkxROrk7TJrvAEI14XAm0vezkB9dB3ctF9Vpg==
   dependencies:
-    motion-dom "^12.10.5"
+    motion-dom "^12.10.6"
     motion-utils "^12.9.4"
     tslib "^2.4.0"
 
@@ -7905,10 +7905,10 @@ mkdirp@^3.0.1:
   resolved "https://registry.yarnpkg.com/mkdirp/-/mkdirp-3.0.1.tgz#e44e4c5607fb279c168241713cc6e0fea9adcb50"
   integrity sha512-+NsyUUAZDmo6YVHzL/stxSu3t9YS1iljliy3BSDrXJ/dkn1KYdmtZODGGjLcc9XLgVVpH4KshHB8XmZgMhaBXg==
 
-motion-dom@^12.10.5:
-  version "12.10.5"
-  resolved "https://registry.yarnpkg.com/motion-dom/-/motion-dom-12.10.5.tgz#f773715b4e0c9f453dbf3bb6113ccb384f63a641"
-  integrity sha512-F7XKmhxXEH/y3aWWf0N2w69wNSN+6PcJ1seqR1WolClmXpPhj+xwzs9j5CpsMFzeHR1D7irl3JcWMToPRwX6Hg==
+motion-dom@^12.10.6:
+  version "12.10.6"
+  resolved "https://registry.yarnpkg.com/motion-dom/-/motion-dom-12.10.6.tgz#63be87c7986d51e7f5f6259d906a78e4b4635d74"
+  integrity sha512-FzvNyO5XkaEH8WSronIDHAY1rcrENJnQtVClJxpCvTNo67lTtpJ5/q1JjXr9id4fK4SrhD4x0o8LfpqpJJa4Gw==
   dependencies:
     motion-utils "^12.9.4"
 
