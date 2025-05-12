@@ -5,7 +5,7 @@ import datetime  # Import datetime for getting current time
 import os
 from typing import Optional
 
-from langchain_ollama import ChatOllama
+from langchain_openai import ChatOpenAI
 from langgraph.checkpoint.memory import MemorySaver
 from langgraph.graph import MessagesState, StateGraph, START, END
 from langgraph.store.base import BaseStore
@@ -16,17 +16,19 @@ logging.basicConfig(level=logging.WARNING)
 logging.getLogger("langgraph").setLevel(logging.WARNING)
 
 # Initialize global LLM
-OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
-llm: Optional[ChatOllama] = None
+VLLM_API_URL = os.getenv("VLLM_API_URL")
+VLLM_API_KEY = os.getenv("VLLM_API_KEY")
+llm: Optional[ChatOpenAI] = None
 
 
-def get_llm() -> ChatOllama:
+def get_llm() -> ChatOpenAI:
     """Get or initialize the LLM."""
     global llm
     if llm is None:
-        llm = ChatOllama(
-            model="gemma3:12b",
-            base_url=OLLAMA_BASE_URL,
+        llm = ChatOpenAI(
+            model="Qwen/Qwen2.5-1.5B-Instruct",
+            base_url=VLLM_API_URL,
+            api_key=VLLM_API_KEY,
             temperature=0.8
         )
     return llm
