@@ -15,6 +15,32 @@ import { useQueryState, parseAsBoolean } from "nuqs";
 import { GenericInterruptView } from "./generic-interrupt";
 import { useArtifact } from "../artifact";
 
+// const WeatherComponent = (props: { city: string }) => {
+//   return <div className="bg-red-500">Weather for {props.city}</div>;
+// };
+const WeatherComponent = (props: { city: string }) => {
+  const { thread, submit } = useStreamContext();
+  return (
+    <>
+      <div>Weather for {props.city}</div>
+
+      <button
+        type="button"
+        onClick={() => {
+          const newMessage = {
+            type: "human",
+            content: `What's the weather in ${props.city}?`,
+          };
+
+          submit({ messages: [newMessage] });
+        }}
+      >
+        Retry
+      </button>
+    </>
+  );
+};
+
 function CustomComponent({
   message,
   thread,
@@ -22,11 +48,23 @@ function CustomComponent({
   message: Message;
   thread: ReturnType<typeof useStreamContext>;
 }) {
+  console.log("message: ", message);
+  console.log("thread: ", thread);
+
   const artifact = useArtifact();
+  console.log("artifact: ", artifact);
+
   const { values } = useStreamContext();
+  console.log("values: ", values);
+
   const customComponents = values.ui?.filter(
-    (ui) => ui.metadata?.message_id === message.id,
+    (ui) => ui.metadata?.message_id === message.id
   );
+  console.log("customComponents: ", customComponents);
+
+  const clientComponents = {
+    weather: WeatherComponent,
+  };
 
   if (!customComponents?.length) return null;
   return (
@@ -36,6 +74,7 @@ function CustomComponent({
           key={customComponent.id}
           stream={thread}
           message={customComponent}
+          components={clientComponents}
           meta={{ ui: customComponent, artifact }}
         />
       ))}
@@ -44,7 +83,7 @@ function CustomComponent({
 }
 
 function parseAnthropicStreamedToolCalls(
-  content: MessageContentComplex[],
+  content: MessageContentComplex[]
 ): AIMessage["tool_calls"] {
   const toolCallContents = content.filter((c) => c.type === "tool_use" && c.id);
 
@@ -106,14 +145,14 @@ export function AssistantMessage({
   const contentString = getContentString(content);
   const [hideToolCalls] = useQueryState(
     "hideToolCalls",
-    parseAsBoolean.withDefault(false),
+    parseAsBoolean.withDefault(false)
   );
 
   const thread = useStreamContext();
   const isLastMessage =
     thread.messages[thread.messages.length - 1].id === message?.id;
   const hasNoAIOrToolMessages = !thread.messages.find(
-    (m) => m.type === "ai" || m.type === "tool",
+    (m) => m.type === "ai" || m.type === "tool"
   );
   const meta = message ? thread.getMessagesMetadata(message) : undefined;
   const threadInterrupt = thread.interrupt;
@@ -131,7 +170,7 @@ export function AssistantMessage({
   const toolCallsHaveContents =
     hasToolCalls &&
     message.tool_calls?.some(
-      (tc) => tc.args && Object.keys(tc.args).length > 0,
+      (tc) => tc.args && Object.keys(tc.args).length > 0
     );
   const hasAnthropicToolCalls = !!anthropicStreamedToolCalls?.length;
   const isToolResult = message?.type === "tool";
@@ -174,12 +213,7 @@ export function AssistantMessage({
               </>
             )}
 
-            {message && (
-              <CustomComponent
-                message={message}
-                thread={thread}
-              />
-            )}
+            {message && <CustomComponent message={message} thread={thread} />}
             <Interrupt
               interruptValue={threadInterrupt?.value}
               isLastMessage={isLastMessage}
@@ -188,7 +222,7 @@ export function AssistantMessage({
             <div
               className={cn(
                 "mr-auto flex items-center gap-2 transition-opacity",
-                "opacity-0 group-focus-within:opacity-100 group-hover:opacity-100",
+                "opacity-0 group-focus-within:opacity-100 group-hover:opacity-100"
               )}
             >
               <BranchSwitcher
