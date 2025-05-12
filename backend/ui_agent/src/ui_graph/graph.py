@@ -1,15 +1,15 @@
 """Simple chat agent using LangGraph."""
 
 import logging
-import datetime  # Import datetime for getting current time
 import os
 from typing import Optional
 
 from langchain_openai import ChatOpenAI
 from langgraph.checkpoint.memory import MemorySaver
 from langgraph.graph import MessagesState, StateGraph, START, END
+from langgraph.prebuilt import ToolNode
 from langgraph.store.base import BaseStore
-from chat_graph.configuration import ChatConfigurable
+from ui_graph.prompts import SYSTEM_PROMPT
 from ui_graph.shadcn_tools import generate_shadcn_widget
 
 # Configure logging to hide INFO messages
@@ -36,44 +36,37 @@ def get_llm() -> ChatOpenAI:
     return llm
 
 
-def build_artifact_response(llm_response, title=None, context=None):
-    # Ensure content is always a string for the frontend
-    if hasattr(llm_response, "content"):
-        content = llm_response.content
-    elif isinstance(llm_response, str):
-        content = llm_response
-    else:
-        content = str(llm_response)
-    return {
-        "artifact": {
-            "title": title or "Generated Artifact",
-            "content": content,
-            "context": context or {}
-        }
-    }
+tool_node = ToolNode([generate_shadcn_widget])
+
+model = get_llm()
+model_with_tools = model.bind_tools([generate_shadcn_widget],
+                                    tool_choice="any",
+                                    strict=True)
+
+
+def should_continue(state: MessagesState):
+    messages = state["messages"]
+    last_message = messages[-1]
+    if last_message.tool_calls:
+        return "tools"
+    return END
+
+
+def call_model(state: MessagesState):
+    messages = [{"role": "system", "content": SYSTEM_PROMPT}] + \
+        state["messages"]
+    response = model_with_tools.invoke(messages)
+    return {"messages": [response]}
 
 
 async def generate_artifact(
     state: MessagesState,
-    config: ChatConfigurable,
-    *,
-    store: BaseStore
 ) -> dict:
     """Chat node that processes messages and generates responses, following the generateArtifact process."""
 
-    configurable = ChatConfigurable.from_runnable_config(config)
-
-    # Get current system time
-    current_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-
-    # Prepare the system prompt (optionally could be extended with user/system overrides)
-    system_msg = configurable.system_prompt.format(time=current_time)
-
-    # Placeholder: Add context/memories if implemented in the future
-    # context_document_messages = ...
-
     # Prepare the full prompt/messages (system prompt + chat history)
-    messages = [{"role": "system", "content": system_msg}] + state["messages"]
+    messages = [{"role": "system", "content": SYSTEM_PROMPT}] + \
+        state["messages"]
 
     # Get the LLM instance (with tools bound)
     chat_model = get_llm()
@@ -101,14 +94,19 @@ async def generate_artifact(
 """Build and return the chat graph."""
 
 # Initialize graph builder with state schema
-workflow = StateGraph(MessagesState, ChatConfigurable)
+workflow = StateGraph(MessagesState)
 
 # Add chatbot node
-workflow.add_node("generate_artifact", generate_artifact)
+# workflow.add_node("generate_artifact", generate_artifact)
+workflow.add_node("call_model", call_model)
+workflow.add_node("tools", tool_node)
 
 # Add edges - start at chatbot and can end after chatbot
-workflow.add_edge(START, "generate_artifact")
-workflow.add_edge("generate_artifact", END)
+workflow.add_edge(START, "call_model")
+workflow.add_conditional_edges("call_model", should_continue, ["tools", END])
+workflow.add_edge("tools", END)
+
+# workflow.add_edge("generate_artifact", END)
 
 # Compile graph
 graph = workflow.compile(checkpointer=MemorySaver())

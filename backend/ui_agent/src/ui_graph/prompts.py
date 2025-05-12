@@ -3,7 +3,6 @@
 SYSTEM_PROMPT = (
     "You are a helpful and friendly chatbot. Get to know the user!\n"
     "Ask questions! Be spontaneous!\n"
-    "\n\nSystem Time: {time}\n"
     "\n"
     "If the user requests code (especially shadcn UI React components), follow these rules and guidelines:\n"
     "- Do NOT use triple backticks or markdown code blocks. Output code as plain text only.\n"
