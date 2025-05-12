@@ -13,7 +13,7 @@ import {
   type Dispatch,
   type SetStateAction,
 } from "react";
-import { createClient } from "./client";
+import { createLangGraphClient } from "./client";
 
 interface ThreadContextType {
   getThreads: () => Promise<Thread[]>;
@@ -42,7 +42,7 @@ export function ThreadProvider({ children }: { children: ReactNode }) {
 
   const getThreads = useCallback(async (): Promise<Thread[]> => {
     if (!apiUrl || !assistantId) return [];
-    const client = await createClient(apiUrl, getApiKey() ?? undefined);
+    const client = await createLangGraphClient(apiUrl, getApiKey() ?? undefined);
 
     const threads = await client.threads.search({
       metadata: {

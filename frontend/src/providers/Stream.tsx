@@ -27,7 +27,7 @@ import { PasswordInput } from "@/components/ui/password-input";
 import { getApiKey } from "@/lib/api-key";
 import { useThreads } from "./Thread";
 import { toast } from "sonner";
-import { createClient } from "./client";
+import { createClient } from "@/utils/supabase/client";
 
 export type StateType = { messages: Message[]; ui?: UIMessage[] };
 
