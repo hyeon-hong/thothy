@@ -12,12 +12,10 @@ from langgraph.store.base import BaseStore
 from chat_graph.configuration import ChatConfigurable
 
 # Configure logging to hide INFO messages
-logging.basicConfig(level=logging.WARNING)
-logging.getLogger("langgraph").setLevel(logging.WARNING)
+logging.basicConfig(level=logging.DEBUG)
 
 # Initialize global LLM
 VLLM_API_URL = os.getenv("VLLM_API_URL")
-VLLM_API_KEY = os.getenv("VLLM_API_KEY")
 llm: Optional[ChatOpenAI] = None
 
 
@@ -28,7 +26,6 @@ def get_llm() -> ChatOpenAI:
         llm = ChatOpenAI(
             model="Qwen/Qwen2.5-1.5B-Instruct",
             base_url=VLLM_API_URL,
-            api_key=VLLM_API_KEY,
             temperature=0.8
         )
     return llm
@@ -52,11 +49,14 @@ async def chatbot(
 
     # Get the LLM instance
     chat_model = get_llm()
+    logging.info(f"Using model: {chat_model}")
 
     # Invoke the LLM
+    logging.info(f"Message: {state['messages']}")
     response = chat_model.invoke(
         [{"role": "system", "content": system_msg}] + state["messages"]
     )
+    logging.info(f"Response: {response}")
 
     return {"messages": response}
 
