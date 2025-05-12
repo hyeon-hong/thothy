@@ -24,7 +24,7 @@ import Logout from '@mui/icons-material/Logout';
 import Link from 'next/link';
 
 interface HeaderProps {
-  currentView: 'inbox' | 'agent' | 'find' | 'staff' | 'team' | 'blog' | 'login' | 'agents' | 'project' | 'docs';
+  currentView: 'inbox' | 'agent' | 'find' | 'staff' | 'team' | 'blog' | 'login' | 'agents' | 'project';
 }
 
 interface PricingPolicyData {
@@ -160,10 +160,6 @@ export default function Header({ currentView }: HeaderProps) {
     router.push('/project');
   };
 
-  const handleDocsClick = () => {
-    router.push('/docs');
-  };
-
   return (
     <AppBar position="static" color="transparent" elevation={0} sx={{ borderBottom: '2px solid rgba(0, 0, 0, 0.12)' }}>
       <Container maxWidth="lg">
@@ -257,17 +253,6 @@ export default function Header({ currentView }: HeaderProps) {
                   }}
                 >
                   Blog
-                </Button>
-
-                <Button
-                  color={currentView === 'docs' ? 'primary' : 'inherit'}
-                  onClick={handleDocsClick}
-                  sx={{
-                    ...navButtonStyle,
-                    fontWeight: currentView === 'docs' ? 700 : 400,
-                  }}
-                >
-                  Docs
                 </Button>
               </>
             )}
