@@ -8,7 +8,6 @@ from langchain_openai import ChatOpenAI
 from langgraph.checkpoint.memory import MemorySaver
 from langgraph.graph import MessagesState, StateGraph, START, END
 from langgraph.prebuilt import ToolNode
-from langgraph.store.base import BaseStore
 from ui_graph.prompts import SYSTEM_PROMPT
 from ui_graph.shadcn_tools import generate_shadcn_widget
 
