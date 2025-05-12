@@ -1,5 +1,5 @@
 import { useStreamContext } from "@/providers/Stream";
-import { Message } from "@langchain/langgraph-sdk";
+import type { Message } from "@langchain/langgraph-sdk";
 import { useState } from "react";
 import { getContentString } from "../utils";
 import { cn } from "@/lib/utils";
@@ -51,6 +51,10 @@ export function HumanMessage({
     setIsEditing(false);
 
     const newMessage: Message = { type: "human", content: value };
+    console.log("thread: ", thread);
+    console.log("message: ", message);
+    console.log("newMessage: ", newMessage);
+
     thread.submit(
       { messages: [newMessage] },
       {

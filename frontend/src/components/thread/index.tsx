@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils";
 import { useStreamContext } from "@/providers/Stream";
 import { useState, type FormEvent } from "react";
 import { Button } from "../ui/button";
-import { Checkpoint, Message } from "@langchain/langgraph-sdk";
+import type { Checkpoint, Message } from "@langchain/langgraph-sdk";
 import { AssistantMessage, AssistantMessageLoading } from "./messages/ai";
 import { HumanMessage } from "./messages/human";
 import {

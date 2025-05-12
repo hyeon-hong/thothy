@@ -58,45 +58,12 @@ def call_model(state: MessagesState):
     return {"messages": [response]}
 
 
-async def generate_artifact(
-    state: MessagesState,
-) -> dict:
-    """Chat node that processes messages and generates responses, following the generateArtifact process."""
-
-    # Prepare the full prompt/messages (system prompt + chat history)
-    messages = [{"role": "system", "content": SYSTEM_PROMPT}] + \
-        state["messages"]
-
-    # Get the LLM instance (with tools bound)
-    chat_model = get_llm()
-    chat_model = chat_model.bind_tools(
-        [generate_shadcn_widget], tool_choice="any", strict=True)
-    logging.debug(f"Using model: {chat_model}")
-
-    # Invoke the LLM with tools
-    logging.info(f"Message: {messages}")
-    response = chat_model.invoke(messages)
-    logging.info(f"Response: {response}")
-    logging.info(f"Response.tool_calls: {response.tool_calls}")
-
-    tool_message = generate_shadcn_widget.invoke(response.tool_calls[0])
-    logging.info(f"Tool message: {tool_message}")
-
-    return tool_message
-
-    # artifact_title = "Shadcn Widget"  # You can extract or generate this dynamically
-    # return_message = build_artifact_response(response, title=artifact_title)
-    # logging.info(f"Return message: {return_message}")
-    # return return_message
-
-
 """Build and return the chat graph."""
 
 # Initialize graph builder with state schema
 workflow = StateGraph(MessagesState)
 
 # Add chatbot node
-# workflow.add_node("generate_artifact", generate_artifact)
 workflow.add_node("call_model", call_model)
 workflow.add_node("tools", tool_node)
 
@@ -104,8 +71,6 @@ workflow.add_node("tools", tool_node)
 workflow.add_edge(START, "call_model")
 workflow.add_conditional_edges("call_model", should_continue, ["tools", END])
 workflow.add_edge("tools", END)
-
-# workflow.add_edge("generate_artifact", END)
 
 # Compile graph
 graph = workflow.compile(checkpointer=MemorySaver())

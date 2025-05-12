@@ -1,4 +1,4 @@
-import { AIMessage, ToolMessage } from "@langchain/langgraph-sdk";
+import type { AIMessage, ToolMessage } from "@langchain/langgraph-sdk";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronDown, ChevronUp } from "lucide-react";
