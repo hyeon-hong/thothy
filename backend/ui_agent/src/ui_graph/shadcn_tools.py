@@ -1,8 +1,9 @@
+from typing import Tuple
 from langchain.tools import tool
 
 
-@tool
-def generate_shadcn_widget(widget_name: str, description: str, artifact: str) -> str:
+@tool(response_format="content_and_artifact")
+def generate_shadcn_widget(widget_name: str, description: str, artifact: str) -> Tuple[str, dict]:
     """
     Generate React code for a shadcn UI widget in JavaScript.
 
@@ -15,7 +16,12 @@ def generate_shadcn_widget(widget_name: str, description: str, artifact: str) ->
         True if the widget was generated successfully, False otherwise
     """
 
-    return True
+    content = f"Successfully generated {widget_name} code."
+    return content, {
+        "widget_name": widget_name,
+        "description": description,
+        "code": artifact
+    }
 
 
 __all__ = ["generate_shadcn_widget"]

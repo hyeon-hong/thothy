@@ -29,12 +29,28 @@ def get_llm() -> ChatOpenAI:
         #     base_url=VLLM_API_URL,
         #     temperature=0.5
         # )
-        base_llm = ChatOpenAI(
+        llm = ChatOpenAI(
             model="gpt-4o-mini",
             temperature=0.5
         )
-        llm = base_llm.bind_tools([generate_shadcn_widget])
     return llm
+
+
+def build_artifact_response(llm_response, title=None, context=None):
+    # Ensure content is always a string for the frontend
+    if hasattr(llm_response, "content"):
+        content = llm_response.content
+    elif isinstance(llm_response, str):
+        content = llm_response
+    else:
+        content = str(llm_response)
+    return {
+        "artifact": {
+            "title": title or "Generated Artifact",
+            "content": content,
+            "context": context or {}
+        }
+    }
 
 
 async def generate_artifact(
@@ -61,14 +77,25 @@ async def generate_artifact(
 
     # Get the LLM instance (with tools bound)
     chat_model = get_llm()
+    chat_model = chat_model.bind_tools(
+        [generate_shadcn_widget], tool_choice="any", strict=True)
     logging.debug(f"Using model: {chat_model}")
 
     # Invoke the LLM with tools
-    logging.debug(f"Message: {messages}")
+    logging.info(f"Message: {messages}")
     response = chat_model.invoke(messages)
-    logging.debug(f"Response: {response}")
+    logging.info(f"Response: {response}")
+    logging.info(f"Response.tool_calls: {response.tool_calls}")
 
-    return {"messages": response}
+    tool_message = generate_shadcn_widget.invoke(response.tool_calls[0])
+    logging.info(f"Tool message: {tool_message}")
+
+    return tool_message
+
+    # artifact_title = "Shadcn Widget"  # You can extract or generate this dynamically
+    # return_message = build_artifact_response(response, title=artifact_title)
+    # logging.info(f"Return message: {return_message}")
+    # return return_message
 
 
 """Build and return the chat graph."""

@@ -185,6 +185,8 @@ export function Thread() {
     e.preventDefault();
     if (!input.trim() || isLoading) return;
     setFirstTokenReceived(false);
+    console.log("stream: ", stream);
+    console.log("input: ", input);
 
     const newHumanMessage: Message = {
       id: uuidv4(),
@@ -193,9 +195,12 @@ export function Thread() {
     };
 
     const toolMessages = ensureToolCallsHaveResponses(stream.messages);
+    console.log("toolMessages: ", toolMessages);
 
     const context =
       Object.keys(artifactContext).length > 0 ? artifactContext : undefined;
+    console.log("artifactContext: ", artifactContext);
+    console.log("context: ", context);
 
     stream.submit(
       { messages: [...toolMessages, newHumanMessage], context },
