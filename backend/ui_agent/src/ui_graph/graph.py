@@ -1,130 +1,80 @@
-"""Main graph definition for the Open Canvas application."""
+"""Simple chat agent using LangGraph."""
 
-from typing import Dict, Any, Union
-from langgraph.graph import END, StateGraph
-from langgraph.prebuilt.messages import Command, Send
+import logging
+import datetime  # Import datetime for getting current time
+import os
+from typing import Optional
 
-from .state import OpenCanvasGraphAnnotation
-from .generate_artifact import generate_artifact
-from .nodes import generate_followup
-from .nodes.rewrite_artifact import rewrite_artifact
-from .nodes import reply_to_general_input
-from .nodes import rewrite_code_artifact_theme
-from .utils import create_ai_message_from_web_results
+from langchain_openai import ChatOpenAI
+from langgraph.checkpoint.memory import MemorySaver
+from langgraph.graph import MessagesState, StateGraph, START, END
+from langgraph.store.base import BaseStore
+from chat_graph.configuration import ChatConfigurable
 
-# Constants
-DEFAULT_INPUTS = {
-    "messages": [],
-    "_messages": [],
-    "highlighted_code": None,
-    "highlighted_text": None,
-    "artifact": None,
-    "next": None,
-    "language": None,
-    "artifact_length": None,
-    "regenerate_with_emojis": None,
-    "reading_level": None,
-    "add_comments": None,
-    "add_logs": None,
-    "port_language": None,
-    "fix_bugs": None,
-    "custom_quick_action_id": None,
-    "web_search_enabled": None,
-    "web_search_results": None,
-}
+# Configure logging to hide INFO messages
+logging.basicConfig(level=logging.DEBUG)
 
-# ~ 4 chars per token, max tokens of 75000. 75000 * 4 = 300000
-CHARACTER_MAX = 300000
+# Initialize global LLM
+VLLM_API_URL = os.getenv("VLLM_API_URL")
+llm: Optional[ChatOpenAI] = None
 
 
-def route_node(state: Dict[str, Any]) -> Send:
-    """Route to the next node based on state."""
-    print("call route_node()")
-    print("state.next: ", state.get("next"))
-
-    if not state.get("next"):
-        raise ValueError("'next' state field not set.")
-
-    return Send(state["next"], state)
-
-
-def clean_state(_: Dict[str, Any]) -> Dict[str, Any]:
-    """Reset state to default values."""
-    return DEFAULT_INPUTS.copy()
-
-
-def simple_token_calculator(state: Dict[str, Any]) -> Union[str, str]:
-    """Calculate if we need to summarize based on total characters."""
-    total_chars = 0
-    for msg in state["_messages"]:
-        if isinstance(msg.content, str):
-            total_chars += len(msg.content)
-        else:
-            # Handle multi-modal content
-            all_content = [
-                c["text"] for c in msg.content
-                if "text" in c
-            ]
-            total_chars += sum(len(c) for c in all_content)
-
-    if total_chars > CHARACTER_MAX:
-        return "summarizer"
-    return END
-
-
-def conditionally_generate_title(state: Dict[str, Any]) -> Union[str, str]:
-    """Conditionally route to the 'generateTitle' node."""
-    print("call conditionally_generate_title()")
-
-    if len(state["messages"]) > 2:
-        # Do not generate if there are more than two messages
-        return simple_token_calculator(state)
-    return "generateTitle"
-
-
-def route_post_web_search(state: Dict[str, Any]) -> Union[Send, Command]:
-    """Route after web search based on results."""
-    # Check if there are multiple artifacts
-    includes_artifacts = len(state.get("artifact", {}).get("contents", [])) > 1
-
-    if not state.get("web_search_results"):
-        return Send(
-            "rewriteArtifact" if includes_artifacts else "generateArtifact",
-            {**state, "web_search_enabled": False}
+def get_llm() -> ChatOpenAI:
+    """Get or initialize the LLM."""
+    global llm
+    if llm is None:
+        llm = ChatOpenAI(
+            model="Qwen/Qwen2.5-1.5B-Instruct",
+            base_url=VLLM_API_URL,
+            temperature=0.8
         )
+    return llm
 
-    # Create message from web search results
-    web_search_results_message = create_ai_message_from_web_results(
-        state["web_search_results"]
+
+async def chatbot(
+    state: MessagesState,
+    config: ChatConfigurable,
+    *,
+    store: BaseStore
+) -> dict:
+    """Chat node that processes messages and generates responses."""
+
+    configurable = ChatConfigurable.from_runnable_config(config)
+
+    # Get current system time
+    current_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+    # Use system prompt from configuration with time variable
+    system_msg = configurable.system_prompt.format(time=current_time)
+
+    # Get the LLM instance
+    chat_model = get_llm()
+    logging.info(f"Using model: {chat_model}")
+
+    # Invoke the LLM
+    logging.info(f"Message: {state['messages']}")
+    response = chat_model.invoke(
+        [{"role": "system", "content": system_msg}] + state["messages"]
     )
+    logging.info(f"Response: {response}")
 
-    return Command(
-        goto="rewriteArtifact" if includes_artifacts else "generateArtifact",
-        update={
-            "web_search_enabled": False,
-            "messages": [web_search_results_message],
-            "_messages": [web_search_results_message],
-        }
-    )
+    return {"messages": response}
 
 
-# Build the graph
-builder = StateGraph(OpenCanvasGraphAnnotation)
+"""Build and return the chat graph."""
 
-# Start node & edge
-builder.add_edge("START", "generateArtifact")
+# Initialize graph builder with state schema
+workflow = StateGraph(MessagesState, ChatConfigurable)
 
-# Add nodes
-builder.add_node("generateArtifact", generate_artifact)
-builder.add_node("rewriteArtifact", rewrite_artifact)
-builder.add_node("generateFollowup", generate_followup)
-builder.add_node("replyToGeneralInput", reply_to_general_input)
+# Add chatbot node
+workflow.add_node("chatbot", chatbot)
 
-# Add edges
-builder.add_edge("generateArtifact", "generateFollowup")
-builder.add_edge("rewriteArtifact", "generateFollowup")
-builder.add_edge("generateFollowup", "END")
-builder.add_edge("replyToGeneralInput", "END")
+# Add edges - start at chatbot and can end after chatbot
+workflow.add_edge(START, "chatbot")
+workflow.add_edge("chatbot", END)
 
-# Compile the graph
-graph = builder.compile()
+# Compile graph
+graph = workflow.compile(checkpointer=MemorySaver())
+graph.name = "ui_graph"
+
+__all__ = ["graph"]
