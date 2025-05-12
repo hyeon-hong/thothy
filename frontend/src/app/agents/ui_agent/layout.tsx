@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import type React from "react";
 
 // import "./globals.css";
-import '@/app/globals.css';
+import "@/app/globals.css";
 import { Inter } from "next/font/google";
 import { NuqsAdapter } from "nuqs/adapters/next/app";
 
@@ -22,11 +22,5 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  return (
-    <html lang="en">
-      <body className={inter.className}>
-        <NuqsAdapter>{children}</NuqsAdapter>
-      </body>
-    </html>
-  );
+  return <>{children}</>;
 }
