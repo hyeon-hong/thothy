@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
-import "./globals.css";
+import type React from "react";
+
+// import "./globals.css";
+import '@/app/globals.css';
 import { Inter } from "next/font/google";
-import React from "react";
 import { NuqsAdapter } from "nuqs/adapters/next/app";
 
 const inter = Inter({
