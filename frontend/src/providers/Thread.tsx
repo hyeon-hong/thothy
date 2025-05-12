@@ -2,16 +2,16 @@
 
 import { validate } from "uuid";
 import { getApiKey } from "@/lib/api-key";
-import { Thread } from "@langchain/langgraph-sdk";
+import type { Thread } from "@langchain/langgraph-sdk";
 import { useQueryState } from "nuqs";
 import {
   createContext,
   useContext,
-  ReactNode,
+  type ReactNode,
   useCallback,
   useState,
-  Dispatch,
-  SetStateAction,
+  type Dispatch,
+  type SetStateAction,
 } from "react";
 import { createClient } from "./client";
 
@@ -26,13 +26,12 @@ interface ThreadContextType {
 const ThreadContext = createContext<ThreadContextType | undefined>(undefined);
 
 function getThreadSearchMetadata(
-  assistantId: string,
+  assistantId: string
 ): { graph_id: string } | { assistant_id: string } {
   if (validate(assistantId)) {
     return { assistant_id: assistantId };
-  } else {
-    return { graph_id: assistantId };
   }
+  return { graph_id: assistantId };
 }
 
 export function ThreadProvider({ children }: { children: ReactNode }) {
