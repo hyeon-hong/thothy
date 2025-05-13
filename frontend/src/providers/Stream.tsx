@@ -1,16 +1,19 @@
 "use client";
 
-import React, {
+import type React from "react";
+import {
   createContext,
-  useContext,
+  useContext,type 
   ReactNode,
   useState,
   useEffect,
-} from "react";
+} from "react"
 import { useStream } from "@langchain/langgraph-sdk/react";
-import { type Message } from "@langchain/langgraph-sdk";
+import type { Message } from "@langchain/langgraph-sdk";
 import {
   uiMessageReducer,
+  isUIMessage,
+  isRemoveUIMessage,
   type UIMessage,
   type RemoveUIMessage,
 } from "@langchain/langgraph-sdk/react-ui";
@@ -24,7 +27,8 @@ import { PasswordInput } from "@/components/ui/password-input";
 import { getApiKey } from "@/lib/api-key";
 import { useThreads } from "./Thread";
 import { toast } from "sonner";
-import { createClient as createClientComponentClient } from "@/utils/supabase/client";
+import { createClient } from "@/utils/supabase/client";
+
 export type StateType = { messages: Message[]; ui?: UIMessage[] };
 
 const useTypedStream = useStream<
@@ -33,6 +37,7 @@ const useTypedStream = useStream<
     UpdateType: {
       messages?: Message[] | Message | string;
       ui?: (UIMessage | RemoveUIMessage)[] | UIMessage | RemoveUIMessage;
+      context?: Record<string, unknown>;
     };
     CustomEventType: UIMessage | RemoveUIMessage;
   }
@@ -90,10 +95,12 @@ const StreamSession = ({
     assistantId,
     threadId: threadId ?? null,
     onCustomEvent: (event, options) => {
-      options.mutate((prev) => {
-        const ui = uiMessageReducer(prev.ui ?? [], event);
-        return { ...prev, ui };
-      });
+      if (isUIMessage(event) || isRemoveUIMessage(event)) {
+        options.mutate((prev) => {
+          const ui = uiMessageReducer(prev.ui ?? [], event);
+          return { ...prev, ui };
+        });
+      }
     },
     onThreadId: (id) => {
       setThreadId(id);
@@ -132,7 +139,7 @@ export const StreamProvider: React.FC<{ children: ReactNode }> = ({
   children,
 }) => {
   const [accessToken, setAccessToken] = useState<string | null>(null);
-  const supabase = createClientComponentClient();
+  const supabase = createClient();
   supabase.auth.getSession().then(({ data }) => {
     setAccessToken(data.session?.access_token ?? null);
   });

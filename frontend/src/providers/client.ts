@@ -1,19 +1,19 @@
 import { Client } from "@langchain/langgraph-sdk";
-import { createClient as createSupabaseClient } from "@/utils/supabase/client";
+import { createClient } from "@/utils/supabase/client";
 
-export async function createClient(apiUrl: string, apiKey: string | undefined) {
-  const supabase = createSupabaseClient();
-  console.log("supabase: ", supabase);
+export async function createLangGraphClient(
+  apiUrl: string,
+  apiKey: string | undefined
+) {
+  const supabase = createClient();
   const { data } = await supabase.auth.getSession();
-  const accessToken = data.session?.access_token;
-  console.log("accessToken: ", accessToken);
 
   return new Client({
     apiKey,
     apiUrl,
     defaultHeaders: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${accessToken}`,
+      Authorization: `Bearer ${data.session?.access_token}`,
     },
   });
 }

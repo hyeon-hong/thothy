@@ -1,5 +1,5 @@
 import { useStreamContext } from "@/providers/Stream";
-import { Message } from "@langchain/langgraph-sdk";
+import type { Message } from "@langchain/langgraph-sdk";
 import { useState } from "react";
 import { getContentString } from "../utils";
 import { cn } from "@/lib/utils";
@@ -51,6 +51,10 @@ export function HumanMessage({
     setIsEditing(false);
 
     const newMessage: Message = { type: "human", content: value };
+    console.log("thread: ", thread);
+    console.log("message: ", message);
+    console.log("newMessage: ", newMessage);
+
     thread.submit(
       { messages: [newMessage] },
       {
@@ -72,7 +76,7 @@ export function HumanMessage({
   return (
     <div
       className={cn(
-        "flex items-center ml-auto gap-2 group",
+        "group ml-auto flex items-center gap-2",
         isEditing && "w-full max-w-xl",
       )}
     >
@@ -84,14 +88,14 @@ export function HumanMessage({
             onSubmit={handleSubmitEdit}
           />
         ) : (
-          <p className="text-right px-4 py-2 rounded-3xl bg-muted">
+          <p className="bg-muted ml-auto w-fit rounded-3xl px-4 py-2 whitespace-pre-wrap">
             {contentString}
           </p>
         )}
 
         <div
           className={cn(
-            "flex gap-2 items-center ml-auto transition-opacity",
+            "ml-auto flex items-center gap-2 transition-opacity",
             "opacity-0 group-focus-within:opacity-100 group-hover:opacity-100",
             isEditing && "opacity-100",
           )}

@@ -2,15 +2,20 @@ import { createClient } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
 
 export async function GET() {
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  );
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  if (!supabaseUrl || !supabaseAnonKey) {
+    return NextResponse.json(
+      { error: "Supabase environment variables are not set" },
+      { status: 500 }
+    );
+  }
+  const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
   try {
     const { data, error } = await supabase
       .from("agents")
-      .select("id, name, description, image_url, graph_name");
+      .select("id, name, description, graph_name");
 
     if (error) {
       throw error;

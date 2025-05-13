@@ -1,130 +1,123 @@
-"""Main graph definition for the Open Canvas application."""
+"""Simple chat agent using LangGraph."""
 
-from typing import Dict, Any, Union
-from langgraph.graph import END, StateGraph
-from langgraph.prebuilt.messages import Command, Send
+import logging
+import os
+from typing import Optional, Annotated, Sequence, TypedDict
+import json
 
-from .state import OpenCanvasGraphAnnotation
-from .generate_artifact import generate_artifact
-from .nodes import generate_followup
-from .nodes.rewrite_artifact import rewrite_artifact
-from .nodes import reply_to_general_input
-from .nodes import rewrite_code_artifact_theme
-from .utils import create_ai_message_from_web_results
-
-# Constants
-DEFAULT_INPUTS = {
-    "messages": [],
-    "_messages": [],
-    "highlighted_code": None,
-    "highlighted_text": None,
-    "artifact": None,
-    "next": None,
-    "language": None,
-    "artifact_length": None,
-    "regenerate_with_emojis": None,
-    "reading_level": None,
-    "add_comments": None,
-    "add_logs": None,
-    "port_language": None,
-    "fix_bugs": None,
-    "custom_quick_action_id": None,
-    "web_search_enabled": None,
-    "web_search_results": None,
-}
-
-# ~ 4 chars per token, max tokens of 75000. 75000 * 4 = 300000
-CHARACTER_MAX = 300000
+from langchain_openai import ChatOpenAI
+from langchain_core.messages import AIMessage, BaseMessage
+from langgraph.graph.message import add_messages
+from langgraph.graph.ui import AnyUIMessage, ui_message_reducer, push_ui_message
+from langgraph.graph import StateGraph, START, END
+from langgraph.prebuilt import ToolNode
+from ui_graph.prompts import SYSTEM_PROMPT
+from ui_graph.tools import generate_shadcn_widget
 
 
-def route_node(state: Dict[str, Any]) -> Send:
-    """Route to the next node based on state."""
-    print("call route_node()")
-    print("state.next: ", state.get("next"))
+# Configure logging to hide INFO messages
+logging.basicConfig(level=logging.INFO)
 
-    if not state.get("next"):
-        raise ValueError("'next' state field not set.")
+# Initialize global LLM
+VLLM_API_URL = os.getenv("VLLM_API_URL")
+llm: Optional[ChatOpenAI] = None
 
-    return Send(state["next"], state)
-
-
-def clean_state(_: Dict[str, Any]) -> Dict[str, Any]:
-    """Reset state to default values."""
-    return DEFAULT_INPUTS.copy()
+UI_MESSAGE_NAME = "ui_graph"
 
 
-def simple_token_calculator(state: Dict[str, Any]) -> Union[str, str]:
-    """Calculate if we need to summarize based on total characters."""
-    total_chars = 0
-    for msg in state["_messages"]:
-        if isinstance(msg.content, str):
-            total_chars += len(msg.content)
-        else:
-            # Handle multi-modal content
-            all_content = [
-                c["text"] for c in msg.content
-                if "text" in c
-            ]
-            total_chars += sum(len(c) for c in all_content)
+class AgentState(TypedDict):  # noqa: D101
+    messages: Annotated[Sequence[BaseMessage], add_messages]
+    ui: Annotated[Sequence[AnyUIMessage], ui_message_reducer]
 
-    if total_chars > CHARACTER_MAX:
-        return "summarizer"
+
+def get_llm() -> ChatOpenAI:
+    """Get or initialize the LLM with shadcn tools bound."""
+    global llm
+    if llm is None:
+        # base_llm = ChatOpenAI(
+        #     model="Qwen/Qwen2.5-1.5B-Instruct",
+        #     base_url=VLLM_API_URL,
+        #     temperature=0.5
+        # )
+        llm = ChatOpenAI(
+            model="gpt-4o-mini",
+            temperature=0.5
+        )
+    return llm
+
+
+tool_node = ToolNode([generate_shadcn_widget])
+
+model = get_llm()
+model_with_tools = model.bind_tools([generate_shadcn_widget],
+                                    tool_choice="any",
+                                    strict=True)
+
+
+def should_continue(state: AgentState):
+    messages = state["messages"]
+    last_message = messages[-1]
+    if last_message.tool_calls:
+        return "tools"
     return END
 
 
-def conditionally_generate_title(state: Dict[str, Any]) -> Union[str, str]:
-    """Conditionally route to the 'generateTitle' node."""
-    print("call conditionally_generate_title()")
+def call_model(state: AgentState):
+    messages = [{"role": "system", "content": SYSTEM_PROMPT}] + \
+        state["messages"]
+    response = model_with_tools.invoke(messages)
 
-    if len(state["messages"]) > 2:
-        # Do not generate if there are more than two messages
-        return simple_token_calculator(state)
-    return "generateTitle"
+    artifact = extract_artifact_from_response(response)
 
+    class Code(TypedDict):
+        code: str
+    code: Code = {
+        "code": artifact
+    }
 
-def route_post_web_search(state: Dict[str, Any]) -> Union[Send, Command]:
-    """Route after web search based on results."""
-    # Check if there are multiple artifacts
-    includes_artifacts = len(state.get("artifact", {}).get("contents", [])) > 1
+    push_ui_message(UI_MESSAGE_NAME, code, message=response)
 
-    if not state.get("web_search_results"):
-        return Send(
-            "rewriteArtifact" if includes_artifacts else "generateArtifact",
-            {**state, "web_search_enabled": False}
-        )
-
-    # Create message from web search results
-    web_search_results_message = create_ai_message_from_web_results(
-        state["web_search_results"]
-    )
-
-    return Command(
-        goto="rewriteArtifact" if includes_artifacts else "generateArtifact",
-        update={
-            "web_search_enabled": False,
-            "messages": [web_search_results_message],
-            "_messages": [web_search_results_message],
-        }
-    )
+    return {
+        "messages": [response],
+    }
 
 
-# Build the graph
-builder = StateGraph(OpenCanvasGraphAnnotation)
+def extract_artifact_from_response(response: AIMessage) -> Optional[str]:
+    # 1. Get tool_calls from additional_kwargs
+    tool_calls = response.additional_kwargs.get("tool_calls", [])
+    for tool_call in tool_calls:
+        # 2. Get the function arguments (as a JSON string)
+        function = tool_call.get("function", {})
+        arguments = function.get("arguments")
+        if arguments:
+            try:
+                # 3. Parse the arguments JSON string
+                args_dict = json.loads(arguments)
+                # 4. Extract the artifact
+                artifact = args_dict.get("artifact")
+                if artifact:
+                    return artifact
+            except Exception as e:
+                print(f"Error parsing tool call arguments: {e}")
+    return None
 
-# Start node & edge
-builder.add_edge("START", "generateArtifact")
 
-# Add nodes
-builder.add_node("generateArtifact", generate_artifact)
-builder.add_node("rewriteArtifact", rewrite_artifact)
-builder.add_node("generateFollowup", generate_followup)
-builder.add_node("replyToGeneralInput", reply_to_general_input)
+"""Build and return the chat graph."""
 
-# Add edges
-builder.add_edge("generateArtifact", "generateFollowup")
-builder.add_edge("rewriteArtifact", "generateFollowup")
-builder.add_edge("generateFollowup", "END")
-builder.add_edge("replyToGeneralInput", "END")
+# Initialize graph builder with new state schema
+workflow = StateGraph(AgentState)
 
-# Compile the graph
-graph = builder.compile()
+# Add chatbot node
+workflow.add_node("call_model", call_model)
+workflow.add_node("tools", tool_node)
+
+# Add edges - start at chatbot and can end after chatbot
+workflow.add_edge(START, "call_model")
+workflow.add_conditional_edges("call_model", should_continue, ["tools", END])
+workflow.add_edge("tools", END)
+
+# Compile graph
+graph = workflow.compile()
+graph.name = "ui_graph"
+
+__all__ = ["graph"]
