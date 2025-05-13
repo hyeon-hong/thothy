@@ -2,23 +2,21 @@
 
 import logging
 import os
-import uuid
-from typing import Optional, Dict, Any, Annotated, Sequence, TypedDict
+from typing import Optional, Annotated, Sequence, TypedDict
 import json
 
-from cohere import ToolMessage
 from langchain_openai import ChatOpenAI
 from langchain_core.messages import AIMessage, BaseMessage
 from langgraph.graph.message import add_messages
 from langgraph.graph.ui import AnyUIMessage, ui_message_reducer, push_ui_message
-from langgraph.graph import MessagesState, StateGraph, START, END
+from langgraph.graph import StateGraph, START, END
 from langgraph.prebuilt import ToolNode
 from ui_graph.prompts import SYSTEM_PROMPT
-from ui_graph.shadcn_tools import generate_shadcn_widget
+from ui_graph.tools import generate_shadcn_widget
 
 
 # Configure logging to hide INFO messages
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.INFO)
 
 # Initialize global LLM
 VLLM_API_URL = os.getenv("VLLM_API_URL")
