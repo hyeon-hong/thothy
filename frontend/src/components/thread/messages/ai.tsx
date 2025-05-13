@@ -1,6 +1,5 @@
 import { parsePartialJson } from "@langchain/core/output_parsers";
 import { useStreamContext } from "@/providers/Stream";
-import { useStreamContext as useLangGraphStreamContext } from "@langchain/langgraph-sdk/react-ui";
 import type { AIMessage, Checkpoint, Message } from "@langchain/langgraph-sdk";
 import { getContentString } from "../utils";
 import { BranchSwitcher, CommandBar } from "./shared";
@@ -15,30 +14,7 @@ import { ThreadView } from "../agent-inbox";
 import { useQueryState, parseAsBoolean } from "nuqs";
 import { GenericInterruptView } from "./generic-interrupt";
 import { useArtifact } from "../artifact";
-
-const UIGraphComponent = (props: { code: string }) => {
-  const { meta } = useLangGraphStreamContext<
-    { code: string },
-    { MetaType: { ui: any; artifact: any } }
-  >();
-  const [ArtifactContent, { open, setOpen, context, setContext }] =
-    meta.artifact;
-
-  return (
-    <div className="bg-red-500">
-      <button
-        className="mb-2 px-2 py-1 rounded bg-white text-black border border-gray-300 hover:bg-gray-100"
-        onClick={() => setOpen(!open)}
-      >
-        {open ? "Hide" : "Show"}
-      </button>
-      <div>Code</div>
-      <ArtifactContent title={<div>{context.title}</div>}>
-        {context.code}
-      </ArtifactContent>
-    </div>
-  );
-};
+import UIGraphComponent from "@/app/agents/ui_agent/artifact";
 
 function CustomComponent({
   message,

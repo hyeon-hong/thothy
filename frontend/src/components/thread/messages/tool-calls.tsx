@@ -75,10 +75,9 @@ export function ToolResult({ message }: { message: ToolMessage }) {
   let isJsonContent = false;
 
   useEffect(() => {
-    setContext({
-      code: message.artifact.code,
-      title: message.artifact.title,
-    });
+    if (message.artifact) {
+      setContext(message.artifact);
+    }
   }, []);
 
   try {
