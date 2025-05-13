@@ -27,8 +27,7 @@ export async function GET(
         agents:agent_id (
           id,
           name,
-          description,
-          image_url
+          description
         )
       `)
       .eq("id", id)

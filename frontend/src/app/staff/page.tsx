@@ -51,7 +51,6 @@ type Agent = {
   id: string;
   name: string;
   description: string;
-  image_url: string;
   graph_name?: string;
 };
 
@@ -261,7 +260,7 @@ export default function StaffPage() {
             const supabase = createSupabaseClient();
             const { data, error } = await supabase
               .from("agents")
-              .select("id, name, description, image_url, graph_name");
+              .select("id, name, description, graph_name");
 
             if (error) {
               throw new Error(`Supabase error: ${error.message}`);
@@ -278,7 +277,7 @@ export default function StaffPage() {
             const supabase = createSupabaseClient();
             const { data, error } = await supabase
               .from("agents")
-              .select("id, name, description, image_url, graph_name");
+              .select("id, name, description, graph_name");
 
             if (error) {
               throw new Error(`Supabase error: ${error.message}`);

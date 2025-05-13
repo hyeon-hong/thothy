@@ -9,7 +9,6 @@ interface Agent {
     id: string;
     name: string;
     description: string;
-    image_url?: string;
     graph_name?: string;
     code?: string;
 }
@@ -97,7 +96,6 @@ export default function AgentHub() {
                             <AgentCard
                                 agent={{
                                     ...agent,
-                                    imageUrl: agent.image_url,
                                     graph_name: agent.graph_name || ''
                                 }}
                                 onSelect={handleAgentSelect}

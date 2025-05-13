@@ -23,8 +23,7 @@ export async function GET(request: Request) {
         agents:agent_id (
           id,
           name,
-          description,
-          image_url
+          description
         )
       `)
       .eq("user_id", session.user.id)
