@@ -14,30 +14,23 @@ import { ThreadView } from "../agent-inbox";
 import { useQueryState, parseAsBoolean } from "nuqs";
 import { GenericInterruptView } from "./generic-interrupt";
 import { useArtifact } from "../artifact";
+import { useEffect } from "react";
 
-// const WeatherComponent = (props: { city: string }) => {
-//   return <div className="bg-red-500">Weather for {props.city}</div>;
-// };
 const WeatherComponent = (props: { city: string }) => {
-  const { thread, submit } = useStreamContext();
+  const [ArtifactContent, { open, setOpen, context, setContext }] =
+    useArtifact();
+
   return (
-    <>
-      <div>Weather for {props.city}</div>
-
+    <div className="bg-red-500">
       <button
-        type="button"
-        onClick={() => {
-          const newMessage = {
-            type: "human",
-            content: `What's the weather in ${props.city}?`,
-          };
-
-          submit({ messages: [newMessage] });
-        }}
+        className="mb-2 px-2 py-1 rounded bg-white text-black border border-gray-300 hover:bg-gray-100"
+        onClick={() => setOpen(!open)}
       >
-        Retry
+        {open ? "Hide" : "Show"}
       </button>
-    </>
+      <div>Code</div>
+      {open && <ArtifactContent>{props.code}</ArtifactContent>}
+    </div>
   );
 };
 
@@ -74,8 +67,8 @@ function CustomComponent({
           key={customComponent.id}
           stream={thread}
           message={customComponent}
-          components={clientComponents}
           meta={{ ui: customComponent, artifact }}
+          components={clientComponents}
         />
       ))}
     </Fragment>
