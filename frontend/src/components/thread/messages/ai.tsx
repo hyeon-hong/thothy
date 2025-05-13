@@ -16,7 +16,7 @@ import { GenericInterruptView } from "./generic-interrupt";
 import { useArtifact } from "../artifact";
 import { useEffect } from "react";
 
-const WeatherComponent = (props: { city: string }) => {
+const WeatherComponent = (props: { code: string }) => {
   const [ArtifactContent, { open, setOpen, context, setContext }] =
     useArtifact();
 
@@ -41,9 +41,6 @@ function CustomComponent({
   message: Message;
   thread: ReturnType<typeof useStreamContext>;
 }) {
-  console.log("message: ", message);
-  console.log("thread: ", thread);
-
   const artifact = useArtifact();
   console.log("artifact: ", artifact);
 
