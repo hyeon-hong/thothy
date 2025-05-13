@@ -1,5 +1,6 @@
 import { parsePartialJson } from "@langchain/core/output_parsers";
 import { useStreamContext } from "@/providers/Stream";
+import { useStreamContext as useLangGraphStreamContext } from "@langchain/langgraph-sdk/react-ui";
 import type { AIMessage, Checkpoint, Message } from "@langchain/langgraph-sdk";
 import { getContentString } from "../utils";
 import { BranchSwitcher, CommandBar } from "./shared";
@@ -16,8 +17,12 @@ import { GenericInterruptView } from "./generic-interrupt";
 import { useArtifact } from "../artifact";
 
 const UIGraphComponent = (props: { code: string }) => {
+  const { meta } = useLangGraphStreamContext<
+    { code: string },
+    { MetaType: { ui: any; artifact: any } }
+  >();
   const [ArtifactContent, { open, setOpen, context, setContext }] =
-    useArtifact();
+    meta.artifact;
 
   return (
     <div className="bg-red-500">
@@ -28,7 +33,9 @@ const UIGraphComponent = (props: { code: string }) => {
         {open ? "Hide" : "Show"}
       </button>
       <div>Code</div>
-      {open && <ArtifactContent>{props.code}</ArtifactContent>}
+      <ArtifactContent title={<div>{context.title}</div>}>
+        {context.code}
+      </ArtifactContent>
     </div>
   );
 };
