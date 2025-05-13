@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Container, Grid, Typography, CircularProgress, Box } from "@mui/material";
 import AgentCard from "./AgentCard";
 import { useAuth } from "../contexts/AuthContext";
 
@@ -66,33 +65,16 @@ export default function AgentHub() {
     };
 
     return (
-        <Container maxWidth="lg" sx={{ py: 8 }}>
-            <Typography
-                variant="h3"
-                component="h1"
-                gutterBottom
-                align="center"
-                sx={{
-                    mb: 6,
-                    fontWeight: 700,
-                    letterSpacing: "-0.02em",
-                }}
-            >
-                Agent Hub
-            </Typography>
+        <div className="max-w-7xl mx-auto py-8 px-4">
+            <h1 className="text-3xl font-bold text-center mb-6 tracking-tight">Agent Hub</h1>
             {loading ? (
-                <Box 
-                    display="flex" 
-                    justifyContent="center" 
-                    alignItems="center" 
-                    minHeight="300px"
-                >
-                    <CircularProgress size={60} thickness={4} />
-                </Box>
+                <div className="flex justify-center items-center min-h-[300px]">
+                    <span className="animate-spin h-10 w-10 border-4 border-indigo-600 border-t-transparent rounded-full inline-block" />
+                </div>
             ) : (
-                <Grid container spacing={4} sx={{ mt: 2 }}>
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 mt-2">
                     {agents.map((agent) => (
-                        <Grid item key={agent.id} xs={12} sm={6} md={4}>
+                        <div key={agent.id}>
                             <AgentCard
                                 agent={{
                                     ...agent,
@@ -101,10 +83,10 @@ export default function AgentHub() {
                                 onSelect={handleAgentSelect}
                                 isSelected={selectedAgentIds.has(agent.id)}
                             />
-                        </Grid>
+                        </div>
                     ))}
-                </Grid>
+                </div>
             )}
-        </Container>
+        </div>
     );
 } 
