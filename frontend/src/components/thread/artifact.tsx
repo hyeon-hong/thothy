@@ -49,7 +49,6 @@ const ArtifactSlot = (props: {
     }
   }, [isEmpty, ctxSetMounted, props.id]);
 
-  console.log("isMounted: ", isMounted);
   if (!isMounted) return null;
   return (
     <>
@@ -121,7 +120,6 @@ export function ArtifactProvider(props: { children?: ReactNode }) {
 export function useArtifact() {
   const id = useId();
   const context = useContext(ArtifactSlotContext);
-  console.log("context: ", context);
   const [ctxOpen, ctxSetOpen] = context.open;
   const [ctxContext, ctxSetContext] = context.context;
   const [, ctxSetMounted] = context.mounted;
