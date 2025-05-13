@@ -24,6 +24,8 @@ logging.basicConfig(level=logging.DEBUG)
 VLLM_API_URL = os.getenv("VLLM_API_URL")
 llm: Optional[ChatOpenAI] = None
 
+UI_MESSAGE_NAME = "ui_graph"
+
 
 class AgentState(TypedDict):  # noqa: D101
     messages: Annotated[Sequence[BaseMessage], add_messages]
@@ -75,7 +77,7 @@ def call_model(state: AgentState):
         "code": artifact
     }
 
-    push_ui_message("weather", code, message=response)
+    push_ui_message(UI_MESSAGE_NAME, code, message=response)
 
     return {
         "messages": [response],

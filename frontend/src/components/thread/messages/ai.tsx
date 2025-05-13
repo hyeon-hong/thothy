@@ -14,9 +14,8 @@ import { ThreadView } from "../agent-inbox";
 import { useQueryState, parseAsBoolean } from "nuqs";
 import { GenericInterruptView } from "./generic-interrupt";
 import { useArtifact } from "../artifact";
-import { useEffect } from "react";
 
-const WeatherComponent = (props: { code: string }) => {
+const UIGraphComponent = (props: { code: string }) => {
   const [ArtifactContent, { open, setOpen, context, setContext }] =
     useArtifact();
 
@@ -42,18 +41,13 @@ function CustomComponent({
   thread: ReturnType<typeof useStreamContext>;
 }) {
   const artifact = useArtifact();
-  console.log("artifact: ", artifact);
-
   const { values } = useStreamContext();
-  console.log("values: ", values);
-
   const customComponents = values.ui?.filter(
     (ui) => ui.metadata?.message_id === message.id
   );
-  console.log("customComponents: ", customComponents);
 
-  const clientComponents = {
-    weather: WeatherComponent,
+  const artifactComponents = {
+    ui_graph: UIGraphComponent,
   };
 
   if (!customComponents?.length) return null;
@@ -65,7 +59,7 @@ function CustomComponent({
           stream={thread}
           message={customComponent}
           meta={{ ui: customComponent, artifact }}
-          components={clientComponents}
+          components={artifactComponents}
         />
       ))}
     </Fragment>
