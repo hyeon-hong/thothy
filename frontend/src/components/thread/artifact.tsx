@@ -22,7 +22,6 @@ const ArtifactSlotContext = createContext<{
   content: [HTMLElement | null, Setter<HTMLElement | null>];
 
   context: [Record<string, unknown>, Setter<Record<string, unknown>>];
-// biome-ignore lint/style/noNonNullAssertion: <explanation>
 }>(null!);
 
 /**
