@@ -18,7 +18,7 @@ def generate_shadcn_widget(widget_name: str, description: str, artifact: str) ->
 
     content = f"Successfully generated {widget_name} code."
     return content, {
-        "widget_name": widget_name,
+        "title": widget_name,
         "description": description,
         "code": artifact
     }

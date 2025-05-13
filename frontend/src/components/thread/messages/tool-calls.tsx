@@ -1,7 +1,8 @@
 import type { AIMessage, ToolMessage } from "@langchain/langgraph-sdk";
-import { useState } from "react";
+import { use, useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronDown, ChevronUp } from "lucide-react";
+import { useArtifact } from "../artifact";
 
 function isComplexValue(value: any): boolean {
   return Array.isArray(value) || (typeof value === "object" && value !== null);
@@ -67,9 +68,18 @@ export function ToolCalls({
 
 export function ToolResult({ message }: { message: ToolMessage }) {
   const [isExpanded, setIsExpanded] = useState(false);
+  const [ArtifactContent, { open, setOpen, context, setContext }] =
+    useArtifact();
 
   let parsedContent: any;
   let isJsonContent = false;
+
+  useEffect(() => {
+    setContext({
+      code: message.artifact.code,
+      title: message.artifact.title,
+    });
+  }, []);
 
   try {
     if (typeof message.content === "string") {
@@ -122,10 +132,7 @@ export function ToolResult({ message }: { message: ToolMessage }) {
           transition={{ duration: 0.3 }}
         >
           <div className="p-3">
-            <AnimatePresence
-              mode="wait"
-              initial={false}
-            >
+            <AnimatePresence mode="wait" initial={false}>
               <motion.div
                 key={isExpanded ? "expanded" : "collapsed"}
                 initial={{ opacity: 0, y: 20 }}
