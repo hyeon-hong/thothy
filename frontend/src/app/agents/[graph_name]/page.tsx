@@ -5,6 +5,7 @@ import { useParams } from "next/navigation";
 import Home from "@/app/agents/plan_agent/page";
 import ChatAgentPage from "@/app/agents/chat_agent/page";
 import DataAgentPage from "@/app/agents/data_agent/page";
+import UIAgentPage from "@/app/agents/ui_agent/page";
 
 export default function AgentPage() {
   const params = useParams();
@@ -16,10 +17,10 @@ export default function AgentPage() {
     switch (graph_name) {
       case "chat_graph":
         return <ChatAgentPage />;
-      case "plan_graph":
-        return <Home />;
       case "data_graph":
         return <DataAgentPage />;
+      case "ui_graph":
+        return <UIAgentPage />;
       default:
         return (
           <div className="container mx-auto px-4 py-8">

@@ -5,13 +5,11 @@
   "scripts": {
     "clean": "rm -rf ./node_modules ./.turbo ./.next ./dist ./yarn.lock",
     "clean:dist": "rm -rf ./dist",
-    "clean:cache": "yarn cache clean",
     "dev": "env-cmd -f ../.env next dev",
     "build": "next build",
     "start": "next start",
     "lint": "next lint"
   },
-  "packageManager": "yarn@1.22.22",
   "dependencies": {
     "@assistant-ui/react": "^0.10.5",
     "@assistant-ui/react-ai-sdk": "^0.10.6",
