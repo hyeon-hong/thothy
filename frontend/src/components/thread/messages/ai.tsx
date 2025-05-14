@@ -14,6 +14,8 @@ import { ThreadView } from "../agent-inbox";
 import { useQueryState, parseAsBoolean } from "nuqs";
 import { GenericInterruptView } from "./generic-interrupt";
 import { useArtifact } from "../artifact";
+
+import DataGraphComponent from "@/app/agents/data_agent/artifact";
 import UIGraphComponent from "@/app/agents/ui_agent/artifact";
 
 function CustomComponent({
@@ -30,6 +32,7 @@ function CustomComponent({
   );
 
   const artifactComponents = {
+    data_graph: DataGraphComponent,
     ui_graph: UIGraphComponent,
   };
 
