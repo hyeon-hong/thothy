@@ -3,8 +3,7 @@
     "."
   ],
   "graphs": {
-    "stockbroker": "./src/index.ts:graph"
+    "stockbroker": "./src/graph.py:graph"
   },
-  "env": "./.env",
-  "node_version": "20"
-}
+  "env": "./.env"
+} 
