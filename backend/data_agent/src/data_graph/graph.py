@@ -1,10 +1,11 @@
 from langgraph.graph import StateGraph, END, START
 from langchain_openai import ChatOpenAI
 from langchain_core.messages import SystemMessage, AIMessage
+from langgraph.prebuilt import ToolNode
 from pydantic import BaseModel, Field
-from typing import List, Optional, Any, Dict, Union
+from typing import List, Optional, Any, Dict
 
-from .tools import ALL_TOOLS_LIST
+from data_graph.tools import ALL_TOOLS_LIST
 
 
 # Define the state for the graph
@@ -56,7 +57,7 @@ def call_model(state: GraphState) -> Dict[str, Any]:
     return {"messages": result}
 
 
-def should_continue(state: GraphState) -> Union[str, List[str]]:
+def should_continue(state: GraphState) -> str:
     """LangGraph routing function that determines the next step in the research flow.
 
     Controls the research loop by deciding whether to continue gathering information
@@ -69,9 +70,13 @@ def should_continue(state: GraphState) -> Union[str, List[str]]:
         String literal indicating the next node to visit ("tools" or "END")
     """
 
-    # If the last message is not an AI message or doesn't have tool calls, we're done
+    # Get the messages
     messages = state.messages
+
+    # Get the last message
     last_message = messages[-1] if messages else None
+
+    # If the last message is not an AI message or doesn't have tool calls, we're done
     if not isinstance(last_message, AIMessage) or not getattr(last_message, "tool_calls", None):
         return END
 
@@ -82,20 +87,7 @@ def should_continue(state: GraphState) -> Union[str, List[str]]:
             "Expected tool_calls to be an array with at least one element")
 
     # If the tool calls are for the price snapshot tool, we need to continue
-    routes = []
-    for tc in tool_calls:
-        routes.append("tools")
-
-    # Otherwise, we're done
-    return routes
-
-
-def find_company_ticker(company_name: str) -> str:
-    """Find the company ticker"""
-
-    # Placeholder: In production, use a web search tool or LLM to extract ticker
-    # For now, just return the company name as ticker for demo
-    return company_name.upper()
+    return "tools"
 
 
 def build_graph():
@@ -105,17 +97,25 @@ def build_graph():
     workflow = StateGraph(GraphState)
 
     # Add nodes
-    workflow.add_node("agent", call_model)
-    workflow.add_node("tools", lambda state: state)
+    workflow.add_node("call_model", call_model)
+    workflow.add_node("tools", ToolNode(ALL_TOOLS_LIST))
 
     # Add edges
-    workflow.add_edge(START, "agent")
-    workflow.add_conditional_edges("agent", should_continue, ["tools", END])
-    workflow.add_edge("tools", "agent")
+    workflow.add_edge(START, "call_model")
+    workflow.add_conditional_edges(
+        "call_model", should_continue, ["tools", END])
+    workflow.add_edge("tools", END)
 
     # Compile the graph
-    return workflow.compile()
+    graph = workflow.compile()
+    graph.name = "data_graph"
+
+    # Return the graph
+    return graph
 
 
 # Build the graph
 graph = build_graph()
+
+# Return the graph
+__all__ = ["graph"]
