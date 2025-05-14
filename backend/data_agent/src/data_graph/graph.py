@@ -1,26 +1,15 @@
-from langgraph.graph import StateGraph, END, START
+from langgraph.graph import StateGraph, END, START, MessagesState
 from langchain_openai import ChatOpenAI
 from langchain_core.messages import SystemMessage, AIMessage
 from langgraph.prebuilt import ToolNode
-from pydantic import BaseModel, Field
-from typing import List, Optional, Any, Dict
-
 from data_graph.tools import ALL_TOOLS_LIST
 
 
-# Define the state for the graph
-class GraphState(BaseModel):
-    """State for the graph"""
-
-    messages: List[Any] = Field(default_factory=list)
-    requested_stock_purchase_details: Optional[Dict[str, Any]] = None
-
-
-def call_model(state: GraphState) -> Dict[str, Any]:
+def call_model(state: MessagesState) -> dict:
     """Call the model"""
 
     # Get the messages
-    messages = state.messages
+    messages = state["messages"]
 
     # Get the system message
     system_message_content = (
@@ -40,7 +29,9 @@ def call_model(state: GraphState) -> Dict[str, Any]:
         "1. First check if the query contains time period indicators (e.g., 'last month', 'past 3 years', etc.)\n"
         "2. For relative time references, calculate the appropriate start and end dates based on the current date\n"
         "3. Pass these calculated dates to the appropriate tool rather than relying on default values\n"
-        "4. Provide clear date context in your response to the user (e.g., 'Here's GOOGL's price history from February 1, 2025 to March 1, 2025...')"
+        "4. Provide clear date context in your response to the user (e.g., 'Here's GOOGL's price history from February 1, 2025 to March 1, 2025...')\n\n"
+        "Use the web_search_tool for searching anything except for financial data, company facts, or price-related queries. "
+        "For all financial data, company facts, or price-related queries, use the appropriate financial tools."
     )
     system_message = SystemMessage(content=system_message_content)
 
@@ -57,21 +48,18 @@ def call_model(state: GraphState) -> Dict[str, Any]:
     return {"messages": result}
 
 
-def should_continue(state: GraphState) -> str:
+def should_continue(state: MessagesState) -> str:
     """LangGraph routing function that determines the next step in the research flow.
-
     Controls the research loop by deciding whether to continue gathering information
     or to finalize the summary based on the configured maximum number of research loops.
-
     Args:
         state: Current graph state containing the research loop count
-
     Returns:
         String literal indicating the next node to visit ("tools" or "END")
     """
 
     # Get the messages
-    messages = state.messages
+    messages = state["messages"]
 
     # Get the last message
     last_message = messages[-1] if messages else None
@@ -83,8 +71,7 @@ def should_continue(state: GraphState) -> str:
     # Get the tool calls from the last message
     tool_calls = getattr(last_message, "tool_calls", [])
     if not tool_calls:
-        raise RuntimeError(
-            "Expected tool_calls to be an array with at least one element")
+        return END
 
     # If the tool calls are for the price snapshot tool, we need to continue
     return "tools"
@@ -94,7 +81,7 @@ def build_graph():
     """Build the graph"""
 
     # Create the workflow
-    workflow = StateGraph(GraphState)
+    workflow = StateGraph(MessagesState)
 
     # Add nodes
     workflow.add_node("call_model", call_model)
@@ -104,7 +91,7 @@ def build_graph():
     workflow.add_edge(START, "call_model")
     workflow.add_conditional_edges(
         "call_model", should_continue, ["tools", END])
-    workflow.add_edge("tools", END)
+    workflow.add_edge("tools", "call_model")
 
     # Compile the graph
     graph = workflow.compile()

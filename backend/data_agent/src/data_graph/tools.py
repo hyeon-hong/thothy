@@ -1,3 +1,4 @@
+import logging
 import os
 import requests
 from typing import Any, Dict, Optional
@@ -155,18 +156,30 @@ class PricesInput(BaseModel):
 
 
 @tool("prices", args_schema=PricesInput)
-def prices_tool(input: PricesInput) -> str:
+def prices_tool(input: PricesInput = None, **kwargs) -> str:
     """Retrieves historical stock price data for a specific ticker between two dates."""
+    logging.info(f"Input: {input}")
+    logging.info(f"Kwargs: {kwargs}")
+
     try:
+        # If input is None, use kwargs to create a new PricesInput instance
+        if input is None:
+            input = PricesInput(**kwargs)
+
+        # Get the start and end dates
         from datetime import datetime, timedelta
         start_date = input.start_date
         end_date = input.end_date
+
+        # If start and end dates are not provided, set them to one month ago and today's date respectively
         if not start_date or not end_date:
             current_date = datetime.now()
             end_date = end_date or current_date.strftime("%Y-%m-%d")
             if not start_date:
                 one_month_ago = current_date - timedelta(days=30)
                 start_date = one_month_ago.strftime("%Y-%m-%d")
+
+        # Call the financial dataset API
         data = call_financial_dataset_api(
             "/prices",
             {
@@ -177,7 +190,10 @@ def prices_tool(input: PricesInput) -> str:
                 "end_date": end_date,
             },
         )
+
+        # Return the data
         return str(data)
+
     except Exception as e:
         return f"An error occurred while fetching prices: {e}"
 
