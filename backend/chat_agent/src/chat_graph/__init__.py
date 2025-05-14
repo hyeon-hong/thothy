@@ -1,5 +1,5 @@
-"""UI Agent"""
+"""Chat Agent"""
 
-from ui_graph.graph import graph
+from chat_graph.graph import graph
 
 __all__ = ["graph"]
