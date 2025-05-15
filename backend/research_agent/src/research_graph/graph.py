@@ -1,6 +1,7 @@
 import json
 import logging
 
+from langchain_openai import ChatOpenAI
 from typing_extensions import Literal
 
 from langchain_core.messages import HumanMessage, SystemMessage
@@ -56,6 +57,11 @@ def generate_query(state: SummaryState, config: RunnableConfig):
             temperature=0,
             format="json"
         )
+    llm_json_mode = ChatOpenAI(
+        model="gpt-4o-mini",
+        temperature=0,
+        # format="json"
+    )
 
     logging.info(
         f"configurable.ollama_base_url: {configurable.ollama_base_url}")
@@ -179,6 +185,10 @@ def summarize_sources(state: SummaryState, config: RunnableConfig):
             model=configurable.local_llm,
             temperature=0
         )
+    llm = ChatOpenAI(
+        model="gpt-4o-mini",
+        temperature=0,
+    )
 
     result = llm.invoke(
         [SystemMessage(content=summarizer_instructions),
@@ -226,6 +236,10 @@ def reflect_on_summary(state: SummaryState, config: RunnableConfig):
             temperature=0,
             format="json"
         )
+    llm_json_mode = ChatOpenAI(
+        model="gpt-4o-mini",
+        temperature=0,
+    )
 
     result = llm_json_mode.invoke(
         [SystemMessage(content=reflection_instructions.format(research_topic=state.research_topic)),
