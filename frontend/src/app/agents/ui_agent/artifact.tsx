@@ -18,7 +18,11 @@ export default function UIGraphComponent(props: { code: string }) {
       </button>
       <div>Code</div>
       <ArtifactContent title={<div>{context.title}</div>}>
-        {context.code}
+        {typeof context === "object" && context !== null ? (
+          <pre>{JSON.stringify(context, null, 2)}</pre>
+        ) : (
+          context
+        )}
       </ArtifactContent>
     </div>
   );

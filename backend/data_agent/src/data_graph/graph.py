@@ -1,11 +1,21 @@
-from langgraph.graph import StateGraph, END, START, MessagesState
+from typing import Annotated, Sequence, TypedDict
+from langgraph.graph import StateGraph, END, START
+from langgraph.graph.ui import AnyUIMessage, ui_message_reducer, push_ui_message
 from langchain_openai import ChatOpenAI
-from langchain_core.messages import SystemMessage, AIMessage
+from langgraph.graph.message import add_messages
+from langchain_core.messages import SystemMessage, AIMessage, BaseMessage
 from langgraph.prebuilt import ToolNode
 from data_graph.tools import ALL_TOOLS_LIST
 
+UI_COMPONENT_NAME = "data_graph"
 
-def call_model(state: MessagesState) -> dict:
+
+class AgentState(TypedDict):  # noqa: D101
+    messages: Annotated[Sequence[BaseMessage], add_messages]
+    ui: Annotated[Sequence[AnyUIMessage], ui_message_reducer]
+
+
+def call_model(state: AgentState) -> dict:
     """Call the model"""
 
     # Get the messages
@@ -31,7 +41,8 @@ def call_model(state: MessagesState) -> dict:
         "3. Pass these calculated dates to the appropriate tool rather than relying on default values\n"
         "4. Provide clear date context in your response to the user (e.g., 'Here's GOOGL's price history from February 1, 2025 to March 1, 2025...')\n\n"
         "Use the web_search_tool for searching anything except for financial data, company facts, or price-related queries. "
-        "For all financial data, company facts, or price-related queries, use the appropriate financial tools."
+        "For all financial data, company facts, or price-related queries, use the appropriate financial tools.\n\n"
+        "After using the web_search_tool, extract only the company stock symbol (ticker) or today's date/time from the results and remove any other information."
     )
     system_message = SystemMessage(content=system_message_content)
 
@@ -42,13 +53,15 @@ def call_model(state: MessagesState) -> dict:
     llm_with_tools = llm.bind_tools(ALL_TOOLS_LIST)
 
     # Invoke the LLM
-    result = llm_with_tools.invoke([system_message] + messages)
+    response = llm_with_tools.invoke([system_message] + messages)
+
+    push_ui_message(UI_COMPONENT_NAME, {}, message=response)
 
     # Return the result
-    return {"messages": result}
+    return {"messages": [response]}
 
 
-def should_continue(state: MessagesState) -> str:
+def should_continue(state: AgentState) -> str:
     """LangGraph routing function that determines the next step in the research flow.
     Controls the research loop by deciding whether to continue gathering information
     or to finalize the summary based on the configured maximum number of research loops.
@@ -81,7 +94,7 @@ def build_graph():
     """Build the graph"""
 
     # Create the workflow
-    workflow = StateGraph(MessagesState)
+    workflow = StateGraph(AgentState)
 
     # Add nodes
     workflow.add_node("call_model", call_model)
