@@ -1,6 +1,11 @@
 import { useStreamContext } from "@langchain/langgraph-sdk/react-ui";
 import { useEffect, useState } from "react";
-import { Sandpack } from "@codesandbox/sandpack-react";
+import {
+  SandpackProvider,
+  SandpackLayout,
+  SandpackPreview,
+  SandpackCodeEditor,
+} from "@codesandbox/sandpack-react";
 import Markdown from "react-markdown";
 
 export default function UIGraphComponent(props: { code: string }) {
@@ -32,71 +37,52 @@ h1 {
     },
   };
 
-  const NEXTJS_TEMPLATE = {
+  const REACT_TEMPLATE = {
     files: {
       ...commonFiles,
-      "/pages/_app.js": {
-        code: `import '../styles.css'
-
-export default function MyApp({ Component, pageProps }) {
-  return <Component {...pageProps} />
-}`,
+      "/App.js": {
+        code: props.code,
       },
-      "/pages/index.js": {
-        code: `import ReactMarkdown from 'react-markdown'
+      "/index.js": {
+        code: `import React, { StrictMode } from "react";
+import { createRoot } from "react-dom/client";
+import "./styles.css";
 
-export default function Home({ data }) {
-  return (
-    <div>
-      <h1>Hello test {data}</h1>
-      <ReactMarkdown>
-        # Hello, *world*!
-        ## Test
-      </ReactMarkdown>
-    </div>
-  );
-}
-  
-export function getServerSideProps() {
-  return {
-    props: { data: "world" },
-  }
-}
-`,
+import App from "./App";
+
+const root = createRoot(document.getElementById("root"));
+root.render(
+  <StrictMode>
+    <App />
+  </StrictMode>
+);`,
       },
-      "/next.config.js": {
-        code: `/** @type {import('next').NextConfig} */
-const nextConfig = {
-  reactStrictMode: true,
-  swcMinify: true,
-}
-
-module.exports = nextConfig
-`,
+      "/public/index.html": {
+        code: `<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+  </head>
+  <body>
+    <div id="root"></div>
+  </body>
+</html>`,
       },
       "/package.json": {
         code: JSON.stringify({
-          name: "my-app",
-          version: "0.1.0",
-          private: true,
-          scripts: {
-            dev: "NEXT_TELEMETRY_DISABLED=1 next dev",
-            build: "next build",
-            start: "next start",
-            lint: "next lint",
-          },
           dependencies: {
-            next: "12.1.6", // @todo: update to the latest version
-            react: "18.2.0",
-            "react-dom": "18.2.0",
-            "@next/swc-wasm-nodejs": "12.1.6",
-            "react-markdown": "latest",
+            react: "^19.0.0",
+            "react-dom": "^19.0.0",
+            "react-scripts": "^5.0.0",
           },
+          main: "/index.js",
         }),
       },
     },
-    main: "/pages/index.js",
-    environment: "node",
+    main: "/App.js",
+    environment: "create-react-app",
   };
 
   useEffect(() => {
@@ -114,16 +100,26 @@ module.exports = nextConfig
       </button>
       <div>Code</div>
       <ArtifactContent title={<div>Code</div>}>
-        <Sandpack
-          template="nextjs"
-          customSetup={{
-            dependencies: {
-              "react-markdown": "latest",
-            },
+        <SandpackProvider
+          template="react"
+          options={{
+            externalResources: ["https://cdn.tailwindcss.com"],
           }}
-          files={NEXTJS_TEMPLATE["files"]}
-          entry={NEXTJS_TEMPLATE["main"]}
-        />
+          files={REACT_TEMPLATE["files"]}
+        >
+          <SandpackLayout>
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                width: "100%",
+              }}
+            >
+              <SandpackPreview />
+              <SandpackCodeEditor wrapContent />
+            </div>
+          </SandpackLayout>
+        </SandpackProvider>
       </ArtifactContent>
     </div>
   );
