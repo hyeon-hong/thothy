@@ -119,6 +119,6 @@ workflow.add_edge("tools", END)
 
 # Compile graph
 graph = workflow.compile()
-graph.name = "ui_graph"
+graph.name = UI_COMPONENT_NAME
 
 __all__ = ["graph"]
