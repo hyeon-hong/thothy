@@ -11,7 +11,7 @@ from langgraph.graph.message import add_messages
 from langgraph.graph.ui import AnyUIMessage, ui_message_reducer, push_ui_message
 from langgraph.graph import StateGraph, START, END
 from langgraph.prebuilt import ToolNode
-from ui_graph.prompts import SYSTEM_PROMPT
+from ui_graph.prompts import get_coding_prompt
 from ui_graph.tools import generate_shadcn_widget
 
 
@@ -63,12 +63,11 @@ def should_continue(state: AgentState):
 
 
 def call_model(state: AgentState):
-    messages = [{"role": "system", "content": SYSTEM_PROMPT}] + \
+    messages = [{"role": "system", "content": get_coding_prompt()}] + \
         state["messages"]
     response = model_with_tools.invoke(messages)
 
     artifact = extract_artifact_from_response(response)
-    artifact = "export default function App() { return " + artifact + " }"
 
     class Code(TypedDict):
         code: str

@@ -1,5 +1,5 @@
 import { v4 as uuidv4 } from "uuid";
-import { type ReactNode, useEffect, useRef } from "react";
+import { type ReactNode, useEffect, useRef, ChangeEvent } from "react";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { useStreamContext } from "@/providers/Stream";
@@ -12,7 +12,6 @@ import {
   DO_NOT_RENDER_ID_PREFIX,
   ensureToolCallsHaveResponses,
 } from "@/lib/ensure-tool-responses";
-import { LangGraphLogoSVG } from "../icons/langgraph";
 import { TooltipIconButton } from "./tooltip-icon-button";
 import {
   ArrowDown,
@@ -21,6 +20,8 @@ import {
   PanelRightClose,
   SquarePen,
   XIcon,
+  Plus,
+  CircleX,
 } from "lucide-react";
 import { useQueryState, parseAsBoolean } from "nuqs";
 import { StickToBottom, useStickToBottomContext } from "use-stick-to-bottom";
@@ -29,7 +30,6 @@ import { toast } from "sonner";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
 import { Label } from "../ui/label";
 import { Switch } from "../ui/switch";
-import { GitHubSVG } from "../icons/github";
 import {
   Tooltip,
   TooltipContent,
@@ -42,6 +42,14 @@ import {
   ArtifactTitle,
   useArtifactContext,
 } from "./artifact";
+import {
+  fileToImageBlock,
+  fileToPDFBlock,
+  toOpenAIImageBlock,
+  toOpenAIPDFBlock,
+} from "@/lib/multimodal-utils";
+import type { Base64ContentBlock } from "@langchain/core/messages";
+import { convertToOpenAIImageBlock } from "@langchain/core/messages";
 
 function StickyToBottomContent(props: {
   content: ReactNode;
@@ -95,6 +103,8 @@ export function Thread() {
     parseAsBoolean.withDefault(false)
   );
   const [input, setInput] = useState("");
+  const [imageUrlList, setImageUrlList] = useState<Base64ContentBlock[]>([]);
+  const [pdfUrlList, setPdfUrlList] = useState<Base64ContentBlock[]>([]);
   const [firstTokenReceived, setFirstTokenReceived] = useState(false);
   const isLargeScreen = useMediaQuery("(min-width: 1024px)");
 
@@ -103,6 +113,7 @@ export function Thread() {
   const isLoading = stream.isLoading;
 
   const lastError = useRef<string | undefined>(undefined);
+  const dropRef = useRef<HTMLDivElement>(null);
 
   const setThreadId = (id: string | null) => {
     _setThreadId(id);
@@ -154,19 +165,52 @@ export function Thread() {
     prevMessageLength.current = messages.length;
   }, [messages]);
 
+  const handleImageUpload = async (e: ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (files) {
+      const imageBlocks = await Promise.all(
+        Array.from(files).map(fileToImageBlock)
+      );
+      setImageUrlList((prev) => [...prev, ...imageBlocks]);
+    }
+    e.target.value = "";
+  };
+
+  const handlePDFUpload = async (e: ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (files) {
+      const pdfBlocks = await Promise.all(
+        Array.from(files).map(fileToPDFBlock)
+      );
+      setPdfUrlList((prev) => [...prev, ...pdfBlocks]);
+    }
+    e.target.value = "";
+  };
+
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
     if (!input.trim() || isLoading) return;
     setFirstTokenReceived(false);
 
+    // TODO: check configurable object for modelname camelcase or snakecase else do openai format
+    const isOpenAI = true;
+
+    const pdfBlocks = pdfUrlList.map(toOpenAIPDFBlock);
+
     const newHumanMessage: Message = {
       id: uuidv4(),
       type: "human",
-      content: input,
+      content:
+        imageUrlList.length || pdfBlocks.length
+          ? ([
+              { type: "text", text: input },
+              ...imageUrlList.map(toOpenAIImageBlock),
+              ...pdfBlocks,
+            ] as Message["content"])
+          : input,
     };
 
     const toolMessages = ensureToolCallsHaveResponses(stream.messages);
-
     const context =
       Object.keys(artifactContext).length > 0 ? artifactContext : undefined;
 
@@ -187,6 +231,8 @@ export function Thread() {
     );
 
     setInput("");
+    setImageUrlList([]);
+    setPdfUrlList([]);
   };
 
   const handleRegenerate = (
@@ -205,6 +251,73 @@ export function Thread() {
   const hasNoAIOrToolMessages = !messages.find(
     (m) => m.type === "ai" || m.type === "tool"
   );
+
+  useEffect(() => {
+    if (!dropRef.current) return;
+
+    const handleDragOver = (e: DragEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+    };
+
+    const handleDrop = async (e: DragEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+
+      if (!e.dataTransfer) return;
+
+      const files = Array.from(e.dataTransfer.files);
+      const imageFiles = files.filter((file) => file.type.startsWith("image/"));
+      const pdfFiles = files.filter((file) => file.type === "application/pdf");
+      const invalidFiles = files.filter(
+        (file) =>
+          !file.type.startsWith("image/") && file.type !== "application/pdf"
+      );
+
+      if (invalidFiles.length > 0) {
+        toast.error(
+          "You have uploaded invalid file type. Please upload an image or a PDF."
+        );
+      }
+
+      if (imageFiles.length) {
+        const imageBlocks: Base64ContentBlock[] = await Promise.all(
+          imageFiles.map(fileToImageBlock)
+        );
+        setImageUrlList((prev) => [...prev, ...imageBlocks]);
+      }
+
+      if (pdfFiles.length) {
+        const pdfBlocks: Base64ContentBlock[] = await Promise.all(
+          pdfFiles.map(fileToPDFBlock)
+        );
+        setPdfUrlList((prev) => [...prev, ...pdfBlocks]);
+      }
+    };
+
+    const handleDragEnter = (e: DragEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+    };
+
+    const handleDragLeave = (e: DragEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+    };
+
+    const element = dropRef.current;
+    element.addEventListener("dragover", handleDragOver);
+    element.addEventListener("drop", handleDrop);
+    element.addEventListener("dragenter", handleDragEnter);
+    element.addEventListener("dragleave", handleDragLeave);
+
+    return () => {
+      element.removeEventListener("dragover", handleDragOver);
+      element.removeEventListener("drop", handleDrop);
+      element.removeEventListener("dragenter", handleDragEnter);
+      element.removeEventListener("dragleave", handleDragLeave);
+    };
+  });
 
   return (
     <div className="flex h-screen w-full overflow-hidden">
@@ -305,7 +418,6 @@ export function Thread() {
                     damping: 30,
                   }}
                 >
-                  <LangGraphLogoSVG width={32} height={32} />
                   <span className="text-xl font-semibold tracking-tight">
                     Agent Chat
                   </span>
@@ -372,10 +484,9 @@ export function Thread() {
                 </>
               }
               footer={
-                <div className="sticky bottom-0 flex flex-col items-center gap-8 bg-white">
+                <div className="sticky bottom-12 flex flex-col items-center gap-8 bg-white">
                   {!chatStarted && (
                     <div className="flex items-center gap-3">
-                      <LangGraphLogoSVG className="h-8 flex-shrink-0" />
                       <h1 className="text-2xl font-semibold tracking-tight">
                         Agent Chat
                       </h1>
@@ -384,11 +495,64 @@ export function Thread() {
 
                   <ScrollToBottom className="animate-in fade-in-0 zoom-in-95 absolute bottom-full left-1/2 mb-4 -translate-x-1/2" />
 
-                  <div className="bg-muted relative z-10 mx-auto mb-8 w-full max-w-3xl rounded-2xl border shadow-xs">
+                  <div
+                    ref={dropRef}
+                    className="bg-muted relative z-10 mx-auto mb-8 w-full max-w-3xl rounded-2xl border shadow-xs"
+                  >
                     <form
                       onSubmit={handleSubmit}
                       className="mx-auto grid max-w-3xl grid-rows-[1fr_auto] gap-2"
                     >
+                      {imageUrlList.length > 0 && (
+                        <div className="flex flex-wrap gap-2 p-3.5 pb-0">
+                          {imageUrlList.map((imageBlock, idx) => {
+                            const imageUrlString = `data:${imageBlock.mime_type};base64,${imageBlock.data}`;
+                            return (
+                              <div className="relative" key={idx}>
+                                <img
+                                  src={imageUrlString}
+                                  alt="uploaded"
+                                  className="h-16 w-16 rounded-md object-cover"
+                                />
+                                <CircleX
+                                  className="absolute top-[2px] right-[2px] size-4 cursor-pointer rounded-full bg-gray-500 text-white"
+                                  onClick={() =>
+                                    setImageUrlList(
+                                      imageUrlList.filter((_, i) => i !== idx)
+                                    )
+                                  }
+                                />
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                      {pdfUrlList.length > 0 && (
+                        <div className="flex flex-wrap gap-2 p-3.5 pb-0">
+                          {pdfUrlList.map((pdfBlock, idx) => (
+                            <div
+                              className="relative flex items-center gap-2 rounded rounded-md border-1 border-teal-700 bg-gray-100 bg-teal-900 px-2 py-1 py-2 text-white"
+                              key={idx}
+                            >
+                              <span className="max-w-xs truncate text-sm">
+                                {String(
+                                  pdfBlock.metadata?.filename ??
+                                    pdfBlock.metadata?.name ??
+                                    ""
+                                )}
+                              </span>
+                              <CircleX
+                                className="size-4 cursor-pointer text-teal-600 hover:text-teal-500"
+                                onClick={() =>
+                                  setPdfUrlList(
+                                    pdfUrlList.filter((_, i) => i !== idx)
+                                  )
+                                }
+                              />
+                            </div>
+                          ))}
+                        </div>
+                      )}
                       <textarea
                         value={input}
                         onChange={(e) => setInput(e.target.value)}
@@ -410,7 +574,41 @@ export function Thread() {
                       />
 
                       <div className="flex items-center justify-between p-2 pt-4">
-                        <div>
+                        <div className="flex items-center gap-2">
+                          <Label
+                            htmlFor="image-input"
+                            className="flex cursor-pointer items-center gap-2"
+                          >
+                            <Plus className="size-5 text-gray-600" />
+                            <span className="text-sm text-gray-600">
+                              Upload Image
+                            </span>
+                          </Label>
+                          <input
+                            id="image-input"
+                            type="file"
+                            onChange={handleImageUpload}
+                            multiple
+                            accept="image/*"
+                            className="hidden"
+                          />
+                          <Label
+                            htmlFor="file-input"
+                            className="flex cursor-pointer items-center gap-2"
+                          >
+                            <Plus className="size-5 text-gray-600" />
+                            <span className="text-sm text-gray-600">
+                              Upload PDF
+                            </span>
+                          </Label>
+                          <input
+                            id="file-input"
+                            type="file"
+                            onChange={handlePDFUpload}
+                            multiple
+                            accept="application/pdf"
+                            className="hidden"
+                          />
                           <div className="flex items-center space-x-2">
                             <Switch
                               id="render-tool-calls"
