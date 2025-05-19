@@ -11,7 +11,7 @@ export default function UIAgentPage(): React.ReactNode {
   return (
     <React.Suspense fallback={<div>Loading (layout)...</div>}>
       <Toaster />
-      <ThreadProvider>
+      <ThreadProvider assistantId="ui_agent">
         <StreamProvider>
           <ArtifactProvider>
             <Thread />
