@@ -8,10 +8,13 @@ import { Toaster } from "@/components/ui/sonner";
 import React from "react";
 
 export default function UIAgentPage(): React.ReactNode {
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:2024";
+  const assistantId = "ui_agent";
+
   return (
     <React.Suspense fallback={<div>Loading (layout)...</div>}>
       <Toaster />
-      <ThreadProvider assistantId="ui_agent">
+      <ThreadProvider assistantId={assistantId} apiUrl={apiUrl}>
         <StreamProvider>
           <ArtifactProvider>
             <Thread />
