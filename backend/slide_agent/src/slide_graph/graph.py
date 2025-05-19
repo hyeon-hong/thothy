@@ -11,8 +11,8 @@ from langgraph.graph.message import add_messages
 from langgraph.graph.ui import AnyUIMessage, ui_message_reducer, push_ui_message
 from langgraph.graph import StateGraph, START, END
 from langgraph.prebuilt import ToolNode
-from ui_graph.prompts import SYSTEM_PROMPT
-from ui_graph.tools import generate_shadcn_widget
+from slide_graph.prompts import SYSTEM_PROMPT
+from slide_graph.tools import generate_shadcn_widget
 
 
 # Configure logging to hide INFO messages
@@ -22,7 +22,7 @@ logging.basicConfig(level=logging.INFO)
 VLLM_API_URL = os.getenv("VLLM_API_URL")
 llm: Optional[ChatOpenAI] = None
 
-UI_COMPONENT_NAME = "ui_graph"
+SLIDE_COMPONENT_NAME = "slide_graph"
 
 
 class AgentState(TypedDict):  # noqa: D101
@@ -76,7 +76,7 @@ def call_model(state: AgentState):
         "code": artifact
     }
 
-    push_ui_message(UI_COMPONENT_NAME, code, message=response)
+    push_ui_message(SLIDE_COMPONENT_NAME, code, message=response)
 
     return {
         "messages": [response],
