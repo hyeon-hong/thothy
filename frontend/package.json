@@ -17,6 +17,7 @@
     "@assistant-ui/react-markdown": "^0.10.3",
     "@assistant-ui/react-syntax-highlighter": "^0.10.3",
     "@codesandbox/sandpack-react": "^2.20.0",
+    "@codesandbox/sandpack-themes": "^2.0.21",
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.0",
     "@ffmpeg/ffmpeg": "^0.12.15",

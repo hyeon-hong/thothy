@@ -1,13 +1,12 @@
-utils = '''
+export const utils = `
 import { type ClassValue, clsx } from "clsx"
 import { twMerge } from "tailwind-merge"
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
-'''
-
-accordian = '''import * as React from "react"
+`;
+export const accordian = `import * as React from "react"
 import * as AccordionPrimitive from "@radix-ui/react-accordion"
 import { ChevronDown } from "lucide-react"
 
@@ -63,9 +62,8 @@ const AccordionContent = React.forwardRef<
 AccordionContent.displayName = AccordionPrimitive.Content.displayName
 
 export { Accordion, AccordionItem, AccordionTrigger, AccordionContent }
-'''
-
-alertDialog = '''import * as React from "react"
+`;
+export const alertDialog = `import * as React from "react"
 import * as AlertDialogPrimitive from "@radix-ui/react-alert-dialog"
 
 import { cn } from "../../lib/utils"
@@ -204,9 +202,8 @@ export {
   AlertDialogAction,
   AlertDialogCancel,
 }
-'''
-
-alert = '''import * as React from "react"
+`;
+export const alert = `import * as React from "react"
 import { cva, type VariantProps } from "class-variance-authority"
 
 import { cn } from "../../lib/utils"
@@ -266,9 +263,8 @@ AlertDescription.displayName = "AlertDescription"
 
 export { Alert, AlertTitle, AlertDescription }
 
-'''
-
-avatar = '''import * as React from "react"
+`;
+export const avatar = `import * as React from "react"
 import * as AvatarPrimitive from "@radix-ui/react-avatar"
 
 import { cn } from "../../lib/utils"
@@ -317,9 +313,8 @@ AvatarFallback.displayName = AvatarPrimitive.Fallback.displayName
 
 export { Avatar, AvatarImage, AvatarFallback }
 
-'''
-
-badge = '''import * as React from "react"
+`;
+export const badge = `import * as React from "react"
 import { cva, type VariantProps } from "class-variance-authority"
 
 import { cn } from "../../lib/utils"
@@ -356,9 +351,8 @@ function Badge({ className, variant, ...props }: BadgeProps) {
 
 export { Badge, badgeVariants }
 
-'''
-
-breadcrumb = '''import * as React from "react"
+`;
+export const breadcrumb = `import * as React from "react"
 import { Slot } from "@radix-ui/react-slot"
 import { ChevronRight, MoreHorizontal } from "lucide-react"
 
@@ -474,9 +468,8 @@ export {
   BreadcrumbEllipsis,
 }
 
-'''
-
-button = '''import * as React from "react"
+`;
+export const button = `import * as React from "react"
 import { Slot } from "@radix-ui/react-slot"
 import { cva, type VariantProps } from "class-variance-authority"
 
@@ -532,9 +525,8 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
 Button.displayName = "Button"
 
 export { Button, buttonVariants }
-'''
-
-calendar = '''import * as React from "react"
+`;
+export const calendar = `import * as React from "react"
 import { ChevronLeft, ChevronRight } from "lucide-react"
 import { DayPicker } from "react-day-picker"
 
@@ -599,9 +591,8 @@ Calendar.displayName = "Calendar"
 
 export { Calendar }
 
-'''
-
-card = '''import * as React from 'react';
+`;
+export const card = `import * as React from 'react';
 
 import { cn } from '../../lib/utils';
 
@@ -680,9 +671,8 @@ const CardFooter = React.forwardRef<
 CardFooter.displayName = "CardFooter"
 
 export { Card, CardHeader, CardFooter, CardTitle, CardDescription, CardContent }
-'''
-
-carousel = '''import * as React from "react"
+`;
+export const carousel = `import * as React from "react"
 import useEmblaCarousel, {
   type UseEmblaCarouselType,
 } from "embla-carousel-react"
@@ -943,9 +933,8 @@ export {
   CarouselNext,
 }
 
-'''
-
-checkbox = '''import * as React from "react"
+`;
+export const checkbox = `import * as React from "react"
 import * as CheckboxPrimitive from "@radix-ui/react-checkbox"
 import { Check } from "lucide-react"
 
@@ -974,9 +963,8 @@ Checkbox.displayName = CheckboxPrimitive.Root.displayName
 
 export { Checkbox }
 
-'''
-
-collapsible = '''import * as CollapsiblePrimitive from "@radix-ui/react-collapsible"
+`;
+export const collapsible = `import * as CollapsiblePrimitive from "@radix-ui/react-collapsible"
 
 const Collapsible = CollapsiblePrimitive.Root
 
@@ -986,9 +974,8 @@ const CollapsibleContent = CollapsiblePrimitive.CollapsibleContent
 
 export { Collapsible, CollapsibleTrigger, CollapsibleContent }
 
-'''
-
-dialog = '''import * as React from "react"
+`;
+export const dialog = `import * as React from "react"
 import * as DialogPrimitive from "@radix-ui/react-dialog"
 import { X } from "lucide-react"
 
@@ -1109,9 +1096,8 @@ export {
   DialogDescription,
 }
 
-'''
-
-drawer = '''import * as React from "react"
+`;
+export const drawer = `import * as React from "react"
 import { Drawer as DrawerPrimitive } from "vaul"
 
 import { cn } from "../../lib/utils"
@@ -1228,9 +1214,8 @@ export {
   DrawerDescription,
 }
 
-'''
-
-dropdownMenu = '''import * as React from "react"
+`;
+export const dropdownMenu = `import * as React from "react"
 import * as DropdownMenuPrimitive from "@radix-ui/react-dropdown-menu"
 import { Check, ChevronRight, Circle } from "lucide-react"
 
@@ -1429,9 +1414,8 @@ export {
   DropdownMenuRadioGroup,
 }
 
-'''
-
-hoverCard = '''import * as React from "react"
+`;
+export const hoverCard = `import * as React from "react"
 import * as HoverCardPrimitive from "@radix-ui/react-hover-card"
 
 import { cn } from "../../lib/utils"
@@ -1459,9 +1443,8 @@ HoverCardContent.displayName = HoverCardPrimitive.Content.displayName
 
 export { HoverCard, HoverCardTrigger, HoverCardContent }
 
-'''
-
-input = '''import * as React from "react"
+`;
+export const input = `import * as React from "react"
 import { cn } from "../../lib/utils"
 
 export interface InputProps
@@ -1485,9 +1468,8 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
 Input.displayName = "Input"
 
 export { Input }
-'''
-
-label = '''import * as React from 'react';
+`;
+export const label = `import * as React from 'react';
 import * as LabelPrimitive from '@radix-ui/react-label';
 import { cva, type VariantProps } from 'class-variance-authority';
 
@@ -1511,9 +1493,8 @@ const Label = React.forwardRef<
 Label.displayName = LabelPrimitive.Root.displayName
 
 export { Label }
-'''
-
-menuBar = '''
+`;
+export const menuBar = `
 import * as React from "react"
 import * as MenubarPrimitive from "@radix-ui/react-menubar"
 import { Check, ChevronRight, Circle } from "lucide-react"
@@ -1749,9 +1730,8 @@ export {
   MenubarShortcut,
 }
 
-'''
-
-navigationMenu = '''import * as React from "react"
+`;
+export const navigationMenu = `import * as React from "react"
 import * as NavigationMenuPrimitive from "@radix-ui/react-navigation-menu"
 import { cva } from "class-variance-authority"
 import { ChevronDown } from "lucide-react"
@@ -1880,9 +1860,8 @@ export {
   NavigationMenuViewport,
 }
 
-'''
-
-pagination = '''import * as React from "react"
+`;
+export const pagination = `import * as React from "react"
 import { ChevronLeft, ChevronRight, MoreHorizontal } from "lucide-react"
 
 import { cn } from "../../lib/utils"
@@ -2000,9 +1979,8 @@ export {
   PaginationPrevious,
 }
 
-'''
-
-popover = '''import * as React from "react"
+`;
+export const popover = `import * as React from "react"
 import * as PopoverPrimitive from "@radix-ui/react-popover"
 
 import { cn } from "../../lib/utils"
@@ -2032,9 +2010,8 @@ PopoverContent.displayName = PopoverPrimitive.Content.displayName
 
 export { Popover, PopoverTrigger, PopoverContent }
 
-'''
-
-progress = '''import * as React from "react"
+`;
+export const progress = `import * as React from "react"
 import * as ProgressPrimitive from "@radix-ui/react-progress"
 
 import { cn } from "../../lib/utils"
@@ -2053,16 +2030,15 @@ const Progress = React.forwardRef<
   >
     <ProgressPrimitive.Indicator
       className="h-full w-full flex-1 bg-gray-900 transition-all dark:bg-gray-50"
-      style={{ transform: \'''translateX(-\${100 - (value || 0)}%)\''' }}
+      style={{ transform: \`translateX(-\${100 - (value || 0)}%)\` }}
     />
   </ProgressPrimitive.Root>
 ))
 Progress.displayName = ProgressPrimitive.Root.displayName
 
 export { Progress }
-'''
-
-radioGroup = '''import * as React from "react"
+`;
+export const radioGroup = `import * as React from "react"
 import * as RadioGroupPrimitive from "@radix-ui/react-radio-group"
 import { Circle } from "lucide-react"
 
@@ -2105,9 +2081,8 @@ RadioGroupItem.displayName = RadioGroupPrimitive.Item.displayName
 
 export { RadioGroup, RadioGroupItem }
 
-'''
-
-select = '''import * as React from "react"
+`;
+export const select = `import * as React from "react"
 import * as SelectPrimitive from "@radix-ui/react-select"
 import { Check, ChevronDown, ChevronUp } from "lucide-react"
 
@@ -2266,9 +2241,8 @@ export {
   SelectScrollDownButton,
 }
 
-'''
-
-separator = '''import * as React from "react"
+`;
+export const separator = `import * as React from "react"
 import * as SeparatorPrimitive from "@radix-ui/react-separator"
 
 import { cn } from "../../lib/utils"
@@ -2298,9 +2272,8 @@ Separator.displayName = SeparatorPrimitive.Root.displayName
 
 export { Separator }
 
-'''
-
-skeleton = '''import { cn } from "../../lib/utils"
+`;
+export const skeleton = `import { cn } from "../../lib/utils"
 
 function Skeleton({
   className,
@@ -2315,9 +2288,8 @@ function Skeleton({
 }
 
 export { Skeleton }
-'''
-
-slider = '''import * as React from "react"
+`;
+export const slider = `import * as React from "react"
 import * as SliderPrimitive from "@radix-ui/react-slider"
 
 import { cn } from "../../lib/utils"
@@ -2344,9 +2316,8 @@ Slider.displayName = SliderPrimitive.Root.displayName
 
 export { Slider }
 
-'''
-
-switchComponent = '''import * as React from "react"
+`;
+export const switchComponent = `import * as React from "react"
 import * as SwitchPrimitives from "@radix-ui/react-switch"
 
 import { cn } from "../../lib/utils"
@@ -2374,9 +2345,8 @@ Switch.displayName = SwitchPrimitives.Root.displayName
 
 export { Switch }
 
-'''
-
-table = '''import * as React from "react"
+`;
+export const table = `import * as React from "react"
 
 import { cn } from "../../lib/utils"
 
@@ -2494,9 +2464,8 @@ export {
   TableCaption,
 }
 
-'''
-
-tabs = '''import * as React from "react"
+`;
+export const tabs = `import * as React from "react"
 import * as TabsPrimitive from "@radix-ui/react-tabs"
 
 import { cn } from "../../lib/utils"
@@ -2550,9 +2519,8 @@ TabsContent.displayName = TabsPrimitive.Content.displayName
 
 export { Tabs, TabsList, TabsTrigger, TabsContent }
 
-'''
-
-textarea = '''import * as React from "react"
+`;
+export const textarea = `import * as React from "react"
 
 import { cn } from "../../lib/utils"
 
@@ -2577,9 +2545,8 @@ Textarea.displayName = "Textarea"
 
 export { Textarea }
 
-'''
-
-toast = '''import * as React from "react"
+`;
+export const toast = `import * as React from "react"
 import * as ToastPrimitives from "@radix-ui/react-toast"
 import { cva, type VariantProps } from "class-variance-authority"
 import { X } from "lucide-react"
@@ -2707,9 +2674,8 @@ export {
   ToastAction,
 }
 
-'''
-
-toaster = '''import {
+`;
+export const toaster = `import {
   Toast,
   ToastClose,
   ToastDescription,
@@ -2743,9 +2709,8 @@ export function Toaster() {
   )
 }
 
-'''
-
-toggleGroup = '''import * as React from "react"
+`;
+export const toggleGroup = `import * as React from "react"
 import * as ToggleGroupPrimitive from "@radix-ui/react-toggle-group"
 import { type VariantProps } from "class-variance-authority"
 
@@ -2805,9 +2770,8 @@ ToggleGroupItem.displayName = ToggleGroupPrimitive.Item.displayName
 
 export { ToggleGroup, ToggleGroupItem }
 
-'''
-
-toggle = '''import * as React from "react"
+`;
+export const toggle = `import * as React from "react"
 import * as TogglePrimitive from "@radix-ui/react-toggle"
 import { cva, type VariantProps } from "class-variance-authority"
 
@@ -2851,9 +2815,8 @@ Toggle.displayName = TogglePrimitive.Root.displayName
 
 export { Toggle, toggleVariants }
 
-'''
-
-tooltip = '''import * as React from "react"
+`;
+export const tooltip = `import * as React from "react"
 import * as TooltipPrimitive from "@radix-ui/react-tooltip"
 
 import { cn } from "../../lib/utils"
@@ -2882,9 +2845,8 @@ TooltipContent.displayName = TooltipPrimitive.Content.displayName
 
 export { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider }
 
-'''
-
-useToast = '''import * as React from "react"
+`;
+export const useToast = `import * as React from "react"
 
 import type {
   ToastActionElement,
@@ -2957,7 +2919,7 @@ const addToRemoveQueue = (toastId: string) => {
   toastTimeouts.set(toastId, timeout)
 }
 
-reducer = (state: State, action: Action): State => {
+export const reducer = (state: State, action: Action): State => {
   switch (action.type) {
     case "ADD_TOAST":
       return {
@@ -3075,62 +3037,62 @@ function useToast() {
 }
 
 export { useToast, toast }
-'''
+`;
 
-shadcnComponents = {
-    utils: utils,
-    accordian: accordian,
-    alertDialog: alertDialog,
-    alert: alert,
-    avatar: avatar,
-    badge: badge,
-    breadcrumb: breadcrumb,
-    button: button,
-    calendar: calendar,
-    card: card,
-    carousel: carousel,
-    checkbox: checkbox,
-    collapsible: collapsible,
-    dialog: dialog,
-    drawer: drawer,
-    dropdownMenu: dropdownMenu,
-    hoverCard: hoverCard,
-    input: input,
-    label: label,
-    menuBar: menuBar,
-    navigationMenu: navigationMenu,
-    pagination: pagination,
-    popover: popover,
-    progress: progress,
-    radioGroup: radioGroup,
-    select: select,
-    separator: separator,
-    skeleton: skeleton,
-    slider: slider,
-    switchComponent: switchComponent,
-    table: table,
-    tabs: tabs,
-    textarea: textarea,
-    toast: toast,
-    toaster: toaster,
-    toggleGroup: toggleGroup,
-    toggle: toggle,
-    tooltip: tooltip,
-    useToast: useToast,
-}
+export const shadcnComponents = {
+  utils: utils,
+  accordian: accordian,
+  alertDialog: alertDialog,
+  alert: alert,
+  avatar: avatar,
+  badge: badge,
+  breadcrumb: breadcrumb,
+  button: button,
+  calendar: calendar,
+  card: card,
+  carousel: carousel,
+  checkbox: checkbox,
+  collapsible: collapsible,
+  dialog: dialog,
+  drawer: drawer,
+  dropdownMenu: dropdownMenu,
+  hoverCard: hoverCard,
+  input: input,
+  label: label,
+  menuBar: menuBar,
+  navigationMenu: navigationMenu,
+  pagination: pagination,
+  popover: popover,
+  progress: progress,
+  radioGroup: radioGroup,
+  select: select,
+  separator: separator,
+  skeleton: skeleton,
+  slider: slider,
+  switchComponent: switchComponent,
+  table: table,
+  tabs: tabs,
+  textarea: textarea,
+  toast: toast,
+  toaster: toaster,
+  toggleGroup: toggleGroup,
+  toggle: toggle,
+  tooltip: tooltip,
+  useToast: useToast,
+};
 
-essentialShadcnComponents = {
-    utils: utils,
-    avatar: avatar,
-    button: button,
-    card: card,
-    checkbox: checkbox,
-    input: input,
-    label: label,
-    radioGroup: radioGroup,
-    select: select,
-    textarea: textarea,
-    # badge: badge,
-    # dialog: dialog,
-    # table: table,
-}
+export const essentialShadcnComponents = {
+  utils: utils,
+  avatar: avatar,
+  button: button,
+  card: card,
+  checkbox: checkbox,
+  input: input,
+  label: label,
+  radioGroup: radioGroup,
+  select: select,
+  textarea: textarea,
+  // badge: badge,
+  // dialog: dialog,
+  // table: table,
+};
