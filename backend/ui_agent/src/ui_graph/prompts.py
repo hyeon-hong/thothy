@@ -1,7 +1,7 @@
 """Define default prompts."""
 
 import textwrap
-from lib.shadcn_docs import avatar, button, card, checkbox, input, label, radio_group, select, textarea
+from ui_graph.lib.shadcn_docs import avatar, button, card, checkbox, input, label, radio_group, select, textarea
 
 shadcn_docs = [
     avatar,
@@ -131,13 +131,13 @@ You are an expert frontend frontend React developer. You will be given a screens
             f"""
 <component>
 <name>
-{component['name']}
+{component.name}
 </name>
 <import-instructions>
-{component['importDocs']}
+{component.importDocs}
 </import-instructions>
 <usage-instructions>
-{component['usageDocs']}
+{component.usageDocs}
 </usage-instructions>
 </component>
 """.strip()
