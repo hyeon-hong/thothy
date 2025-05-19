@@ -11,6 +11,8 @@ export default function UIAgentPage(props: {
   apiUrl: string;
   assistantId: string;
 }): React.ReactNode {
+  // In case of direct access to the page, use the provided apiUrl and assistantId
+  // Otherwise, use the apiUrl and assistantId from props
   const apiUrl = props.apiUrl || process.env.NEXT_PUBLIC_LANGGRAPH_API_URL;
   const assistantId = props.assistantId || "ui_graph";
 
