@@ -7,14 +7,7 @@ export async function PUT(
 ) {
   try {
     const id = params.id;  // Extract ID early to avoid repeated access
-    const { name, description, agent_ids } = await request.json();
-
-    if (!name || !description || !agent_ids) {
-      return NextResponse.json(
-        { error: "Name, description, and agent_ids are required" },
-        { status: 400 }
-      );
-    }
+    const updateData = await request.json();
 
     // Get the authenticated user's ID
     const supabase = await createClient();
@@ -27,15 +20,16 @@ export async function PUT(
       );
     }
 
+    // Add updated_at timestamp to the update data
+    const dataToUpdate = {
+      ...updateData,
+      updated_at: new Date().toISOString()
+    };
+
     // Update the team in the database
     const { data, error } = await supabase
       .from('teams')
-      .update({
-        name,
-        description,
-        agent_list: agent_ids,
-        updated_at: new Date().toISOString()
-      })
+      .update(dataToUpdate)
       .eq('id', id)  // Use the extracted ID
       .eq('user_id', user.id)
       .select()
@@ -57,6 +51,49 @@ export async function PUT(
     }
 
     return NextResponse.json(data);
+  } catch (error) {
+    console.error('Error in teams API:', error);
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
+  }
+}
+
+export async function DELETE(
+  request: Request,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const id = params.id;
+
+    // Get the authenticated user's ID
+    const supabase = await createClient();
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+
+    if (userError || !user) {
+      return NextResponse.json(
+        { error: "Unauthorized" },
+        { status: 401 }
+      );
+    }
+
+    // Delete the team from the database
+    const { error } = await supabase
+      .from('teams')
+      .delete()
+      .eq('id', id)
+      .eq('user_id', user.id);
+
+    if (error) {
+      console.error('Error deleting team:', error);
+      return NextResponse.json(
+        { error: 'Failed to delete team' },
+        { status: 500 }
+      );
+    }
+
+    return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Error in teams API:', error);
     return NextResponse.json(

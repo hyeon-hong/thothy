@@ -8,7 +8,16 @@ from langgraph_sdk import Auth
 from datetime import timedelta
 from typing import Any
 import pprint
+import logging
 
+# Set logging level to WARNING
+# Print all logging options
+# - DEBUG
+# - INFO
+# - WARNING
+# - ERROR
+# - CRITICAL
+logging.basicConfig(level=logging.WARNING)
 """
 Threads
 @auth.on.threads.create     Thread creation             ThreadsCreate
@@ -125,12 +134,12 @@ async def auth_on(
         ctx: Auth.types.AuthContext,
         value: Any) -> bool:
     """Reject requests that aren't handled by more specific handlers."""
-    # print("========== Function: auth_on")
-    # print(f"========== ctx.resource: {ctx.resource}")
-    # print(f"========== ctx.action: {ctx.action}")
-    # print(f"========== ctx.permissions: {ctx.permissions}")
-    # print(f"========== ctx.user: {ctx.user}")
-    # print(f"========== value: {value}")
+    logging.debug("========== Function: auth_on")
+    logging.debug(f"========== ctx.resource: {ctx.resource}")
+    logging.debug(f"========== ctx.action: {ctx.action}")
+    logging.debug(f"========== ctx.permissions: {ctx.permissions}")
+    logging.debug(f"========== ctx.user: {ctx.user}")
+    logging.debug(f"========== value: {value}")
 
     # Uncomment this only for testing LangGraph Studio
     # if isinstance(ctx.user, Auth.types.StudioUser):
@@ -147,12 +156,12 @@ async def auth_on_threads(
 ) -> Any:
     """Thread creation. This will match only on thread create actions"""
 
-    # print("========== Function: auth_on_threads")
-    # print(f"========== ctx.resource: {ctx.resource}")
-    # print(f"========== ctx.action: {ctx.action}")
-    # print(f"========== ctx.permissions: {ctx.permissions}")
-    # print(f"========== ctx.user: {ctx.user}")
-    # print(f"========== value: {value}")
+    logging.debug("========== Function: auth_on_threads")
+    logging.debug(f"========== ctx.resource: {ctx.resource}")
+    logging.debug(f"========== ctx.action: {ctx.action}")
+    logging.debug(f"========== ctx.permissions: {ctx.permissions}")
+    logging.debug(f"========== ctx.user: {ctx.user}")
+    logging.debug(f"========== value: {value}")
 
     return {"owner": ctx.user.identity}
 
@@ -164,12 +173,12 @@ async def auth_on_threads_create(
 ) -> Any:
     """Thread creation. This will match only on thread create actions"""
 
-    # print("========== Function: auth_on_threads_create")
-    # print(f"========== ctx.resource: {ctx.resource}")
-    # print(f"========== ctx.action: {ctx.action}")
-    # print(f"========== ctx.permissions: {ctx.permissions}")
-    # print(f"========== ctx.user: {ctx.user}")
-    # print(f"========== value: {value}")
+    logging.debug("========== Function: auth_on_threads_create")
+    logging.debug(f"========== ctx.resource: {ctx.resource}")
+    logging.debug(f"========== ctx.action: {ctx.action}")
+    logging.debug(f"========== ctx.permissions: {ctx.permissions}")
+    logging.debug(f"========== ctx.user: {ctx.user}")
+    logging.debug(f"========== value: {value}")
 
     # Check permission
     # if "threads:create" not in ctx.user.permissions:
@@ -188,12 +197,12 @@ async def auth_on_threads_read(
 ) -> bool:
     """Read a thread. This will match only on thread read actions"""
 
-    # print("========== Function: auth_on_threads_read")
-    # print(f"========== ctx.resource: {ctx.resource}")
-    # print(f"========== ctx.action: {ctx.action}")
-    # print(f"========== ctx.permissions: {ctx.permissions}")
-    # print(f"========== ctx.user: {ctx.user}")
-    # print(f"========== value: {value}")
+    logging.debug("========== Function: auth_on_threads_read")
+    logging.debug(f"========== ctx.resource: {ctx.resource}")
+    logging.debug(f"========== ctx.action: {ctx.action}")
+    logging.debug(f"========== ctx.permissions: {ctx.permissions}")
+    logging.debug(f"========== ctx.user: {ctx.user}")
+    logging.debug(f"========== value: {value}")
 
     # if "threads:read" not in ctx.permissions:
     #     raise Auth.exceptions.HTTPException(
@@ -212,12 +221,12 @@ async def auth_on_threads_update(
 ) -> bool:
     """Update a thread. This will match only on thread update actions"""
 
-    # print("========== Function: auth_on_threads_update")
-    # print(f"========== ctx.resource: {ctx.resource}")
-    # print(f"========== ctx.action: {ctx.action}")
-    # print(f"========== ctx.permissions: {ctx.permissions}")
-    # print(f"========== ctx.user: {ctx.user}")
-    # print(f"========== value: {value}")
+    logging.debug("========== Function: auth_on_threads_update")
+    logging.debug(f"========== ctx.resource: {ctx.resource}")
+    logging.debug(f"========== ctx.action: {ctx.action}")
+    logging.debug(f"========== ctx.permissions: {ctx.permissions}")
+    logging.debug(f"========== ctx.user: {ctx.user}")
+    logging.debug(f"========== value: {value}")
 
     # Check permission
     # if "threads:update" not in ctx.permissions:
@@ -262,11 +271,11 @@ async def auth_on_threads_search(
 ) -> Any:
     """Search for threads. This will match only on thread search actions"""
 
-    # print("========== Function: auth_on_threads_search")
-    # print(f"========== ctx.resource: {ctx.resource}")
-    # print(f"========== ctx.action: {ctx.action}")
-    # print(f"========== ctx.permissions: {ctx.permissions}")
-    # print(f"========== value: {value}")
+    logging.debug("========== Function: auth_on_threads_search")
+    logging.debug(f"========== ctx.resource: {ctx.resource}")
+    logging.debug(f"========== ctx.action: {ctx.action}")
+    logging.debug(f"========== ctx.permissions: {ctx.permissions}")
+    logging.debug(f"========== value: {value}")
 
     # if "threads:search" not in ctx.permissions:
     #     raise Auth.exceptions.HTTPException(
@@ -284,12 +293,12 @@ async def auth_on_threads_create_run(
 ):
     """Create a run. This will match only on run create actions"""
 
-    # print("========== Function: auth_on_threads_create_run")
-    # print(f"========== ctx.resource: {ctx.resource}")
-    # print(f"========== ctx.action: {ctx.action}")
-    # print(f"========== ctx.permissions: {ctx.permissions}")
-    # print(f"========== ctx.user: {ctx.user}")
-    # print(f"========== value: {value}")
+    logging.debug("========== Function: auth_on_threads_create_run")
+    logging.debug(f"========== ctx.resource: {ctx.resource}")
+    logging.debug(f"========== ctx.action: {ctx.action}")
+    logging.debug(f"========== ctx.permissions: {ctx.permissions}")
+    logging.debug(f"========== ctx.user: {ctx.user}")
+    logging.debug(f"========== value: {value}")
 
     # Check permission
     # if "threads:create_run" not in ctx.permissions:
@@ -308,12 +317,12 @@ async def auth_on_assistants(
 ) -> Any:
     """Assistant creation. This will match only on assistant create actions"""
 
-    # print("========== Function: auth_on_assistants")
-    # print(f"========== ctx.resource: {ctx.resource}")
-    # print(f"========== ctx.action: {ctx.action}")
-    # print(f"========== ctx.permissions: {ctx.permissions}")
-    # print(f"========== ctx.user: {ctx.user}")
-    # print(f"========== value: {value}")
+    logging.debug("========== Function: auth_on_assistants")
+    logging.debug(f"========== ctx.resource: {ctx.resource}")
+    logging.debug(f"========== ctx.action: {ctx.action}")
+    logging.debug(f"========== ctx.permissions: {ctx.permissions}")
+    logging.debug(f"========== ctx.user: {ctx.user}")
+    logging.debug(f"========== value: {value}")
 
     return {"owner": ctx.user.identity}
 
@@ -325,14 +334,14 @@ async def auth_on_assistants_create(
 ) -> Any:
     """Create an assistant. This will match only on assistant create actions"""
 
-    # print("========== Function: auth_on_assistants_create")
-    # print(f"========== ctx.resource: {ctx.resource}")
-    # print(f"========== ctx.action: {ctx.action}")
-    # print(f"========== ctx.permissions: {ctx.permissions}")
-    # print(f"========== ctx.user: {ctx.user}")
-    # print(f"========== value: {value}")
+    logging.debug("========== Function: auth_on_assistants_create")
+    logging.debug(f"========== ctx.resource: {ctx.resource}")
+    logging.debug(f"========== ctx.action: {ctx.action}")
+    logging.debug(f"========== ctx.permissions: {ctx.permissions}")
+    logging.debug(f"========== ctx.user: {ctx.user}")
+    logging.debug(f"========== value: {value}")
 
-    # if "assistantsVjjj:create" not in ctx.permissions:
+    # if "assistants:create" not in ctx.permissions:
     #     raise Auth.exceptions.HTTPException(
     #         status_code=403,
     #         detail="User lacks the required permissions: assistants:create."
@@ -349,12 +358,12 @@ async def auth_on_assistants_read(
 ) -> bool:
     """Read an assistant. This will match only on assistant read actions"""
 
-    # print("========== Function: auth_on_assistants_read")
-    # print(f"========== ctx.resource: {ctx.resource}")
-    # print(f"========== ctx.action: {ctx.action}")
-    # print(f"========== ctx.permissions: {ctx.permissions}")
-    # print(f"========== ctx.user: {ctx.user}")
-    # print(f"========== value: {value}")
+    logging.debug("========== Function: auth_on_assistants_read")
+    logging.debug(f"========== ctx.resource: {ctx.resource}")
+    logging.debug(f"========== ctx.action: {ctx.action}")
+    logging.debug(f"========== ctx.permissions: {ctx.permissions}")
+    logging.debug(f"========== ctx.user: {ctx.user}")
+    logging.debug(f"========== value: {value}")
 
     # if "assistants:read" not in ctx.permissions:
     #     raise Auth.exceptions.HTTPException(
@@ -416,7 +425,8 @@ async def auth_on_assistants_search(
     ctx: Auth.types.AuthContext,
     value: Any,
 ) -> bool:
-    """Search for assistants. This will match only on assistant search actions"""
+    """Search for assistants. This will match only on assistant search actions
+    """
 
     # print("========== Function: auth_on_assistants_search")
     # print(f"========== ctx.resource: {ctx.resource}")
@@ -545,10 +555,16 @@ def deep_inspect(obj, max_depth=5, _current_depth=0):
         return obj
 
     if isinstance(obj, (list, tuple)):
-        return [deep_inspect(item, max_depth, _current_depth + 1) for item in obj]
+        return [
+            deep_inspect(item, max_depth, _current_depth + 1)
+            for item in obj
+        ]
 
     if isinstance(obj, dict):
-        return {k: deep_inspect(v, max_depth, _current_depth + 1) for k, v in obj.items()}
+        return {
+            k: deep_inspect(v, max_depth, _current_depth + 1)
+            for k, v in obj.items()
+        }
 
     # For custom objects, get all attributes
     result = {}

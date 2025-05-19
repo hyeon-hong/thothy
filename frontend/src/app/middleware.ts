@@ -3,7 +3,7 @@ import type { NextRequest } from "next/server"
 import { updateSession } from "@/utils/supabase/middleware"
 import { createServerClient } from "@supabase/ssr"
 
-const protectedPaths = ['/team', '/find', '/inbox', '/staff', '/blog']
+const protectedPaths = ['/team', '/agent', '/find', '/inbox', '/staff', '/blog']
 
 export async function middleware(request: NextRequest) {
   // Create a response with the request

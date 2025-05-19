@@ -13,9 +13,7 @@ from chat_graph.prompts import SYSTEM_PROMPT
 class ChatConfigurable:
     """The configurable fields for the chatbot."""
 
-    user_id: str = "default-user"
-    model: str = "anthropic/claude-3-5-sonnet-20240620"
-    delay_seconds: int = 1
+    model: str = "gpt-4o-mini"
     system_prompt: str = SYSTEM_PROMPT
 
     @classmethod
@@ -25,7 +23,7 @@ class ChatConfigurable:
         """Load configuration."""
 
         configurable = (
-            config["configurable"] if config and "configurable" in config else {}
+            config.get("configurable", {}) if config else {}
         )
 
         values: dict[str, Any] = {

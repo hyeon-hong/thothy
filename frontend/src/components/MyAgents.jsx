@@ -21,7 +21,7 @@ export default function MyAgents() {
 
             try {
                 const { data, error } = await supabase
-                    .from("user_agents")
+                    .from("staffs")
                     .select(`
                         id,
                         agent_id,
@@ -64,7 +64,7 @@ export default function MyAgents() {
 
         try {
             const { error } = await supabase
-                .from("user_agents")
+                .from("staffs")
                 .delete()
                 .eq("user_id", user.id)
                 .eq("agent_id", agentId);

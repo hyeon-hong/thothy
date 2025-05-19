@@ -1,84 +1,120 @@
 "use client";
 
-import "@assistant-ui/react-markdown/styles/dot.css";
-
-import {
-  CodeHeaderProps,
-  MarkdownTextPrimitive,
-  unstable_memoizeMarkdownComponents as memoizeMarkdownComponents,
-  useIsMarkdownCodeBlock,
-} from "@assistant-ui/react-markdown";
+import { FC } from "react";
+import Markdown from "react-markdown";
+import rehypeKatex from "rehype-katex";
+import remarkMath from "remark-math";
 import remarkGfm from "remark-gfm";
-import { FC, memo, useState } from "react";
-import { CheckIcon, CopyIcon } from "lucide-react";
-
-import { TooltipIconButton } from "@/components/assistant-ui/tooltip-icon-button";
+import { Check, Copy } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { CodeHeader } from "./code-header";
+import { SyntaxHighlighter } from "./syntax-highlighter";
 
-const MarkdownTextImpl = () => {
-  return (
-    <MarkdownTextPrimitive
-      remarkPlugins={[remarkGfm]}
-      className="aui-md"
-      components={defaultComponents}
-    />
-  );
-};
+import "katex/dist/katex.min.css";
 
-export const MarkdownText = memo(MarkdownTextImpl);
+interface MarkdownTextProps {
+  children: string;
+}
 
-const CodeHeader: FC<CodeHeaderProps> = ({ language, code }) => {
-  const { isCopied, copyToClipboard } = useCopyToClipboard();
-  const onCopy = () => {
-    if (!code || isCopied) return;
-    copyToClipboard(code);
-  };
-
-  return (
-    <div className="flex items-center justify-between gap-4 rounded-t-lg bg-zinc-900 px-4 py-2 text-sm font-semibold text-white">
-      <span className="lowercase [&>span]:text-xs">{language}</span>
-      <TooltipIconButton tooltip="Copy" onClick={onCopy}>
-        {!isCopied && <CopyIcon />}
-        {isCopied && <CheckIcon />}
-      </TooltipIconButton>
+const defaultComponents = {
+  table: ({ children, ...props }) => (
+    <div className="overflow-x-auto">
+      <table className="min-w-full divide-y divide-border" {...props}>
+        {children}
+      </table>
     </div>
-  );
-};
-
-const useCopyToClipboard = ({
-  copiedDuration = 3000,
-}: {
-  copiedDuration?: number;
-} = {}) => {
-  const [isCopied, setIsCopied] = useState<boolean>(false);
-
-  const copyToClipboard = (value: string) => {
-    if (!value) return;
-
-    navigator.clipboard.writeText(value).then(() => {
-      setIsCopied(true);
-      setTimeout(() => setIsCopied(false), copiedDuration);
-    });
-  };
-
-  return { isCopied, copyToClipboard };
-};
-
-const defaultComponents = memoizeMarkdownComponents({
-  h1: ({ className, ...props }) => (
-    <h1 className={cn("mb-8 scroll-m-20 text-4xl font-extrabold tracking-tight last:mb-0", className)} {...props} />
   ),
-  h2: ({ className, ...props }) => (
-    <h2 className={cn("mb-4 mt-8 scroll-m-20 text-3xl font-semibold tracking-tight first:mt-0 last:mb-0", className)} {...props} />
+  thead: ({ children, ...props }) => (
+    <thead className="bg-muted" {...props}>
+      {children}
+    </thead>
   ),
-  h3: ({ className, ...props }) => (
-    <h3 className={cn("mb-4 mt-6 scroll-m-20 text-2xl font-semibold tracking-tight first:mt-0 last:mb-0", className)} {...props} />
+  tbody: ({ children, ...props }) => (
+    <tbody className="divide-y divide-border bg-background" {...props}>
+      {children}
+    </tbody>
   ),
-  h4: ({ className, ...props }) => (
-    <h4 className={cn("mb-4 mt-6 scroll-m-20 text-xl font-semibold tracking-tight first:mt-0 last:mb-0", className)} {...props} />
+  tr: ({ children, ...props }) => (
+    <tr className="transition-colors hover:bg-muted/50" {...props}>
+      {children}
+    </tr>
   ),
-  h5: ({ className, ...props }) => (
-    <h5 className={cn("my-4 text-lg font-semibold first:mt-0 last:mb-0", className)} {...props} />
+  th: ({ children, ...props }) => (
+    <th
+      className="whitespace-nowrap px-4 py-3.5 text-left text-sm font-semibold text-foreground"
+      {...props}
+    >
+      {children}
+    </th>
+  ),
+  td: ({ children, ...props }) => (
+    <td
+      className="whitespace-nowrap px-4 py-4 text-sm text-muted-foreground"
+      {...props}
+    >
+      {children}
+    </td>
+  ),
+  pre: ({ children }) => <>{children}</>,
+  code: ({ className, children, ...props }) => {
+    const language = className?.replace("language-", "");
+    const code = String(children).replace(/\n$/, "");
+
+    return (
+      <div className="group relative my-4 rounded-lg border bg-zinc-950">
+        {language && <CodeHeader language={language} code={code} />}
+        <SyntaxHighlighter language={language} {...props}>
+          {code}
+        </SyntaxHighlighter>
+      </div>
+    );
+  },
+  details: ({ children, ...props }) => (
+    <details className="my-4 rounded-lg border bg-muted p-4" {...props}>
+      {children}
+    </details>
+  ),
+  summary: ({ children, ...props }) => (
+    <summary className="cursor-pointer font-medium" {...props}>
+      {children}
+    </summary>
+  ),
+  h1: ({ children, ...props }) => (
+    <h1 className="scroll-m-20 text-4xl font-bold tracking-tight" {...props}>
+      {children}
+    </h1>
+  ),
+  h2: ({ children, ...props }) => (
+    <h2
+      className="scroll-m-20 border-b pb-2 text-3xl font-semibold tracking-tight first:mt-0"
+      {...props}
+    >
+      {children}
+    </h2>
+  ),
+  h3: ({ children, ...props }) => (
+    <h3
+      className="scroll-m-20 text-2xl font-semibold tracking-tight"
+      {...props}
+    >
+      {children}
+    </h3>
+  ),
+  h4: ({ children, ...props }) => (
+    <h4
+      className="scroll-m-20 text-xl font-semibold tracking-tight"
+      {...props}
+    >
+      {children}
+    </h4>
+  ),
+  h5: ({ children, ...props }) => (
+    <h5
+      className="scroll-m-20 text-lg font-semibold tracking-tight"
+      {...props}
+    >
+      {children}
+    </h5>
   ),
   h6: ({ className, ...props }) => (
     <h6 className={cn("my-4 font-semibold first:mt-0 last:mb-0", className)} {...props} />
@@ -101,32 +137,19 @@ const defaultComponents = memoizeMarkdownComponents({
   hr: ({ className, ...props }) => (
     <hr className={cn("my-5 border-b", className)} {...props} />
   ),
-  table: ({ className, ...props }) => (
-    <table className={cn("my-5 w-full border-separate border-spacing-0 overflow-y-auto", className)} {...props} />
-  ),
-  th: ({ className, ...props }) => (
-    <th className={cn("bg-muted px-4 py-2 text-left font-bold first:rounded-tl-lg last:rounded-tr-lg [&[align=center]]:text-center [&[align=right]]:text-right", className)} {...props} />
-  ),
-  td: ({ className, ...props }) => (
-    <td className={cn("border-b border-l px-4 py-2 text-left last:border-r [&[align=center]]:text-center [&[align=right]]:text-right", className)} {...props} />
-  ),
-  tr: ({ className, ...props }) => (
-    <tr className={cn("m-0 border-b p-0 first:border-t [&:last-child>td:first-child]:rounded-bl-lg [&:last-child>td:last-child]:rounded-br-lg", className)} {...props} />
-  ),
   sup: ({ className, ...props }) => (
     <sup className={cn("[&>a]:text-xs [&>a]:no-underline", className)} {...props} />
   ),
-  pre: ({ className, ...props }) => (
-    <pre className={cn("overflow-x-auto rounded-b-lg bg-black p-4 text-white", className)} {...props} />
-  ),
-  code: function Code({ className, ...props }) {
-    const isCodeBlock = useIsMarkdownCodeBlock();
-    return (
-      <code
-        className={cn(!isCodeBlock && "bg-muted rounded border font-semibold", className)}
-        {...props}
-      />
-    );
-  },
-  CodeHeader,
-});
+};
+
+export const MarkdownText: FC<MarkdownTextProps> = ({ children }) => {
+  return (
+    <Markdown
+      components={defaultComponents}
+      remarkPlugins={[remarkGfm as any, remarkMath as any]}
+      rehypePlugins={[rehypeKatex]}
+    >
+      {children}
+    </Markdown>
+  );
+};

@@ -1,9 +1,10 @@
 'use client';
 
-import React from 'react';
+import type React from 'react';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import { AuthProvider } from '@/contexts/AuthContext';
+import { NuqsAdapter } from "nuqs/adapters/next/app";
 
 const theme = createTheme({
   palette: {
@@ -47,11 +48,13 @@ const theme = createTheme({
 
 export function Providers({ children }: { children: React.ReactNode }) {
   return (
-    <AuthProvider>
-      <ThemeProvider theme={theme}>
-        <CssBaseline />
-        {children}
-      </ThemeProvider>
-    </AuthProvider>
+    <NuqsAdapter>
+      <AuthProvider>
+        <ThemeProvider theme={theme}>
+          <CssBaseline />
+          {children}
+        </ThemeProvider>
+      </AuthProvider>
+    </NuqsAdapter>
   );
 } 

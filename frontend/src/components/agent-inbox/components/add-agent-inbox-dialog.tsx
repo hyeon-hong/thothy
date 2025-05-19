@@ -62,7 +62,6 @@ export function AddAgentInboxDialog({
     addAgentInbox({
       id: uuidv4(),
       graphId,
-      deploymentUrl,
       name,
       selected: true,
     });

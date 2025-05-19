@@ -1,7 +1,0 @@
----
-description: This tool performs node commands.
-globs:
-alwaysApply: false
----
-
-You should use "yarn" instead of "npm" for node package manager.

@@ -5,7 +5,7 @@
 
 /**
  * Navigate to a different view in the application
- * @param {string} view - The view to navigate to ('landing', 'find', 'staff', etc.)
+ * @param {string} view - The view to navigate to ('landing', 'agent', 'staff', etc.)
  * @param {Object} [params={}] - Additional parameters to include in the navigation
  */
 export const navigateTo = (view, params = {}) => {
@@ -37,8 +37,10 @@ function getPathForView(view) {
   switch (view) {
     case 'landing':
       return '/';
+    case 'agent':
+      return '/agent';
     case 'find':
-      return '/find';
+      return '/agent';
     case 'staff':
       return '/staff';
     case 'agents':

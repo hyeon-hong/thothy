@@ -1,137 +1,34 @@
 """Simple chat agent using LangGraph."""
 
-import os
 import logging
-from dotenv import load_dotenv
-from pydantic import BaseModel
-from psycopg import Connection, OperationalError
-from typing import Any, Dict
+import datetime  # Import datetime for getting current time
+import os
+from typing import Optional
 
-from langchain.chat_models import init_chat_model
-
+from langchain_openai import ChatOpenAI
 from langgraph.checkpoint.memory import MemorySaver
 from langgraph.graph import MessagesState, StateGraph, START, END
 from langgraph.store.base import BaseStore
-from langgraph.store.postgres import PostgresStore
-# We're using create_memory_store_manager but not ReflectionExecutor
-from langmem import ReflectionExecutor, create_memory_store_manager
 from chat_graph.configuration import ChatConfigurable
 
 # Configure logging to hide INFO messages
-logging.basicConfig(level=logging.WARNING)
-# Set specific loggers for langgraph and related libraries to WARNING level
-logging.getLogger("langgraph").setLevel(logging.WARNING)
-logging.getLogger("langchain").setLevel(logging.WARNING)
-logging.getLogger("langmem").setLevel(logging.WARNING)
+logging.basicConfig(level=logging.DEBUG)
+
+# Initialize global LLM
+VLLM_API_URL = os.getenv("VLLM_API_URL")
+llm: Optional[ChatOpenAI] = None
 
 
-class ReconnectingPostgresStore:
-    """PostgresStore wrapper that handles reconnection."""
-
-    def __init__(self, db_url: str, index: Dict[str, Any]):
-        """Initialize with database URL and index configuration."""
-        self.db_url = db_url
-        self.index = index
-        self.store = None
-        self._connect()
-
-    def _connect(self) -> None:
-        """Establish database connection and setup store."""
-        try:
-            conn = Connection.connect(self.db_url, autocommit=True)
-            self.store = PostgresStore(conn)
-            self.store.index = self.index
-            self.store.setup()
-        except Exception as e:
-            raise ValueError(f"Failed to connect to database: {e}")
-
-    def _ensure_connection(self) -> None:
-        """Ensure database connection is active, reconnect if needed."""
-        try:
-            # Test connection with a simple query
-            self.store.conn.execute("SELECT 1")
-        except (OperationalError, Exception):
-            # Connection is closed or error occurred, try to reconnect
-            self._connect()
-
-    def search(self, *args, **kwargs):
-        """Synchronous version of asearch."""
-        self._ensure_connection()
-        return self.store.search(*args, **kwargs)
-
-    async def asearch(self, *args, **kwargs):
-        """Wrap asearch with connection check."""
-        self._ensure_connection()
-        return await self.store.asearch(*args, **kwargs)
-
-    def put(self, *args, **kwargs):
-        """Synchronous version of aput."""
-        self._ensure_connection()
-        return self.store.put(*args, **kwargs)
-
-    async def aput(self, *args, **kwargs):
-        """Wrap aput with connection check."""
-        self._ensure_connection()
-        return await self.store.aput(*args, **kwargs)
-
-    def delete(self, *args, **kwargs):
-        """Synchronous version of adelete."""
-        self._ensure_connection()
-        return self.store.delete(*args, **kwargs)
-
-    async def adelete(self, *args, **kwargs):
-        """Wrap adelete with connection check."""
-        self._ensure_connection()
-        return await self.store.adelete(*args, **kwargs)
-
-    def setup(self):
-        """Setup the store."""
-        self._ensure_connection()
-        self.store.setup()
-
-
-# Get database URL
-load_dotenv()
-db_url = os.getenv("SUPABASE_DATABASE_URL")
-if not db_url:
-    raise ValueError("SUPABASE_DATABASE_URL environment variable is not set")
-
-# Initialize store with reconnection capability
-store = ReconnectingPostgresStore(
-    db_url=db_url,
-    index={
-        "dims": 1536,
-        "embed": "openai:text-embedding-3-small",
-        # Embed entire document (default)
-        "fields": ["$"],
-    }
-)
-
-llm = init_chat_model("gpt-4o-mini", model_provider="openai", temperature=0.8)
-
-
-# Create memory manager to extract memories from conversations
-class Triple(BaseModel):
-    """Store all new facts, preferences, and relationships as triples."""
-    subject: str
-    predicate: str
-    object: str
-    context: str | None = None
-
-
-namespace = ("memories", "{user_id}", "triples")
-
-memory_manager = create_memory_store_manager(
-    "anthropic:claude-3-5-sonnet-latest",
-    schemas=[Triple],
-    enable_inserts=True,
-    enable_deletes=True,
-    instructions="Extract user preferences and any other useful information",
-    namespace=namespace,
-)
-
-# Wrap memory_manager to handle deferred background processing
-executor = ReflectionExecutor(memory_manager, store=store)
+def get_llm() -> ChatOpenAI:
+    """Get or initialize the LLM."""
+    global llm
+    if llm is None:
+        llm = ChatOpenAI(
+            model="Qwen/Qwen2.5-1.5B-Instruct",
+            base_url=VLLM_API_URL,
+            temperature=0.8
+        )
+    return llm
 
 
 async def chatbot(
@@ -141,40 +38,25 @@ async def chatbot(
     store: BaseStore
 ) -> dict:
     """Chat node that processes messages and generates responses."""
-    # Get user_id from config
+
     configurable = ChatConfigurable.from_runnable_config(config)
-    user_id = configurable.user_id
 
-    # Use the same namespace format as defined above
-    namespace = ("memories", user_id, "triples")
+    # Get current system time
+    current_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-    # Search for existing memories
-    memories = await store.asearch(
-        namespace,
-        query=str(state["messages"][-1].content)
-    )
-    memories = []
+    # Use system prompt from configuration with time variable
+    system_msg = configurable.system_prompt.format(time=current_time)
 
-    info = "\n".join(
-        [d.value.get("data", "") for d in memories if d.value]
-    )
-    system_msg = (
-        f"You are a helpful assistant talking to the user. "
-        f"User info: {info}"
-    )
+    # Get the LLM instance
+    chat_model = get_llm()
+    logging.info(f"Using model: {chat_model}")
 
     # Invoke the LLM
-    response = llm.invoke(
+    logging.info(f"Message: {state['messages']}")
+    response = chat_model.invoke(
         [{"role": "system", "content": system_msg}] + state["messages"]
     )
-
-    # Submit memory processing task
-    to_process = {
-        "messages": [
-            {"role": "user", "content": state["messages"][-1].content}
-        ] + [response]
-    }
-    executor.submit(to_process, after_seconds=0.5, config=config)
+    logging.info(f"Response: {response}")
 
     return {"messages": response}
 
@@ -192,7 +74,7 @@ workflow.add_edge(START, "chatbot")
 workflow.add_edge("chatbot", END)
 
 # Compile graph
-graph = workflow.compile(checkpointer=MemorySaver(), store=store.store)
+graph = workflow.compile(checkpointer=MemorySaver())
 graph.name = "chat_graph"
 
 __all__ = ["graph"]

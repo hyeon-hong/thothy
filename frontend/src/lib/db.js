@@ -4,7 +4,7 @@ const supabase = createClient();
 
 export async function saveUserAgent(userId, agentId) {
     const { data, error } = await supabase
-        .from('user_agents')
+        .from('staffs')
         .upsert({
             user_id: userId,
             agent_id: agentId
@@ -22,7 +22,7 @@ export async function saveUserAgent(userId, agentId) {
 
 export async function getUserAgents(userId) {
     const { data, error } = await supabase
-        .from('user_agents')
+        .from('staffs')
         .select(`
             *,
             agents:agent_id (*)
@@ -42,7 +42,7 @@ export async function getUserAgents(userId) {
 
 export async function removeUserAgent(userId, agentId) {
     const { error } = await supabase
-        .from('user_agents')
+        .from('staffs')
         .delete()
         .match({
             user_id: userId,

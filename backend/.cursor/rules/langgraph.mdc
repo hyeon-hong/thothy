@@ -1,0 +1,35 @@
+---
+description: Apply this rule to all LangGraph files.
+globs:
+alwaysApply: false
+---
+
+- When you create a new directory for a new LangGraph agent, check the error using "langgraph dev" command.
+- If possible, call an interrupt function in the start of node function. (https://langchain-ai.github.io/langgraph/concepts/human_in_the_loop/#common-pitfalls)
+- Should add description field to the interrupt function for frontend to display.
+
+# Interrupt
+In order to use the Inbox, you'll need to use this interrupt input & output schemas for both Python.
+
+class HumanInterruptConfig(TypedDict):
+    allow_ignore: bool
+    allow_respond: bool
+    allow_edit: bool
+    allow_accept: bool
+
+
+class ActionRequest(TypedDict):
+    action: str
+    args: dict
+
+class HumanInterrupt(TypedDict):
+    action_request: ActionRequest
+    config: HumanInterruptConfig
+    description: Optional[str]
+
+
+class HumanResponse(TypedDict):
+    type: Literal['accept', 'ignore', 'response', 'edit']
+    args: Union[None, str, ActionRequest]
+
+

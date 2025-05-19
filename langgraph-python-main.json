@@ -2,6 +2,7 @@
   "dependencies": [
     "./backend/blog_agent",
     "./backend/chat_agent",
+    "./backend/data_agent",
     "./backend/news_agent",
     "./backend/open_deep_research_agent",
     "./backend/research_agent",
@@ -11,6 +12,7 @@
   "graphs": {
     "blog_graph": "./backend/blog_agent/src/blog_graph/graph.py:graph",
     "chat_graph": "./backend/chat_agent/src/chat_graph/graph.py:graph",
+    "data_graph": "./backend/data_agent/src/data_graph/graph.py:graph",
     "news_graph": "./backend/news_agent/src/news_graph/graph.py:graph",
     "open_deep_research_graph": "./backend/open_deep_research_agent/src/open_deep_research_graph/graph.py:graph",
     "research_graph": "./backend/research_agent/src/research_graph/graph.py:graph",

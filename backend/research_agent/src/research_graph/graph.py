@@ -1,237 +1,335 @@
-"""Define a data enrichment agent.
-
-Works with a chat model with tool calling support.
-"""
-
 import json
-from typing import Any, Dict, List, Literal, Optional, cast
+import logging
 
-from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, ToolMessage
+from langchain_openai import ChatOpenAI
+from typing_extensions import Literal
+
+from langchain_core.messages import HumanMessage, SystemMessage
 from langchain_core.runnables import RunnableConfig
-from langgraph.graph import StateGraph
-from langgraph.prebuilt import ToolNode
-from pydantic import BaseModel, Field
+from langchain_ollama import ChatOllama
+from langgraph.graph import START, END, StateGraph
 
-from research_graph import prompts
 from research_graph.configuration import Configuration
-from research_graph.state import InputState, OutputState, State
-from research_graph.tools import scrape_website, search
-from research_graph.utils import init_model
+from research_graph.utils import deduplicate_and_format_sources, tavily_search, format_sources, perplexity_search, duckduckgo_search, searxng_search, strip_thinking_tokens, get_config_value
+from research_graph.state import SummaryState, SummaryStateInput, SummaryStateOutput
+from research_graph.prompts import query_writer_instructions, summarizer_instructions, reflection_instructions, get_current_date
+from research_graph.lmstudio import ChatLMStudio
+
+# Nodes
 
 
-async def call_agent_model(
-    state: State, *, config: Optional[RunnableConfig] = None
-) -> Dict[str, Any]:
-    """Call the primary Language Model (LLM) to decide on the next research action.
+def generate_query(state: SummaryState, config: RunnableConfig):
+    """LangGraph node that generates a search query based on the research topic.
 
-    This asynchronous function performs the following steps:
-    1. Initializes configuration and sets up the 'Info' tool, which is the user-defined extraction schema.
-    2. Prepares the prompt and message history for the LLM.
-    3. Initializes and configures the LLM with available tools.
-    4. Invokes the LLM and processes its response.
-    5. Handles the LLM's decision to either continue research or submit final info.
+    Uses an LLM to create an optimized search query for web research based on
+    the user's research topic. Supports both LMStudio and Ollama as LLM providers.
+
+    Args:
+        state: Current graph state containing the research topic
+        config: Configuration for the runnable, including LLM provider settings
+
+    Returns:
+        Dictionary with state update, including search_query key containing the generated query
     """
-    # Load configuration from the provided RunnableConfig
-    configuration = Configuration.from_runnable_config(config)
 
-    # Define the 'Info' tool, which is the user-defined extraction schema
-    info_tool = {
-        "name": "Info",
-        "description": "Call this when you have gathered all the relevant info",
-        "parameters": state.extraction_schema,
-    }
-
-    # Format the prompt defined in prompts.py with the extraction schema and topic
-    p = configuration.prompt.format(
-        info=json.dumps(state.extraction_schema, indent=2), topic=state.topic
+    # Format the prompt
+    current_date = get_current_date()
+    formatted_prompt = query_writer_instructions.format(
+        current_date=current_date,
+        research_topic=state.research_topic
     )
 
-    # Create the messages list with the formatted prompt and the previous messages
-    messages = [HumanMessage(content=p)] + state.messages
-
-    # Initialize the raw model with the provided configuration and bind the tools
-    raw_model = init_model(config)
-    model = raw_model.bind_tools(
-        [scrape_website, search, info_tool], tool_choice="any")
-    response = cast(AIMessage, await model.ainvoke(messages))
-
-    # Initialize info to None
-    info = None
-
-    # Check if the response has tool calls
-    if response.tool_calls:
-        for tool_call in response.tool_calls:
-            if tool_call["name"] == "Info":
-                info = tool_call["args"]
-                break
-    if info is not None:
-        # The agent is submitting their answer;
-        # ensure it isn't erroneously attempting to simultaneously perform research
-        response.tool_calls = [
-            next(tc for tc in response.tool_calls if tc["name"] == "Info")
-        ]
-    response_messages: List[BaseMessage] = [response]
-    if not response.tool_calls:  # If LLM didn't respect the tool_choice
-        response_messages.append(
-            HumanMessage(
-                content="Please respond by calling one of the provided tools.")
-        )
-    return {
-        "messages": response_messages,
-        "info": info,
-        # Add 1 to the step count
-        "loop_step": 1,
-    }
-
-
-class InfoIsSatisfactory(BaseModel):
-    """Validate whether the current extracted info is satisfactory and complete."""
-
-    reason: List[str] = Field(
-        description="First, provide reasoning for why this is either good or bad as a final result. Must include at least 3 reasons."
-    )
-    is_satisfactory: bool = Field(
-        description="After providing your reasoning, provide a value indicating whether the result is satisfactory. If not, you will continue researching."
-    )
-    improvement_instructions: Optional[str] = Field(
-        description="If the result is not satisfactory, provide clear and specific instructions on what needs to be improved or added to make the information satisfactory."
-        " This should include details on missing information, areas that need more depth, or specific aspects to focus on in further research.",
-        default=None,
-    )
-
-
-async def reflect(
-    state: State, *, config: Optional[RunnableConfig] = None
-) -> Dict[str, Any]:
-    """Validate the quality of the data enrichment agent's output.
-
-    This asynchronous function performs the following steps:
-    1. Prepares the initial prompt using the main prompt template.
-    2. Constructs a message history for the model.
-    3. Prepares a checker prompt to evaluate the presumed info.
-    4. Initializes and configures a language model with structured output.
-    5. Invokes the model to assess the quality of the gathered information.
-    6. Processes the model's response and determines if the info is satisfactory.
-    """
-    p = prompts.MAIN_PROMPT.format(
-        info=json.dumps(state.extraction_schema, indent=2), topic=state.topic
-    )
-    last_message = state.messages[-1]
-    if not isinstance(last_message, AIMessage):
-        raise ValueError(
-            f"{reflect.__name__} expects the last message in the state to be an AI message with tool calls."
-            f" Got: {type(last_message)}"
-        )
-    messages = [HumanMessage(content=p)] + state.messages[:-1]
-    presumed_info = state.info
-    checker_prompt = """I am thinking of calling the info tool with the info below. \
-Is this good? Give your reasoning as well. \
-You can encourage the Assistant to look at specific URLs if that seems relevant, or do more searches.
-If you don't think it is good, you should be very specific about what could be improved.
-
-{presumed_info}"""
-    p1 = checker_prompt.format(
-        presumed_info=json.dumps(presumed_info or {}, indent=2))
-    messages.append(HumanMessage(content=p1))
-    raw_model = init_model(config)
-    bound_model = raw_model.with_structured_output(InfoIsSatisfactory)
-    response = cast(InfoIsSatisfactory, await bound_model.ainvoke(messages))
-    if response.is_satisfactory and presumed_info:
-        return {
-            "info": presumed_info,
-            "messages": [
-                ToolMessage(
-                    tool_call_id=last_message.tool_calls[0]["id"],
-                    content="\n".join(response.reason),
-                    name="Info",
-                    additional_kwargs={"artifact": response.model_dump()},
-                    status="success",
-                )
-            ],
-        }
-    else:
-        return {
-            "messages": [
-                ToolMessage(
-                    tool_call_id=last_message.tool_calls[0]["id"],
-                    content=f"Unsatisfactory response:\n{response.improvement_instructions}",
-                    name="Info",
-                    additional_kwargs={"artifact": response.model_dump()},
-                    status="error",
-                )
-            ]
-        }
-
-
-def route_after_agent(
-    state: State,
-) -> Literal["reflect", "tools", "call_agent_model", "__end__"]:
-    """Schedule the next node after the agent's action.
-
-    This function determines the next step in the research process based on the
-    last message in the state. It handles three main scenarios:
-
-    1. Error recovery: If the last message is unexpectedly not an AIMessage.
-    2. Info submission: If the agent has called the "Info" tool to submit findings.
-    3. Continued research: If the agent has called any other tool.
-    """
-    last_message = state.messages[-1]
-
-    # "If for some reason the last message is not an AIMessage (due to a bug or unexpected behavior elsewhere in the code),
-    # it ensures the system doesn't crash but instead tries to recover by calling the agent model again.
-    if not isinstance(last_message, AIMessage):
-        return "call_agent_model"
-    # If the "Into" tool was called, then the model provided its extraction output. Reflect on the result
-    if last_message.tool_calls and last_message.tool_calls[0]["name"] == "Info":
-        return "reflect"
-    # The last message is a tool call that is not "Info" (extraction output)
-    else:
-        return "tools"
-
-
-def route_after_checker(
-    state: State, config: RunnableConfig
-) -> Literal["__end__", "call_agent_model"]:
-    """Schedule the next node after the checker's evaluation.
-
-    This function determines whether to continue the research process or end it
-    based on the checker's evaluation and the current state of the research.
-    """
+    # Generate a query
     configurable = Configuration.from_runnable_config(config)
-    last_message = state.messages[-1]
 
-    if state.loop_step < configurable.max_loops:
-        if not state.info:
-            return "call_agent_model"
-        if not isinstance(last_message, ToolMessage):
-            raise ValueError(
-                f"{route_after_checker.__name__} expected a tool messages. Received: {type(last_message)}."
-            )
-        if last_message.status == "error":
-            # Research deemed unsatisfactory
-            return "call_agent_model"
-        # It's great!
-        return "__end__"
+    # Choose the appropriate LLM based on the provider
+    if configurable.llm_provider == "lmstudio":
+        llm_json_mode = ChatLMStudio(
+            base_url=configurable.lmstudio_base_url,
+            model=configurable.local_llm,
+            temperature=0,
+            format="json"
+        )
+    else:  # Default to Ollama
+        llm_json_mode = ChatOllama(
+            base_url=configurable.ollama_base_url,
+            model=configurable.local_llm,
+            temperature=0,
+            format="json"
+        )
+    llm_json_mode = ChatOpenAI(
+        model="gpt-4o-mini",
+        temperature=0,
+        # format="json"
+    )
+
+    logging.info(
+        f"configurable.ollama_base_url: {configurable.ollama_base_url}")
+    logging.info(f"configurable.local_llm: {configurable.local_llm}")
+    logging.info(f"llm_json_mode: {llm_json_mode}")
+    result = llm_json_mode.invoke(
+        [SystemMessage(content=formatted_prompt),
+         HumanMessage(content="Generate a query for web search:")]
+    )
+    logging.info(f"result: {result}")
+
+    # Get the content
+    content = result.content
+
+    # Parse the JSON response and get the query
+    try:
+        query = json.loads(content)
+        search_query = query['query']
+    except (json.JSONDecodeError, KeyError):
+        # If parsing fails or the key is not found, use a fallback query
+        if configurable.strip_thinking_tokens:
+            content = strip_thinking_tokens(content)
+        search_query = content
+    return {"search_query": search_query}
+
+
+def web_research(state: SummaryState, config: RunnableConfig):
+    """LangGraph node that performs web research using the generated search query.
+
+    Executes a web search using the configured search API (tavily, perplexity,
+    duckduckgo, or searxng) and formats the results for further processing.
+
+    Args:
+        state: Current graph state containing the search query and research loop count
+        config: Configuration for the runnable, including search API settings
+
+    Returns:
+        Dictionary with state update, including sources_gathered, research_loop_count, and web_research_results
+    """
+
+    # Configure
+    configurable = Configuration.from_runnable_config(config)
+
+    # Get the search API
+    search_api = get_config_value(configurable.search_api)
+
+    # Search the web
+    if search_api == "tavily":
+        search_results = tavily_search(
+            state.search_query, fetch_full_page=configurable.fetch_full_page, max_results=1)
+        search_str = deduplicate_and_format_sources(
+            search_results, max_tokens_per_source=1000, fetch_full_page=configurable.fetch_full_page)
+    elif search_api == "perplexity":
+        search_results = perplexity_search(
+            state.search_query, state.research_loop_count)
+        search_str = deduplicate_and_format_sources(
+            search_results, max_tokens_per_source=1000, fetch_full_page=configurable.fetch_full_page)
+    elif search_api == "duckduckgo":
+        search_results = duckduckgo_search(
+            state.search_query, max_results=3, fetch_full_page=configurable.fetch_full_page)
+        search_str = deduplicate_and_format_sources(
+            search_results, max_tokens_per_source=1000, fetch_full_page=configurable.fetch_full_page)
+    elif search_api == "searxng":
+        search_results = searxng_search(
+            state.search_query, max_results=3, fetch_full_page=configurable.fetch_full_page)
+        search_str = deduplicate_and_format_sources(
+            search_results, max_tokens_per_source=1000, fetch_full_page=configurable.fetch_full_page)
     else:
-        return "__end__"
+        raise ValueError(f"Unsupported search API: {configurable.search_api}")
+
+    return {"sources_gathered": [format_sources(search_results)], "research_loop_count": state.research_loop_count + 1, "web_research_results": [search_str]}
 
 
-# Create the graph
-workflow = StateGraph(
-    State, input=InputState, output=OutputState, config_schema=Configuration
-)
+def summarize_sources(state: SummaryState, config: RunnableConfig):
+    """LangGraph node that summarizes web research results.
 
-# Add nodes to the workflow
-workflow.add_node(call_agent_model)
-workflow.add_node(reflect)
-workflow.add_node("tools", ToolNode([search, scrape_website]))
+    Uses an LLM to create or update a running summary based on the newest web research
+    results, integrating them with any existing summary.
 
-# Add edges to the workflow
-workflow.add_edge("__start__", "call_agent_model")
-workflow.add_conditional_edges("call_agent_model", route_after_agent)
-workflow.add_edge("tools", "call_agent_model")
-workflow.add_conditional_edges("reflect", route_after_checker)
+    Args:
+        state: Current graph state containing research topic, running summary,
+              and web research results
+        config: Configuration for the runnable, including LLM provider settings
 
-# Compile the workflow
-graph = workflow.compile()
-graph.name = "ResearchTopic"
+    Returns:
+        Dictionary with state update, including running_summary key containing the updated summary
+    """
+
+    # Existing summary
+    existing_summary = state.running_summary
+
+    # Most recent web research
+    most_recent_web_research = state.web_research_results[-1]
+
+    # Build the human message
+    if existing_summary:
+        human_message_content = (
+            f"<Existing Summary> \n {existing_summary} \n <Existing Summary>\n\n"
+            f"<New Context> \n {most_recent_web_research} \n <New Context>"
+            f"Update the Existing Summary with the New Context on this topic: \n <User Input> \n {state.research_topic} \n <User Input>\n\n"
+        )
+    else:
+        human_message_content = (
+            f"<Context> \n {most_recent_web_research} \n <Context>"
+            f"Create a Summary using the Context on this topic: \n <User Input> \n {state.research_topic} \n <User Input>\n\n"
+        )
+
+    # Run the LLM
+    configurable = Configuration.from_runnable_config(config)
+
+    # Choose the appropriate LLM based on the provider
+    if configurable.llm_provider == "lmstudio":
+        llm = ChatLMStudio(
+            base_url=configurable.lmstudio_base_url,
+            model=configurable.local_llm,
+            temperature=0
+        )
+    else:  # Default to Ollama
+        llm = ChatOllama(
+            base_url=configurable.ollama_base_url,
+            model=configurable.local_llm,
+            temperature=0
+        )
+    llm = ChatOpenAI(
+        model="gpt-4o-mini",
+        temperature=0,
+    )
+
+    result = llm.invoke(
+        [SystemMessage(content=summarizer_instructions),
+         HumanMessage(content=human_message_content)]
+    )
+
+    # Strip thinking tokens if configured
+    running_summary = result.content
+    if configurable.strip_thinking_tokens:
+        running_summary = strip_thinking_tokens(running_summary)
+
+    return {"running_summary": running_summary}
+
+
+def reflect_on_summary(state: SummaryState, config: RunnableConfig):
+    """LangGraph node that identifies knowledge gaps and generates follow-up queries.
+
+    Analyzes the current summary to identify areas for further research and generates
+    a new search query to address those gaps. Uses structured output to extract
+    the follow-up query in JSON format.
+
+    Args:
+        state: Current graph state containing the running summary and research topic
+        config: Configuration for the runnable, including LLM provider settings
+
+    Returns:
+        Dictionary with state update, including search_query key containing the generated follow-up query
+    """
+
+    # Generate a query
+    configurable = Configuration.from_runnable_config(config)
+
+    # Choose the appropriate LLM based on the provider
+    if configurable.llm_provider == "lmstudio":
+        llm_json_mode = ChatLMStudio(
+            base_url=configurable.lmstudio_base_url,
+            model=configurable.local_llm,
+            temperature=0,
+            format="json"
+        )
+    else:  # Default to Ollama
+        llm_json_mode = ChatOllama(
+            base_url=configurable.ollama_base_url,
+            model=configurable.local_llm,
+            temperature=0,
+            format="json"
+        )
+    llm_json_mode = ChatOpenAI(
+        model="gpt-4o-mini",
+        temperature=0,
+    )
+
+    result = llm_json_mode.invoke(
+        [SystemMessage(content=reflection_instructions.format(research_topic=state.research_topic)),
+         HumanMessage(content=f"Reflect on our existing knowledge: \n === \n {state.running_summary}, \n === \n And now identify a knowledge gap and generate a follow-up web search query:")]
+    )
+
+    # Strip thinking tokens if configured
+    try:
+        # Try to parse as JSON first
+        reflection_content = json.loads(result.content)
+        # Get the follow-up query
+        query = reflection_content.get('follow_up_query')
+        # Check if query is None or empty
+        if not query:
+            # Use a fallback query
+            return {"search_query": f"Tell me more about {state.research_topic}"}
+        return {"search_query": query}
+    except (json.JSONDecodeError, KeyError, AttributeError):
+        # If parsing fails or the key is not found, use a fallback query
+        return {"search_query": f"Tell me more about {state.research_topic}"}
+
+
+def finalize_summary(state: SummaryState):
+    """LangGraph node that finalizes the research summary.
+
+    Prepares the final output by deduplicating and formatting sources, then
+    combining them with the running summary to create a well-structured
+    research report with proper citations.
+
+    Args:
+        state: Current graph state containing the running summary and sources gathered
+
+    Returns:
+        Dictionary with state update, including running_summary key containing the formatted final summary with sources
+    """
+
+    # Deduplicate sources before joining
+    seen_sources = set()
+    unique_sources = []
+
+    for source in state.sources_gathered:
+        # Split the source into lines and process each individually
+        for line in source.split('\n'):
+            # Only process non-empty lines
+            if line.strip() and line not in seen_sources:
+                seen_sources.add(line)
+                unique_sources.append(line)
+
+    # Join the deduplicated sources
+    all_sources = "\n".join(unique_sources)
+    state.running_summary = f"## Summary\n{state.running_summary}\n\n ### Sources:\n{all_sources}"
+    return {"running_summary": state.running_summary}
+
+
+def route_research(state: SummaryState, config: RunnableConfig) -> Literal["finalize_summary", "web_research"]:
+    """LangGraph routing function that determines the next step in the research flow.
+
+    Controls the research loop by deciding whether to continue gathering information
+    or to finalize the summary based on the configured maximum number of research loops.
+
+    Args:
+        state: Current graph state containing the research loop count
+        config: Configuration for the runnable, including max_web_research_loops setting
+
+    Returns:
+        String literal indicating the next node to visit ("web_research" or "finalize_summary")
+    """
+
+    configurable = Configuration.from_runnable_config(config)
+    if state.research_loop_count <= configurable.max_web_research_loops:
+        return "web_research"
+    else:
+        return "finalize_summary"
+
+
+# Add nodes and edges
+builder = StateGraph(SummaryState, input=SummaryStateInput,
+                     output=SummaryStateOutput, config_schema=Configuration)
+builder.add_node("generate_query", generate_query)
+builder.add_node("web_research", web_research)
+builder.add_node("summarize_sources", summarize_sources)
+builder.add_node("reflect_on_summary", reflect_on_summary)
+builder.add_node("finalize_summary", finalize_summary)
+
+# Add edges
+builder.add_edge(START, "generate_query")
+builder.add_edge("generate_query", "web_research")
+builder.add_edge("web_research", "summarize_sources")
+builder.add_edge("summarize_sources", "reflect_on_summary")
+builder.add_conditional_edges("reflect_on_summary", route_research)
+builder.add_edge("finalize_summary", END)
+
+graph = builder.compile()

@@ -8,7 +8,7 @@ import {
   ThreadData,
   ThreadStatusWithAll,
 } from "@/components/agent-inbox/types";
-import { useToast, type ToastInput } from "@/hooks/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { createClient } from "@/lib/client";
 import {
   Run,
@@ -25,7 +25,6 @@ import {
   OFFSET_PARAM,
   AGENT_INBOX_PARAM,
   AGENT_INBOXES_LOCAL_STORAGE_KEY,
-  LANGCHAIN_API_KEY_LOCAL_STORAGE_KEY,
   NO_INBOXES_FOUND_PARAM,
 } from "../constants";
 import {
@@ -35,6 +34,14 @@ import {
   processThreadWithoutInterrupts,
 } from "./utils";
 import { useLocalStorage } from "../hooks/use-local-storage";
+
+// Define the ToastInput type that matches what useToast expects
+type ToastInput = {
+  title?: string;
+  description?: React.ReactNode;
+  variant?: "default" | "destructive";
+  duration?: number;
+};
 
 type ThreadContentType<
   ThreadValues extends Record<string, any> = Record<string, any>,
@@ -54,14 +61,20 @@ type ThreadContentType<
     options?: {
       stream?: TStream;
     }
-  ) => TStream extends true
-    ?
-        | AsyncGenerator<{
-            event: Record<string, any>;
-            data: any;
-          }>
-        | undefined
-    : Promise<Run> | undefined;
+  ) => Promise<
+    TStream extends true
+      ?
+          | AsyncGenerator<
+              {
+                event: Record<string, any>;
+                data: any;
+              },
+              any,
+              unknown
+            >
+          | undefined
+      : Run | undefined
+  >;
   fetchSingleThread: (threadId: string) => Promise<
     | {
         thread: Thread<ThreadValues>;
@@ -70,6 +83,12 @@ type ThreadContentType<
       }
     | undefined
   >;
+  bulkGetThreadStates: (
+    threadIds: string[]
+  ) => Promise<
+    { thread_id: string; thread_state: ThreadState<ThreadValues> }[]
+  >;
+  deleteThread: (threadId: string) => Promise<void>;
 };
 
 const ThreadsContext = React.createContext<ThreadContentType | undefined>(
@@ -83,52 +102,49 @@ interface GetClientArgs {
 }
 
 const getClient = async ({ agentInboxes, getItem, toast }: GetClientArgs) => {
-  console.log('getClient called with agentInboxes:', JSON.stringify(agentInboxes, null, 2));
-  
   if (agentInboxes.length === 0) {
-    console.error("Agent inbox not found. Please add an inbox in settings.");
     toast({
       title: "Error",
-      description: "Agent inbox not found. Please add an inbox in settings. (",
+      description: "Agent inbox not found. Please add an inbox in settings.",
       variant: "destructive",
       duration: 3000,
     });
     return;
   }
-  
-  const selectedInbox = agentInboxes.find((i) => i.selected);
-  console.log('Selected inbox:', JSON.stringify(selectedInbox, null, 2));
-  
-  let deploymentUrl = selectedInbox?.deploymentUrl;
-  console.log('Initial deploymentUrl:', deploymentUrl);
-  
-  if (!deploymentUrl) {
-    console.error("Deployment URL not found. Please add a deployment URL in settings.");
-    toast({
-      title: "Error",
-      description:
-        "Please ensure your selected agent inbox has a deployment URL.",
-      variant: "destructive",
-      duration: 5000,
-    });
-    return;
-  }
 
-  // In development, route through our API proxy
-  if (process.env.NODE_ENV === 'development') {
-    deploymentUrl = 'http://localhost:3000/api';
-  }
-
-  const langchainApiKeyLS =
+  // Use the proxied URL consistently across the application
+  const deploymentUrl = process.env.NEXT_PUBLIC_LANGGRAPH_API_URL;
+  const langchainApiKey =
     process.env.NEXT_PUBLIC_LANGGRAPH_API_KEY || undefined;
-  console.log('LangChain API Key present:', !!langchainApiKeyLS);
 
-  console.log('Creating client with final deploymentUrl:', deploymentUrl);
-  
-  return await createClient({
-    deploymentUrl,
-    langchainApiKey: langchainApiKeyLS,
-  });
+  try {
+    const client = await createClient({
+      deploymentUrl,
+      langchainApiKey,
+    });
+
+    return client;
+  } catch (error: any) {
+    console.error("Failed to create LangGraph client:", error);
+    if (error.message?.includes("CORS")) {
+      toast({
+        title: "CORS Error",
+        description:
+          "Unable to connect to LangGraph API. Please check your configuration.",
+        variant: "destructive",
+        duration: 5000,
+      });
+    } else {
+      toast({
+        title: "Error",
+        description:
+          "Failed to connect to LangGraph API. Please check your configuration.",
+        variant: "destructive",
+        duration: 5000,
+      });
+    }
+    return undefined;
+  }
 };
 
 export function ThreadsProvider<
@@ -149,122 +165,160 @@ export function ThreadsProvider<
   const inboxParam = searchParams.get(INBOX_PARAM);
 
   React.useEffect(() => {
-    if (typeof window === "undefined") {
-      return;
-    }
-    if (!agentInboxes.length) {
-      return;
-    }
-    const inboxSearchParam = getSearchParam(INBOX_PARAM) as ThreadStatusWithAll;
-    if (!inboxSearchParam) {
-      return;
-    }
-    try {
-      fetchThreads(inboxSearchParam);
-    } catch (e) {
-      console.error("Error occurred while fetching threads", e);
-    }
-  }, [limitParam, offsetParam, inboxParam, agentInboxes]);
+    console.log("call useEffect");
 
-  const agentInboxParam = searchParams.get(AGENT_INBOX_PARAM);
-
-  React.useEffect(() => {
     if (typeof window === "undefined") {
+      console.log("window is undefined");
+      console.log("window: ", window);
       return;
     }
-    try {
-      getAgentInboxes();
-    } catch (e) {
-      console.error("Error occurred while fetching agent inboxes", e);
-    }
-  }, [agentInboxParam]);
+
+    let mounted = true;
+
+    const init = async () => {
+      try {
+        // Only fetch agent inboxes if we don't have any yet
+        if (agentInboxes.length === 0) {
+          await getAgentInboxes();
+        } else {
+          // If we already have agent inboxes, just fetch threads if needed
+          const inboxSearchParam = getSearchParam(INBOX_PARAM) as ThreadStatusWithAll;
+          if (inboxSearchParam && mounted) {
+            await fetchThreads(inboxSearchParam);
+          }
+        }
+      } catch (e) {
+        console.error("Error occurred during initialization", e);
+      }
+    };
+
+    init();
+
+    return () => {
+      mounted = false;
+    };
+  }, [limitParam, offsetParam, inboxParam]);
 
   const getAgentInboxes = React.useCallback(async () => {
     const agentInboxSearchParam = getSearchParam(AGENT_INBOX_PARAM);
-    const agentInboxes = getItem(AGENT_INBOXES_LOCAL_STORAGE_KEY);
-    if (!agentInboxes || !agentInboxes.length) {
-      updateQueryParams(NO_INBOXES_FOUND_PARAM, "true");
-      return;
-    }
-    let parsedAgentInboxes: AgentInbox[] = [];
+    console.log(
+      "[Debug] Fetching agent inboxes, search param:",
+      agentInboxSearchParam
+    );
+
     try {
-      parsedAgentInboxes = JSON.parse(agentInboxes);
-    } catch (error) {
-      console.error("Error parsing agent inboxes", error);
-      toast({
-        title: "Error",
-        description: "Agent inbox not found. Please add an inbox in settings.",
-        variant: "destructive",
-        duration: 3000,
-      });
-      return;
-    }
-
-    if (!parsedAgentInboxes.length) {
-      const noInboxesFoundParam = searchParams.get(NO_INBOXES_FOUND_PARAM);
-      if (noInboxesFoundParam !== "true") {
-        updateQueryParams(NO_INBOXES_FOUND_PARAM, "true");
-      }
-      return;
-    }
-
-    // Ensure each agent inbox has an ID, and if not, add one
-    parsedAgentInboxes = parsedAgentInboxes.map((i) => {
-      return {
-        ...i,
-        id: i.id || uuidv4(),
+      setLoading(true);
+      // Fetch teams from the database with detailed error logging
+      const requestBody = {
+        action: "select",
+        table: "teams",
+        query: {
+          select: "*",
+          order: [{ column: "created_at", order: "desc" }]
+        },
       };
-    });
 
-    // If there is no agent inbox search param, or the search param is not
-    // a valid UUID, update search param and local storage
-    if (!agentInboxSearchParam || !validate(agentInboxSearchParam)) {
-      const selectedInbox = parsedAgentInboxes.find((i) => i.selected);
-      if (!selectedInbox) {
+      console.log("[Debug] Sending request to /api/supabase:", requestBody);
+
+      const response = await fetch("/api/supabase", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(requestBody),
+      });
+
+      console.log("[Debug] Response status:", response.status);
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("[Debug] API Error response:", errorText);
+        throw new Error(`Failed to fetch teams: ${response.status} ${errorText}`);
+      }
+
+      const teams = await response.json();
+      console.log("[Debug] Teams data:", teams);
+
+      if (!teams || !Array.isArray(teams)) {
+        console.error("[Debug] Invalid data format:", teams);
+        throw new Error("Invalid data format from API");
+      }
+
+      if (!teams.length) {
+        console.log("[Debug] No teams found in database");
+        // Don't show welcome dialog even if no teams found
+        setAgentInboxes([]);
+        setLoading(false);
+        return;
+      }
+
+      // Transform teams into AgentInbox format
+      const parsedAgentInboxes: AgentInbox[] = teams.map((team: any) => ({
+        id: team.id,
+        // TODO: Handle project_graph later
+        graphId: "team_graph",
+        name: team.name,
+        description: team.description,
+        selected: false,
+      }));
+      console.log("[Debug] Transformed agent inboxes:", parsedAgentInboxes);
+
+      // If there is no agent inbox search param, or the search param is not
+      // a valid UUID, update search param
+      if (!agentInboxSearchParam || !validate(agentInboxSearchParam)) {
         parsedAgentInboxes[0].selected = true;
         updateQueryParams(AGENT_INBOX_PARAM, parsedAgentInboxes[0].id);
         setAgentInboxes(parsedAgentInboxes);
-        setItem(
-          AGENT_INBOXES_LOCAL_STORAGE_KEY,
-          JSON.stringify(parsedAgentInboxes)
-        );
-      } else {
-        updateQueryParams(AGENT_INBOX_PARAM, selectedInbox.id);
-        setAgentInboxes(parsedAgentInboxes);
-        setItem(
-          AGENT_INBOXES_LOCAL_STORAGE_KEY,
-          JSON.stringify(parsedAgentInboxes)
-        );
+        
+        // Fetch threads for the first inbox
+        const inboxSearchParam = getSearchParam(INBOX_PARAM) as ThreadStatusWithAll;
+        if (inboxSearchParam) {
+          await fetchThreads(inboxSearchParam);
+        }
+        return;
       }
-      return;
-    }
 
-    const selectedInbox = parsedAgentInboxes.find(
-      (i) =>
-        i.id === agentInboxSearchParam || i.graphId === agentInboxSearchParam
-    );
-    if (!selectedInbox) {
+      const selectedInbox = parsedAgentInboxes.find(
+        (i) =>
+          i.id === agentInboxSearchParam || i.graphId === agentInboxSearchParam
+      );
+
+      if (!selectedInbox) {
+        toast({
+          title: "Error",
+          description:
+            "Agent inbox not found. Please add an inbox in settings.",
+          variant: "destructive",
+          duration: 3000,
+        });
+        setLoading(false);
+        return;
+      }
+
+      parsedAgentInboxes.forEach((inbox) => {
+        inbox.selected =
+          inbox.id === agentInboxSearchParam ||
+          inbox.graphId === agentInboxSearchParam;
+      });
+
+      setAgentInboxes(parsedAgentInboxes);
+      
+      // Fetch threads for the selected inbox
+      const inboxSearchParam = getSearchParam(INBOX_PARAM) as ThreadStatusWithAll;
+      if (inboxSearchParam) {
+        await fetchThreads(inboxSearchParam);
+      }
+    } catch (error) {
+      console.error("[Debug] Error fetching teams:", error);
       toast({
         title: "Error",
-        description: "Agent inbox not found. Please add an inbox in settings.",
+        description: "Failed to fetch agent inboxes. Please try again.",
         variant: "destructive",
         duration: 3000,
       });
-      return;
+    } finally {
+      setLoading(false);
     }
-
-    parsedAgentInboxes = parsedAgentInboxes.map((i) => {
-      return {
-        ...i,
-        selected:
-          i.id === agentInboxSearchParam || i.graphId === agentInboxSearchParam,
-      };
-    });
-    setAgentInboxes(parsedAgentInboxes);
-    setItem(
-      AGENT_INBOXES_LOCAL_STORAGE_KEY,
-      JSON.stringify(parsedAgentInboxes)
-    );
   }, []);
 
   const addAgentInbox = React.useCallback((agentInbox: AgentInbox) => {
@@ -332,53 +386,36 @@ export function ThreadsProvider<
 
   const fetchThreads = React.useCallback(
     async (inbox: ThreadStatusWithAll) => {
-      console.log('=== fetchThreads Start ===');
-      console.log('Inbox parameter:', inbox);
-      console.log('Current agentInboxes:', JSON.stringify(agentInboxes, null, 2));
-      
+      console.log("call fetchThreads");
       setLoading(true);
-      
+
       try {
-        console.log('Getting client...');
         const client = await getClient({
           agentInboxes,
           getItem,
           toast,
         });
-        console.log("Client creation result:", JSON.stringify(client, null, 2));
-        
+
         if (!client) {
-          console.error('Client creation failed');
           return;
         }
 
-        console.log('=== Search Parameters Setup ===');
         const limitQueryParam = getSearchParam(LIMIT_PARAM);
-        console.log('Raw limit param:', limitQueryParam);
-        
+
         if (!limitQueryParam) {
-          console.error("Limit query param not found");
           throw new Error("Limit query param not found");
         }
-        
+
         const offsetQueryParam = getSearchParam(OFFSET_PARAM);
-        console.log('Raw offset param:', offsetQueryParam);
-        
+
         if (!offsetQueryParam) {
-          console.error("Offset query param not found");
           throw new Error("Offset query param not found");
         }
-        
+
         const limit = Number(limitQueryParam);
         const offset = Number(offsetQueryParam);
-        console.log('Parsed parameters:', { limit, offset });
-        console.log('Parameter validation:', {
-          isLimitValid: !isNaN(limit),
-          isOffsetValid: !isNaN(offset)
-        });
 
         if (limit > 100) {
-          console.warn('Limit exceeds maximum allowed value:', limit);
           toast({
             title: "Error",
             description: "Cannot fetch more than 100 threads at a time",
@@ -388,76 +425,47 @@ export function ThreadsProvider<
           return;
         }
 
-        console.log('=== Building Search Arguments ===');
         const statusInput = inbox === "all" ? {} : { status: inbox };
-        console.log('Status input:', statusInput);
-        
         const metadataInput = getThreadFilterMetadata(agentInboxes);
-        console.log('Metadata input:', metadataInput);
-
         const threadSearchArgs = {
-          // offset,
-          // limit,
-          // ...statusInput,
-          // ...(metadataInput ? { metadata: metadataInput } : {}),
+          offset,
+          limit,
+          ...statusInput,
+          ...(metadataInput ? { metadata: metadataInput } : {}),
         };
-        console.log('Final thread search arguments:', JSON.stringify(threadSearchArgs, null, 2));
+        console.log("threadSearchArgs: ", threadSearchArgs);
 
-        console.log('=== Executing Search ===');
-        console.log('Client before search:', client);
-        console.log('Client threads API:', client.threads);
         const threads = await client.threads.search(threadSearchArgs);
-        console.log('Search results:', JSON.stringify(threads, null, 2));
-        
         const data: ThreadData<ThreadValues>[] = [];
-        console.log('=== Processing Results ===');
 
         if (["interrupted", "all"].includes(inbox)) {
-          console.log('Processing interrupted threads');
           const interruptedThreads = threads.filter(
             (t) => t.status === "interrupted"
           );
-          console.log('Found interrupted threads:', interruptedThreads.length);
 
-          // Process threads with interrupts in their thread object
-          console.log('Processing threads with existing interrupts');
           const processedThreads = interruptedThreads
             .map((t) => {
-              console.log('Processing thread:', t.thread_id);
               return processInterruptedThread(t as Thread<ThreadValues>);
             })
             .filter((t): t is ThreadData<ThreadValues> => {
-              console.log('Thread processing result:', !!t);
               return !!t;
             });
-          console.log('Processed threads count:', processedThreads.length);
           data.push(...processedThreads);
 
-          // [LEGACY]: Process threads that need state lookup
-          console.log('Processing legacy threads without interrupts');
-          const threadsWithoutInterrupts = interruptedThreads.filter(
-            (t) => {
-              const hasInterrupts = !getInterruptFromThread(t)?.length;
-              console.log(`Thread ${t.thread_id} has interrupts:`, !hasInterrupts);
-              return hasInterrupts;
-            }
-          );
-          console.log('Threads without interrupts:', threadsWithoutInterrupts.length);
+          const threadsWithoutInterrupts = interruptedThreads.filter((t) => {
+            return !getInterruptFromThread(t)?.length;
+          });
 
           if (threadsWithoutInterrupts.length > 0) {
-            console.log('Fetching states for threads without interrupts');
             const states = await bulkGetThreadStates(
               threadsWithoutInterrupts.map((t) => t.thread_id)
             );
-            console.log('Retrieved states:', states.length);
 
             const interruptedData = states.map((state) => {
-              console.log('Processing state for thread:', state.thread_id);
               const thread = threadsWithoutInterrupts.find(
                 (t) => t.thread_id === state.thread_id
               );
               if (!thread) {
-                console.error(`Thread not found: ${state.thread_id}`);
                 throw new Error(`Thread not found: ${state.thread_id}`);
               }
               return processThreadWithoutInterrupts(
@@ -465,54 +473,38 @@ export function ThreadsProvider<
                 state
               );
             });
-            console.log('Processed interrupted data count:', interruptedData.length);
 
             data.push(...interruptedData);
           }
         }
 
-        console.log('=== Processing Non-interrupted Threads ===');
         threads.forEach((t) => {
           if (t.status === "interrupted") {
-            console.log('Skipping interrupted thread:', t.thread_id);
             return;
           }
-          console.log('Adding non-interrupted thread:', t.thread_id);
           data.push({
             status: t.status,
             thread: t as Thread<ThreadValues>,
           });
         });
 
-        console.log('=== Sorting Results ===');
-        console.log('Pre-sort data count:', data.length);
         const sortedData = data.sort((a, b) => {
           const dateA = new Date(b.thread.created_at).getTime();
           const dateB = new Date(a.thread.created_at).getTime();
-          console.log('Comparing dates:', {
-            a: b.thread.created_at,
-            b: a.thread.created_at,
-            result: dateA - dateB
-          });
           return dateA - dateB;
         });
-        console.log('Post-sort data count:', sortedData.length);
 
-        console.log('=== Updating State ===');
         setThreadData(sortedData);
         setHasMoreThreads(threads.length === limit);
-        console.log('Has more threads:', threads.length === limit);
-        
       } catch (e) {
-        console.error("Failed to fetch threads", e);
-        console.error("Error details:", {
-          name: e.name,
-          message: e.message,
-          stack: e.stack
+        toast({
+          title: "Error",
+          description: "Failed to fetch threads",
+          variant: "destructive",
+          duration: 3000,
         });
       }
       setLoading(false);
-      console.log('=== fetchThreads End ===');
     },
     [agentInboxes]
   );
@@ -528,13 +520,13 @@ export function ThreadsProvider<
         }
       | undefined
     > => {
-      const client = getClient({
+      const client = await getClient({
         agentInboxes,
         getItem,
         toast,
       });
       if (!client) {
-        return;
+        return undefined;
       }
       const thread = await client.threads.get(threadId);
       let threadInterrupts: HumanInterrupt[] | undefined;
@@ -564,7 +556,7 @@ export function ThreadsProvider<
     ): Promise<
       { thread_id: string; thread_state: ThreadState<ThreadValues> }[]
     > => {
-      const client = getClient({
+      const client = await getClient({
         agentInboxes,
         getItem,
         toast,
@@ -601,7 +593,7 @@ export function ThreadsProvider<
   );
 
   const ignoreThread = async (threadId: string) => {
-    const client = getClient({
+    const client = await getClient({
       agentInboxes,
       getItem,
       toast,
@@ -624,7 +616,6 @@ export function ThreadsProvider<
         duration: 3000,
       });
     } catch (e) {
-      console.error("Error ignoring thread", e);
       toast({
         title: "Error",
         description: "Failed to ignore thread",
@@ -634,32 +625,8 @@ export function ThreadsProvider<
     }
   };
 
-  const sendHumanResponse = <TStream extends boolean = false>(
-    threadId: string,
-    response: HumanResponse[],
-    options?: {
-      stream?: TStream;
-    }
-  ): TStream extends true
-    ?
-        | AsyncGenerator<{
-            event: Record<string, any>;
-            data: any;
-          }>
-        | undefined
-    : Promise<Run> | undefined => {
-    const graphId = agentInboxes.find((i) => i.selected)?.graphId;
-    if (!graphId) {
-      toast({
-        title: "No assistant/graph ID found.",
-        description:
-          "Assistant/graph IDs are required to send responses. Please add an assistant/graph ID in the settings.",
-        variant: "destructive",
-      });
-      return undefined;
-    }
-
-    const client = getClient({
+  const deleteThread = async (threadId: string) => {
+    const client = await getClient({
       agentInboxes,
       getItem,
       toast,
@@ -668,21 +635,81 @@ export function ThreadsProvider<
       return;
     }
     try {
+      await client.threads.delete(threadId);
+
+      setThreadData((prev) => {
+        return prev.filter((p) => p.thread.thread_id !== threadId);
+      });
+      toast({
+        title: "Success",
+        description: "Thread deleted successfully",
+        duration: 3000,
+      });
+    } catch (e) {
+      toast({
+        title: "Error",
+        description: "Failed to delete thread",
+        variant: "destructive",
+        duration: 3000,
+      });
+    }
+  };
+
+  const sendHumanResponse = async <TStream extends boolean = false>(
+    threadId: string,
+    response: HumanResponse[],
+    options?: {
+      stream?: TStream;
+    }
+  ): Promise<
+    TStream extends true
+      ?
+          | AsyncGenerator<
+              {
+                event: Record<string, any>;
+                data: any;
+              },
+              any,
+              unknown
+            >
+          | undefined
+      : Run | undefined
+  > => {
+    let graphId = agentInboxes.find((i) => i.selected)?.graphId;
+    if (!graphId) {
+      toast({
+        title: "No assistant/graph ID found.",
+        description:
+          "Assistant/graph IDs are required to send responses. Please add an assistant/graph ID in the settings.",
+        variant: "destructive",
+      });
+      return undefined as any;
+    }
+    console.log("graphId: ", graphId);
+
+    const client = await getClient({
+      agentInboxes,
+      getItem,
+      toast,
+    });
+    if (!client) {
+      return undefined as any;
+    }
+    try {
       if (options?.stream) {
         return client.runs.stream(threadId, graphId, {
           command: {
             resume: response,
           },
           streamMode: "events",
-        }) as any; // Type assertion needed due to conditional return type
+        }) as any;
       }
       return client.runs.create(threadId, graphId, {
         command: {
           resume: response,
         },
-      }) as any; // Type assertion needed due to conditional return type
+      }) as any;
     } catch (e: any) {
-      console.error("Error sending human response", e);
       throw e;
     }
   };
@@ -699,6 +726,8 @@ export function ThreadsProvider<
     sendHumanResponse,
     fetchThreads,
     fetchSingleThread,
+    bulkGetThreadStates,
+    deleteThread,
   };
 
   return (

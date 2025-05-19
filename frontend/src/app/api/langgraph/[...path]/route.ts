@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server';
 
-const LANGGRAPH_BASE_URL = 'https://thothy-main-1-de5fb55cbe095927b7558bbdb47d8a8d.us.langgraph.app';
+const LANGGRAPH_BASE_URL = 'http://localhost:2024';
 
 export async function GET(
   request: NextRequest,

@@ -4,6 +4,7 @@ import { Layers, Loader, TriangleAlert, ZapOff } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { INBOX_PARAM } from "../constants";
 import { ThreadStatusWithAll } from "../types";
+import { useThreadsContext } from "../contexts/ThreadContext";
 
 const idleInboxesSVG = (
   <svg
@@ -30,6 +31,19 @@ const INBOX_ICON_MAP = {
   busy: <Loader />,
   error: <TriangleAlert />,
 };
+
+function InboxButtonSkeleton() {
+  return (
+    <div className="flex w-full gap-2 items-center justify-start animate-pulse">
+      {[1, 2, 3, 4, 5].map((i) => (
+        <div
+          key={i}
+          className="h-10 bg-gray-200 rounded-md w-24"
+        />
+      ))}
+    </div>
+  );
+}
 
 function InboxButton({
   label,
@@ -61,7 +75,12 @@ export function InboxButtons({
   changeInbox: (inbox: ThreadStatusWithAll) => void;
 }) {
   const { searchParams } = useQueryParams();
+  const { loading } = useThreadsContext();
   const selectedInbox = searchParams.get(INBOX_PARAM) || "interrupted";
+
+  if (loading) {
+    return <InboxButtonSkeleton />;
+  }
 
   return (
     <div className="flex w-full gap-2 items-center justify-start">
