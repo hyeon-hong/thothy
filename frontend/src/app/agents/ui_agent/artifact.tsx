@@ -8,7 +8,6 @@ export default function UIGraphComponent(props: { code: string }) {
 
   const { meta } = useStreamContext<{ MetaType: { ui: any; artifact: any } }>();
   const [ArtifactContent, { open, setOpen }] = meta.artifact;
-  // const [content, setContent] = useState<any>(null);
 
   useEffect(() => {
     setOpen(true);
