@@ -5,7 +5,7 @@ description = "An agent that can interact with and manipulate slides."
 authors = [
     { name = "Thothy", email = "ai.thothy@gmail.com" },
 ]
-license = { text = "Apache-2.0" }
+license = "Apache-2.0"
 requires-python = ">=3.12"
 dependencies = [
     "langgraph>=0.4.3",
