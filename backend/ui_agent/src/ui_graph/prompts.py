@@ -1,6 +1,20 @@
 """Define default prompts."""
 
 import textwrap
+from lib.shadcn_docs import avatar, button, card, checkbox, input, label, radio_group, select, textarea
+
+shadcn_docs = [
+    avatar,
+    button,
+    card,
+    checkbox,
+    input,
+    label,
+    radio_group,
+    select,
+    textarea,
+]
+
 SYSTEM_PROMPT = (
     "You are a helpful and friendly chatbot. Get to know the user!\n"
     "Ask questions! Be spontaneous!\n"
@@ -82,18 +96,10 @@ examples = [
 ]
 
 
-def get_coding_prompt(shadcn: bool, shadcn_docs=None, examples=None):
+def get_coding_prompt():
     """
     Returns a system prompt for coding tasks, optionally including shadcn component docs and examples.
-    Args:
-        shadcn (bool): Whether to include shadcn component docs.
-        shadcn_docs (list of dict): List of component docs, each with 'name', 'importDocs', 'usageDocs'.
-        examples (list of dict): List of examples, each with 'input' and 'output'.
     """
-    if shadcn_docs is None:
-        shadcn_docs = []
-    if examples is None:
-        examples = []
 
     system_prompt = '''
 You are an expert frontend frontend React developer. You will be given a screenshot of a website from the user, and then you will return code for it using React and Tailwind CSS. Follow the instructions carefully, it is very important for my job. I will tip you $1 million if you do a good job:
@@ -119,7 +125,7 @@ You are an expert frontend frontend React developer. You will be given a screens
 - Make the design look nice and don't have borders around the entire website even if that's described
 '''
 
-    if shadcn and shadcn_docs:
+    if shadcn_docs:
         system_prompt += '\nThere are some prestyled components available for use. Please use your best judgement to use any of these components if the app calls for one.\n\nHere are the components that are available, along with how to import them, and how to use them:\n\n'
         system_prompt += '\n'.join(
             f"""
