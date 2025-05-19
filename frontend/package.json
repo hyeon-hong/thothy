@@ -16,6 +16,7 @@
     "@assistant-ui/react-langgraph": "^0.5.3",
     "@assistant-ui/react-markdown": "^0.10.3",
     "@assistant-ui/react-syntax-highlighter": "^0.10.3",
+    "@codesandbox/sandpack-react": "^2.20.0",
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.0",
     "@ffmpeg/ffmpeg": "^0.12.15",
@@ -144,5 +145,6 @@
   "overrides": {
     "react-is": "^19.0.0-rc-69d4b800-20241021",
     "@langchain/langgraph-checkpoint": "^0.0.16"
-  }
+  },
+  "packageManager": "pnpm@9.1.2"
 }

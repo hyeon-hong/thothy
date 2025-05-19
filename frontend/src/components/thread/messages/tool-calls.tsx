@@ -68,20 +68,19 @@ export function ToolCalls({
 
 export function ToolResult({ message }: { message: ToolMessage }) {
   const [isExpanded, setIsExpanded] = useState(false);
-  const [ArtifactContent, { open, setOpen, context, setContext }] =
-    useArtifact();
-
   let parsedContent: any;
   let isJsonContent = false;
 
-  useEffect(() => {
-    console.log("message: ", message);
-    if (message.artifact) {
-      console.log("message.artifact: ", message.artifact);
-      setContext(message.artifact);
-      setOpen(true);
-    }
-  }, []);
+  // Use the artifact to get the data
+  // const [ArtifactContent, { open, setOpen, context, setContext }] =
+  //   useArtifact();
+  // useEffect(() => {
+  //   if (message.artifact) {
+  //     console.log("message.artifact: ", message.artifact);
+  //     setContext(message.artifact);
+  //     setOpen(true);
+  //   }
+  // }, [message.artifact, setContext, setOpen]);
 
   try {
     if (typeof message.content === "string") {
