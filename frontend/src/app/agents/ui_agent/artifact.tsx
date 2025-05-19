@@ -129,14 +129,13 @@ export default function UIGraphComponent(props: { code: string }) {
   }, [props.code]);
 
   return (
-    <div className="bg-red-500 h-full">
+    <div className="h-full">
       <button
-        className="mb-2 px-2 py-1 rounded bg-white text-black border border-gray-300 hover:bg-gray-100"
+        className="mb-4 px-4 py-2 rounded text-white bg-blue-600 hover:bg-blue-700 transition-colors font-semibold shadow"
         onClick={() => setOpen(!open)}
       >
-        {open ? "Hide" : "Show"}
+        {open ? "Click to hide code" : "Click to display code"}
       </button>
-      <div>Code</div>
       <ArtifactContent title={<div>Code</div>}>
         <SandpackProvider
           options={{
