@@ -1,0 +1,10 @@
+{
+  "dependencies": [
+    "."
+  ],
+  "graphs": {
+    "slide_graph": "./src/slide_graph/graph.py:graph"
+  },
+  "env": ".env",
+  "python_version": "3.12"
+}

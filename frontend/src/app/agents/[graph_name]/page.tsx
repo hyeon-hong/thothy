@@ -4,6 +4,7 @@ import React from "react";
 import { useParams } from "next/navigation";
 import ChatAgentPage from "@/app/agents/chat_agent/page";
 import DataAgentPage from "@/app/agents/data_agent/page";
+import SlideAgentPage from "@/app/agents/slide_agent/page";
 import UIAgentPage from "@/app/agents/ui_agent/page";
 
 export default function AgentPage() {
@@ -19,6 +20,8 @@ export default function AgentPage() {
         return <ChatAgentPage />;
       case "data_graph":
         return <DataAgentPage />;
+      case "slide_graph":
+        return <SlideAgentPage apiUrl={apiUrl} assistantId={assistantId} />;
       case "ui_graph":
         return <UIAgentPage apiUrl={apiUrl} assistantId={assistantId} />;
       default:

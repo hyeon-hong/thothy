@@ -16,6 +16,7 @@ import { GenericInterruptView } from "./generic-interrupt";
 import { useArtifact } from "../artifact";
 
 import DataGraphComponent from "@/app/agents/data_agent/artifact";
+import SlideGraphComponent from "@/app/agents/slide_agent/artifact";
 import UIGraphComponent from "@/app/agents/ui_agent/artifact";
 
 function CustomComponent({
@@ -33,6 +34,7 @@ function CustomComponent({
 
   const artifactComponents = {
     data_graph: DataGraphComponent,
+    slide_graph: SlideGraphComponent,
     ui_graph: UIGraphComponent,
   };
 

@@ -1,4 +1,4 @@
-"""Simple chat agent using LangGraph."""
+"""Simple slide agent using LangGraph."""
 
 import logging
 import os
@@ -11,8 +11,8 @@ from langgraph.graph.message import add_messages
 from langgraph.graph.ui import AnyUIMessage, ui_message_reducer, push_ui_message
 from langgraph.graph import StateGraph, START, END
 from langgraph.prebuilt import ToolNode
-from ui_graph.prompts import SYSTEM_PROMPT
-from ui_graph.tools import generate_shadcn_widget
+from slide_graph.prompts import SYSTEM_PROMPT
+from slide_graph.tools import generate_shadcn_widget
 
 
 # Configure logging to hide INFO messages
@@ -22,7 +22,7 @@ logging.basicConfig(level=logging.INFO)
 VLLM_API_URL = os.getenv("VLLM_API_URL")
 llm: Optional[ChatOpenAI] = None
 
-UI_COMPONENT_NAME = "ui_graph"
+SLIDE_COMPONENT_NAME = "slide_graph"
 
 
 class AgentState(TypedDict):  # noqa: D101
@@ -68,7 +68,7 @@ def call_model(state: AgentState):
     response = model_with_tools.invoke(messages)
 
     artifact = extract_artifact_from_response(response)
-    artifact = "export default function App() { return " + artifact + " }"
+    # artifact = "export default function App() { return " + artifact + " }"
 
     class Code(TypedDict):
         code: str
@@ -76,7 +76,7 @@ def call_model(state: AgentState):
         "code": artifact
     }
 
-    push_ui_message(UI_COMPONENT_NAME, code, message=response)
+    push_ui_message(SLIDE_COMPONENT_NAME, code, message=response)
 
     return {
         "messages": [response],
@@ -119,6 +119,6 @@ workflow.add_edge("tools", END)
 
 # Compile graph
 graph = workflow.compile()
-graph.name = UI_COMPONENT_NAME
+graph.name = SLIDE_COMPONENT_NAME
 
 __all__ = ["graph"]
