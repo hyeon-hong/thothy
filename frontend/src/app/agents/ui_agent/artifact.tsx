@@ -1,6 +1,11 @@
 import { useStreamContext } from "@langchain/langgraph-sdk/react-ui";
 import { useEffect, useState } from "react";
-import { Sandpack } from "@codesandbox/sandpack-react";
+import {
+  SandpackProvider,
+  SandpackLayout,
+  SandpackPreview,
+  SandpackCodeEditor,
+} from "@codesandbox/sandpack-react";
 import Markdown from "react-markdown";
 
 export default function UIGraphComponent(props: { code: string }) {
@@ -36,10 +41,7 @@ h1 {
     files: {
       ...commonFiles,
       "/App.js": {
-        code: `export default function App() {
-  return <h1>Hello world</h1>
-}
-`,
+        code: props.code,
       },
       "/index.js": {
         code: `import React, { StrictMode } from "react";
@@ -98,14 +100,26 @@ root.render(
       </button>
       <div>Code</div>
       <ArtifactContent title={<div>Code</div>}>
-        <Sandpack
+        <SandpackProvider
           template="react"
           options={{
-            rtl: true,
+            externalResources: ["https://cdn.tailwindcss.com"],
           }}
           files={REACT_TEMPLATE["files"]}
-          entry={REACT_TEMPLATE["main"]}
-        />
+        >
+          <SandpackLayout>
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                width: "100%",
+              }}
+            >
+              <SandpackPreview />
+              <SandpackCodeEditor wrapContent />
+            </div>
+          </SandpackLayout>
+        </SandpackProvider>
       </ArtifactContent>
     </div>
   );
