@@ -1,7 +1,7 @@
 import { useStreamContext } from "@/providers/Stream";
 import type { Message } from "@langchain/langgraph-sdk";
 import { useState } from "react";
-import { getContentString } from "../utils";
+import { getContentImageUrls, getContentString } from "../utils";
 import { cn } from "@/lib/utils";
 import { Textarea } from "@/components/ui/textarea";
 import { BranchSwitcher, CommandBar } from "./shared";
@@ -46,15 +46,12 @@ export function HumanMessage({
   const [isEditing, setIsEditing] = useState(false);
   const [value, setValue] = useState("");
   const contentString = getContentString(message.content);
+  const contentImageUrls = getContentImageUrls(message.content);
 
   const handleSubmitEdit = () => {
     setIsEditing(false);
 
     const newMessage: Message = { type: "human", content: value };
-    console.log("thread: ", thread);
-    console.log("message: ", message);
-    console.log("newMessage: ", newMessage);
-
     thread.submit(
       { messages: [newMessage] },
       {
@@ -88,9 +85,23 @@ export function HumanMessage({
             onSubmit={handleSubmitEdit}
           />
         ) : (
-          <p className="bg-muted ml-auto w-fit rounded-3xl px-4 py-2 whitespace-pre-wrap">
-            {contentString}
-          </p>
+          <div className="flex flex-col gap-2">
+            {contentImageUrls.length > 0 && (
+              <div className="flex flex-wrap justify-end gap-2">
+                {contentImageUrls.map((imageUrl, index) => (
+                  <img
+                    key={index}
+                    src={imageUrl}
+                    alt="uploaded image"
+                    className="bg-muted h-16 w-16 rounded-md object-cover"
+                  />
+                ))}
+              </div>
+            )}
+            <p className="bg-muted ml-auto w-fit rounded-3xl px-4 py-2 whitespace-pre-wrap">
+              {contentString}
+            </p>
+          </div>
         )}
 
         <div
