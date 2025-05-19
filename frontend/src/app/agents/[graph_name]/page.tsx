@@ -2,29 +2,29 @@
 
 import React from "react";
 import { useParams } from "next/navigation";
-import Home from "@/app/agents/plan_agent/page";
 import ChatAgentPage from "@/app/agents/chat_agent/page";
 import DataAgentPage from "@/app/agents/data_agent/page";
 import UIAgentPage from "@/app/agents/ui_agent/page";
 
 export default function AgentPage() {
+  // Get the assistantId from the URL
   const params = useParams();
-  const graph_name = (params?.graph_name as string) || "chat_graph";
-  // console.log("graph_name", graph_name);
+  const apiUrl = process.env.NEXT_PUBLIC_LANGGRAPH_API_URL;
+  const assistantId = params?.graph_name as string;
 
   // Function to render the appropriate agent component
   const renderAgentComponent = () => {
-    switch (graph_name) {
+    switch (assistantId) {
       case "chat_graph":
         return <ChatAgentPage />;
       case "data_graph":
         return <DataAgentPage />;
       case "ui_graph":
-        return <UIAgentPage />;
+        return <UIAgentPage apiUrl={apiUrl} assistantId={assistantId} />;
       default:
         return (
           <div className="container mx-auto px-4 py-8">
-            <h1 className="text-3xl font-bold mb-6">Agent: {graph_name}</h1>
+            <h1 className="text-3xl font-bold mb-6">Agent: {assistantId}</h1>
             <p className="text-gray-600">
               This agent type is not yet implemented.
             </p>

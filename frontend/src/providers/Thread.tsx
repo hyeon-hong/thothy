@@ -1,7 +1,6 @@
 "use client";
 
 import { validate } from "uuid";
-import { getApiKey } from "@/lib/api-key";
 import type { Thread } from "@langchain/langgraph-sdk";
 import { useQueryState } from "nuqs";
 import {
@@ -34,15 +33,28 @@ function getThreadSearchMetadata(
   return { graph_id: assistantId };
 }
 
-export function ThreadProvider({ children }: { children: ReactNode }) {
-  const [apiUrl] = useQueryState("apiUrl");
-  const [assistantId] = useQueryState("assistantId");
+export function ThreadProvider({
+  children,
+  assistantId: assistantIdProp,
+  apiUrl: apiUrlProp,
+}: {
+  children: ReactNode;
+  assistantId?: string;
+  apiUrl?: string;
+}) {
+  const [apiUrlQuery] = useQueryState("apiUrl");
+  const apiUrl = apiUrlProp ?? apiUrlQuery;
+  const [assistantIdQuery] = useQueryState("assistantId");
+  const assistantId = assistantIdProp ?? assistantIdQuery;
   const [threads, setThreads] = useState<Thread[]>([]);
   const [threadsLoading, setThreadsLoading] = useState(false);
 
   const getThreads = useCallback(async (): Promise<Thread[]> => {
     if (!apiUrl || !assistantId) return [];
-    const client = await createLangGraphClient(apiUrl, getApiKey() ?? undefined);
+    const client = await createLangGraphClient(
+      apiUrl,
+      process.env.NEXT_PUBLIC_LANGSMITH_API_KEY ?? undefined
+    );
 
     const threads = await client.threads.search({
       metadata: {
