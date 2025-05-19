@@ -1,5 +1,6 @@
 import { useStreamContext } from "@langchain/langgraph-sdk/react-ui";
 import { useEffect, useState } from "react";
+import { Sandpack } from "@codesandbox/sandpack-react";
 
 export default function UIGraphComponent(props: { code: string }) {
   // Get the data from an agent by two way
@@ -8,8 +9,10 @@ export default function UIGraphComponent(props: { code: string }) {
 
   const { meta } = useStreamContext<{ MetaType: { ui: any; artifact: any } }>();
   const [ArtifactContent, { open, setOpen }] = meta.artifact;
+  const [code, setCode] = useState<string>("");
 
   useEffect(() => {
+    setCode("<Button>button</Button>");
     setOpen(true);
   }, [props.code]);
 
@@ -23,7 +26,7 @@ export default function UIGraphComponent(props: { code: string }) {
       </button>
       <div>Code</div>
       <ArtifactContent title={<div>Code</div>}>
-        <p>props.code: {props.code}</p>
+        <Sandpack />
       </ArtifactContent>
     </div>
   );
