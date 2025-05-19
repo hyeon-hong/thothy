@@ -18,6 +18,7 @@ import { useArtifact } from "../artifact";
 import DataGraphComponent from "@/app/agents/data_agent/artifact";
 import SlideGraphComponent from "@/app/agents/slide_agent/artifact";
 import UIGraphComponent from "@/app/agents/ui_agent/artifact";
+import UIEvalGraphComponent from "@/app/agents/ui_eval_agent/artifact";
 
 function CustomComponent({
   message,
@@ -36,6 +37,7 @@ function CustomComponent({
     data_graph: DataGraphComponent,
     slide_graph: SlideGraphComponent,
     ui_graph: UIGraphComponent,
+    ui_eval_graph: UIEvalGraphComponent,
   };
 
   if (!customComponents?.length) return null;
