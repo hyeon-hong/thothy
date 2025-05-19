@@ -1,4 +1,4 @@
-"""Define default prompts."""
+"""Define slide generation prompts."""
 
 SYSTEM_PROMPT = (
     "You are a helpful and friendly chatbot. Get to know the user!\n"
