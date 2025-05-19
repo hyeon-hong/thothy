@@ -15,7 +15,6 @@ export default function UIGraphComponent(props: { code: string }) {
 
   const { meta } = useStreamContext<{ MetaType: { ui: any; artifact: any } }>();
   const [ArtifactContent, { open, setOpen }] = meta.artifact;
-  const [code, setCode] = useState<string>("");
 
   const commonFiles = {
     "/styles.css": {
@@ -86,7 +85,6 @@ root.render(
   };
 
   useEffect(() => {
-    setCode("<Button>button</Button>");
     setOpen(true);
   }, [props.code]);
 
