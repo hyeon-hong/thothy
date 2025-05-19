@@ -68,7 +68,7 @@ def call_model(state: AgentState):
     response = model_with_tools.invoke(messages)
 
     artifact = extract_artifact_from_response(response)
-    artifact = "export default function App() { return " + artifact + " }"
+    # artifact = "export default function App() { return " + artifact + " }"
 
     class Code(TypedDict):
         code: str
