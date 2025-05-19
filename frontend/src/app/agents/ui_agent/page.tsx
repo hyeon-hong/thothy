@@ -7,15 +7,18 @@ import { ArtifactProvider } from "@/components/thread/artifact";
 import { Toaster } from "@/components/ui/sonner";
 import React from "react";
 
-export default function UIAgentPage(): React.ReactNode {
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:2024";
-  const assistantId = "ui_agent";
+export default function UIAgentPage(props: {
+  apiUrl: string;
+  assistantId: string;
+}): React.ReactNode {
+  const apiUrl = props.apiUrl || process.env.NEXT_PUBLIC_LANGGRAPH_API_URL;
+  const assistantId = props.assistantId || "ui_graph";
 
   return (
     <React.Suspense fallback={<div>Loading (layout)...</div>}>
       <Toaster />
       <ThreadProvider assistantId={assistantId} apiUrl={apiUrl}>
-        <StreamProvider>
+        <StreamProvider assistantId={assistantId} apiUrl={apiUrl}>
           <ArtifactProvider>
             <Thread />
           </ArtifactProvider>
