@@ -50,7 +50,7 @@ tool_node = ToolNode([take_screenshot])
 
 model = get_llm()
 model_with_tools = model.bind_tools([take_screenshot],
-                                    tool_choice="any",
+                                    tool_choice="take_screenshot",
                                     strict=True)
 
 
