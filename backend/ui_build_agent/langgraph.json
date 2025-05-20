@@ -1,0 +1,10 @@
+{
+  "dependencies": [
+    "."
+  ],
+  "graphs": {
+    "ui_graph": "./src/ui_graph/graph.py:graph"
+  },
+  "env": ".env",
+  "python_version": "3.12"
+}
