@@ -1,7 +1,7 @@
 """Define default prompts."""
 
 import textwrap
-from ui_graph.lib.shadcn_docs import avatar, button, card, checkbox, input, label, radio_group, select, textarea
+from ui_build_graph.lib.shadcn_docs import avatar, button, card, checkbox, input, label, radio_group, select, textarea
 
 shadcn_docs = [
     avatar,

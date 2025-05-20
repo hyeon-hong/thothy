@@ -6,7 +6,7 @@ from typing import Any, Optional
 
 from langchain_core.runnables import RunnableConfig
 
-from ui_graph.prompts import SYSTEM_PROMPT
+from ui_build_graph.prompts import SYSTEM_PROMPT
 
 
 @dataclass(kw_only=True)

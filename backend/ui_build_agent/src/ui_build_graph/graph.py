@@ -11,8 +11,8 @@ from langgraph.graph.message import add_messages
 from langgraph.graph.ui import AnyUIMessage, ui_message_reducer, push_ui_message
 from langgraph.graph import StateGraph, START, END
 from langgraph.prebuilt import ToolNode
-from ui_graph.prompts import get_coding_prompt
-from ui_graph.tools import generate_shadcn_widget
+from ui_build_graph.prompts import get_coding_prompt
+from ui_build_graph.tools import generate_shadcn_widget
 
 
 # Configure logging to hide INFO messages
@@ -22,7 +22,7 @@ logging.basicConfig(level=logging.INFO)
 VLLM_API_URL = os.getenv("VLLM_API_URL")
 llm: Optional[ChatOpenAI] = None
 
-UI_COMPONENT_NAME = "ui_graph"
+UI_COMPONENT_NAME = "ui_build_graph"
 
 
 class AgentState(TypedDict):  # noqa: D101
