@@ -10,6 +10,7 @@ import http.server
 import socketserver
 import threading
 import os
+import base64
 
 
 @tool(response_format="content_and_artifact")
@@ -93,4 +94,53 @@ def local_take_screenshot_and_build(code: str) -> str:
     return str(screenshot_path)
 
 
-__all__ = ["take_screenshot"]
+def get_image_base64(image_path: str) -> str:
+    """
+    Encode image file to base64 string.
+
+    Args:
+        image_path: Path to the image file
+
+    Returns:
+        Base64 encoded string of the image
+    """
+    with open(image_path, "rb") as image_file:
+        return base64.b64encode(image_file.read()).decode('utf-8')
+
+
+@tool(response_format="content_and_artifact")
+def analyze_ui(widget_name: str, description: str, score: int, analysis: str) -> Tuple[str, dict]:
+    """
+    Generate a score and analysis of a UI.
+
+    Args:
+        widget_name: The name of the widget/component (e.g., 'Button', 'Card')
+        description: A description of the widget's purpose and features
+        score: The score of the UI
+        analysis: A detailed analysis of the UI
+
+    Returns:
+        A tuple containing the score and analysis of the UI
+    """
+
+    # Get the screenshot path from the most recent screenshot
+    web_dir = Path(__file__).parent / "web"
+    dist_dir = web_dir / "dist"
+    screenshot_path = dist_dir / "screenshot.png"
+
+    # Check if screenshot exists
+    image_content = None
+    if screenshot_path.exists():
+        image_content = get_image_base64(str(screenshot_path))
+
+    content = "Successfully generated a score and analysis of the UI."
+    return content, {
+        "title": widget_name,
+        "description": description,
+        "score": score,
+        "analysis": analysis,
+        "image_base64": image_content
+    }
+
+
+__all__ = ["take_screenshot", "analyze_ui"]

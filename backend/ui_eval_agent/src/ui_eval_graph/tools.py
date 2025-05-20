@@ -17,7 +17,7 @@ def analyze_ui(widget_name: str, description: str, score: int, analysis: str) ->
         A tuple containing the score and analysis of the UI
     """
 
-    content = f"Successfully generated a score and analysis of the UI."
+    content = "Successfully generated a score and analysis of the UI."
     return content, {
         "title": widget_name,
         "description": description,

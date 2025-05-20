@@ -1,7 +1,7 @@
 name = "Label"
 
 importDocs = '''
-import { Label } from "/components/ui/label"
+import { Label } from "./components/ui/label"
 '''
 
 usageDocs = '''
