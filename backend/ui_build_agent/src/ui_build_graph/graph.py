@@ -12,7 +12,7 @@ from langgraph.graph.ui import AnyUIMessage, ui_message_reducer, push_ui_message
 from langgraph.graph import StateGraph, START, END
 from langgraph.prebuilt import ToolNode
 from ui_build_graph.prompts import get_coding_prompt
-from ui_build_graph.tools import generate_shadcn_widget
+from ui_build_graph.tools import take_screenshot
 
 
 # Configure logging to hide INFO messages
@@ -46,10 +46,10 @@ def get_llm() -> ChatOpenAI:
     return llm
 
 
-tool_node = ToolNode([generate_shadcn_widget])
+tool_node = ToolNode([take_screenshot])
 
 model = get_llm()
-model_with_tools = model.bind_tools([generate_shadcn_widget],
+model_with_tools = model.bind_tools([take_screenshot],
                                     tool_choice="any",
                                     strict=True)
 

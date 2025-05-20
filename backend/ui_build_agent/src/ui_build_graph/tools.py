@@ -3,25 +3,23 @@ from langchain.tools import tool
 
 
 @tool(response_format="content_and_artifact")
-def generate_shadcn_widget(widget_name: str, description: str, artifact: str) -> Tuple[str, dict]:
+def take_screenshot(code: str) -> Tuple[str, dict]:
     """
-    Generate React code for a shadcn UI widget in JavaScript.
+    Take a screenshot of a code.
 
     Args:
-        widget_name: The name of the widget/component (e.g., 'Button', 'Card')
-        description: A description of the widget's purpose and features
-        artifact: A string of JavaScript (React) code using shadcn UI components
+        code: A string of JavaScript (React) code using shadcn UI components
 
     Returns:
-        True if the widget was generated successfully, False otherwise
+        True if the screenshot was taken successfully, False otherwise
     """
 
-    content = f"Successfully generated {widget_name} code."
+    content = "Successfully took screenshot of the code."
     return content, {
-        "title": widget_name,
-        "description": description,
-        "code": artifact
+        "title": "Screenshot",
+        "description": "Screenshot",
+        "code": code
     }
 
 
-__all__ = ["generate_shadcn_widget"]
+__all__ = ["take_screenshot"]
