@@ -1,10 +1,10 @@
-"""Simple chat agent using LangGraph."""
+"""UI build agent"""
 
 import logging
 import os
-from typing import Optional, Annotated, Sequence, TypedDict, Tuple
 import json
 import base64
+from typing import Optional, Annotated, Sequence, TypedDict, Tuple
 
 from langchain_openai import ChatOpenAI
 from langchain_core.messages import AIMessage, BaseMessage, HumanMessage
@@ -12,9 +12,12 @@ from langgraph.graph.message import add_messages
 from langgraph.graph.ui import AnyUIMessage, ui_message_reducer, push_ui_message
 from langgraph.graph import StateGraph, START, END
 from langgraph.prebuilt import ToolNode
+
 from ui_build_graph.prompts import get_coding_prompt
 from ui_build_graph.tools import take_screenshot, analyze_ui
 
+# Set the name of the UI component
+UI_COMPONENT_NAME = "ui_build_graph"
 
 # Configure logging to hide INFO messages
 logging.basicConfig(level=logging.INFO)
@@ -23,16 +26,15 @@ logging.basicConfig(level=logging.INFO)
 VLLM_API_URL = os.getenv("VLLM_API_URL")
 llm: Optional[ChatOpenAI] = None
 
-UI_COMPONENT_NAME = "ui_build_graph"
 
-
-class AgentState(TypedDict):  # noqa: D101
+class AgentState(TypedDict):
     messages: Annotated[Sequence[BaseMessage], add_messages]
     ui: Annotated[Sequence[AnyUIMessage], ui_message_reducer]
 
 
 def get_llm() -> ChatOpenAI:
     """Get or initialize the LLM with shadcn tools bound."""
+
     global llm
     if llm is None:
         # base_llm = ChatOpenAI(
@@ -51,44 +53,46 @@ screenshot_tool_node = ToolNode([take_screenshot])
 analyze_ui_tool_node = ToolNode([analyze_ui])
 
 model = get_llm()
-model_with_tools = model.bind_tools([take_screenshot],
-                                    tool_choice="take_screenshot",
-                                    strict=True)
-
-model_with_analysis_tools = model.bind_tools([analyze_ui],
-                                             tool_choice="analyze_ui",
-                                             strict=True)
 
 
-def should_continue(state: AgentState):
-    messages = state["messages"]
-    last_message = messages[-1]
-    if last_message.tool_calls:
-        return "tools"
-    return END
+def generate_code(state: AgentState):
+    """Generate code for the UI component"""
 
-
-def call_model(state: AgentState):
+    # Get the messages
     messages = [{"role": "system", "content": get_coding_prompt()}] + \
         state["messages"]
+
+    # Bind the take_screenshot tool to the model
+    model_with_tools = model.bind_tools([take_screenshot],
+                                        tool_choice="take_screenshot",
+                                        strict=True)
+
+    # Invoke the model with the take_screenshot tool
     response = model_with_tools.invoke(messages)
 
-    artifact = extract_artifact_from_response(response)
+    # Extract the artifact
+    artifact = extract_artifact(response)
 
+    # Set the code
     class Code(TypedDict):
         code: str
     code: Code = {
         "code": artifact
     }
 
+    # Push the artifact to the UI
     push_ui_message(UI_COMPONENT_NAME, code, message=response)
 
+    # Return the messages
     return {
         "messages": [response],
     }
 
 
-def call_model_with_analysis(state: AgentState):
+def analyze_ui(state: AgentState):
+    """Analyze the UI component"""
+
+    # Get the messages
     messages = [{"role": "system", "content": get_coding_prompt()}] + \
         state["messages"]
 
@@ -138,27 +142,35 @@ def call_model_with_analysis(state: AgentState):
             image_message = HumanMessage(content=image_message_content)
             messages.append(image_message)
 
+    # Bind the analyze_ui tool to the model
+    model_with_analysis_tools = model.bind_tools([analyze_ui],
+                                                 tool_choice="analyze_ui",
+                                                 strict=True)
+    # Invoke the model with the analyze_ui tool
     response = model_with_analysis_tools.invoke(messages)
 
-    score, analysis = extract_score_and_analysis_from_response(response)
+    # Extract the score and analysis
+    score, analysis = extract_score_and_analysis(response)
 
+    # Set the score and analysis
     class Score(TypedDict):
         score: int
         analysis: str
-
     score: Score = {
         "score": score,
         "analysis": analysis
     }
 
+    # Push the score and analysis to the UI
     push_ui_message(UI_COMPONENT_NAME, score, message=response)
 
+    # Return the messages
     return {
         "messages": [response],
     }
 
 
-def extract_score_and_analysis_from_response(response: AIMessage) -> Optional[Tuple[int, str]]:
+def extract_score_and_analysis(response: AIMessage) -> Optional[Tuple[int, str]]:
     # 1. Get tool_calls from additional_kwargs
     tool_calls = response.additional_kwargs.get("tool_calls", [])
     for tool_call in tool_calls:
@@ -179,7 +191,7 @@ def extract_score_and_analysis_from_response(response: AIMessage) -> Optional[Tu
     return None
 
 
-def extract_artifact_from_response(response: AIMessage) -> Optional[str]:
+def extract_artifact(response: AIMessage) -> Optional[str]:
     # 1. Get tool_calls from additional_kwargs
     tool_calls = response.additional_kwargs.get("tool_calls", [])
     for tool_call in tool_calls:
@@ -199,22 +211,22 @@ def extract_artifact_from_response(response: AIMessage) -> Optional[str]:
     return None
 
 
-"""Build and return the chat graph."""
+"""Build and return the UI build graph."""
 
 # Initialize graph builder with new state schema
 workflow = StateGraph(AgentState)
 
-# Add chatbot node
-workflow.add_node("call_model", call_model)
-workflow.add_node("call_model_with_analysis", call_model_with_analysis)
+# Add nodes
+workflow.add_node("generate_code", generate_code)
+workflow.add_node("analyze_ui", analyze_ui)
 workflow.add_node("screenshot_tool", screenshot_tool_node)
 workflow.add_node("analyze_ui_tool", analyze_ui_tool_node)
 
-# Add edges - start at chatbot and can end after chatbot
-workflow.add_edge(START, "call_model")
-workflow.add_edge("call_model", "screenshot_tool")
-workflow.add_edge("screenshot_tool", "call_model_with_analysis")
-workflow.add_edge("call_model_with_analysis", "analyze_ui_tool")
+# Add edges - start at generate_code and can end after analyze_ui
+workflow.add_edge(START, "generate_code")
+workflow.add_edge("generate_code", "screenshot_tool")
+workflow.add_edge("screenshot_tool", "analyze_ui")
+workflow.add_edge("analyze_ui", "analyze_ui_tool")
 workflow.add_edge("analyze_ui_tool", END)
 
 # Compile graph
