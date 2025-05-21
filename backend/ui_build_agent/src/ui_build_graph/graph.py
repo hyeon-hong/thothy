@@ -171,7 +171,8 @@ def analyze_ui(state: AgentState):
     score: Score = {
         "score": score,
         "analysis": analysis,
-        "new_ui": f"data:image/png;base64,{base64_image}"
+        "original_ui": original_image,
+        "new_ui": base64_image
     }
 
     # Push the score and analysis to the UI
