@@ -191,27 +191,23 @@ def analyze_ui(state: AgentState):
     response = model_with_analysis_tools.invoke(messages)
 
     # Extract the score and analysis
-    score, analysis = extract_score_and_analysis(response)
+    score_result, analysis = extract_score_and_analysis(response)
 
-    # Set the score and analysis
-    class Score(TypedDict):
-        score: int
-        analysis: str
-        new_ui: str
-    score: Score = {
-        "score": score,
+    # Create result data for UI display
+    score_data = {
+        "score": score_result,
         "analysis": analysis,
         "original_ui": original_image,
         "new_ui": base64_image
     }
 
     # Push the score and analysis to the UI
-    push_ui_message(UI_COMPONENT_NAME, score, message=response)
+    push_ui_message(UI_COMPONENT_NAME, score_data, message=response)
 
-    # Return the messages
+    # Return the messages and properly typed values for state
     return {
         "messages": [response],
-        "score": score,
+        "score": score_result,   # This is now the integer value
         "analysis": analysis,
         "original_ui": original_image,
         "new_ui": base64_image
@@ -220,7 +216,15 @@ def analyze_ui(state: AgentState):
 
 def check_score(state: AgentState) -> Literal["__end__", "generate_code"]:
     """Check the score and determine if we should end or regenerate code."""
-    if state["score"] >= 8:
+    # Get the score value, which might be a dict or int depending on how it was set
+    score_value = state["score"]
+
+    # Handle the case where score is a dictionary with a "score" key
+    if isinstance(score_value, dict) and "score" in score_value:
+        score_value = score_value["score"]
+
+    # Now compare the integer value
+    if score_value >= 8:
         return END
     else:
         return "generate_code"
