@@ -92,7 +92,8 @@ def generate_code(state: AgentState):
     class Code(TypedDict):
         code: str
     code: Code = {
-        "code": artifact
+        "code": artifact,
+        "original_ui": original_image
     }
 
     # Push the artifact to the UI
@@ -147,17 +148,6 @@ def analyze_ui(state: AgentState):
                     "url": f"data:image/png;base64,{original_image}"
                 }
             })
-        # If no user image but calendar file exists, use that instead
-        elif os.path.exists(os.path.join(dist_dir, "calendar.png")):
-            with open(os.path.join(dist_dir, "calendar.png"), "rb") as calendar_file:
-                original_image = base64.b64encode(
-                    calendar_file.read()).decode('utf-8')
-            image_message_content.append({
-                "type": "image_url",
-                "image_url": {
-                    "url": f"data:image/png;base64,{original_image}"
-                }
-            })
 
         # Add the image message to the conversation
         image_message = HumanMessage(content=image_message_content)
@@ -177,9 +167,11 @@ def analyze_ui(state: AgentState):
     class Score(TypedDict):
         score: int
         analysis: str
+        new_ui: str
     score: Score = {
         "score": score,
-        "analysis": analysis
+        "analysis": analysis,
+        "new_ui": f"data:image/png;base64,{base64_image}"
     }
 
     # Push the score and analysis to the UI
