@@ -19,6 +19,7 @@ dependencies = [
     "psycopg[binary,pool]>=3.2.5",
     "pydantic>=2.0.0",
     "python-dotenv>=1.0.0",
+    "datetime",
 ]
 
 [project.optional-dependencies]

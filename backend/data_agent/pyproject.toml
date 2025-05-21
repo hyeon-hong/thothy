@@ -11,11 +11,14 @@ dependencies = [
     "langgraph>=0.2.55",
     "langgraph-checkpoint>=2.0.16",
     "langgraph-sdk>=0.1.32",
+    "langgraph-prebuilt",
     "langchain>=0.3.9",
     "langchain-core>=0.3.9",
     "langchain-openai>=0.3.7",
+    "langchain-community",
     "pydantic>=2.0.0",
     "python-dotenv>=1.0.0",
+    "requests",
 ]
 
 [project.optional-dependencies]

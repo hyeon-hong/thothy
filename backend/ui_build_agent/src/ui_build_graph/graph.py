@@ -42,15 +42,15 @@ def get_llm() -> ChatOpenAI:
 
     global llm
     if llm is None:
-        # base_llm = ChatOpenAI(
-        #     model="Qwen/Qwen2.5-1.5B-Instruct",
-        #     base_url=VLLM_API_URL,
-        #     temperature=0.5
-        # )
         llm = ChatOpenAI(
-            model="gpt-4o-mini",
+            model="Qwen/Qwen3-14B-AWQ",
+            base_url=VLLM_API_URL,
             temperature=0.5
         )
+        # llm = ChatOpenAI(
+        #     model="gpt-4o-mini",
+        #     temperature=0.5
+        # )
     return llm
 
 

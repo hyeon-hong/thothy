@@ -11,6 +11,7 @@ dependencies = [
     "langgraph>=0.4.3",
     "langgraph-checkpoint>=2.0.25",
     "langgraph-sdk>=0.1.66",
+    "langgraph-prebuilt",
     "langchain>=0.3.25",
     "langchain-core>=0.3.59",
     "langchain-openai>=0.3.16",
@@ -19,6 +20,7 @@ dependencies = [
     "psycopg[binary,pool]>=3.2.5",
     "pydantic>=2.0.0",
     "python-dotenv>=1.0.0",
+    "json",
 ]
 
 [project.optional-dependencies]
