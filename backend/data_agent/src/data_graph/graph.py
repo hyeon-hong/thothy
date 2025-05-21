@@ -10,7 +10,7 @@ from data_graph.tools import ALL_TOOLS_LIST
 UI_COMPONENT_NAME = "data_graph"
 
 
-class AgentState(TypedDict):  # noqa: D101
+class AgentState(TypedDict):
     messages: Annotated[Sequence[BaseMessage], add_messages]
     ui: Annotated[Sequence[AnyUIMessage], ui_message_reducer]
 
@@ -55,6 +55,7 @@ def call_model(state: AgentState) -> dict:
     # Invoke the LLM
     response = llm_with_tools.invoke([system_message] + messages)
 
+    # Push the response to the UI
     push_ui_message(UI_COMPONENT_NAME, {}, message=response)
 
     # Return the result
@@ -90,32 +91,23 @@ def should_continue(state: AgentState) -> str:
     return "tools"
 
 
-def build_graph():
-    """Build the graph"""
+# Create the workflow
+workflow = StateGraph(AgentState)
 
-    # Create the workflow
-    workflow = StateGraph(AgentState)
+# Add nodes
+workflow.add_node("call_model", call_model)
+workflow.add_node("tools", ToolNode(ALL_TOOLS_LIST, messages_key="messages"))
 
-    # Add nodes
-    workflow.add_node("call_model", call_model)
-    workflow.add_node("tools", ToolNode(ALL_TOOLS_LIST))
+# Add edges
+workflow.add_edge(START, "call_model")
+workflow.add_conditional_edges(
+    "call_model", should_continue, ["tools", END])
+workflow.add_edge("tools", "call_model")
 
-    # Add edges
-    workflow.add_edge(START, "call_model")
-    workflow.add_conditional_edges(
-        "call_model", should_continue, ["tools", END])
-    workflow.add_edge("tools", "call_model")
+# Compile the graph
+graph = workflow.compile()
+graph.name = "data_graph"
 
-    # Compile the graph
-    graph = workflow.compile()
-    graph.name = "data_graph"
-
-    # Return the graph
-    return graph
-
-
-# Build the graph
-graph = build_graph()
 
 # Return the graph
 __all__ = ["graph"]

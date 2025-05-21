@@ -72,15 +72,13 @@ export function ToolResult({ message }: { message: ToolMessage }) {
   let isJsonContent = false;
 
   // Use the artifact to get the data
-  // const [ArtifactContent, { open, setOpen, context, setContext }] =
-  //   useArtifact();
-  // useEffect(() => {
-  //   if (message.artifact) {
-  //     console.log("message.artifact: ", message.artifact);
-  //     setContext(message.artifact);
-  //     setOpen(true);
-  //   }
-  // }, [message.artifact, setContext, setOpen]);
+  const [ArtifactContent, { open, setOpen, context, setContext }] =
+    useArtifact();
+  useEffect(() => {
+    if (message.artifact) {
+      setContext(message.artifact);
+    }
+  }, [message.artifact, setContext, setOpen]);
 
   try {
     if (typeof message.content === "string") {

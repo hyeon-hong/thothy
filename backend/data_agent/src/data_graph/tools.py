@@ -5,6 +5,8 @@ from pydantic import BaseModel, Field
 from langchain.tools import tool
 from langchain_community.tools.tavily_search import TavilySearchResults
 
+UI_COMPONENT_NAME = "data_graph"
+
 FINANCIAL_DATASETS_API_KEY = os.getenv("FINANCIAL_DATASETS_API_KEY")
 BASE_URL = "https://api.financialdatasets.ai"
 SEARXNG_URL = os.getenv("SEARXNG_URL")
@@ -146,6 +148,7 @@ def price_snapshot_tool(input: PriceSnapshotInput = None, **kwargs) -> Tuple[str
             "/prices/snapshot",
             {"ticker": input.ticker},
         )
+
         return str(data), {"title": "Price Snapshot", "price_snapshot": data}
     except Exception as e:
         return f"An error occurred while fetching price snapshots: {e}", {}
