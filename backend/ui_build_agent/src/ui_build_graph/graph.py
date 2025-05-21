@@ -34,6 +34,7 @@ class AgentState(TypedDict):
     analysis: Optional[str]
     original_ui: Optional[str]
     new_ui: Optional[str]
+    error: Optional[str]
 
 
 def get_llm() -> ChatOpenAI:
@@ -217,19 +218,21 @@ def analyze_ui(state: AgentState):
     }
 
 
-def check_score(state: AgentState) -> Literal["__end__", "generate_code"]:
+def check_score(state: AgentState):
     """Check the score and determine if we should end or regenerate code."""
     if state["score"] == 10:
-        return "__end__"
+        return END
     else:
         return "generate_code"
 
 
-def check_error(state: AgentState) -> Literal["__end__", "generate_code"]:
+def check_error(state: AgentState):
     """Check if the last message is "Error", and if so, go to generate_code node."""
-    if state["messages"][-1].content == "Error":
+    last_message = state["messages"][-1]
+    if isinstance(last_message, AIMessage) and last_message.content.startswith("Error"):
+        state["error"] = last_message.content
         return "generate_code"
-    return "__end__"
+    return END
 
 
 def extract_score_and_analysis(response: AIMessage) -> Optional[Tuple[int, str]]:

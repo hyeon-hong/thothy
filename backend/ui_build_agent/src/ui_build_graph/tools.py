@@ -26,12 +26,11 @@ def take_screenshot_tool(code: str) -> Tuple[str, dict]:
     """
 
     # 1. Take screenshot and build
-    # TODO: Implement remote screenshot and build with docker container
-    screenshot_path = _local_take_screenshot_and_build(code)
-    if screenshot_path == "Error":
-        return "Error", {}
+    response = _local_take_screenshot_and_build(code)
+    if isinstance(response, str) and response.startswith("Error"):
+        return response, {}
 
-    content = f"Successfully took screenshot of the code. {screenshot_path}"
+    content = f"Successfully took screenshot of the code. {response}"
 
     # 2. Return the content
     return content, {
@@ -56,7 +55,6 @@ def _local_take_screenshot_and_build(code: str) -> str:
         f.write(code)
 
     # 2. Build the app
-    # TODO: Should handle errors
     result = subprocess.run(
         ["pnpm", "run", "build"],
         cwd=web_dir,
@@ -76,7 +74,7 @@ def _local_take_screenshot_and_build(code: str) -> str:
         else:
             print(f"Build failed: {result.stderr}")
 
-        return "Error"
+        return f"Error: {result.stderr}"
 
     # 3. Set up a simple HTTP server
     os.chdir(dist_dir)
