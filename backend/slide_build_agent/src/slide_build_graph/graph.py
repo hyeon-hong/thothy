@@ -224,7 +224,7 @@ def check_score(state: AgentState) -> Literal["__end__", "generate_code"]:
         score_value = score_value["score"]
 
     # Now compare the integer value
-    if score_value >= 8:
+    if score_value >= 5:
         return END
     else:
         return "generate_code"

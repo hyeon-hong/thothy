@@ -160,7 +160,7 @@ def analyze_ui(state: AgentState):
         image_message_content = [
             {
                 "type": "text",
-                "text": f"Here is the screenshot image of the UI component and a original image. Please describe the difference between the two images, if any. If you feel there is no difference, please set score to 10. And if you feel there is a difference, please set score from 0 to 9 as the difference is.{previous_analysis}"
+                "text": f"Here is the screenshot image of the UI component and a original image. Please describe the difference between the two images, if any. If you feel there is no difference, please set score to 10. And if you feel there is a difference, please set score from 0 to 9 as the difference is. More difference, lower score. More similar, higher score. {previous_analysis}"
             },
             {
                 "type": "image_url",
@@ -224,7 +224,7 @@ def check_score(state: AgentState) -> Literal["__end__", "generate_code"]:
         score_value = score_value["score"]
 
     # Now compare the integer value
-    if score_value >= 8:
+    if score_value >= 5:
         return END
     else:
         return "generate_code"
