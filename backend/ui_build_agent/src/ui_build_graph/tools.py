@@ -1,3 +1,4 @@
+import logging
 from typing import Tuple
 from langchain.tools import tool
 import subprocess
@@ -14,7 +15,7 @@ import base64
 
 
 @tool(response_format="content_and_artifact")
-def take_screenshot(code: str) -> Tuple[str, dict]:
+def take_screenshot_tool(code: str) -> Tuple[str, dict]:
     """
     Take a screenshot of a code.
 
@@ -26,9 +27,12 @@ def take_screenshot(code: str) -> Tuple[str, dict]:
     """
 
     # 1. Take screenshot and build
-    # TODO: Implement remote screenshot and build with docker container
-    screenshot_path = local_take_screenshot_and_build(code)
-    content = f"Successfully took screenshot of the code. {screenshot_path}"
+    response = _local_take_screenshot_and_build(code)
+    logging.info("response: %s", response)
+    if isinstance(response, str) and response.startswith("Error"):
+        return response, {}
+
+    content = f"Successfully took screenshot of the code. {response}"
 
     # 2. Return the content
     return content, {
@@ -38,7 +42,7 @@ def take_screenshot(code: str) -> Tuple[str, dict]:
     }
 
 
-def local_take_screenshot_and_build(code: str) -> str:
+def _local_take_screenshot_and_build(code: str) -> str:
     """
     Overwrite App.tsx with the given code, build the app, and take a screenshot of the built index.html.
     Returns the path to the screenshot.
@@ -53,7 +57,36 @@ def local_take_screenshot_and_build(code: str) -> str:
         f.write(code)
 
     # 2. Build the app
-    subprocess.run(["pnpm", "run", "build"], cwd=web_dir, check=True)
+    result = subprocess.run(
+        ["pnpm", "run", "build"],
+        cwd=web_dir,
+        capture_output=True,
+        text=True,
+        check=False
+    )
+    logging.info("result: %s", result)
+
+    if result.returncode != 0:
+        # Look for TypeScript errors
+        ts_errors = []
+        error_message = ""
+        
+        # Check both stdout and stderr for error messages
+        output = result.stdout + "\n" + result.stderr
+        
+        if "error TS" in output:
+            ts_errors = [line for line in output.split('\n') if "error TS" in line]
+            logging.info("ts_errors: %s", ts_errors)
+            logging.error("TypeScript errors detected: %s", ts_errors)
+            for error in ts_errors[:5]:  # Show first 5 errors
+                logging.error("  - %s", error.strip())
+            error_message = f"TypeScript errors: {'; '.join(ts_errors[:3])}"
+        else:
+            logging.error("Build failed: %s", output)
+            # Truncate long error messages
+            error_message = f"Build failed: {output[:200]}"
+
+        return f"Error: {error_message}"
 
     # 3. Set up a simple HTTP server
     os.chdir(dist_dir)
@@ -85,6 +118,9 @@ def local_take_screenshot_and_build(code: str) -> str:
             time.sleep(3)  # Wait longer for the page to fully load with CSS/JS
             driver.save_screenshot(str(screenshot_path))
             driver.quit()
+        except Exception as e:
+            logging.error("Screenshot error: %s", str(e))
+            return f"Error: Failed to take screenshot: {str(e)}"
         finally:
             # 5. Shut down the server
             httpd.shutdown()
@@ -94,7 +130,7 @@ def local_take_screenshot_and_build(code: str) -> str:
     return str(screenshot_path)
 
 
-def get_image_base64(image_path: str) -> str:
+def _get_image_base64(image_path: str) -> str:
     """
     Encode image file to base64 string.
 
@@ -109,7 +145,7 @@ def get_image_base64(image_path: str) -> str:
 
 
 @tool(response_format="content_and_artifact")
-def analyze_ui(widget_name: str, description: str, score: int, analysis: str) -> Tuple[str, dict]:
+def analyze_ui_tool(widget_name: str, description: str, score: int, analysis: str) -> Tuple[str, dict]:
     """
     Generate a score and analysis of a UI.
 
@@ -131,7 +167,7 @@ def analyze_ui(widget_name: str, description: str, score: int, analysis: str) ->
     # Check if screenshot exists
     image_content = None
     if screenshot_path.exists():
-        image_content = get_image_base64(str(screenshot_path))
+        image_content = _get_image_base64(str(screenshot_path))
 
     content = "Successfully generated a score and analysis of the UI."
     return content, {
@@ -143,4 +179,4 @@ def analyze_ui(widget_name: str, description: str, score: int, analysis: str) ->
     }
 
 
-__all__ = ["take_screenshot", "analyze_ui"]
+__all__ = ["take_screenshot_tool", "analyze_ui_tool"]

@@ -135,9 +135,13 @@ export const StreamProvider: React.FC<{
 }> = ({ children, assistantId: assistantIdProp, apiUrl: apiUrlProp }) => {
   const [accessToken, setAccessToken] = useState<string | null>(null);
   const supabase = createClient();
-  supabase.auth.getSession().then(({ data }) => {
-    setAccessToken(data.session?.access_token ?? null);
-  });
+  
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => {
+      setAccessToken(data.session?.access_token ?? null);
+    });
+  }, [supabase.auth]);
+  
   const [apiUrlQuery] = useQueryState("apiUrl");
   const apiUrl = apiUrlProp ?? apiUrlQuery;
   const apiKey = process.env.NEXT_PUBLIC_LANGSMITH_API_KEY ?? null;
