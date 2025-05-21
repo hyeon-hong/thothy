@@ -133,6 +133,10 @@ def analyze_ui(state: AgentState):
     messages = [{"role": "system", "content": get_coding_prompt()}] + \
         state["messages"]
 
+    # If the last message is "Error", go to generate_code node
+    if state["messages"][-1].content == "Error":
+        return "generate_code"
+
     # Check if we have a screenshot to include in the analysis
     web_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "web")
     dist_dir = os.path.join(web_dir, "dist")
@@ -221,6 +225,13 @@ def check_score(state: AgentState) -> Literal["__end__", "generate_code"]:
         return "generate_code"
 
 
+def check_error(state: AgentState) -> Literal["__end__", "generate_code"]:
+    """Check if the last message is "Error", and if so, go to generate_code node."""
+    if state["messages"][-1].content == "Error":
+        return "generate_code"
+    return "__end__"
+
+
 def extract_score_and_analysis(response: AIMessage) -> Optional[Tuple[int, str]]:
     # 1. Get tool_calls from additional_kwargs
     tool_calls = response.additional_kwargs.get("tool_calls", [])
@@ -273,14 +284,17 @@ workflow.add_node("analyze_ui", analyze_ui)
 workflow.add_node("screenshot_tool", screenshot_tool_node)
 workflow.add_node("analyze_ui_tool", analyze_ui_tool_node)
 workflow.add_node("check_score", check_score)
+workflow.add_node("check_error", check_error)
 
 # Add edges - start at generate_code
 workflow.add_edge(START, "generate_code")
 workflow.add_edge("generate_code", "screenshot_tool")
-workflow.add_edge("screenshot_tool", "analyze_ui")
+workflow.add_conditional_edges(
+    "screenshot_tool",
+    check_error,
+    ["generate_code", "analyze_ui"]
+)
 workflow.add_edge("analyze_ui", "analyze_ui_tool")
-
-# Add conditional edges based on score
 workflow.add_conditional_edges(
     "analyze_ui_tool",
     check_score,
