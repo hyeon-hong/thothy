@@ -7,7 +7,6 @@ export default function UIBuildGraphComponent(props: {
   original_ui: string;
   new_ui: string;
 }) {
-  console.log("UI Build props:", props);
   // Get the data from an agent by two way
   // 1. Use the props from push_ui_message function
   // 2. Use the context from the artifact
@@ -42,28 +41,43 @@ export default function UIBuildGraphComponent(props: {
                 <img
                   src={`data:image/png;base64,${props.original_ui}`}
                   alt="Original UI"
-                  style={{ maxWidth: '200px', maxHeight: '200px', width: 'auto', height: 'auto' }}
+                  style={{
+                    maxWidth: "200px",
+                    maxHeight: "200px",
+                    width: "auto",
+                    height: "auto",
+                  }}
                   className="object-contain"
                 />
               </div>
             </div>
-            
+
             <div>
               <div className="font-medium mb-2">New UI:</div>
               <div className="h-[200px] w-[200px] flex items-center justify-center border rounded">
                 <img
                   src={`data:image/png;base64,${props.new_ui}`}
                   alt="New UI"
-                  style={{ maxWidth: '200px', maxHeight: '200px', width: 'auto', height: 'auto' }}
+                  style={{
+                    maxWidth: "200px",
+                    maxHeight: "200px",
+                    width: "auto",
+                    height: "auto",
+                  }}
                   className="object-contain"
                 />
               </div>
             </div>
           </div>
-          
+
           <div className="mt-6 p-4 border-2 border-blue-400 rounded bg-blue-50 flex-grow">
-            <div className="text-lg font-bold mb-2 text-blue-800">Evaluation Results</div>
-            <div className="mb-3"><span className="font-medium">Score:</span> <span className="text-lg font-semibold">{scoreValue}</span></div>
+            <div className="text-lg font-bold mb-2 text-blue-800">
+              Evaluation Results
+            </div>
+            <div className="mb-3">
+              <span className="font-medium">Score:</span>{" "}
+              <span className="text-lg font-semibold">{scoreValue}</span>
+            </div>
             <div>
               <div className="font-medium mb-2 text-lg">Analysis:</div>
               <div className="h-[300px] overflow-y-auto p-3 bg-white border rounded text-md whitespace-pre-wrap scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-gray-100">
