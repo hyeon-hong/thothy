@@ -4,7 +4,7 @@ import logging
 import os
 import json
 import base64
-from typing import Optional, Annotated, Sequence, TypedDict, Tuple
+from typing import Optional, Annotated, Sequence, TypedDict, Tuple, Literal
 
 from langchain_openai import ChatOpenAI
 from langchain_core.messages import AIMessage, BaseMessage, HumanMessage
@@ -30,7 +30,10 @@ llm: Optional[ChatOpenAI] = None
 class AgentState(TypedDict):
     messages: Annotated[Sequence[BaseMessage], add_messages]
     ui: Annotated[Sequence[AnyUIMessage], ui_message_reducer]
-    original_image: Optional[str]
+    score: int  # Default will be 0
+    analysis: Optional[str]
+    original_ui: Optional[str]
+    new_ui: Optional[str]
 
 
 def get_llm() -> ChatOpenAI:
@@ -59,8 +62,21 @@ model = get_llm()
 def generate_code(state: AgentState):
     """Generate code for the UI component"""
 
+    # Initialize score to 0 if not present
+    if "score" not in state:
+        state["score"] = 0
+
+    # Get previous analysis if it exists
+    previous_analysis = ""
+    if state.get("analysis"):
+        previous_analysis = f"\n\nPrevious analysis: {state.get('analysis')}"
+
     # Get the messages
-    messages = [{"role": "system", "content": get_coding_prompt()}] + \
+    system_prompt = get_coding_prompt()
+    if previous_analysis:
+        system_prompt += previous_analysis
+
+    messages = [{"role": "system", "content": system_prompt}] + \
         state["messages"]
 
     # Extract image data from user messages if present
@@ -102,12 +118,16 @@ def generate_code(state: AgentState):
     # Return the messages and the user image if found
     return {
         "messages": [response],
-        "original_image": original_image
+        "original_ui": original_image
     }
 
 
 def analyze_ui(state: AgentState):
     """Analyze the UI component"""
+
+    # Initialize score to 0 if not present
+    if "score" not in state:
+        state["score"] = 0
 
     # Get the messages
     messages = [{"role": "system", "content": get_coding_prompt()}] + \
@@ -118,19 +138,24 @@ def analyze_ui(state: AgentState):
     dist_dir = os.path.join(web_dir, "dist")
     screenshot_path = os.path.join(dist_dir, "screenshot.png")
 
+    # Get previous analysis if it exists
+    previous_analysis = ""
+    if state.get("analysis"):
+        previous_analysis = f"\n\nPrevious analysis: {state.get('analysis')}"
+
     # If the screenshot exists, add it to the messages as an image
     if os.path.exists(screenshot_path):
         with open(screenshot_path, "rb") as image_file:
             base64_image = base64.b64encode(image_file.read()).decode('utf-8')
 
         # Get user image data for calendar comparison (if available)
-        original_image = state.get("original_image")
+        original_image = state.get("original_ui")
 
         # Create a message with the images
         image_message_content = [
             {
                 "type": "text",
-                "text": "Here is the screenshot of the UI component and a calendar image. Please describe the difference between the two images, if any. If there is a small difference, please say no difference."
+                "text": f"Here is the screenshot image of the UI component and a original image. Please describe the difference between the two images, if any. If you feel there is no difference, please set score to 10. And if you feel there is a difference, please set score from 0 to 9 as the difference is.{previous_analysis}"
             },
             {
                 "type": "image_url",
@@ -181,7 +206,19 @@ def analyze_ui(state: AgentState):
     # Return the messages
     return {
         "messages": [response],
+        "score": score,
+        "analysis": analysis,
+        "original_ui": original_image,
+        "new_ui": base64_image
     }
+
+
+def check_score(state: AgentState) -> Literal["__end__", "generate_code"]:
+    """Check the score and determine if we should end or regenerate code."""
+    if state["score"] == 10:
+        return "__end__"
+    else:
+        return "generate_code"
 
 
 def extract_score_and_analysis(response: AIMessage) -> Optional[Tuple[int, str]]:
@@ -235,13 +272,20 @@ workflow.add_node("generate_code", generate_code)
 workflow.add_node("analyze_ui", analyze_ui)
 workflow.add_node("screenshot_tool", screenshot_tool_node)
 workflow.add_node("analyze_ui_tool", analyze_ui_tool_node)
+workflow.add_node("check_score", check_score)
 
-# Add edges - start at generate_code and can end after analyze_ui
+# Add edges - start at generate_code
 workflow.add_edge(START, "generate_code")
 workflow.add_edge("generate_code", "screenshot_tool")
 workflow.add_edge("screenshot_tool", "analyze_ui")
 workflow.add_edge("analyze_ui", "analyze_ui_tool")
-workflow.add_edge("analyze_ui_tool", END)
+
+# Add conditional edges based on score
+workflow.add_conditional_edges(
+    "analyze_ui_tool",
+    check_score,
+    ["generate_code", END]
+)
 
 # Compile graph
 graph = workflow.compile()
