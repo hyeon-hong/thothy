@@ -14,7 +14,7 @@ from langgraph.graph import StateGraph, START, END
 from langgraph.prebuilt import ToolNode
 
 from ui_build_graph.prompts import get_coding_prompt
-from ui_build_graph.tools import take_screenshot, analyze_ui
+from ui_build_graph.tools import take_screenshot_tool, analyze_ui_tool
 
 # Set the name of the UI component
 UI_COMPONENT_NAME = "ui_build_graph"
@@ -50,8 +50,8 @@ def get_llm() -> ChatOpenAI:
     return llm
 
 
-screenshot_tool_node = ToolNode([take_screenshot])
-analyze_ui_tool_node = ToolNode([analyze_ui])
+screenshot_tool_node = ToolNode([take_screenshot_tool])
+analyze_ui_tool_node = ToolNode([analyze_ui_tool])
 
 model = get_llm()
 
@@ -78,8 +78,8 @@ def generate_code(state: AgentState):
                         break
 
     # Bind the take_screenshot tool to the model
-    model_with_tools = model.bind_tools([take_screenshot],
-                                        tool_choice="take_screenshot",
+    model_with_tools = model.bind_tools([take_screenshot_tool],
+                                        tool_choice="take_screenshot_tool",
                                         strict=True)
 
     # Invoke the model with the take_screenshot tool
@@ -164,8 +164,8 @@ def analyze_ui(state: AgentState):
         messages.append(image_message)
 
     # Bind the analyze_ui tool to the model
-    model_with_analysis_tools = model.bind_tools([analyze_ui],
-                                                 tool_choice="analyze_ui",
+    model_with_analysis_tools = model.bind_tools([analyze_ui_tool],
+                                                 tool_choice="analyze_ui_tool",
                                                  strict=True)
     # Invoke the model with the analyze_ui tool
     response = model_with_analysis_tools.invoke(messages)

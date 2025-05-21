@@ -14,7 +14,7 @@ import base64
 
 
 @tool(response_format="content_and_artifact")
-def take_screenshot(code: str) -> Tuple[str, dict]:
+def take_screenshot_tool(code: str) -> Tuple[str, dict]:
     """
     Take a screenshot of a code.
 
@@ -27,7 +27,7 @@ def take_screenshot(code: str) -> Tuple[str, dict]:
 
     # 1. Take screenshot and build
     # TODO: Implement remote screenshot and build with docker container
-    screenshot_path = local_take_screenshot_and_build(code)
+    screenshot_path = _local_take_screenshot_and_build(code)
     content = f"Successfully took screenshot of the code. {screenshot_path}"
 
     # 2. Return the content
@@ -38,7 +38,7 @@ def take_screenshot(code: str) -> Tuple[str, dict]:
     }
 
 
-def local_take_screenshot_and_build(code: str) -> str:
+def _local_take_screenshot_and_build(code: str) -> str:
     """
     Overwrite App.tsx with the given code, build the app, and take a screenshot of the built index.html.
     Returns the path to the screenshot.
@@ -94,7 +94,7 @@ def local_take_screenshot_and_build(code: str) -> str:
     return str(screenshot_path)
 
 
-def get_image_base64(image_path: str) -> str:
+def _get_image_base64(image_path: str) -> str:
     """
     Encode image file to base64 string.
 
@@ -109,7 +109,7 @@ def get_image_base64(image_path: str) -> str:
 
 
 @tool(response_format="content_and_artifact")
-def analyze_ui(widget_name: str, description: str, score: int, analysis: str) -> Tuple[str, dict]:
+def analyze_ui_tool(widget_name: str, description: str, score: int, analysis: str) -> Tuple[str, dict]:
     """
     Generate a score and analysis of a UI.
 
@@ -131,7 +131,7 @@ def analyze_ui(widget_name: str, description: str, score: int, analysis: str) ->
     # Check if screenshot exists
     image_content = None
     if screenshot_path.exists():
-        image_content = get_image_base64(str(screenshot_path))
+        image_content = _get_image_base64(str(screenshot_path))
 
     content = "Successfully generated a score and analysis of the UI."
     return content, {
@@ -143,4 +143,4 @@ def analyze_ui(widget_name: str, description: str, score: int, analysis: str) ->
     }
 
 
-__all__ = ["take_screenshot", "analyze_ui"]
+__all__ = ["take_screenshot_tool", "analyze_ui_tool"]
