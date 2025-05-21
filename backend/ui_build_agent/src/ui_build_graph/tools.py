@@ -111,7 +111,7 @@ def _local_take_screenshot_and_build(code: str) -> str:
             options.add_argument("--no-sandbox")
             options.add_argument("--disable-dev-shm-usage")
             driver = webdriver.Chrome(options=options)
-            driver.set_window_size(1280, 800)
+            driver.set_window_size(320, 240)
 
             # Use localhost instead of file://
             driver.get(f"http://localhost:{port}/")

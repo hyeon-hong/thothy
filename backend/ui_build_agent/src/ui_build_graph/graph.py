@@ -42,15 +42,15 @@ def get_llm() -> ChatOpenAI:
 
     global llm
     if llm is None:
-        llm = ChatOpenAI(
-            model="Qwen/Qwen3-14B-AWQ",
-            base_url=VLLM_API_URL,
-            temperature=0.5
-        )
         # llm = ChatOpenAI(
-        #     model="gpt-4o-mini",
+        #     model="Qwen/Qwen2.5-VL-3B-Instruct",
+        #     base_url=VLLM_API_URL,
         #     temperature=0.5
         # )
+        llm = ChatOpenAI(
+            model="gpt-4o-mini",
+            temperature=0.5
+        )
     return llm
 
 
@@ -96,11 +96,12 @@ def generate_code(state: AgentState):
 
     # Bind the take_screenshot tool to the model
     model_with_tools = model.bind_tools([take_screenshot_tool],
-                                        tool_choice="take_screenshot_tool",
+                                        # tool_choice="take_screenshot_tool",
                                         strict=True)
 
     # Invoke the model with the take_screenshot tool
     response = model_with_tools.invoke(messages)
+    logging.info("response: %s", response)
 
     # Extract the artifact
     artifact = extract_artifact(response)
@@ -185,10 +186,11 @@ def analyze_ui(state: AgentState):
 
     # Bind the analyze_ui tool to the model
     model_with_analysis_tools = model.bind_tools([analyze_ui_tool],
-                                                 tool_choice="analyze_ui_tool",
+                                                 #  tool_choice="analyze_ui_tool",
                                                  strict=True)
     # Invoke the model with the analyze_ui tool
     response = model_with_analysis_tools.invoke(messages)
+    logging.info("response: %s", response)
 
     # Extract the score and analysis
     score_result, analysis = extract_score_and_analysis(response)
