@@ -1,30 +1,31 @@
+import React, { useEffect } from "react";
 import { useStreamContext } from "@langchain/langgraph-sdk/react-ui";
 
-export default function DataGraphComponent() {
+export default function DataGraphComponent(props: { price_snapshot: string }) {
   const { meta } = useStreamContext<
-    { prices: any },
+    { price_snapshot: string },
     { MetaType: { ui: any; artifact: any } }
   >();
   const [ArtifactContent, { open, setOpen, context, setContext }] =
     meta.artifact;
-
+  console.log("props: ", props);
   console.log("context: ", context);
+  console.log("props.price_snapshot: ", props.price_snapshot);
+
+  useEffect(() => {
+    setOpen(true);
+  }, [context]);
 
   return (
-    <div className="bg-blue-500">
+    <div className="h-full">
       <button
-        className="mb-2 px-2 py-1 rounded bg-white text-black border border-gray-300 hover:bg-gray-100"
+        className="mb-4 px-4 py-2 rounded text-white bg-blue-600 hover:bg-blue-700 transition-colors font-semibold shadow"
         onClick={() => setOpen(!open)}
       >
-        {open ? "Hide" : "Show"}
+        {open ? "Click to hide data" : "Click to display data"}
       </button>
-      <div>Artifact</div>
-      <ArtifactContent title={<div>{context?.title}</div>}>
-        {typeof context === "object" && context !== null ? (
-          <pre>{JSON.stringify(context, null, 2)}</pre>
-        ) : (
-          context
-        )}
+      <ArtifactContent title={<div>Data</div>}>
+        <pre>{JSON.stringify(context.price_snapshot, null, 2)}</pre>
       </ArtifactContent>
     </div>
   );
