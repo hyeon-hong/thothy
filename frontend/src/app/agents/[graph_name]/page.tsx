@@ -7,6 +7,8 @@ import DataAgentPage from "@/app/agents/data_agent/page";
 import SlideAgentPage from "@/app/agents/slide_agent/page";
 import UIAgentPage from "@/app/agents/ui_agent/page";
 import UIEvalAgentPage from "@/app/agents/ui_eval_agent/page";
+import UIBuildAgentPage from "@/app/agents/ui_build_agent/page";
+
 export default function AgentPage() {
   // Get the assistantId from the URL
   const params = useParams();
@@ -26,6 +28,8 @@ export default function AgentPage() {
         return <UIAgentPage apiUrl={apiUrl} assistantId={assistantId} />;
       case "ui_eval_graph":
         return <UIEvalAgentPage apiUrl={apiUrl} assistantId={assistantId} />;
+      case "ui_build_graph":
+        return <UIBuildAgentPage apiUrl={apiUrl} assistantId={assistantId} />;
       default:
         return (
           <div className="container mx-auto px-4 py-8">
