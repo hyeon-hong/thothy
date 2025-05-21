@@ -1,0 +1,10 @@
+{
+  "extends": "./tsconfig.app.json",
+  "compilerOptions": {
+    "noUnusedParameters": false,
+    "noUnusedLocals": false,
+    "verbatimModuleSyntax": false,
+    "skipLibCheck": true,
+    "isolatedModules": true
+  }
+} 
