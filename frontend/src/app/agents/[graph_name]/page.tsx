@@ -19,9 +19,9 @@ export default function AgentPage() {
   const renderAgentComponent = () => {
     switch (assistantId) {
       case "chat_graph":
-        return <ChatAgentPage />;
+        return <ChatAgentPage apiUrl={apiUrl} assistantId={assistantId} />;
       case "data_graph":
-        return <DataAgentPage />;
+        return <DataAgentPage apiUrl={apiUrl} assistantId={assistantId} />;
       case "slide_graph":
         return <SlideAgentPage apiUrl={apiUrl} assistantId={assistantId} />;
       case "ui_graph":
