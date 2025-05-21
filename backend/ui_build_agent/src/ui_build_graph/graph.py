@@ -220,7 +220,7 @@ def analyze_ui(state: AgentState):
 
 def check_score(state: AgentState) -> Literal["__end__", "generate_code"]:
     """Check the score and determine if we should end or regenerate code."""
-    if state["score"] == 10:
+    if state["score"] >= 8:
         return END
     else:
         return "generate_code"
@@ -242,6 +242,9 @@ def check_error(state: AgentState) -> Literal["generate_code", "analyze_ui"]:
     if has_error:
         state["error"] = last_message.content
         logging.error("Error detected: %s", last_message.content)
+        push_ui_message(UI_COMPONENT_NAME,
+                        {"error": state["error"]},
+                        message=last_message)
         return "generate_code"
 
     return "analyze_ui"

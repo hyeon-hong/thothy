@@ -3,6 +3,8 @@
   "compilerOptions": {
     "noUnusedParameters": false,
     "noUnusedLocals": false,
-    "verbatimModuleSyntax": false
+    "verbatimModuleSyntax": false,
+    "skipLibCheck": true,
+    "isolatedModules": true
   }
-}
+} 

@@ -6,6 +6,7 @@ export default function UIBuildGraphComponent(props: {
   analysis: string;
   original_ui: string;
   new_ui: string;
+  error: string;
 }) {
   // Get the data from an agent by two way
   // 1. Use the props from push_ui_message function
@@ -82,6 +83,12 @@ export default function UIBuildGraphComponent(props: {
               <div className="font-medium mb-2 text-lg">Analysis:</div>
               <div className="h-[300px] overflow-y-auto p-3 bg-white border rounded text-md whitespace-pre-wrap scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-gray-100">
                 {analysisText}
+              </div>
+            </div>
+            <div>
+              <div className="font-medium mb-2 text-lg">Error:</div>
+              <div className="h-[300px] overflow-y-auto p-3 bg-white border rounded text-md whitespace-pre-wrap scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-gray-100">
+                {props.error}
               </div>
             </div>
           </div>

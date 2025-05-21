@@ -70,19 +70,21 @@ def _local_take_screenshot_and_build(code: str) -> str:
         # Look for TypeScript errors
         ts_errors = []
         error_message = ""
-
-        if "error TS" in result.stderr:
-            ts_errors = [line for line in result.stderr.split(
-                '\n') if "error TS" in line]
+        
+        # Check both stdout and stderr for error messages
+        output = result.stdout + "\n" + result.stderr
+        
+        if "error TS" in output:
+            ts_errors = [line for line in output.split('\n') if "error TS" in line]
             logging.info("ts_errors: %s", ts_errors)
             logging.error("TypeScript errors detected: %s", ts_errors)
             for error in ts_errors[:5]:  # Show first 5 errors
                 logging.error("  - %s", error.strip())
             error_message = f"TypeScript errors: {'; '.join(ts_errors[:3])}"
         else:
-            logging.error("Build failed: %s", result.stderr)
+            logging.error("Build failed: %s", output)
             # Truncate long error messages
-            error_message = f"Build failed: {result.stderr[:200]}"
+            error_message = f"Build failed: {output[:200]}"
 
         return f"Error: {error_message}"
 
