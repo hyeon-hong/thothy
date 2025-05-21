@@ -13,11 +13,11 @@ from langgraph.graph.ui import AnyUIMessage, ui_message_reducer, push_ui_message
 from langgraph.graph import StateGraph, START, END
 from langgraph.prebuilt import ToolNode
 
-from ui_build_graph.prompts import get_coding_prompt
-from ui_build_graph.tools import take_screenshot_tool, analyze_ui_tool
+from slide_build_graph.prompts import get_coding_prompt
+from slide_build_graph.tools import take_screenshot_tool, analyze_ui_tool
 
 # Set the name of the UI component
-UI_COMPONENT_NAME = "ui_build_graph"
+UI_COMPONENT_NAME = "slide_build_graph"
 
 # Configure logging to hide INFO messages
 logging.basicConfig(level=logging.INFO)
