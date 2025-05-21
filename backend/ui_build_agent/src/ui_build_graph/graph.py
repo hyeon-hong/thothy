@@ -30,6 +30,7 @@ llm: Optional[ChatOpenAI] = None
 class AgentState(TypedDict):
     messages: Annotated[Sequence[BaseMessage], add_messages]
     ui: Annotated[Sequence[AnyUIMessage], ui_message_reducer]
+    original_image: Optional[str]
 
 
 def get_llm() -> ChatOpenAI:
@@ -62,6 +63,20 @@ def generate_code(state: AgentState):
     messages = [{"role": "system", "content": get_coding_prompt()}] + \
         state["messages"]
 
+    # Extract image data from user messages if present
+    original_image = None
+    for message in state["messages"]:
+        if isinstance(message, HumanMessage) and isinstance(message.content, list):
+            for content_item in message.content:
+                if isinstance(content_item, dict) and content_item.get("type") == "image_url":
+                    image_url = content_item.get(
+                        "image_url", {}).get("url", "")
+                    if image_url.startswith("data:image/"):
+                        # Extract base64 image data
+                        original_image = image_url.split(
+                            "base64,")[1] if "base64," in image_url else None
+                        break
+
     # Bind the take_screenshot tool to the model
     model_with_tools = model.bind_tools([take_screenshot],
                                         tool_choice="take_screenshot",
@@ -83,9 +98,10 @@ def generate_code(state: AgentState):
     # Push the artifact to the UI
     push_ui_message(UI_COMPONENT_NAME, code, message=response)
 
-    # Return the messages
+    # Return the messages and the user image if found
     return {
         "messages": [response],
+        "original_image": original_image
     }
 
 
@@ -106,41 +122,46 @@ def analyze_ui(state: AgentState):
         with open(screenshot_path, "rb") as image_file:
             base64_image = base64.b64encode(image_file.read()).decode('utf-8')
 
-        # Get calendar image path (assuming it's in the same directory as screenshot)
-        calendar_path = os.path.join(dist_dir, "calendar.png")
-        if os.path.exists(calendar_path):
-            with open(calendar_path, "rb") as calendar_file:
-                base64_calendar = base64.b64encode(
-                    calendar_file.read()).decode('utf-8')
-        else:
-            base64_calendar = None
+        # Get user image data for calendar comparison (if available)
+        original_image = state.get("original_image")
 
-            # Create a message with the image
-            image_message_content = [
-                {
-                    "type": "text",
-                    "text": "Here is the screenshot of the UI component and a calendar image. Please describe the difference between the two images, if any. If there is a small difference, please say no difference."
-                },
-                {
-                    "type": "image_url",
-                    "image_url": {
-                        "url": f"data:image/png;base64,{base64_image}"
-                    }
+        # Create a message with the images
+        image_message_content = [
+            {
+                "type": "text",
+                "text": "Here is the screenshot of the UI component and a calendar image. Please describe the difference between the two images, if any. If there is a small difference, please say no difference."
+            },
+            {
+                "type": "image_url",
+                "image_url": {
+                    "url": f"data:image/png;base64,{base64_image}"
                 }
-            ]
+            }
+        ]
 
-            # Add calendar image if available
-            if base64_calendar:
-                image_message_content.append({
-                    "type": "image_url",
-                    "image_url": {
-                        "url": f"data:image/png;base64,{base64_calendar}"
-                    }
-                })
+        # Add calendar image if available
+        if original_image:
+            image_message_content.append({
+                "type": "image_url",
+                "image_url": {
+                    "url": f"data:image/png;base64,{original_image}"
+                }
+            })
+        # If no user image but calendar file exists, use that instead
+        elif os.path.exists(os.path.join(dist_dir, "calendar.png")):
+            with open(os.path.join(dist_dir, "calendar.png"), "rb") as calendar_file:
+                original_image = base64.b64encode(
+                    calendar_file.read()).decode('utf-8')
+            image_message_content.append({
+                "type": "image_url",
+                "image_url": {
+                    "url": f"data:image/png;base64,{original_image}"
+                }
+            })
 
-            # Add the image message to the conversation
-            image_message = HumanMessage(content=image_message_content)
-            messages.append(image_message)
+        # Add the image message to the conversation
+        image_message = HumanMessage(content=image_message_content)
+        messages.append(image_message)
 
     # Bind the analyze_ui tool to the model
     model_with_analysis_tools = model.bind_tools([analyze_ui],
