@@ -7,7 +7,7 @@ import base64
 from typing import Optional, Annotated, Sequence, TypedDict, Tuple, Literal
 
 from langchain_openai import ChatOpenAI
-from langchain_core.messages import AIMessage, BaseMessage, HumanMessage
+from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, ToolMessage
 from langgraph.graph.message import add_messages
 from langgraph.graph.ui import AnyUIMessage, ui_message_reducer, push_ui_message
 from langgraph.graph import StateGraph, START, END
@@ -218,7 +218,7 @@ def analyze_ui(state: AgentState):
     }
 
 
-def check_score(state: AgentState):
+def check_score(state: AgentState) -> Literal["__end__", "generate_code"]:
     """Check the score and determine if we should end or regenerate code."""
     if state["score"] == 10:
         return END
@@ -226,13 +226,25 @@ def check_score(state: AgentState):
         return "generate_code"
 
 
-def check_error(state: AgentState):
+def check_error(state: AgentState) -> Literal["generate_code", "analyze_ui"]:
     """Check if the last message is "Error", and if so, go to generate_code node."""
     last_message = state["messages"][-1]
-    if isinstance(last_message, AIMessage) and last_message.content.startswith("Error"):
+    logging.info("last_message: %s", last_message)
+
+    # Check for error in both AIMessage and ToolMessage types
+    has_error = False
+
+    if isinstance(last_message, AIMessage) and isinstance(last_message.content, str) and last_message.content.startswith("Error"):
+        has_error = True
+    elif isinstance(last_message, ToolMessage) and isinstance(last_message.content, str) and last_message.content.startswith("Error"):
+        has_error = True
+
+    if has_error:
         state["error"] = last_message.content
+        logging.error("Error detected: %s", last_message.content)
         return "generate_code"
-    return END
+
+    return "analyze_ui"
 
 
 def extract_score_and_analysis(response: AIMessage) -> Optional[Tuple[int, str]]:
@@ -252,7 +264,7 @@ def extract_score_and_analysis(response: AIMessage) -> Optional[Tuple[int, str]]
                 if score and analysis:
                     return score, analysis
             except Exception as e:
-                print(f"Error parsing tool call arguments: {e}")
+                logging.error("Error parsing tool call arguments: %s", e)
     return None
 
 
@@ -272,7 +284,7 @@ def extract_artifact(response: AIMessage) -> Optional[str]:
                 if artifact:
                     return artifact
             except Exception as e:
-                print(f"Error parsing tool call arguments: {e}")
+                logging.error("Error parsing tool call arguments: %s", e)
     return None
 
 
