@@ -8,6 +8,7 @@ import SlideAgentPage from "@/app/agents/slide_agent/page";
 import UIAgentPage from "@/app/agents/ui_agent/page";
 import UIEvalAgentPage from "@/app/agents/ui_eval_agent/page";
 import UIBuildAgentPage from "@/app/agents/ui_build_agent/page";
+import SlideBuildAgentPage from "@/app/agents/slide_build_agent/page";
 
 export default function AgentPage() {
   // Get the assistantId from the URL
@@ -24,6 +25,8 @@ export default function AgentPage() {
         return <DataAgentPage apiUrl={apiUrl} assistantId={assistantId} />;
       case "slide_graph":
         return <SlideAgentPage apiUrl={apiUrl} assistantId={assistantId} />;
+      case "slide_build_graph":
+        return <SlideBuildAgentPage apiUrl={apiUrl} assistantId={assistantId} />;
       case "ui_graph":
         return <UIAgentPage apiUrl={apiUrl} assistantId={assistantId} />;
       case "ui_eval_graph":
