@@ -18,7 +18,6 @@ export default function SlideBuildGraphComponent(props: {
 
   useEffect(() => {
     setOpen(true);
-    console.log("Analysis received:", props.analysis);
   }, [props.score, props.analysis]);
 
   // Make sure we have fallbacks for missing data
