@@ -8,6 +8,7 @@ from typing import Optional, Annotated, Sequence, TypedDict, Tuple, Literal
 
 from langchain_openai import ChatOpenAI
 from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, ToolMessage
+from langchain_google_genai import ChatGoogleGenerativeAI
 from langgraph.graph.message import add_messages
 from langgraph.graph.ui import AnyUIMessage, ui_message_reducer, push_ui_message
 from langgraph.graph import StateGraph, START, END
@@ -47,10 +48,20 @@ def get_llm() -> ChatOpenAI:
         #     base_url=VLLM_API_URL,
         #     temperature=0.5
         # )
-        llm = ChatOpenAI(
-            model="gpt-4o-mini",
-            temperature=0.5
+
+        llm = ChatGoogleGenerativeAI(
+            model="gemini-2.0-flash",
+            temperature=0,
+            max_tokens=None,
+            timeout=None,
+            max_retries=2,
         )
+
+        # Use ChatOpenAI for remote inference
+        # llm = ChatOpenAI(
+        #     model="gpt-4o-mini",
+        #     temperature=0.5
+        # )
     return llm
 
 
@@ -96,12 +107,13 @@ def generate_code(state: AgentState):
 
     # Bind the take_screenshot tool to the model
     model_with_tools = model.bind_tools([take_screenshot_tool],
-                                        # tool_choice="take_screenshot_tool",
-                                        strict=True)
+                                        tool_choice="any",
+                                        # strict=True
+                                        )
 
     # Invoke the model with the take_screenshot tool
     response = model_with_tools.invoke(messages)
-    logging.info("response: %s", response)
+    logging.info("model_with_tools response: %s", response)
 
     # Extract the artifact
     artifact = extract_artifact(response)
@@ -186,11 +198,12 @@ def analyze_ui(state: AgentState):
 
     # Bind the analyze_ui tool to the model
     model_with_analysis_tools = model.bind_tools([analyze_ui_tool],
-                                                 #  tool_choice="analyze_ui_tool",
-                                                 strict=True)
+                                                 tool_choice="analyze_ui_tool",
+                                                 #  strict=True
+                                                 )
     # Invoke the model with the analyze_ui tool
     response = model_with_analysis_tools.invoke(messages)
-    logging.info("response: %s", response)
+    logging.info("model_with_analysis_tools response: %s", response)
 
     # Extract the score and analysis
     score_result, analysis = extract_score_and_analysis(response)
@@ -226,7 +239,7 @@ def check_score(state: AgentState) -> Literal["__end__", "generate_code"]:
         score_value = score_value["score"]
 
     # Now compare the integer value
-    if score_value >= 5:
+    if score_value >= 6:
         return END
     else:
         return "generate_code"
@@ -256,45 +269,110 @@ def check_error(state: AgentState) -> Literal["generate_code", "analyze_ui"]:
     return "analyze_ui"
 
 
-def extract_score_and_analysis(response: AIMessage) -> Optional[Tuple[int, str]]:
-    # 1. Get tool_calls from additional_kwargs
+def extract_score_and_analysis(response: AIMessage) -> Tuple[int, str]:
+    """Extract score and analysis from AI response, handling different model response formats."""
+    logging.info("Extracting score and analysis from: %s", response)
+
+    # Default values in case extraction fails
+    default_score = 0
+    default_analysis = "Failed to extract analysis from response"
+
+    # Try to extract from tool_calls (OpenAI format)
     tool_calls = response.additional_kwargs.get("tool_calls", [])
     for tool_call in tool_calls:
-        # 2. Get the function arguments (as a JSON string)
         function = tool_call.get("function", {})
         arguments = function.get("arguments")
         if arguments:
             try:
-                # 3. Parse the arguments JSON string
                 args_dict = json.loads(arguments)
-                # 4. Extract the artifact
                 score = args_dict.get("score")
                 analysis = args_dict.get("analysis")
-                if score and analysis:
-                    return score, analysis
+                if score is not None and analysis:
+                    return int(score), analysis
             except Exception as e:
-                logging.error("Error parsing tool call arguments: %s", e)
-    return None
+                logging.error("Error parsing tool_calls arguments: %s", e)
+
+    # Try to extract from function_call (Gemini format)
+    function_call = response.additional_kwargs.get("function_call")
+    if function_call and isinstance(function_call, dict):
+        arguments = function_call.get("arguments")
+        if arguments:
+            try:
+                args_dict = json.loads(arguments)
+                score = args_dict.get("score")
+                analysis = args_dict.get("analysis")
+                if score is not None and analysis:
+                    return int(score), analysis
+            except Exception as e:
+                logging.error("Error parsing function_call arguments: %s", e)
+
+    # Check for tool_calls in the alternative location (tool_calls property)
+    if hasattr(response, 'tool_calls') and response.tool_calls:
+        for tool_call in response.tool_calls:
+            try:
+                args = tool_call.get('args', {})
+                score = args.get("score")
+                analysis = args.get("analysis")
+                if score is not None and analysis:
+                    return int(score), analysis
+            except Exception as e:
+                logging.error("Error parsing response.tool_calls: %s", e)
+
+    # Log failure
+    logging.warning("Failed to extract score and analysis, using defaults")
+    return default_score, default_analysis
 
 
-def extract_artifact(response: AIMessage) -> Optional[str]:
-    # 1. Get tool_calls from additional_kwargs
+def extract_artifact(response: AIMessage) -> str:
+    """Extract artifact from AI response, handling different model response formats."""
+    logging.info("Extracting artifact from: %s", response)
+
+    # Default value in case extraction fails
+    default_artifact = "// Failed to extract code from response"
+
+    # Try to extract from tool_calls (OpenAI format)
     tool_calls = response.additional_kwargs.get("tool_calls", [])
     for tool_call in tool_calls:
-        # 2. Get the function arguments (as a JSON string)
         function = tool_call.get("function", {})
         arguments = function.get("arguments")
         if arguments:
             try:
-                # 3. Parse the arguments JSON string
                 args_dict = json.loads(arguments)
-                # 4. Extract the artifact
-                artifact = args_dict.get("artifact")
+                # Look for either 'artifact' or 'code' in the response
+                artifact = args_dict.get("artifact") or args_dict.get("code")
                 if artifact:
                     return artifact
             except Exception as e:
-                logging.error("Error parsing tool call arguments: %s", e)
-    return None
+                logging.error("Error parsing tool_calls arguments: %s", e)
+
+    # Try to extract from function_call (Gemini format)
+    function_call = response.additional_kwargs.get("function_call")
+    if function_call and isinstance(function_call, dict):
+        arguments = function_call.get("arguments")
+        if arguments:
+            try:
+                args_dict = json.loads(arguments)
+                # Look for either 'artifact' or 'code' in the response
+                artifact = args_dict.get("artifact") or args_dict.get("code")
+                if artifact:
+                    return artifact
+            except Exception as e:
+                logging.error("Error parsing function_call arguments: %s", e)
+
+    # Check for tool_calls in the alternative location
+    if hasattr(response, 'tool_calls') and response.tool_calls:
+        for tool_call in response.tool_calls:
+            try:
+                args = tool_call.get('args', {})
+                artifact = args.get("artifact") or args.get("code")
+                if artifact:
+                    return artifact
+            except Exception as e:
+                logging.error("Error parsing response.tool_calls: %s", e)
+
+    # Log failure
+    logging.warning("Failed to extract artifact, using default")
+    return default_artifact
 
 
 """Build and return the UI build graph."""

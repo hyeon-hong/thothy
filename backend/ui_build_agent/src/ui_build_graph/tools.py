@@ -23,23 +23,37 @@ def take_screenshot_tool(code: str) -> Tuple[str, dict]:
         code: A string of JavaScript (React) code using shadcn UI components
 
     Returns:
-        True if the screenshot was taken successfully, False otherwise
+        A tuple containing the result message and a dictionary with screenshot details
     """
+    try:
+        # 1. Take screenshot and build
+        response = _local_take_screenshot_and_build(code)
+        logging.info("response: %s", response)
+        logging.info("response type: %s", type(response))
 
-    # 1. Take screenshot and build
-    response = _local_take_screenshot_and_build(code)
-    logging.info("response: %s", response)
-    if isinstance(response, str) and response.startswith("Error"):
-        return response, {}
+        # Always convert response to string to ensure consistent handling
+        response_string = str(response)
 
-    content = f"Successfully took screenshot of the code. {response}"
+        # Check if there was an error
+        if response_string.startswith("Error:"):
+            error_msg = response_string[7:].strip()  # Remove "Error: " prefix
+            return error_msg, {"title": "Error", "description": "Screenshot failed", "code": code}
 
-    # 2. Return the content
-    return content, {
-        "title": "Screenshot",
-        "description": "Screenshot",
-        "code": code
-    }
+        # Success case
+        content = f"Successfully took screenshot of the code at {response_string}"
+
+        # 2. Return the content and artifact
+        return content, {
+            "title": "Screenshot",
+            "description": "Screenshot",
+            "code": code,
+            "screenshot_path": response_string
+        }
+    except Exception as e:
+        # Catch any unexpected errors to ensure we always return a tuple
+        logging.exception(
+            "Unexpected error in take_screenshot_tool: %s", str(e))
+        return f"Failed to take screenshot: {str(e)}", {"title": "Error", "description": "Screenshot failed", "code": code}
 
 
 def _local_take_screenshot_and_build(code: str) -> str:
@@ -70,12 +84,13 @@ def _local_take_screenshot_and_build(code: str) -> str:
         # Look for TypeScript errors
         ts_errors = []
         error_message = ""
-        
+
         # Check both stdout and stderr for error messages
         output = result.stdout + "\n" + result.stderr
-        
+
         if "error TS" in output:
-            ts_errors = [line for line in output.split('\n') if "error TS" in line]
+            ts_errors = [line for line in output.split(
+                '\n') if "error TS" in line]
             logging.info("ts_errors: %s", ts_errors)
             logging.error("TypeScript errors detected: %s", ts_errors)
             for error in ts_errors[:5]:  # Show first 5 errors
@@ -111,7 +126,7 @@ def _local_take_screenshot_and_build(code: str) -> str:
             options.add_argument("--no-sandbox")
             options.add_argument("--disable-dev-shm-usage")
             driver = webdriver.Chrome(options=options)
-            driver.set_window_size(320, 240)
+            driver.set_window_size(640, 480)
 
             # Use localhost instead of file://
             driver.get(f"http://localhost:{port}/")

@@ -22,13 +22,6 @@ dependencies = [
     "python-dotenv>=1.0.0",
     "selenium",
     "chromedriver-autoinstaller",
-    "textwrap",
-    "json",
-    "base64",
-    "pathlib",
-    "http-server",
-    "socketserver",
-    "threading",
 ]
 
 [project.optional-dependencies]
