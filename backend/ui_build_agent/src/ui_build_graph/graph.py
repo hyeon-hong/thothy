@@ -50,7 +50,7 @@ def get_llm() -> ChatOpenAI:
         # )
 
         llm = ChatGoogleGenerativeAI(
-            model="gemini-2.0-flash",
+            model="gemini-2.5-flash-preview-05-20",
             temperature=0,
             max_tokens=None,
             timeout=None,
