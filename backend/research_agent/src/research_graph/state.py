@@ -1,25 +1,84 @@
-import operator
-from dataclasses import dataclass, field
-from typing_extensions import Annotated
+from typing import Annotated, List, TypedDict, Literal, Sequence
+import operator  # Add this import
+from pydantic import BaseModel, Field
+from langchain_core.messages import BaseMessage
+from langgraph.graph.message import add_messages
+from langgraph.graph.ui import AnyUIMessage, ui_message_reducer
 
 
-@dataclass(kw_only=True)
-class SummaryState:
-    research_topic: str = field(default=None)  # Report topic
-    search_query: str = field(default=None)  # Search query
-    web_research_results: Annotated[list,
-                                    operator.add] = field(default_factory=list)
-    sources_gathered: Annotated[list, operator.add] = field(
-        default_factory=list)
-    research_loop_count: int = field(default=0)  # Research loop count
-    running_summary: str = field(default=None)  # Final report
+class Section(BaseModel):
+    name: str = Field(
+        description="Name for this section of the report.",
+    )
+    description: str = Field(
+        description="Brief overview of the main topics and concepts to be covered in this section.",
+    )
+    research: bool = Field(
+        description="Whether to perform web research for this section of the report."
+    )
+    content: str = Field(
+        description="The content of the section."
+    )
 
 
-@dataclass(kw_only=True)
-class SummaryStateInput:
-    research_topic: str = field(default=None)  # Report topic
+class Sections(BaseModel):
+    sections: List[Section] = Field(
+        description="Sections of the report.",
+    )
 
 
-@dataclass(kw_only=True)
-class SummaryStateOutput:
-    running_summary: str = field(default=None)  # Final report
+class SearchQuery(BaseModel):
+    search_query: str = Field(None, description="Query for web search.")
+
+
+class Queries(BaseModel):
+    queries: List[SearchQuery] = Field(
+        description="List of search queries.",
+    )
+
+
+class Feedback(BaseModel):
+    grade: Literal["pass", "fail"] = Field(
+        description="Evaluation result indicating whether the response meets requirements ('pass') or needs revision ('fail')."
+    )
+    follow_up_queries: List[SearchQuery] = Field(
+        description="List of follow-up search queries.",
+    )
+
+
+class ReportStateInput(TypedDict):
+    messages: Annotated[Sequence[BaseMessage], add_messages]  # Messages from frontend
+
+
+class ReportStateOutput(TypedDict):
+    final_report: str  # Final report
+
+
+class ReportState(TypedDict):
+    messages: Annotated[Sequence[BaseMessage], add_messages]
+    ui: Annotated[Sequence[AnyUIMessage], ui_message_reducer]
+    topic: str  # Report topic
+    feedback_on_report_plan: str  # Feedback on the report plan
+    sections: list[Section]  # List of report sections
+    # Use Annotated type with add reducer
+    completed_sections: Annotated[list[Section], operator.add]
+    # String of any completed sections from research to write final sections
+    report_sections_from_research: str
+    final_report: str  # Final report
+
+
+class SectionState(TypedDict):
+    topic: str  # Report topic
+    section: Section  # Report section
+    search_iterations: int  # Number of search iterations done
+    search_queries: list[SearchQuery]  # List of search queries
+    source_str: str  # String of formatted source content from web search
+    # String of any completed sections from research to write final sections
+    report_sections_from_research: str
+    # Use Annotated type with add reducer
+    completed_sections: Annotated[list[Section], operator.add]
+
+
+class SectionOutputState(TypedDict):
+    completed_sections: Annotated[list[Section],
+                                  operator.add]  # Use Annotated type here too

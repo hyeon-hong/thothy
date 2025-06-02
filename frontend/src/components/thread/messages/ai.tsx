@@ -16,11 +16,12 @@ import { GenericInterruptView } from "./generic-interrupt";
 import { useArtifact } from "../artifact";
 
 import DataGraphComponent from "@/app/agents/data_agent/artifact";
+import ResearchGraphComponent from "@/app/agents/research_agent/artifact";
+import SlideBuildGraphComponent from "@/app/agents/slide_build_agent/artifact";
 import SlideGraphComponent from "@/app/agents/slide_agent/artifact";
 import UIGraphComponent from "@/app/agents/ui_agent/artifact";
 import UIEvalGraphComponent from "@/app/agents/ui_eval_agent/artifact";
 import UIBuildGraphComponent from "@/app/agents/ui_build_agent/artifact";
-import SlideBuildGraphComponent from "@/app/agents/slide_build_agent/artifact";
 
 function CustomComponent({
   message,
@@ -31,14 +32,19 @@ function CustomComponent({
 }) {
   const artifact = useArtifact();
   const { values } = useStreamContext();
-  const customComponents = values.ui?.filter(
-    (ui) => ui.metadata?.message_id === message.id
-  );
+  console.log("values: ", values);
+  // TODO: Fix this
+  // const customComponents = values.ui?.filter(
+  //   (ui) => ui.metadata?.message_id === message.id
+  // );
+  const customComponents = values.ui;
+  console.log("customComponents: ", customComponents);
 
   const artifactComponents = {
     data_graph: DataGraphComponent,
     slide_graph: SlideGraphComponent,
     slide_build_graph: SlideBuildGraphComponent,
+    research_graph: ResearchGraphComponent,
     ui_graph: UIGraphComponent,
     ui_eval_graph: UIEvalGraphComponent,
     ui_build_graph: UIBuildGraphComponent,
