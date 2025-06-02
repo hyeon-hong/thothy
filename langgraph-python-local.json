@@ -29,6 +29,6 @@
     "ui_build_graph": "./backend/ui_build_agent/src/ui_build_graph/graph.py:graph",
     "ui_eval_graph": "./backend/ui_eval_agent/src/ui_eval_graph/graph.py:graph"
   },
-  "env": "./.env",
+  "env": "./.env.local",
   "python_version": "3.12"
 }
