@@ -1,4 +1,5 @@
 from typing import Literal
+import logging
 
 from langchain.chat_models import init_chat_model
 from langchain_core.messages import HumanMessage, SystemMessage
@@ -37,6 +38,9 @@ from research_graph.utils import (
     select_and_execute_search
 )
 
+# Set up logger with the specified name
+logger = logging.getLogger("thothy-devlop")
+
 # Nodes --
 
 
@@ -57,8 +61,54 @@ async def generate_report_plan(state: ReportState, config: RunnableConfig):
         Dict containing the generated sections
     """
 
-    # Inputs
-    topic = state["topic"]
+    # Get the topic from the last message and save it to the state
+    logger.info(f"State: {state}")
+
+    # Try to get topic from different possible sources
+    topic = None
+
+    # Method 1: Try to get from messages (standard chat flow)
+    messages = state.get("messages", [])
+    logger.info(f"Messages: {messages}")
+    logger.info(f"Messages type: {type(messages)}")
+    logger.info(
+        f"Messages length: {len(messages) if messages else 'None/Empty'}")
+
+    if messages and len(messages) > 0:
+        try:
+            topic = messages[-1].content
+            logger.info(f"Topic extracted from messages: {topic}")
+        except (AttributeError, IndexError) as e:
+            logger.warning(f"Could not extract topic from messages: {e}")
+
+    # Method 2: Try to get topic directly from state (alternative input format)
+    if not topic:
+        topic = state.get("topic")
+        if topic:
+            logger.info(f"Topic found directly in state: {topic}")
+
+    # Method 3: Check if we have any string values in state that could be the topic
+    if not topic:
+        logger.info(
+            f"Full state keys: {list(state.keys()) if hasattr(state, 'keys') else 'Not a dict'}")
+        logger.info(f"Full state content: {state}")
+
+        # Look for any string that might be the topic
+        for key, value in state.items():
+            if isinstance(value, str) and len(value) > 0 and key != "feedback_on_report_plan":
+                topic = value
+                logger.info(
+                    f"Found potential topic in state['{key}']: {topic}")
+                break
+
+    if not topic:
+        logger.error(
+            "No topic found in any format! This indicates a problem with input processing.")
+        raise ValueError(
+            "No topic received. Please provide a topic for report generation.")
+
+    logger.info(f"Final topic set: {topic}")
+
     feedback = state.get("feedback_on_report_plan", None)
 
     # Get configuration
@@ -168,7 +218,7 @@ async def generate_report_plan(state: ReportState, config: RunnableConfig):
         # Get sections
         sections = report_sections.sections
 
-    return {"sections": sections}
+    return {"topic": topic, "sections": sections}
 
 
 def human_feedback(state: ReportState, config: RunnableConfig) -> Command[Literal["generate_report_plan", "build_section_with_web_research"]]:

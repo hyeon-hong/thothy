@@ -1,6 +1,8 @@
-from typing import Annotated, List, TypedDict, Literal
+from typing import Annotated, List, TypedDict, Literal, Sequence
 import operator  # Add this import
 from pydantic import BaseModel, Field
+from langchain_core.messages import BaseMessage
+from langgraph.graph.message import add_messages
 
 
 class Section(BaseModel):
@@ -44,7 +46,7 @@ class Feedback(BaseModel):
 
 
 class ReportStateInput(TypedDict):
-    topic: str  # Report topic
+    messages: Annotated[Sequence[BaseMessage], add_messages]  # Messages from frontend
 
 
 class ReportStateOutput(TypedDict):
@@ -52,6 +54,7 @@ class ReportStateOutput(TypedDict):
 
 
 class ReportState(TypedDict):
+    messages: Annotated[Sequence[BaseMessage], add_messages]
     topic: str  # Report topic
     feedback_on_report_plan: str  # Feedback on the report plan
     sections: list[Section]  # List of report sections
