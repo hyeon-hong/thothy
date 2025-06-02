@@ -8,17 +8,17 @@ authors = [
 license = { text = "Apache-2.0" }
 requires-python = ">=3.12"
 dependencies = [
-    "langgraph>=0.2.55",
-    "langgraph-checkpoint>=2.0.16",
-    "langgraph-sdk>=0.1.32",
-    "langgraph-prebuilt",
-    "langchain>=0.3.9",
-    "langchain-core>=0.3.9",
-    "langchain-openai>=0.3.7",
-    "langchain-community",
-    "pydantic>=2.0.0",
-    "python-dotenv>=1.0.0",
-    "requests",
+    "langgraph>=0.4.7",
+    "langgraph-checkpoint>=2.0.25",
+    "langgraph-sdk>=0.1.66",
+    "langgraph-prebuilt>=0.1.8",
+    "langchain>=0.3.25",
+    "langchain-core>=0.3.63",
+    "langchain-openai>=0.3.18",
+    "langchain-community>=0.3.24",
+    "pydantic>=2.11.4",
+    "python-dotenv>=1.1.0",
+    "requests>=2.32.3",
 ]
 
 [project.optional-dependencies]
