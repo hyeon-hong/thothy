@@ -1323,8 +1323,8 @@ def init_model_with_provider(model_name: str, provider: str, **kwargs) -> BaseCh
                 temperature=0.1
             )
         else:
-            # Use standard init_chat_model for other providers
-            return init_chat_model(model=model_name, model_provider=provider, **kwargs)
+            # Use Gemini as the default provider if not Groq
+            return init_chat_model(model=model_name, model_provider="google_genai", **kwargs)
     except Exception as e:
         print(
             f"Error initializing model {model_name} with provider {provider}: {e}")

@@ -5,7 +5,7 @@ import datetime  # Import datetime for getting current time
 import os
 from typing import Optional
 
-from langchain_openai import ChatOpenAI
+from langchain_google_genai import ChatGoogleGenerativeAI
 from langgraph.checkpoint.memory import MemorySaver
 from langgraph.graph import MessagesState, StateGraph, START, END
 from langgraph.store.base import BaseStore
@@ -16,16 +16,15 @@ logging.basicConfig(level=logging.DEBUG)
 
 # Initialize global LLM
 VLLM_API_URL = os.getenv("VLLM_API_URL")
-llm: Optional[ChatOpenAI] = None
+llm: Optional[ChatGoogleGenerativeAI] = None
 
 
-def get_llm() -> ChatOpenAI:
+def get_llm() -> ChatGoogleGenerativeAI:
     """Get or initialize the LLM."""
     global llm
     if llm is None:
-        llm = ChatOpenAI(
-            model="Qwen/Qwen2.5-1.5B-Instruct",
-            base_url=VLLM_API_URL,
+        llm = ChatGoogleGenerativeAI(
+            model="gemini-2.5-flash-preview-05-20",
             temperature=0.8
         )
     return llm

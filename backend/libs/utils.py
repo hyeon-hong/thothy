@@ -152,7 +152,7 @@ def initialize_memory_manager(
 
     memory_manager = create_memory_store_manager(
         # "anthropic:claude-3-5-sonnet-latest",
-        "openai:gpt-4o-mini",
+        "google_genai:gemini-2.5-flash-preview-05-20",
         schemas=[Triple],
         enable_inserts=True,
         enable_deletes=True,

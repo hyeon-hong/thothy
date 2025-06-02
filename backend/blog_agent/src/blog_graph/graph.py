@@ -74,8 +74,8 @@ tools = [create_blog_post]
 tool_node = ToolNode(tools)
 
 llm = init_chat_model(
-    "gpt-4-turbo-preview",
-    model_provider="openai",
+    "gemini-2.5-flash-preview-05-20",
+    model_provider="google_genai",
     temperature=0.7
 ).bind_tools(tools)
 

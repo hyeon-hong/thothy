@@ -1,7 +1,7 @@
 from typing import Annotated, Sequence, TypedDict
 from langgraph.graph import StateGraph, END, START
 from langgraph.graph.ui import AnyUIMessage, ui_message_reducer, push_ui_message
-from langchain_openai import ChatOpenAI
+from langchain_google_genai import ChatGoogleGenerativeAI
 from langgraph.graph.message import add_messages
 from langchain_core.messages import SystemMessage, AIMessage, BaseMessage
 from langgraph.prebuilt import ToolNode
@@ -47,7 +47,7 @@ def call_model(state: AgentState) -> dict:
     system_message = SystemMessage(content=system_message_content)
 
     # Get the LLM
-    llm = ChatOpenAI(model="gpt-4o-mini", temperature=0)
+    llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash-preview-05-20", temperature=0)
 
     # Bind the tools to the LLM
     llm_with_tools = llm.bind_tools(ALL_TOOLS_LIST)
