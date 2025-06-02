@@ -35,10 +35,10 @@ class Configuration:
     report_structure: str = DEFAULT_REPORT_STRUCTURE  # Defaults to the default report structure
     number_of_queries: int = 2  # Number of search queries to generate per iteration
     max_search_depth: int = 2  # Maximum number of reflection + search iterations
-    planner_provider: str = "groq"  # Defaults to groq as provider
-    planner_model: str = "llama3-70b-8192"  # Defaults to claude-3-7-sonnet-latest
-    writer_provider: str = "groq"  # Defaults to groq as provider
-    writer_model: str = "llama3-8b-8192"  # Defaults to claude-3-5-sonnet-latest
+    planner_provider: str = "anthropic"  # Defaults to groq as provider
+    planner_model: str = "claude-3-7-sonnet-latest"  # Defaults to claude-3-7-sonnet-latest
+    writer_provider: str = "anthropic"  # Defaults to groq as provider
+    writer_model: str = "claude-3-7-sonnet-latest"  # Defaults to claude-3-7-sonnet-latest
     search_api: SearchAPI = SearchAPI.DUCKDUCKGO  # Default to TAVILY
     search_api_config: Optional[Dict[str, Any]] = None
 

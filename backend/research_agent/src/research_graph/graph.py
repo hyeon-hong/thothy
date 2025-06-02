@@ -3,7 +3,6 @@ from typing import Literal
 from langchain.chat_models import init_chat_model
 from langchain_core.messages import HumanMessage, SystemMessage
 from langchain_core.runnables import RunnableConfig
-from langgraph.checkpoint.memory import MemorySaver
 from langgraph.constants import Send
 from langgraph.graph import START, END, StateGraph
 from langgraph.types import Command
@@ -193,15 +192,15 @@ def human_feedback(state: ReportState, config: RunnableConfig) -> Command[Litera
     # Get sections
     topic = state["topic"]
     sections = state['sections']
-    sections_str = "\n\n".join(
-        f"Section: {section.name}\n"
-        f"Description: {section.description}\n"
-        f"Research needed: {'Yes' if section.research else 'No'}\n"
-        for section in sections
-    )
+    # sections_str = "\n\n".join(
+    #     f"Section: {section.name}\n"
+    #     f"Description: {section.description}\n"
+    #     f"Research needed: {'Yes' if section.research else 'No'}\n"
+    #     for section in sections
+    # )
 
     # Get feedback on the report plan from interrupt
-    # interrupt_message = f"""Please provide feedback on the following report plan. 
+    # interrupt_message = f"""Please provide feedback on the following report plan.
     #                     \n\n{sections_str}\n
     #                     \nDoes the report plan meet your needs?\nPass 'true' to approve the report plan.\nOr, provide feedback to regenerate the report plan:"""
 
@@ -560,5 +559,4 @@ builder.add_conditional_edges("gather_completed_sections",
 builder.add_edge("write_final_sections", "compile_final_report")
 builder.add_edge("compile_final_report", END)
 
-memory = MemorySaver()
-graph = builder.compile(checkpointer=memory)
+graph = builder.compile()

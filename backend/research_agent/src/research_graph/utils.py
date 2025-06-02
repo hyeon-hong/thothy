@@ -19,9 +19,10 @@ from langchain_community.retrievers import ArxivRetriever
 from langchain_community.utilities.pubmed import PubMedAPIWrapper
 from langsmith import traceable
 
-from state import Section
 from langchain.chat_models import init_chat_model
 from langchain_core.language_models import BaseChatModel
+
+from research_graph.state import Section
 
 T = TypeVar('T')
 
@@ -126,9 +127,9 @@ def deduplicate_and_format_sources(search_response, max_tokens_per_source, inclu
     # Format output
     formatted_text = "Content from sources:\n"
     for i, source in enumerate(unique_sources.values(), 1):
-        formatted_text += f"{'='*80}\n"  # Clear section separator
+        formatted_text += f"{'=' * 80}\n"  # Clear section separator
         formatted_text += f"Source: {source['title']}\n"
-        formatted_text += f"{'-'*80}\n"  # Subsection separator
+        formatted_text += f"{'-' * 80}\n"  # Subsection separator
         formatted_text += f"URL: {source['url']}\n===\n"
         formatted_text += f"Most relevant content from source: {source['content']}\n===\n"
         if include_raw_content:
@@ -143,7 +144,7 @@ def deduplicate_and_format_sources(search_response, max_tokens_per_source, inclu
             if len(raw_content) > char_limit:
                 raw_content = raw_content[:char_limit] + "... [truncated]"
             formatted_text += f"Full source content limited to {max_tokens_per_source} tokens: {raw_content}\n\n"
-        formatted_text += f"{'='*80}\n\n"  # End section separator
+        formatted_text += f"{'=' * 80}\n\n"  # End section separator
 
     return formatted_text.strip()
 
@@ -153,9 +154,9 @@ def format_sections(sections: list[Section]) -> str:
     formatted_str = ""
     for idx, section in enumerate(sections, 1):
         formatted_str += f"""
-{'='*60}
+{'=' * 60}
 Section {idx}: {section.name}
-{'='*60}
+{'=' * 60}
 Description:
 {section.description}
 Requires Research: 
@@ -280,7 +281,7 @@ def perplexity_search(search_queries):
 
         # First citation gets the full content
         results.append({
-            "title": f"Perplexity Search, Source 1",
+            "title": "Perplexity Search, Source 1",
             "url": citations[0],
             "content": content,
             "raw_content": content,
@@ -864,7 +865,7 @@ async def duckduckgo_search(search_queries):
                 # Increasing delay pattern
                 delay = 2 + (i * 0.5) + (random.random() * 1.0)
                 print(
-                    f"DuckDuckGo search: waiting {delay:.2f}s before query {i+1}/{len(search_queries)}")
+                    f"DuckDuckGo search: waiting {delay:.2f}s before query {i + 1}/{len(search_queries)}")
                 await asyncio.sleep(delay)
 
             # Use our single-query function with retries
@@ -1300,48 +1301,6 @@ async def google_search_async(search_queries: Union[str, List[str]], max_results
         # Only shut down executor if it was created
         if executor:
             executor.shutdown(wait=False)
-
-
-async def select_and_execute_search(search_api: str, query_list: list[str], params_to_pass: dict) -> str:
-    """Select and execute the appropriate search API.
-
-    Args:
-        search_api: Name of the search API to use
-        query_list: List of search queries to execute
-        params_to_pass: Parameters to pass to the search API
-
-    Returns:
-        Formatted string containing search results
-
-    Raises:
-        ValueError: If an unsupported search API is specified
-    """
-    if search_api == "tavily":
-        search_results = await tavily_search_async(query_list, **params_to_pass)
-        return deduplicate_and_format_sources(search_results, max_tokens_per_source=4000, include_raw_content=False)
-    elif search_api == "perplexity":
-        search_results = perplexity_search(query_list, **params_to_pass)
-        return deduplicate_and_format_sources(search_results, max_tokens_per_source=4000)
-    elif search_api == "exa":
-        search_results = await exa_search(query_list, **params_to_pass)
-        return deduplicate_and_format_sources(search_results, max_tokens_per_source=4000)
-    elif search_api == "arxiv":
-        search_results = await arxiv_search_async(query_list, **params_to_pass)
-        return deduplicate_and_format_sources(search_results, max_tokens_per_source=4000)
-    elif search_api == "pubmed":
-        search_results = await pubmed_search_async(query_list, **params_to_pass)
-        return deduplicate_and_format_sources(search_results, max_tokens_per_source=4000)
-    elif search_api == "linkup":
-        search_results = await linkup_search(query_list, **params_to_pass)
-        return deduplicate_and_format_sources(search_results, max_tokens_per_source=4000)
-    elif search_api == "duckduckgo":
-        search_results = await duckduckgo_search(query_list)
-        return deduplicate_and_format_sources(search_results, max_tokens_per_source=4000)
-    elif search_api == "googlesearch":
-        search_results = await google_search_async(query_list, **params_to_pass)
-        return deduplicate_and_format_sources(search_results, max_tokens_per_source=4000)
-    else:
-        raise ValueError(f"Unsupported search API: {search_api}")
 
 
 def init_model_with_provider(model_name: str, provider: str, **kwargs) -> BaseChatModel:
