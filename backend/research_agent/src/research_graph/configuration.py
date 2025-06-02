@@ -12,9 +12,9 @@ DEFAULT_REPORT_STRUCTURE = """Use this structure to create a report on the user-
 
 2. Main Body Sections:
    - Each section should focus on a sub-topic of the user-provided topic
-   
+
 3. Conclusion
-   - Aim for 1 structural element (either a list of table) that distills the main body sections 
+   - Aim for 1 structural element (either a list of table) that distills the main body sections
    - Provide a concise summary of the report"""
 
 
@@ -36,10 +36,12 @@ class Configuration:
     number_of_queries: int = 2  # Number of search queries to generate per iteration
     max_search_depth: int = 2  # Maximum number of reflection + search iterations
     planner_provider: str = "anthropic"  # Defaults to groq as provider
-    planner_model: str = "claude-3-7-sonnet-latest"  # Defaults to claude-3-7-sonnet-latest
+    # Defaults to claude-3-7-sonnet-latest
+    planner_model: str = "claude-3-7-sonnet-latest"
     writer_provider: str = "anthropic"  # Defaults to groq as provider
-    writer_model: str = "claude-3-7-sonnet-latest"  # Defaults to claude-3-7-sonnet-latest
-    search_api: SearchAPI = SearchAPI.DUCKDUCKGO  # Default to TAVILY
+    # Defaults to claude-3-7-sonnet-latest
+    writer_model: str = "claude-3-7-sonnet-latest"
+    search_api: SearchAPI = SearchAPI.TAVILY  # Default to TAVILY
     search_api_config: Optional[Dict[str, Any]] = None
 
     @classmethod

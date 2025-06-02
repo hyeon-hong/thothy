@@ -86,8 +86,8 @@ async def generate_report_plan(state: ReportState, config: RunnableConfig):
         topic=topic, report_organization=report_structure, number_of_queries=number_of_queries)
 
     # Generate queries
-    results = structured_llm.invoke([SystemMessage(content=system_instructions_query),
-                                     HumanMessage(content="Generate search queries that will help with planning the sections of the report.")])
+    results = await structured_llm.ainvoke([SystemMessage(content=system_instructions_query),
+                                            HumanMessage(content="Generate search queries that will help with planning the sections of the report.")])
 
     # Web search
     query_list = [query.search_query for query in results.queries]
@@ -114,8 +114,8 @@ async def generate_report_plan(state: ReportState, config: RunnableConfig):
                                       model_provider=planner_provider)
 
         # Get raw response and parse manually
-        response = planner_llm.invoke([SystemMessage(content=system_instructions_sections),
-                                      HumanMessage(content=planner_message)])
+        response = await planner_llm.ainvoke([SystemMessage(content=system_instructions_sections),
+                                             HumanMessage(content=planner_message)])
 
         # Extract JSON from the response
         import json
@@ -162,8 +162,8 @@ async def generate_report_plan(state: ReportState, config: RunnableConfig):
 
         # Generate the report sections with structured output
         structured_llm = planner_llm.with_structured_output(Sections)
-        report_sections = structured_llm.invoke([SystemMessage(content=system_instructions_sections),
-                                                HumanMessage(content=planner_message)])
+        report_sections = await structured_llm.ainvoke([SystemMessage(content=system_instructions_sections),
+                                                       HumanMessage(content=planner_message)])
 
         # Get sections
         sections = report_sections.sections
@@ -227,7 +227,7 @@ def human_feedback(state: ReportState, config: RunnableConfig) -> Command[Litera
     # raise TypeError(f"Interrupt value of type {type(feedback)} is not supported.")
 
 
-def generate_queries(state: SectionState, config: RunnableConfig):
+async def generate_queries(state: SectionState, config: RunnableConfig):
     """Generate search queries for researching a specific section.
 
     This node uses an LLM to generate targeted search queries based on the 
@@ -262,8 +262,8 @@ def generate_queries(state: SectionState, config: RunnableConfig):
                                                            number_of_queries=number_of_queries)
 
     # Generate queries
-    queries = structured_llm.invoke([SystemMessage(content=system_instructions),
-                                     HumanMessage(content="Generate search queries on the provided topic.")])
+    queries = await structured_llm.ainvoke([SystemMessage(content=system_instructions),
+                                            HumanMessage(content="Generate search queries on the provided topic.")])
     # print("\n-------Queries:----------",queries)
     return {"search_queries": queries.queries}
 
@@ -304,7 +304,7 @@ async def search_web(state: SectionState, config: RunnableConfig):
     return {"source_str": source_str, "search_iterations": state["search_iterations"] + 1}
 
 
-def write_section(state: SectionState, config: RunnableConfig) -> Command[Literal[END, "search_web"]]:
+async def write_section(state: SectionState, config: RunnableConfig) -> Command[Literal[END, "search_web"]]:
     """Write a section of the report and evaluate if more research is needed.
 
     This node:
@@ -343,8 +343,8 @@ def write_section(state: SectionState, config: RunnableConfig) -> Command[Litera
     writer_model = init_chat_model(
         model=writer_model_name, model_provider=writer_provider)
 
-    section_content = writer_model.invoke([SystemMessage(content=section_writer_instructions),
-                                           HumanMessage(content=section_writer_inputs_formatted)])
+    section_content = await writer_model.ainvoke([SystemMessage(content=section_writer_instructions),
+                                                  HumanMessage(content=section_writer_inputs_formatted)])
 
     # Write content to the section object
     section.content = section_content.content
@@ -373,8 +373,8 @@ def write_section(state: SectionState, config: RunnableConfig) -> Command[Litera
         reflection_model = init_chat_model(model=planner_model,
                                            model_provider=planner_provider).with_structured_output(Feedback)
     # Generate feedback
-    feedback = reflection_model.invoke([SystemMessage(content=section_grader_instructions_formatted),
-                                        HumanMessage(content=section_grader_message)])
+    feedback = await reflection_model.ainvoke([SystemMessage(content=section_grader_instructions_formatted),
+                                               HumanMessage(content=section_grader_message)])
 
     # If the section is passing or the max search depth is reached, publish the section to completed sections
     if feedback.grade == "pass" or state["search_iterations"] >= configurable.max_search_depth:
@@ -393,7 +393,7 @@ def write_section(state: SectionState, config: RunnableConfig) -> Command[Litera
         )
 
 
-def write_final_sections(state: SectionState, config: RunnableConfig):
+async def write_final_sections(state: SectionState, config: RunnableConfig):
     """Write sections that don't require research using completed sections as context.
 
     This node handles sections like conclusions or summaries that build on
@@ -425,8 +425,8 @@ def write_final_sections(state: SectionState, config: RunnableConfig):
     writer_model = init_chat_model(
         model=writer_model_name, model_provider=writer_provider)
 
-    section_content = writer_model.invoke([SystemMessage(content=system_instructions),
-                                           HumanMessage(content="Generate a report section based on the provided sources.")])
+    section_content = await writer_model.ainvoke([SystemMessage(content=system_instructions),
+                                                  HumanMessage(content="Generate a report section based on the provided sources.")])
 
     # Write content to section
     section.content = section_content.content
