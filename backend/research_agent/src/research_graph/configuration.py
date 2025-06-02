@@ -1,61 +1,46 @@
 import os
 from enum import Enum
-from pydantic import BaseModel, Field
-from typing import Any, Optional, Literal
+from dataclasses import dataclass, fields
+from typing import Any, Optional, Dict
 
 from langchain_core.runnables import RunnableConfig
+
+DEFAULT_REPORT_STRUCTURE = """Use this structure to create a report on the user-provided topic:
+
+1. Introduction (no research needed)
+   - Brief overview of the topic area
+
+2. Main Body Sections:
+   - Each section should focus on a sub-topic of the user-provided topic
+   
+3. Conclusion
+   - Aim for 1 structural element (either a list of table) that distills the main body sections 
+   - Provide a concise summary of the report"""
 
 
 class SearchAPI(Enum):
     PERPLEXITY = "perplexity"
     TAVILY = "tavily"
+    EXA = "exa"
+    ARXIV = "arxiv"
+    PUBMED = "pubmed"
+    LINKUP = "linkup"
     DUCKDUCKGO = "duckduckgo"
-    SEARXNG = "searxng"
+    GOOGLESEARCH = "googlesearch"
 
 
-class Configuration(BaseModel):
-    """The configurable fields for the research assistant."""
-
-    max_web_research_loops: int = Field(
-        default=3,
-        title="Research Depth",
-        description="Number of research iterations to perform"
-    )
-    local_llm: str = Field(
-        default="llama3.2",
-        title="LLM Model Name",
-        description="Name of the LLM model to use"
-    )
-    llm_provider: Literal["ollama", "lmstudio"] = Field(
-        default="ollama",
-        title="LLM Provider",
-        description="Provider for the LLM (Ollama or LMStudio)"
-    )
-    search_api: Literal["perplexity", "tavily", "duckduckgo", "searxng"] = Field(
-        default="duckduckgo",
-        title="Search API",
-        description="Web search API to use"
-    )
-    fetch_full_page: bool = Field(
-        default=True,
-        title="Fetch Full Page",
-        description="Include the full page content in the search results"
-    )
-    ollama_base_url: str = Field(
-        default="http://localhost:11434/",
-        title="Ollama Base URL",
-        description="Base URL for Ollama API"
-    )
-    lmstudio_base_url: str = Field(
-        default="http://localhost:1234/v1",
-        title="LMStudio Base URL",
-        description="Base URL for LMStudio OpenAI-compatible API"
-    )
-    strip_thinking_tokens: bool = Field(
-        default=True,
-        title="Strip Thinking Tokens",
-        description="Whether to strip <think> tokens from model responses"
-    )
+@dataclass(kw_only=True)
+class Configuration:
+    """The configurable fields for the chatbot."""
+    report_structure: str = DEFAULT_REPORT_STRUCTURE  # Defaults to the default report structure
+    number_of_queries: int = 2  # Number of search queries to generate per iteration
+    max_search_depth: int = 2  # Maximum number of reflection + search iterations
+    planner_provider: str = "groq"  # Defaults to groq as provider
+    planner_model: str = "llama3-70b-8192"  # Defaults to claude-3-7-sonnet-latest
+    writer_provider: str = "groq"  # Defaults to groq as provider
+    writer_model: str = "llama3-8b-8192"  # Defaults to claude-3-5-sonnet-latest
+    search_api: SearchAPI = SearchAPI.DUCKDUCKGO  # Default to TAVILY
+    search_api_config: Optional[Dict[str, Any]] = None
 
     @classmethod
     def from_runnable_config(
@@ -65,14 +50,9 @@ class Configuration(BaseModel):
         configurable = (
             config["configurable"] if config and "configurable" in config else {}
         )
-
-        # Get raw values from environment or config
-        raw_values: dict[str, Any] = {
-            name: os.environ.get(name.upper(), configurable.get(name))
-            for name in cls.model_fields.keys()
+        values: dict[str, Any] = {
+            f.name: os.environ.get(f.name.upper(), configurable.get(f.name))
+            for f in fields(cls)
+            if f.init
         }
-
-        # Filter out None values
-        values = {k: v for k, v in raw_values.items() if v is not None}
-
-        return cls(**values)
+        return cls(**{k: v for k, v in values.items() if v})
