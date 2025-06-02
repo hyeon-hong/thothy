@@ -2,11 +2,12 @@ from typing import Literal
 import logging
 
 from langchain.chat_models import init_chat_model
-from langchain_core.messages import HumanMessage, SystemMessage
+from langchain_core.messages import HumanMessage, SystemMessage, AIMessage
 from langchain_core.runnables import RunnableConfig
 from langgraph.constants import Send
 from langgraph.graph import START, END, StateGraph
 from langgraph.types import Command
+from langgraph.graph.ui import push_ui_message
 
 from research_graph.state import (
     ReportStateInput,
@@ -40,6 +41,9 @@ from research_graph.utils import (
 
 # Set up logger with the specified name
 logger = logging.getLogger("thothy-devlop")
+
+# UI Component name for research agent
+UI_COMPONENT_NAME = "research_graph"
 
 # Nodes --
 
@@ -523,6 +527,13 @@ def compile_final_report(state: ReportState):
 
     # Compile final report
     all_sections = "\n\n".join([s.content for s in sections])
+    
+    # Create a simple AI message for the UI message
+    ui_message = AIMessage(content="Research report generated successfully!")
+    
+    # Send the report data to frontend
+    report_data = {"content": all_sections}
+    push_ui_message(UI_COMPONENT_NAME, report_data, message=ui_message)
 
     return ReportStateOutput(final_report=all_sections)
 

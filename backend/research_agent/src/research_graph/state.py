@@ -3,6 +3,7 @@ import operator  # Add this import
 from pydantic import BaseModel, Field
 from langchain_core.messages import BaseMessage
 from langgraph.graph.message import add_messages
+from langgraph.graph.ui import AnyUIMessage, ui_message_reducer
 
 
 class Section(BaseModel):
@@ -55,6 +56,7 @@ class ReportStateOutput(TypedDict):
 
 class ReportState(TypedDict):
     messages: Annotated[Sequence[BaseMessage], add_messages]
+    ui: Annotated[Sequence[AnyUIMessage], ui_message_reducer]
     topic: str  # Report topic
     feedback_on_report_plan: str  # Feedback on the report plan
     sections: list[Section]  # List of report sections
