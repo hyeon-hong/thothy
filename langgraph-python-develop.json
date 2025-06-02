@@ -4,9 +4,15 @@
     "./backend/chat_agent",
     "./backend/data_agent",
     "./backend/news_agent",
+    "./backend/research_agent",
     "./backend/security",
+    "./backend/slide_agent",
+    "./backend/slide_build_agent",
     "./backend/staff_agent",
     "./backend/team_agent",
+    "./backend/ui_agent",
+    "./backend/ui_build_agent",
+    "./backend/ui_eval_agent",
     "./backend/libs"
   ],
   "graphs": {
@@ -14,8 +20,14 @@
     "chat_graph": "./backend/chat_agent/src/chat_graph/graph.py:graph",
     "data_graph": "./backend/data_agent/src/data_graph/graph.py:graph",
     "news_graph": "./backend/news_agent/src/news_graph/graph.py:graph",
+    "research_graph": "./backend/research_agent/src/research_graph/graph.py:graph",
+    "slide_graph": "./backend/slide_agent/src/slide_graph/graph.py:graph",
+    "slide_build_graph": "./backend/slide_build_agent/src/slide_build_graph/graph.py:graph",
     "staff_graph": "./backend/staff_agent/src/staff_graph/graph.py:graph",
-    "team_graph": "./backend/team_agent/src/team_graph/graph.py:graph"
+    "team_graph": "./backend/team_agent/src/team_graph/graph.py:graph",
+    "ui_graph": "./backend/ui_agent/src/ui_graph/graph.py:graph",
+    "ui_build_graph": "./backend/ui_build_agent/src/ui_build_graph/graph.py:graph",
+    "ui_eval_graph": "./backend/ui_eval_agent/src/ui_eval_graph/graph.py:graph"
   },
   "auth": {
     "path": "./backend/security/auth.py:auth",
