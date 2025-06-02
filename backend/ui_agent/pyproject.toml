@@ -30,7 +30,11 @@ requires = ["setuptools>=73.0.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools]
-packages = ["ui_graph"]
+packages = [
+    "ui_graph",
+    "ui_graph.lib",
+    "ui_graph.lib.shadcn_docs"
+]
 [tool.setuptools.package-dir]
 "ui_graph" = "src/ui_graph"
 
