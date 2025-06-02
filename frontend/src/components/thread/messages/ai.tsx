@@ -16,9 +16,9 @@ import { GenericInterruptView } from "./generic-interrupt";
 import { useArtifact } from "../artifact";
 
 import DataGraphComponent from "@/app/agents/data_agent/artifact";
+import ResearchGraphComponent from "@/app/agents/research_agent/artifact";
 import SlideBuildGraphComponent from "@/app/agents/slide_build_agent/artifact";
 import SlideGraphComponent from "@/app/agents/slide_agent/artifact";
-import ResearchGraphComponent from "@/app/agents/research_agent/artifact";
 import UIGraphComponent from "@/app/agents/ui_agent/artifact";
 import UIEvalGraphComponent from "@/app/agents/ui_eval_agent/artifact";
 import UIBuildGraphComponent from "@/app/agents/ui_build_agent/artifact";

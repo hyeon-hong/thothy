@@ -65,18 +65,11 @@ async def generate_report_plan(state: ReportState, config: RunnableConfig):
         Dict containing the generated sections
     """
 
-    # Get the topic from the last message and save it to the state
-    logger.info(f"State: {state}")
-
     # Try to get topic from different possible sources
     topic = None
 
     # Method 1: Try to get from messages (standard chat flow)
     messages = state.get("messages", [])
-    logger.info(f"Messages: {messages}")
-    logger.info(f"Messages type: {type(messages)}")
-    logger.info(
-        f"Messages length: {len(messages) if messages else 'None/Empty'}")
 
     if messages and len(messages) > 0:
         try:
@@ -161,68 +154,33 @@ async def generate_report_plan(state: ReportState, config: RunnableConfig):
     planner_message = """Generate the sections of the report. Each section must have: name, description, research (boolean indicating if research is needed), and content fields.
                       Format your response as a valid JSON object containing a 'sections' array."""
 
-    # Run the planner with provider-specific handling
-    if planner_provider == "groq":
-        # For Groq, avoid using structured output directly
+    # Use structured output for all providers
+    if planner_model == "claude-3-7-sonnet-latest":
+        planner_llm = init_chat_model(model=planner_model,
+                                      model_provider=planner_provider,
+                                      max_tokens=20_000,
+                                      thinking={"type": "enabled", "budget_tokens": 16_000})
+    else:
         planner_llm = init_chat_model(model=planner_model,
                                       model_provider=planner_provider)
 
-        # Get raw response and parse manually
-        response = await planner_llm.ainvoke([SystemMessage(content=system_instructions_sections),
-                                             HumanMessage(content=planner_message)])
+    # Generate the report sections with structured output
+    structured_llm = planner_llm.with_structured_output(Sections)
+    report_sections = await structured_llm.ainvoke([SystemMessage(content=system_instructions_sections),
+                                                   HumanMessage(content=planner_message)])
 
-        # Extract JSON from the response
-        import json
-        import re
+    # Get sections
+    sections = report_sections.sections
 
-        # Try to extract JSON using regex for flexibility
-        content = response.content
-        json_match = re.search(r'```json\s*([\s\S]*?)\s*```', content)
-        if json_match:
-            json_str = json_match.group(1)
-        else:
-            # If no code block, try to find JSON directly
-            json_str = re.search(r'(\{[\s\S]*\})', content).group(1)
+    logger.info(f"report_sections: {report_sections}")
 
-        try:
-            # Parse the JSON
-            sections_data = json.loads(json_str)
-            # Convert to Section objects
-            from state import Section
-            sections = [Section(**section_data)
-                        for section_data in sections_data.get('sections', [])]
-        except Exception as e:
-            print(f"Error parsing sections JSON: {e}")
-            # Fallback to a basic structure
-            from state import Section
-            sections = [
-                Section(name="Introduction", description="Introduction to the topic",
-                        research=False, content=""),
-                Section(name="Main Content",
-                        description=f"Primary information about {topic}", research=True, content=""),
-                Section(name="Conclusion", description="Summary of findings",
-                        research=False, content="")
-            ]
-    else:
-        # For other providers like OpenAI, use structured output
-        if planner_model == "claude-3-7-sonnet-latest":
-            planner_llm = init_chat_model(model=planner_model,
-                                          model_provider=planner_provider,
-                                          max_tokens=20_000,
-                                          thinking={"type": "enabled", "budget_tokens": 16_000})
-        else:
-            planner_llm = init_chat_model(model=planner_model,
-                                          model_provider=planner_provider)
+    # Push the report sections to the UI with message
+    ui_message = AIMessage(
+        content=f"Report sections generated successfully! {sections}")
+    push_ui_message(UI_COMPONENT_NAME, {
+                    "sections": sections, "topic": topic}, message=ui_message)
 
-        # Generate the report sections with structured output
-        structured_llm = planner_llm.with_structured_output(Sections)
-        report_sections = await structured_llm.ainvoke([SystemMessage(content=system_instructions_sections),
-                                                       HumanMessage(content=planner_message)])
-
-        # Get sections
-        sections = report_sections.sections
-
-    return {"topic": topic, "sections": sections}
+    return {"topic": topic, "sections": sections, "messages": [report_sections]}
 
 
 def human_feedback(state: ReportState, config: RunnableConfig) -> Command[Literal["generate_report_plan", "build_section_with_web_research"]]:
@@ -485,6 +443,12 @@ async def write_final_sections(state: SectionState, config: RunnableConfig):
     # Write content to section
     section.content = section_content.content
 
+    # Push the section content to the UI with message
+    ui_message = AIMessage(
+        content=f"Section {section.name} generated successfully!")
+    push_ui_message(UI_COMPONENT_NAME, {
+                    "content": section.content}, message=ui_message)
+
     # Write the updated section to completed sections
     return {"completed_sections": [section]}
 
@@ -514,7 +478,6 @@ def gather_completed_sections(state: ReportState):
 def compile_final_report(state: ReportState):
     """Compile all sections into the final report."""
 
-    print("Compiling final report with state:", state)
     # Get sections
     sections = state["sections"]
     completed_sections = {
@@ -527,10 +490,10 @@ def compile_final_report(state: ReportState):
 
     # Compile final report
     all_sections = "\n\n".join([s.content for s in sections])
-    
+
     # Create a simple AI message for the UI message
     ui_message = AIMessage(content="Research report generated successfully!")
-    
+
     # Send the report data to frontend
     report_data = {"content": all_sections}
     push_ui_message(UI_COMPONENT_NAME, report_data, message=ui_message)
@@ -612,12 +575,13 @@ builder.add_node("compile_final_report", compile_final_report)
 
 # Add edges
 builder.add_edge(START, "generate_report_plan")
-builder.add_edge("generate_report_plan", "human_feedback")
-builder.add_edge("build_section_with_web_research",
-                 "gather_completed_sections")
-builder.add_conditional_edges("gather_completed_sections",
-                              initiate_final_section_writing, ["write_final_sections"])
-builder.add_edge("write_final_sections", "compile_final_report")
-builder.add_edge("compile_final_report", END)
+builder.add_edge("generate_report_plan", END)
+# builder.add_edge("generate_report_plan", "human_feedback")
+# builder.add_edge("build_section_with_web_research",
+#                  "gather_completed_sections")
+# builder.add_conditional_edges("gather_completed_sections",
+#                               initiate_final_section_writing, ["write_final_sections"])
+# builder.add_edge("write_final_sections", "compile_final_report")
+# builder.add_edge("compile_final_report", END)
 
 graph = builder.compile()

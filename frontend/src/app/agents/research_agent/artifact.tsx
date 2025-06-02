@@ -8,8 +8,22 @@ import {
   CardFooter 
 } from "@/components/ui/card";
 
+// TypeScript interfaces matching the Python classes from state.py
+interface Section {
+  name: string;
+  description: string;
+  research: boolean;
+  content: string;
+}
+
+interface Sections {
+  sections: Section[];
+}
+
 export default function ResearchGraphComponent(props: {
   content?: string;
+  topic?: string;
+  sections?: Sections;
 }) {
   const { meta } = useStreamContext<
     { research_report?: { content: string } },
@@ -22,6 +36,10 @@ export default function ResearchGraphComponent(props: {
   useEffect(() => {
     setOpen(true);
   }, [context, props.content]);
+  console.log("props: ", props);
+  console.log("props.content: ", props.content);
+  console.log("props.topic: ", props.topic);
+  console.log("props.sections: ", props.sections);
 
   // Get content from props or context, prioritizing props
   const reportContent = props.content || context.research_report?.content;
@@ -70,6 +88,57 @@ export default function ResearchGraphComponent(props: {
       
       <ArtifactContent title={<div>Research Report</div>}>
         <div className="space-y-4">
+          {/* Display topic if available */}
+          {props.topic && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Research Topic</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-lg font-medium">{props.topic}</p>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Display sections if available */}
+          {props.sections && props.sections.sections.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Report Sections</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {props.sections.sections.map((section, index) => (
+                    <div key={index} className="border rounded-lg p-4 bg-gray-50">
+                      <div className="flex items-center justify-between mb-2">
+                        <h3 className="text-lg font-semibold">{section.name}</h3>
+                        <span className={`px-2 py-1 text-xs rounded ${
+                          section.research 
+                            ? 'bg-blue-100 text-blue-800' 
+                            : 'bg-gray-100 text-gray-800'
+                        }`}>
+                          {section.research ? 'Research Required' : 'No Research'}
+                        </span>
+                      </div>
+                      <p className="text-gray-600 mb-3">{section.description}</p>
+                      {section.content && (
+                        <div className="bg-white p-3 rounded border">
+                          <h4 className="font-medium mb-2">Content:</h4>
+                          <div className="text-gray-700 leading-relaxed">
+                            {section.content.split('\n').map((line, lineIndex) => (
+                              <p key={lineIndex} className="mb-1">{line}</p>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Display report content if available */}
           {reportContent ? (
             <Card>
               <CardHeader>
