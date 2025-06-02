@@ -32,9 +32,13 @@ function CustomComponent({
 }) {
   const artifact = useArtifact();
   const { values } = useStreamContext();
-  const customComponents = values.ui?.filter(
-    (ui) => ui.metadata?.message_id === message.id
-  );
+  console.log("values: ", values);
+  // TODO: Fix this
+  // const customComponents = values.ui?.filter(
+  //   (ui) => ui.metadata?.message_id === message.id
+  // );
+  const customComponents = values.ui;
+  console.log("customComponents: ", customComponents);
 
   const artifactComponents = {
     data_graph: DataGraphComponent,
