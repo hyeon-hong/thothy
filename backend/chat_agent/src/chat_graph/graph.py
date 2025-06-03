@@ -6,13 +6,9 @@ import os
 from typing import Optional
 
 from langchain_google_genai import ChatGoogleGenerativeAI
-from langgraph.checkpoint.memory import MemorySaver
 from langgraph.graph import MessagesState, StateGraph, START, END
 from langgraph.store.base import BaseStore
 from chat_graph.configuration import ChatConfigurable
-
-# Configure logging to hide INFO messages
-logging.basicConfig(level=logging.DEBUG)
 
 # Initialize global LLM
 VLLM_API_URL = os.getenv("VLLM_API_URL")
@@ -73,7 +69,5 @@ workflow.add_edge(START, "chatbot")
 workflow.add_edge("chatbot", END)
 
 # Compile graph
-graph = workflow.compile(checkpointer=MemorySaver())
+graph = workflow.compile()
 graph.name = "chat_graph"
-
-__all__ = ["graph"]

@@ -6,7 +6,6 @@ from langgraph.types import Command, interrupt
 from langgraph.graph import MessagesState
 from typing_extensions import TypedDict
 from langchain.chat_models import init_chat_model
-from langgraph.checkpoint.memory import MemorySaver
 from langgraph.store.base import BaseStore
 
 from team_graph.configuration import TeamConfigurable
@@ -376,7 +375,5 @@ builder.add_edge("init_request", "team_supervisor")
 builder.add_edge("finish_node", END)
 
 # Compile the graph
-graph = builder.compile(checkpointer=MemorySaver(), store=store)
+graph = builder.compile(store=store)
 graph.name = "team_graph"
-
-__all__ = ["graph"]

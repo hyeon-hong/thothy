@@ -8,18 +8,10 @@ from pydantic import BaseModel
 from langchain.chat_models import init_chat_model
 from langchain.tools import tool
 
-from langgraph.checkpoint.memory import MemorySaver
 from langgraph.graph import MessagesState, StateGraph, START, END
 from news_graph.configuration import NewsConfigurable
 from news_graph.tools import fetch_hackernews_articles
 from langgraph.prebuilt import ToolNode
-
-# Configure logging to hide INFO messages
-logging.basicConfig(level=logging.WARNING)
-# Set specific loggers for langgraph and related libraries to WARNING level
-logging.getLogger("langgraph").setLevel(logging.WARNING)
-logging.getLogger("langchain").setLevel(logging.WARNING)
-logging.getLogger("langmem").setLevel(logging.WARNING)
 
 
 class NewsPost(BaseModel):
@@ -115,7 +107,5 @@ workflow.add_conditional_edges("agent", should_continue, ["tools", END])
 workflow.add_edge("tools", "agent")
 
 # Compile graph
-graph = workflow.compile(checkpointer=MemorySaver())
+graph = workflow.compile()
 graph.name = "news_graph"
-
-__all__ = ["graph"]
