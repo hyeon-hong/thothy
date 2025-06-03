@@ -97,7 +97,7 @@ async def call_model(state: MessagesState, config: BlogConfigurable):
         f"includes proper HTML tags with the user_id of {user_id}."
     )
     messages = [{"role": "system", "content": system_msg}] + state["messages"]
-    response = llm.invoke(messages)
+    response = await llm.ainvoke(messages)
     return {"messages": [response]}
 
 

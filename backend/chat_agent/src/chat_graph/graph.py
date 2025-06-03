@@ -4,6 +4,7 @@ import logging
 import datetime  # Import datetime for getting current time
 import os
 from typing import Optional
+import asyncio
 
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langgraph.graph import MessagesState, StateGraph, START, END
@@ -15,14 +16,16 @@ VLLM_API_URL = os.getenv("VLLM_API_URL")
 llm: Optional[ChatGoogleGenerativeAI] = None
 
 
-def get_llm() -> ChatGoogleGenerativeAI:
-    """Get or initialize the LLM."""
+async def get_llm() -> ChatGoogleGenerativeAI:
+    """Get or initialize the LLM asynchronously."""
     global llm
     if llm is None:
-        llm = ChatGoogleGenerativeAI(
-            model="gemini-2.5-flash-preview-05-20",
-            temperature=0.8
-        )
+        def create_llm():
+            return ChatGoogleGenerativeAI(
+                model="gemini-2.5-flash-preview-05-20",
+                temperature=0.8
+            )
+        llm = await asyncio.to_thread(create_llm)
     return llm
 
 
@@ -43,12 +46,10 @@ async def chatbot(
     system_msg = configurable.system_prompt.format(time=current_time)
 
     # Get the LLM instance
-    chat_model = get_llm()
-    logging.info(f"Using model: {chat_model}")
+    chat_model = await get_llm()
 
     # Invoke the LLM
-    logging.info(f"Message: {state['messages']}")
-    response = chat_model.invoke(
+    response = await chat_model.ainvoke(
         [{"role": "system", "content": system_msg}] + state["messages"]
     )
     logging.info(f"Response: {response}")

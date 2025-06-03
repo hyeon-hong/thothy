@@ -53,7 +53,7 @@ def call_model(state: AgentState) -> dict:
     llm_with_tools = llm.bind_tools(ALL_TOOLS_LIST)
 
     # Invoke the LLM
-    response = llm_with_tools.invoke([system_message] + messages)
+    response = await llm_with_tools.ainvoke([system_message] + messages)
 
     # Push the response to the UI
     push_ui_message(UI_COMPONENT_NAME, {}, message=response)

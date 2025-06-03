@@ -90,7 +90,7 @@ async def call_model(state: MessagesState):
         "news, you can specify how many articles to fetch."
     )
     messages = [{"role": "system", "content": system_msg}] + state["messages"]
-    response = llm.invoke(messages)
+    response = await llm.ainvoke(messages)
     return {"messages": [response]}
 
 
