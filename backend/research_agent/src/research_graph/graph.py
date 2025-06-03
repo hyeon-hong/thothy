@@ -177,7 +177,7 @@ async def generate_report_plan(state: ReportState, config: RunnableConfig):
     ui_message = AIMessage(
         content="Report sections generated successfully!")
     push_ui_message(UI_COMPONENT_NAME, {
-                    "sections": sections, "topic": topic}, message=ui_message)
+                    "topic": topic, "sections": sections}, message=ui_message)
 
     return {"topic": topic, "sections": sections, "messages": [ui_message]}
 
