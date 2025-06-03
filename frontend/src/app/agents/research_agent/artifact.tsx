@@ -58,11 +58,7 @@ export default function ResearchGraphComponent(props: {
 
   // Initialize updated sections when props.sections changes
   useEffect(() => {
-    console.log("props.sections: ", props.sections);
-
     const sectionsArray = getSectionsArray();
-    console.log("sectionsArray: ", sectionsArray);
-
     if (sectionsArray.length > 0) {
       persistentSectionsRef.current = sectionsArray;
     }
@@ -70,12 +66,7 @@ export default function ResearchGraphComponent(props: {
 
   // Update section content when section_update is received
   useEffect(() => {
-    console.log("props.sections: ", props.sections);
-    console.log("props.section_update: ", props.section_update);
-
     if (props.section_update) {
-      console.log("Updating section content for:", props.section_update.name);
-
       setCompletedSections((prev) => {
         const updated = new Map(prev);
         updated.set(props.section_update!.name, props.section_update!.content);
@@ -111,7 +102,6 @@ export default function ResearchGraphComponent(props: {
 
   // Track persistentSections changes
   useEffect(() => {
-    console.log("persistentSections updated:", persistentSectionsRef.current);
   }, [persistentSectionsRef.current]);
 
   // Get content from props or context, prioritizing props
@@ -140,53 +130,7 @@ export default function ResearchGraphComponent(props: {
     content: completedSections.get(section.name) || section.content,
   }));
 
-  console.log("persistentSections:", persistentSectionsRef.current);
-  console.log("completedSections:", completedSections);
-  console.log("sectionsToRender:", sectionsToRender);
-
   // Format the report content with proper markdown-like styling
-  const formatReportContent = (content: string) => {
-    if (!content) return "No report content available.";
-
-    // Split content into sections and format
-    const sections = content.split("\n\n");
-    return sections
-      .map((section, index) => {
-        if (section.trim().startsWith("#")) {
-          // This is a header
-          const level = section.match(/^#+/)?.[0].length || 1;
-          const text = section.replace(/^#+\s*/, "");
-          const headerClass =
-            level === 1
-              ? "text-2xl font-bold mb-4"
-              : level === 2
-                ? "text-xl font-semibold mb-3"
-                : "text-lg font-medium mb-2";
-          return (
-            <div key={index} className={headerClass}>
-              {text}
-            </div>
-          );
-        } else if (section.trim()) {
-          // Regular paragraph content
-          return (
-            <div key={index} className="mb-4 text-gray-700 leading-relaxed">
-              {section
-                .trim()
-                .split("\n")
-                .map((line, lineIndex) => (
-                  <p key={lineIndex} className="mb-2">
-                    {line}
-                  </p>
-                ))}
-            </div>
-          );
-        }
-        return null;
-      })
-      .filter(Boolean);
-  };
-
   return (
     <div className="h-full">
       <button
