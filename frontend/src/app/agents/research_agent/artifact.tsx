@@ -117,20 +117,8 @@ export default function ResearchGraphComponent(props: {
         {open ? "Click to hide report" : "Click to display report"}
       </button>
 
-      <ArtifactContent title={<div>Research Report</div>}>
-        <div className="space-y-4 max-h-[80vh] overflow-y-auto pr-2">
-          {/* Display topic if available */}
-          {props.topic && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Research Topic</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-lg font-medium">{props.topic}</p>
-              </CardContent>
-            </Card>
-          )}
-
+      <ArtifactContent title={<div>{props.topic || "Research Report"}</div>}>
+        <div className="space-y-4 max-h-[80vh] overflow-y-auto pr-2" style={{ scrollbarGutter: 'stable', scrollbarWidth: 'thin' }}>
           {/* Display sections if available */}
           {sectionsArray.length > 0 && (
             <Card>
@@ -185,7 +173,7 @@ export default function ResearchGraphComponent(props: {
           )}
 
           {/* Display report content if available */}
-          {reportContent ? (
+          {reportContent && (
             <Card>
               <CardHeader>
                 <CardTitle>Generated Research Report</CardTitle>
@@ -199,13 +187,6 @@ export default function ResearchGraphComponent(props: {
                 Report generated at {new Date().toLocaleString()}
               </CardFooter>
             </Card>
-          ) : (
-            <div className="p-4 border rounded bg-gray-50">
-              <p>
-                No research report available yet. The report will appear here
-                once generation is complete.
-              </p>
-            </div>
           )}
         </div>
       </ArtifactContent>

@@ -45,8 +45,6 @@ logger = logging.getLogger("thothy-devlop")
 # UI Component name for research agent
 UI_COMPONENT_NAME = "research_graph"
 
-# Nodes --
-
 
 async def generate_report_plan(state: ReportState, config: RunnableConfig):
     """Generate the initial report plan with sections.
@@ -113,6 +111,7 @@ async def generate_report_plan(state: ReportState, config: RunnableConfig):
     report_structure = configurable.report_structure
     number_of_queries = configurable.number_of_queries
     search_api = get_config_value(configurable.search_api)
+
     # Get the config dict, default to empty
     search_api_config = configurable.search_api_config or {}
     params_to_pass = get_search_params(
@@ -176,7 +175,7 @@ async def generate_report_plan(state: ReportState, config: RunnableConfig):
 
     # Push the report sections to the UI with message
     ui_message = AIMessage(
-        content=f"Report sections generated successfully! {sections}")
+        content="Report sections generated successfully!")
     push_ui_message(UI_COMPONENT_NAME, {
                     "sections": sections, "topic": topic}, message=ui_message)
 
@@ -575,13 +574,14 @@ builder.add_node("compile_final_report", compile_final_report)
 
 # Add edges
 builder.add_edge(START, "generate_report_plan")
-# builder.add_edge("generate_report_plan", END)
-builder.add_edge("generate_report_plan", "human_feedback")
-builder.add_edge("build_section_with_web_research",
-                 "gather_completed_sections")
-builder.add_conditional_edges("gather_completed_sections",
-                              initiate_final_section_writing, ["write_final_sections"])
-builder.add_edge("write_final_sections", "compile_final_report")
-builder.add_edge("compile_final_report", END)
+builder.add_edge("generate_report_plan", END)
+
+# builder.add_edge("generate_report_plan", "human_feedback")
+# builder.add_edge("build_section_with_web_research",
+#                  "gather_completed_sections")
+# builder.add_conditional_edges("gather_completed_sections",
+#                               initiate_final_section_writing, ["write_final_sections"])
+# builder.add_edge("write_final_sections", "compile_final_report")
+# builder.add_edge("compile_final_report", END)
 
 graph = builder.compile()
