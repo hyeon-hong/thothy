@@ -134,7 +134,6 @@ async def generate_report_plan(state: ReportState, config: RunnableConfig):
     # Generate queries
     results = await structured_llm.ainvoke([SystemMessage(content=system_instructions_query),
                                             HumanMessage(content="Generate search queries that will help with planning the sections of the report.")])
-    logger.info(f"results: {results}")
 
     # Web search
     query_list = [query.search_query for query in results.queries]
@@ -312,8 +311,16 @@ async def generate_queries(state: SectionState, config: RunnableConfig):
     # Generate queries
     queries = await structured_llm.ainvoke([SystemMessage(content=system_instructions),
                                             HumanMessage(content="Generate search queries on the provided topic.")])
-    # print("\n-------Queries:----------",queries)
-    return {"search_queries": queries.queries}
+
+    # Convert queries to ai message format and append to existing messages
+    current_messages = state.get("messages", [])
+    updated_messages = list(current_messages) + [AIMessage(content=f"Generated search queries for {section.name}", tool_calls=[{
+        "id": "query_generation_001",
+        "name": "generate_search_queries",
+        "args": {"queries": [query.search_query for query in queries.queries]}
+    }])]
+
+    return {"search_queries": queries.queries, "messages": updated_messages}
 
 
 async def search_web(state: SectionState, config: RunnableConfig):
@@ -426,6 +433,18 @@ async def write_section(state: SectionState, config: RunnableConfig) -> Command[
 
     # If the section is passing or the max search depth is reached, publish the section to completed sections
     if feedback.grade == "pass" or state["search_iterations"] >= configurable.max_search_depth:
+        # Push the completed section to UI with message
+        ui_message = AIMessage(
+            content=f"Section '{section.name}' completed successfully!"
+        )
+        push_ui_message(UI_COMPONENT_NAME, {
+            "section_update": {
+                "name": section.name,
+                "content": section.content,
+                "status": "completed"
+            }
+        }, message=ui_message)
+
         # Publish the section to completed sections
         return Command(
             update={"completed_sections": [section]},
@@ -434,6 +453,19 @@ async def write_section(state: SectionState, config: RunnableConfig) -> Command[
 
     # Update the existing section with new content and update search queries
     else:
+        # Push the section status to UI indicating more research is needed
+        ui_message = AIMessage(
+            content=f"Section '{section.name}' needs more research (iteration {state['search_iterations'] + 1})"
+        )
+        push_ui_message(UI_COMPONENT_NAME, {
+            "section_update": {
+                "name": section.name,
+                "content": section.content,
+                "status": "needs_more_research",
+                "iteration": state["search_iterations"] + 1
+            }
+        }, message=ui_message)
+
         return Command(
             update={"search_queries": feedback.follow_up_queries,
                     "section": section},
@@ -481,10 +513,15 @@ async def write_final_sections(state: SectionState, config: RunnableConfig):
 
     # Push the section content to the UI with message
     ui_message = AIMessage(
-        content=f"Section {section.name} generated successfully!"
+        content=f"Section '{section.name}' generated successfully!"
     )
     push_ui_message(UI_COMPONENT_NAME, {
-                    "content": section.content}, message=ui_message)
+        "section_update": {
+            "name": section.name,
+            "content": section.content,
+            "status": "completed"
+        }
+    }, message=ui_message)
 
     # Write the updated section to completed sections
     return {"completed_sections": [section]}
@@ -612,12 +649,10 @@ builder.add_node("compile_final_report", compile_final_report)
 
 # Add edges
 builder.add_edge(START, "generate_report_plan")
-builder.add_edge("generate_report_plan", END)
-
-# builder.add_edge("generate_report_plan", "human_feedback")
-# builder.add_edge("build_section_with_web_research",
-#                  "gather_completed_sections")
-# builder.add_edge("gather_completed_sections", END)
+builder.add_edge("generate_report_plan", "human_feedback")
+builder.add_edge("build_section_with_web_research",
+                 "gather_completed_sections")
+builder.add_edge("gather_completed_sections", END)
 
 # builder.add_conditional_edges("gather_completed_sections",
 #                               initiate_final_section_writing, ["write_final_sections"])

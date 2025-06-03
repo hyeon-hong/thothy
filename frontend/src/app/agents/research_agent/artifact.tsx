@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { useStreamContext } from "@langchain/langgraph-sdk/react-ui";
 import {
   Card,
@@ -24,13 +24,13 @@ export default function ResearchGraphComponent(props: {
   content?: string;
   topic?: string;
   sections?: Sections;
+  section_update?: {
+    name: string;
+    content: string;
+    status: string;
+    iteration?: number;
+  };
 }) {
-  console.log("props: ", props);
-  console.log("props.content: ", props.content);
-  console.log("props.topic: ", props.topic);
-  console.log("props.sections: ", props.sections);
-  console.log("props.sections?.sections: ", props.sections?.sections);
-
   const { meta } = useStreamContext<
     { research_report?: { content: string } },
     { MetaType: { ui: any; artifact: any } }
@@ -39,9 +39,37 @@ export default function ResearchGraphComponent(props: {
   const [ArtifactContent, { open, setOpen, context, setContext }] =
     meta.artifact;
 
+  // State to track completed sections
+  const [completedSections, setCompletedSections] = useState<
+    Map<string, string>
+  >(new Map());
+  const [sectionStatuses, setSectionStatuses] = useState<
+    Map<string, { status: string; iteration?: number }>
+  >(new Map());
+
   useEffect(() => {
     setOpen(true);
-  }, [props.sections, props.content, props.topic]);
+  }, [props.sections, props.content, props.topic, props.section_update]);
+
+  // Update completed sections when section_update is received
+  useEffect(() => {
+    if (props.section_update) {
+      setCompletedSections((prev) => {
+        const updated = new Map(prev);
+        updated.set(props.section_update!.name, props.section_update!.content);
+        return updated;
+      });
+
+      setSectionStatuses((prev) => {
+        const updated = new Map(prev);
+        updated.set(props.section_update!.name, {
+          status: props.section_update!.status,
+          iteration: props.section_update!.iteration,
+        });
+        return updated;
+      });
+    }
+  }, [props.section_update]);
 
   // Get content from props or context, prioritizing props
   const reportContent = props.content || context.research_report?.content;
@@ -49,17 +77,17 @@ export default function ResearchGraphComponent(props: {
   // Helper function to safely get sections array
   const getSectionsArray = (): Section[] => {
     if (!props.sections) return [];
-    
+
     // Check if sections is the expected Sections object with sections property
     if (props.sections.sections && Array.isArray(props.sections.sections)) {
       return props.sections.sections;
     }
-    
+
     // Check if sections is directly an array (fallback case)
     if (Array.isArray(props.sections)) {
       return props.sections as Section[];
     }
-    
+
     return [];
   };
 
@@ -118,7 +146,10 @@ export default function ResearchGraphComponent(props: {
       </button>
 
       <ArtifactContent title={<div>{props.topic || "Research Report"}</div>}>
-        <div className="space-y-4 max-h-[80vh] overflow-y-auto pr-2" style={{ scrollbarGutter: 'stable', scrollbarWidth: 'thin' }}>
+        <div
+          className="space-y-4 max-h-[80vh] overflow-y-auto pr-2"
+          style={{ scrollbarGutter: "stable", scrollbarWidth: "thin" }}
+        >
           {/* Display sections if available */}
           {sectionsArray.length > 0 && (
             <Card>
@@ -127,46 +158,87 @@ export default function ResearchGraphComponent(props: {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {sectionsArray.map((section, index) => (
-                    <div
-                      key={index}
-                      className="border rounded-lg p-4 bg-gray-50"
-                    >
-                      <div className="flex items-center justify-between mb-2">
-                        <h3 className="text-lg font-semibold">
-                          {section.name}
-                        </h3>
-                        <span
-                          className={`px-2 py-1 text-xs rounded ${
-                            section.research
-                              ? "bg-blue-100 text-blue-800"
-                              : "bg-gray-100 text-gray-800"
-                          }`}
-                        >
-                          {section.research
-                            ? "Research Required"
-                            : "No Research"}
-                        </span>
-                      </div>
-                      <p className="text-gray-600 mb-3">
-                        {section.description}
-                      </p>
-                      {section.content && (
-                        <div className="bg-white p-3 rounded border">
-                          <h4 className="font-medium mb-2">Content:</h4>
-                          <div className="text-gray-700 leading-relaxed">
-                            {section.content
-                              .split("\n")
-                              .map((line, lineIndex) => (
-                                <p key={lineIndex} className="mb-1">
-                                  {line}
-                                </p>
-                              ))}
+                  {sectionsArray.map((section, index) => {
+                    const isCompleted = completedSections.has(section.name);
+                    const completedContent = completedSections.get(
+                      section.name
+                    );
+                    const sectionStatus = sectionStatuses.get(section.name);
+                    const status = sectionStatus?.status || "pending";
+                    const iteration = sectionStatus?.iteration;
+
+                    return (
+                      <div
+                        key={index}
+                        className={`border rounded-lg p-4 ${
+                          status === "completed"
+                            ? "bg-green-50 border-green-200"
+                            : status === "needs_more_research"
+                              ? "bg-orange-50 border-orange-200"
+                              : "bg-gray-50"
+                        }`}
+                      >
+                        <div className="flex items-center justify-between mb-2">
+                          <h3 className="text-lg font-semibold flex items-center gap-2">
+                            {section.name}
+                            {status === "completed" && (
+                              <span className="text-green-600 text-sm">✓</span>
+                            )}
+                            {status === "needs_more_research" && (
+                              <span className="text-orange-600 text-sm">
+                                🔄
+                              </span>
+                            )}
+                          </h3>
+                          <div className="flex gap-2">
+                            <span
+                              className={`px-2 py-1 text-xs rounded ${
+                                section.research
+                                  ? "bg-blue-100 text-blue-800"
+                                  : "bg-gray-100 text-gray-800"
+                              }`}
+                            >
+                              {section.research
+                                ? "Research Required"
+                                : "No Research"}
+                            </span>
+                            <span
+                              className={`px-2 py-1 text-xs rounded ${
+                                status === "completed"
+                                  ? "bg-green-100 text-green-800"
+                                  : status === "needs_more_research"
+                                    ? "bg-orange-100 text-orange-800"
+                                    : "bg-yellow-100 text-yellow-800"
+                              }`}
+                            >
+                              {status === "completed"
+                                ? "Completed"
+                                : status === "needs_more_research"
+                                  ? `Research in progress${iteration ? ` (${iteration})` : ""}`
+                                  : "Pending"}
+                            </span>
                           </div>
                         </div>
-                      )}
-                    </div>
-                  ))}
+                        <p className="text-gray-600 mb-3">
+                          {section.description}
+                        </p>
+                        {(completedContent || section.content) && (
+                          <div className="bg-white p-3 rounded border">
+                            <h4 className="font-medium mb-2">Content:</h4>
+                            <div className="text-gray-700 leading-relaxed">
+                              {(completedContent || section.content)
+                                .split("\n")
+                                .map((line, lineIndex) => (
+                                  <p key={lineIndex} className="mb-1">
+                                    {line}
+                                  </p>
+                                ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
               </CardContent>
             </Card>
