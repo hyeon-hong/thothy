@@ -1,5 +1,5 @@
-import '@/app/globals.css';
-import type { Metadata } from 'next';
+import "@/app/globals.css";
+import type { Metadata } from "next";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { NuqsAdapter } from "nuqs/adapters/next/app";
 
@@ -8,10 +8,11 @@ export const metadata: Metadata = {
   description: "Thothy",
 };
 
+// TODO: Replace NuqsAdapter with useState and props
 export default function RootLayout({
   children,
 }: {
-  children: React.ReactNode
+  children: React.ReactNode;
 }) {
   return (
     <html lang="en">
