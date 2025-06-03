@@ -576,9 +576,10 @@ builder.add_node("compile_final_report", compile_final_report)
 builder.add_edge(START, "generate_report_plan")
 builder.add_edge("generate_report_plan", END)
 
-# builder.add_edge("generate_report_plan", "human_feedback")
-# builder.add_edge("build_section_with_web_research",
-#                  "gather_completed_sections")
+builder.add_edge("generate_report_plan", "human_feedback")
+builder.add_edge("build_section_with_web_research",
+                 "gather_completed_sections")
+builder.add_edge("gather_completed_sections", END)
 # builder.add_conditional_edges("gather_completed_sections",
 #                               initiate_final_section_writing, ["write_final_sections"])
 # builder.add_edge("write_final_sections", "compile_final_report")
