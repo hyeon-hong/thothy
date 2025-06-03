@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { useStreamContext } from "@langchain/langgraph-sdk/react-ui";
 import {
   Card,
@@ -7,6 +7,7 @@ import {
   CardContent,
   CardFooter,
 } from "@/components/ui/card";
+import Markdown from "react-markdown";
 
 // TypeScript interfaces matching the Python classes from state.py
 interface Section {
@@ -28,6 +29,7 @@ export default function ResearchGraphComponent(props: {
     name: string;
     content: string;
     status: string;
+    research: boolean;
     iteration?: number;
   };
 }) {
@@ -46,9 +48,9 @@ export default function ResearchGraphComponent(props: {
   const [sectionStatuses, setSectionStatuses] = useState<
     Map<string, { status: string; iteration?: number }>
   >(new Map());
-  
-  // State to track updated sections array
-  const [updatedSections, setUpdatedSections] = useState<Section[]>([]);
+
+  // State to persistently store sections so they don't get lost when props.sections becomes undefined
+  const persistentSectionsRef = useRef<Section[]>([]);
 
   useEffect(() => {
     setOpen(true);
@@ -56,26 +58,23 @@ export default function ResearchGraphComponent(props: {
 
   // Initialize updated sections when props.sections changes
   useEffect(() => {
+    console.log("props.sections: ", props.sections);
+
     const sectionsArray = getSectionsArray();
+    console.log("sectionsArray: ", sectionsArray);
+
     if (sectionsArray.length > 0) {
-      setUpdatedSections(sectionsArray);
+      persistentSectionsRef.current = sectionsArray;
     }
   }, [props.sections]);
 
-  // Update sections array when section_update is received
+  // Update section content when section_update is received
   useEffect(() => {
+    console.log("props.sections: ", props.sections);
+    console.log("props.section_update: ", props.section_update);
+
     if (props.section_update) {
-      setUpdatedSections((prevSections) => {
-        return prevSections.map((section) => {
-          if (section.name === props.section_update!.name) {
-            return {
-              ...section,
-              content: props.section_update!.content || section.content,
-            };
-          }
-          return section;
-        });
-      });
+      console.log("Updating section content for:", props.section_update.name);
 
       setCompletedSections((prev) => {
         const updated = new Map(prev);
@@ -91,9 +90,29 @@ export default function ResearchGraphComponent(props: {
         });
         return updated;
       });
+
+      // Update research and status in persistentSectionsRef
+      persistentSectionsRef.current = persistentSectionsRef.current.map(
+        (section) => {
+          if (section.name === props.section_update!.name) {
+            return {
+              ...section,
+              content: props.section_update!.content,
+              research: props.section_update!.research,
+              status: props.section_update!.status,
+              iteration: props.section_update!.iteration,
+            };
+          }
+          return section;
+        }
+      );
     }
   }, [props.section_update]);
-  console.log("props.section_update: ", props.section_update);
+
+  // Track persistentSections changes
+  useEffect(() => {
+    console.log("persistentSections updated:", persistentSectionsRef.current);
+  }, [persistentSectionsRef.current]);
 
   // Get content from props or context, prioritizing props
   const reportContent = props.content || context.research_report?.content;
@@ -114,6 +133,16 @@ export default function ResearchGraphComponent(props: {
 
     return [];
   };
+
+  // Compute sections with updated content
+  const sectionsToRender = persistentSectionsRef.current.map((section) => ({
+    ...section,
+    content: completedSections.get(section.name) || section.content,
+  }));
+
+  console.log("persistentSections:", persistentSectionsRef.current);
+  console.log("completedSections:", completedSections);
+  console.log("sectionsToRender:", sectionsToRender);
 
   // Format the report content with proper markdown-like styling
   const formatReportContent = (content: string) => {
@@ -173,18 +202,14 @@ export default function ResearchGraphComponent(props: {
           style={{ scrollbarGutter: "stable", scrollbarWidth: "thin" }}
         >
           {/* Display sections if available */}
-          {updatedSections.length > 0 && (
+          {sectionsToRender.length > 0 && (
             <Card>
               <CardHeader>
                 <CardTitle>Report Sections</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {updatedSections.map((section, index) => {
-                    const isCompleted = completedSections.has(section.name);
-                    const completedContent = completedSections.get(
-                      section.name
-                    );
+                  {sectionsToRender.map((section, index) => {
                     const sectionStatus = sectionStatuses.get(section.name);
                     const status = sectionStatus?.status || "pending";
                     const iteration = sectionStatus?.iteration;
@@ -197,7 +222,9 @@ export default function ResearchGraphComponent(props: {
                             ? "bg-green-50 border-green-200"
                             : status === "needs_more_research"
                               ? "bg-orange-50 border-orange-200"
-                              : "bg-gray-50"
+                              : status === "processing"
+                                ? "bg-blue-50 border-blue-200"
+                                : "bg-gray-50"
                         }`}
                       >
                         <div className="flex items-center justify-between mb-2">
@@ -211,6 +238,9 @@ export default function ResearchGraphComponent(props: {
                                 🔄
                               </span>
                             )}
+                            {status === "processing" && (
+                              <span className="text-blue-600 text-sm">⏳</span>
+                            )}
                           </h3>
                           <div className="flex gap-2">
                             <span
@@ -222,7 +252,7 @@ export default function ResearchGraphComponent(props: {
                             >
                               {section.research
                                 ? "Research Required"
-                                : "No Research"}
+                                : "Research Done"}
                             </span>
                             <span
                               className={`px-2 py-1 text-xs rounded ${
@@ -230,31 +260,30 @@ export default function ResearchGraphComponent(props: {
                                   ? "bg-green-100 text-green-800"
                                   : status === "needs_more_research"
                                     ? "bg-orange-100 text-orange-800"
-                                    : "bg-yellow-100 text-yellow-800"
+                                    : status === "processing"
+                                      ? "bg-blue-100 text-blue-800"
+                                      : "bg-yellow-100 text-yellow-800"
                               }`}
                             >
                               {status === "completed"
                                 ? "Completed"
                                 : status === "needs_more_research"
                                   ? `Research in progress${iteration ? ` (${iteration})` : ""}`
-                                  : "Pending"}
+                                  : status === "processing"
+                                    ? "Processing"
+                                    : "Pending"}
                             </span>
                           </div>
                         </div>
                         <p className="text-gray-600 mb-3">
                           {section.description}
                         </p>
-                        {(completedContent || section.content) && (
+
+                        {section.content && (
                           <div className="bg-white p-3 rounded border">
                             <h4 className="font-medium mb-2">Content:</h4>
-                            <div className="text-gray-700 leading-relaxed">
-                              {(completedContent || section.content)
-                                .split("\n")
-                                .map((line, lineIndex) => (
-                                  <p key={lineIndex} className="mb-1">
-                                    {line}
-                                  </p>
-                                ))}
+                            <div className="text-gray-700 leading-relaxed prose prose-sm max-w-none">
+                              <Markdown>{section.content}</Markdown>
                             </div>
                           </div>
                         )}
@@ -274,7 +303,7 @@ export default function ResearchGraphComponent(props: {
               </CardHeader>
               <CardContent>
                 <div className="prose max-w-none">
-                  {formatReportContent(reportContent)}
+                  <Markdown>{reportContent}</Markdown>
                 </div>
               </CardContent>
               <CardFooter className="text-sm text-gray-500">

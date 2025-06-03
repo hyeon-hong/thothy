@@ -412,6 +412,7 @@ async def write_section(state: SectionState, config: RunnableConfig) -> Command[
         "section_update": {
             "name": section.name,
             "content": section.content,
+            "research": False,
             "status": "completed"
         }
     }, message=ui_message)
@@ -672,6 +673,7 @@ builder.add_edge("build_section_with_web_research",
                  "gather_completed_sections")
 builder.add_edge("gather_completed_sections", END)
 
+# TODO: Add conditional edges for final section writing
 # builder.add_conditional_edges("gather_completed_sections",
 #                               initiate_final_section_writing, ["write_final_sections"])
 # builder.add_edge("write_final_sections", "compile_final_report")

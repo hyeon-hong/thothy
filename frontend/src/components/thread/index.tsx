@@ -123,8 +123,6 @@ export function Thread() {
     setArtifactContext({});
   };
 
-  console.log("messages: ", messages);
-
   useEffect(() => {
     if (!stream.error) {
       lastError.current = undefined;
