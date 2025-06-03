@@ -21,7 +21,10 @@ const createClient = () => {
       console.error("Error getting auth state:", error);
     }
   }
-
+  console.log("[langgraph-api] accessToken:", accessToken);
+  if (!accessToken) {
+    throw new Error("No access token found. User may not be authenticated.");
+  }
   return new Client({
     apiUrl,
     apiKey: accessToken || process.env.NEXT_PUBLIC_LANGGRAPH_API_KEY,

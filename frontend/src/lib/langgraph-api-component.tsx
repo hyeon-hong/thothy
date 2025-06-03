@@ -8,8 +8,10 @@ export function useLangGraphApi() {
   const accessToken = session?.access_token;
   const apiUrl = process.env.NEXT_PUBLIC_LANGGRAPH_API_URL;
   
-  console.log("API URL:", apiUrl);
-  console.log("Access token available:", !!accessToken);
+  console.log("[useLangGraphApi] accessToken:", accessToken);
+  if (!accessToken) {
+    throw new Error("No access token found. User may not be authenticated.");
+  }
   
   const createClient = useCallback(() => {
     const client = new Client({
