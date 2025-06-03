@@ -71,7 +71,7 @@ analyze_ui_tool_node = ToolNode([analyze_ui_tool])
 model = get_llm()
 
 
-def generate_code(state: AgentState):
+async def generate_code(state: AgentState):
     """Generate code for the UI component"""
 
     # Initialize score to 0 if not present
@@ -112,7 +112,7 @@ def generate_code(state: AgentState):
                                         )
 
     # Invoke the model with the take_screenshot tool
-    response = model_with_tools.invoke(messages)
+    response = await model_with_tools.ainvoke(messages)
     logging.info("model_with_tools response: %s", response)
 
     # Extract the artifact
@@ -136,7 +136,7 @@ def generate_code(state: AgentState):
     }
 
 
-def analyze_ui(state: AgentState):
+async def analyze_ui(state: AgentState):
     """Analyze the UI component"""
 
     # Initialize score to 0 if not present
@@ -202,7 +202,7 @@ def analyze_ui(state: AgentState):
                                                  #  strict=True
                                                  )
     # Invoke the model with the analyze_ui tool
-    response = model_with_analysis_tools.invoke(messages)
+    response = await model_with_analysis_tools.ainvoke(messages)
     logging.info("model_with_analysis_tools response: %s", response)
 
     # Extract the score and analysis

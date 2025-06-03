@@ -8,19 +8,10 @@ from pydantic import BaseModel
 from langchain.chat_models import init_chat_model
 from langchain.tools import tool
 
-from langgraph.checkpoint.memory import MemorySaver
 from langgraph.graph import MessagesState, StateGraph, START, END
 from blog_graph.configuration import BlogConfigurable
 from blog_graph.tools import post_blog
 from langgraph.prebuilt import ToolNode
-
-# Configure logging to hide INFO messages
-logging.basicConfig(level=logging.INFO)
-
-# Set specific loggers for langgraph and related libraries to WARNING level
-logging.getLogger("langgraph").setLevel(logging.INFO)
-logging.getLogger("langchain").setLevel(logging.INFO)
-logging.getLogger("langmem").setLevel(logging.INFO)
 
 
 class BlogPost(BaseModel):
@@ -106,7 +97,7 @@ async def call_model(state: MessagesState, config: BlogConfigurable):
         f"includes proper HTML tags with the user_id of {user_id}."
     )
     messages = [{"role": "system", "content": system_msg}] + state["messages"]
-    response = llm.invoke(messages)
+    response = await llm.ainvoke(messages)
     return {"messages": [response]}
 
 
@@ -123,7 +114,5 @@ workflow.add_conditional_edges("agent", should_continue, ["tools", END])
 workflow.add_edge("tools", "agent")
 
 # Compile graph
-graph = workflow.compile(checkpointer=MemorySaver())
+graph = workflow.compile()
 graph.name = "blog_graph"
-
-__all__ = ["graph"]

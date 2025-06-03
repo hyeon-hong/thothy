@@ -2,6 +2,7 @@
 
 import { validate } from "uuid";
 import type { Thread } from "@langchain/langgraph-sdk";
+import { Client } from "@langchain/langgraph-sdk";
 import { useQueryState } from "nuqs";
 import {
   createContext,
@@ -12,7 +13,7 @@ import {
   type Dispatch,
   type SetStateAction,
 } from "react";
-import { createLangGraphClient } from "./client";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface ThreadContextType {
   getThreads: () => Promise<Thread[]>;
@@ -48,23 +49,46 @@ export function ThreadProvider({
   const assistantId = assistantIdProp ?? assistantIdQuery;
   const [threads, setThreads] = useState<Thread[]>([]);
   const [threadsLoading, setThreadsLoading] = useState(false);
+  const { session } = useAuth();
 
   const getThreads = useCallback(async (): Promise<Thread[]> => {
     if (!apiUrl || !assistantId) return [];
-    const client = await createLangGraphClient(
-      apiUrl,
-      process.env.NEXT_PUBLIC_LANGSMITH_API_KEY ?? undefined
-    );
 
-    const threads = await client.threads.search({
-      metadata: {
-        ...getThreadSearchMetadata(assistantId),
-      },
-      limit: 100,
-    });
+    const accessToken = session?.access_token;
+    if (!accessToken) {
+      throw new Error("No access token found. User might not be authenticated.");
+    }
 
-    return threads;
-  }, [apiUrl, assistantId]);
+    try {
+      const client = new Client({
+        apiKey: process.env.NEXT_PUBLIC_LANGSMITH_API_KEY ?? undefined,
+        apiUrl,
+        defaultHeaders: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${accessToken}`,
+        },
+      });
+
+      const threads = await client.threads.search({
+        metadata: {
+          ...getThreadSearchMetadata(assistantId),
+        },
+        limit: 100,
+      });
+
+      return threads;
+    } catch (error: any) {
+      console.error("Error fetching threads:", error);
+      if (error.status === 403 || error.status === 401) {
+        console.error(
+          "Authentication error: User might not be logged in or session expired"
+        );
+        // You might want to redirect to login or refresh the session here
+        throw new Error("Authentication failed: Please log in again");
+      }
+      throw error;
+    }
+  }, [apiUrl, assistantId, session?.access_token]);
 
   const value = {
     getThreads,

@@ -737,11 +737,15 @@ const createLangGraphClient = async () => {
   const apiUrl = process.env.NEXT_PUBLIC_LANGGRAPH_API_URL;
   const apiKey = process.env.NEXT_PUBLIC_LANGSMITH_API_KEY;
 
+  if (!session?.access_token) {
+    throw new Error("No access token found. User might not be authenticated.");
+  }
+
   return new Client({
     apiUrl,
     apiKey,
     defaultHeaders: {
-      Authorization: `Bearer ${session?.access_token}`,
+      Authorization: `Bearer ${session.access_token}`,
     },
   });
 };

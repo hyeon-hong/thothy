@@ -19,9 +19,6 @@ if not supabase_url:
 if not supabase_key:
     raise ValueError("Supabase key is not set")
 
-logging.info(f"supabase_url: {supabase_url}")
-logging.info(f"supabase_key: {supabase_key}")
-
 supabase: Client = create_client(supabase_url, supabase_key)
 
 

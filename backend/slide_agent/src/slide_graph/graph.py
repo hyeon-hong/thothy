@@ -57,10 +57,10 @@ def should_continue(state: AgentState):
     return END
 
 
-def call_model(state: AgentState):
+async def call_model(state: AgentState):
     messages = [{"role": "system", "content": SYSTEM_PROMPT}] + \
         state["messages"]
-    response = model_with_tools.invoke(messages)
+    response = await model_with_tools.ainvoke(messages)
 
     artifact = extract_artifact_from_response(response)
     # artifact = "export default function App() { return " + artifact + " }"

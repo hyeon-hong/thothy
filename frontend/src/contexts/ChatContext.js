@@ -18,10 +18,15 @@ export function ChatProvider({ children, graph_name }) {
     const { session } = useAuth();
 
     const client = useMemo(() => {
+        if (!session?.access_token) {
+            console.warn("No access token available for LangGraph client");
+            return null;
+        }
+        
         return new Client({
             apiUrl: DEPLOYMENT_URL,
             defaultHeaders: {
-                Authorization: `Bearer ${session?.access_token}`,
+                Authorization: `Bearer ${session.access_token}`,
             },
         });
     }, [session?.access_token]);
@@ -440,6 +445,11 @@ export function ChatProvider({ children, graph_name }) {
             return;
         }
 
+        if (!client || !session?.access_token) {
+            console.error("No client or access token available");
+            return;
+        }
+
         try {
             setCurrentThreadId(threadId);
             setMessages([]); // Clear messages initially
@@ -447,7 +457,7 @@ export function ChatProvider({ children, graph_name }) {
             // Fetch thread data
             const thread = await client.threads.get(threadId, {
                 headers: {
-                    Authorization: `Bearer ${session?.access_token}`,
+                    Authorization: `Bearer ${session.access_token}`,
                 },
             });
 

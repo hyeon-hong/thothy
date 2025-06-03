@@ -67,6 +67,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         // Check for active session and get user
         const initializeAuth = async () => {
+            setLoading(true);
             try {
                 // This will use the existing session and refresh the token if needed
                 const { data: { session: currentSession }, error } = await supabase.auth.getSession();

@@ -209,11 +209,11 @@ def prices_tool(input: PricesInput = None, **kwargs) -> Tuple[str, dict]:
 
 
 @tool("web_search", args_schema=None, response_format="content_and_artifact")
-def web_search_tool(query: str) -> Tuple[str, dict]:
+async def web_search_tool(query: str) -> Tuple[str, dict]:
     """Search the web using Tavily and return the top result(s)."""
     try:
         tavily = TavilySearchResults(max_results=1)
-        results = tavily.invoke(query)
+        results = await tavily.ainvoke(query)
         if not results:
             return "No results found.", {"title": "Web Search", "web_search": "No results found."}
         # Tavily returns a list of dicts with 'title', 'url', and 'content'
