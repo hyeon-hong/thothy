@@ -16,7 +16,6 @@ export default function AgentPage() {
   const params = useParams();
   const apiUrl = process.env.NEXT_PUBLIC_LANGGRAPH_API_URL;
   const assistantId = params?.graph_name as string;
-  console.log("assistantId: ", assistantId);
 
   // Function to render the appropriate agent component
   const renderAgentComponent = () => {
@@ -26,7 +25,6 @@ export default function AgentPage() {
       case "data_graph":
         return <DataAgentPage apiUrl={apiUrl} assistantId={assistantId} />;
       case "research_graph":
-        console.log("research_graph");
         return <ResearchAgentPage apiUrl={apiUrl} assistantId={assistantId} />;
       case "slide_graph":
         return <SlideAgentPage apiUrl={apiUrl} assistantId={assistantId} />;
