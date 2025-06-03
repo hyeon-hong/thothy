@@ -51,7 +51,7 @@ export function ThreadProvider({
 
   const getThreads = useCallback(async (): Promise<Thread[]> => {
     if (!apiUrl || !assistantId) return [];
-    
+
     try {
       const client = await createLangGraphClient(
         apiUrl,
@@ -69,7 +69,9 @@ export function ThreadProvider({
     } catch (error: any) {
       console.error("Error fetching threads:", error);
       if (error.status === 403 || error.status === 401) {
-        console.error("Authentication error: User might not be logged in or session expired");
+        console.error(
+          "Authentication error: User might not be logged in or session expired"
+        );
         // You might want to redirect to login or refresh the session here
         throw new Error("Authentication failed: Please log in again");
       }

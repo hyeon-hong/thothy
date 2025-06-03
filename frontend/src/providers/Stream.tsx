@@ -20,7 +20,7 @@ import {
 import { useQueryState } from "nuqs";
 import { useThreads } from "./Thread";
 import { toast } from "sonner";
-import { createClient } from "@/utils/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 
 export type StateType = { messages: Message[]; ui?: UIMessage[] };
 
@@ -68,20 +68,19 @@ const StreamSession = ({
   apiKey,
   apiUrl,
   assistantId,
-  accessToken,
 }: {
   children: ReactNode;
   apiKey: string | null;
   apiUrl: string;
   assistantId: string;
-  accessToken: string | null;
 }) => {
   const [threadId, setThreadId] = useQueryState("threadId");
   const { getThreads, setThreads } = useThreads();
+  const { session } = useAuth();
 
   const streamValue = useTypedStream({
     defaultHeaders: {
-      Authorization: `Bearer ${accessToken}`,
+      Authorization: `Bearer ${session?.access_token || ''}`,
     },
     apiUrl,
     apiKey: apiKey ?? undefined,
@@ -133,15 +132,6 @@ export const StreamProvider: React.FC<{
   assistantId?: string;
   apiUrl?: string;
 }> = ({ children, assistantId: assistantIdProp, apiUrl: apiUrlProp }) => {
-  const [accessToken, setAccessToken] = useState<string | null>(null);
-  const supabase = createClient();
-  
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
-      setAccessToken(data.session?.access_token ?? null);
-    });
-  }, [supabase.auth]);
-  
   const [apiUrlQuery] = useQueryState("apiUrl");
   const apiUrl = apiUrlProp ?? apiUrlQuery;
   const apiKey = process.env.NEXT_PUBLIC_LANGSMITH_API_KEY ?? null;
@@ -154,7 +144,6 @@ export const StreamProvider: React.FC<{
       apiKey={apiKey}
       apiUrl={apiUrl}
       assistantId={assistantId}
-      accessToken={accessToken}
     >
       {children}
     </StreamSession>
