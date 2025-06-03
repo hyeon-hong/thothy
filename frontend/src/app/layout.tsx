@@ -1,6 +1,7 @@
 import '@/app/globals.css';
 import type { Metadata } from 'next';
-import { Providers } from '@/providers';
+import { AuthProvider } from "@/contexts/AuthContext";
+import { NuqsAdapter } from "nuqs/adapters/next/app";
 
 export const metadata: Metadata = {
   title: 'Thothy App',
@@ -15,7 +16,9 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body suppressHydrationWarning>
-        <Providers>{children}</Providers>
+        <NuqsAdapter>
+          <AuthProvider>{children}</AuthProvider>
+        </NuqsAdapter>
       </body>
     </html>
   );
