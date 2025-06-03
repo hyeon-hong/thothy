@@ -134,6 +134,7 @@ async def generate_report_plan(state: ReportState, config: RunnableConfig):
     # Generate queries
     results = await structured_llm.ainvoke([SystemMessage(content=system_instructions_query),
                                             HumanMessage(content="Generate search queries that will help with planning the sections of the report.")])
+    logger.info(f"results: {results}")
 
     # Web search
     query_list = [query.search_query for query in results.queries]
@@ -168,8 +169,39 @@ async def generate_report_plan(state: ReportState, config: RunnableConfig):
     report_sections = await structured_llm.ainvoke([SystemMessage(content=system_instructions_sections),
                                                    HumanMessage(content=planner_message)])
 
+    logger.info(f"report_sections: {report_sections}")
+
     # Get sections
     sections = report_sections.sections
+
+    # Create AI messages with tool_calls for the LLM interactions
+    # First AI message for query generation
+    query_generation_message = AIMessage(
+        content="Generated search queries for report planning",
+        tool_calls=[{
+            "id": "query_generation_001",
+            "name": "generate_search_queries",
+            "args": {
+                "topic": topic,
+                "queries": [query.search_query for query in results.queries],
+                "number_of_queries": len(results.queries)
+            }
+        }]
+    )
+
+    # Second AI message for report sections generation  
+    sections_generation_message = AIMessage(
+        content="Generated report sections structure",
+        tool_calls=[{
+            "id": "sections_generation_001", 
+            "name": "generate_report_sections",
+            "args": {
+                "topic": topic,
+                "sections": [{"name": s.name, "description": s.description, "research": s.research} for s in sections],
+                "total_sections": len(sections)
+            }
+        }]
+    )
 
     # Push the report sections to the UI with message
     ui_message = AIMessage(
@@ -177,9 +209,10 @@ async def generate_report_plan(state: ReportState, config: RunnableConfig):
     push_ui_message(UI_COMPONENT_NAME, {
                     "topic": topic, "sections": sections}, message=ui_message)
 
-    # Append ui_message to existing messages instead of replacing them
+    # Append all messages to existing messages 
     current_messages = state.get("messages", [])
-    updated_messages = list(current_messages) + [ui_message]
+    logger.info(f"current_messages: {current_messages}")
+    updated_messages = list(current_messages) + [query_generation_message, sections_generation_message, ui_message]
 
     return {"topic": topic, "sections": sections, "messages": updated_messages}
 
