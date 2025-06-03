@@ -15,7 +15,7 @@ class AgentState(TypedDict):
     ui: Annotated[Sequence[AnyUIMessage], ui_message_reducer]
 
 
-def call_model(state: AgentState) -> dict:
+async def call_model(state: AgentState) -> dict:
     """Call the model"""
 
     # Get the messages

@@ -49,7 +49,8 @@ async def chatbot(
     chat_model = await get_llm()
 
     # Invoke the LLM
-    response = await chat_model.ainvoke(
+    response = await asyncio.to_thread(
+        chat_model.ainvoke,
         [{"role": "system", "content": system_msg}] + state["messages"]
     )
     logging.info(f"Response: {response}")
