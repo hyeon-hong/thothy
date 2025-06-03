@@ -2,6 +2,7 @@
 
 import { validate } from "uuid";
 import type { Thread } from "@langchain/langgraph-sdk";
+import { Client } from "@langchain/langgraph-sdk";
 import { useQueryState } from "nuqs";
 import {
   createContext,
@@ -12,7 +13,7 @@ import {
   type Dispatch,
   type SetStateAction,
 } from "react";
-import { createLangGraphClient } from "./client";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface ThreadContextType {
   getThreads: () => Promise<Thread[]>;
@@ -48,15 +49,25 @@ export function ThreadProvider({
   const assistantId = assistantIdProp ?? assistantIdQuery;
   const [threads, setThreads] = useState<Thread[]>([]);
   const [threadsLoading, setThreadsLoading] = useState(false);
+  const { session } = useAuth();
 
   const getThreads = useCallback(async (): Promise<Thread[]> => {
     if (!apiUrl || !assistantId) return [];
 
+    const accessToken = session?.access_token;
+    if (!accessToken) {
+      throw new Error("No access token found. User might not be authenticated.");
+    }
+
     try {
-      const client = await createLangGraphClient(
+      const client = new Client({
+        apiKey: process.env.NEXT_PUBLIC_LANGSMITH_API_KEY ?? undefined,
         apiUrl,
-        process.env.NEXT_PUBLIC_LANGSMITH_API_KEY ?? undefined
-      );
+        defaultHeaders: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${accessToken}`,
+        },
+      });
 
       const threads = await client.threads.search({
         metadata: {
@@ -77,7 +88,7 @@ export function ThreadProvider({
       }
       throw error;
     }
-  }, [apiUrl, assistantId]);
+  }, [apiUrl, assistantId, session?.access_token]);
 
   const value = {
     getThreads,
