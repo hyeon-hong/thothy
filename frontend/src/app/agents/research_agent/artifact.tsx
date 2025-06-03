@@ -46,14 +46,37 @@ export default function ResearchGraphComponent(props: {
   const [sectionStatuses, setSectionStatuses] = useState<
     Map<string, { status: string; iteration?: number }>
   >(new Map());
+  
+  // State to track updated sections array
+  const [updatedSections, setUpdatedSections] = useState<Section[]>([]);
 
   useEffect(() => {
     setOpen(true);
   }, [props.sections, props.content, props.topic, props.section_update]);
 
-  // Update completed sections when section_update is received
+  // Initialize updated sections when props.sections changes
+  useEffect(() => {
+    const sectionsArray = getSectionsArray();
+    if (sectionsArray.length > 0) {
+      setUpdatedSections(sectionsArray);
+    }
+  }, [props.sections]);
+
+  // Update sections array when section_update is received
   useEffect(() => {
     if (props.section_update) {
+      setUpdatedSections((prevSections) => {
+        return prevSections.map((section) => {
+          if (section.name === props.section_update!.name) {
+            return {
+              ...section,
+              content: props.section_update!.content || section.content,
+            };
+          }
+          return section;
+        });
+      });
+
       setCompletedSections((prev) => {
         const updated = new Map(prev);
         updated.set(props.section_update!.name, props.section_update!.content);
@@ -70,6 +93,7 @@ export default function ResearchGraphComponent(props: {
       });
     }
   }, [props.section_update]);
+  console.log("props.section_update: ", props.section_update);
 
   // Get content from props or context, prioritizing props
   const reportContent = props.content || context.research_report?.content;
@@ -90,8 +114,6 @@ export default function ResearchGraphComponent(props: {
 
     return [];
   };
-
-  const sectionsArray = getSectionsArray();
 
   // Format the report content with proper markdown-like styling
   const formatReportContent = (content: string) => {
@@ -151,14 +173,14 @@ export default function ResearchGraphComponent(props: {
           style={{ scrollbarGutter: "stable", scrollbarWidth: "thin" }}
         >
           {/* Display sections if available */}
-          {sectionsArray.length > 0 && (
+          {updatedSections.length > 0 && (
             <Card>
               <CardHeader>
                 <CardTitle>Report Sections</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {sectionsArray.map((section, index) => {
+                  {updatedSections.map((section, index) => {
                     const isCompleted = completedSections.has(section.name);
                     const completedContent = completedSections.get(
                       section.name

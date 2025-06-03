@@ -401,20 +401,26 @@ async def write_section(state: SectionState, config: RunnableConfig) -> Command[
     section_content = await writer_model.ainvoke([SystemMessage(content=section_writer_instructions),
                                                   HumanMessage(content=section_writer_inputs_formatted)])
 
-    # Push processing status to UI
-    ui_processing_message = AIMessage(
-        content=f"Processing section '{section.name}' content..."
+    # Write content to the section object
+    section.content = section_content.content
+
+    # Push the completed section to UI with message
+    ui_message = AIMessage(
+        content=f"Section '{section.name}' completed successfully!"
     )
     push_ui_message(UI_COMPONENT_NAME, {
         "section_update": {
             "name": section.name,
-            "content": section_content.content,
-            "status": "processing"
+            "content": section.content,
+            "status": "completed"
         }
-    }, message=ui_processing_message)
+    }, message=ui_message)
 
-    # Write content to the section object
-    section.content = section_content.content
+    # Publish the section to completed sections
+    return Command(
+        update={"completed_sections": [section]},
+        goto=END
+    )
 
     # Grade prompt
     section_grader_message = ("Grade the report and consider follow-up questions for missing information. "

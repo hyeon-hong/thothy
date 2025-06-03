@@ -454,6 +454,7 @@ export function Thread() {
                 <>
                   {messages
                     .filter((m) => !m.id?.startsWith(DO_NOT_RENDER_ID_PREFIX))
+                    .filter((m) => !m.id?.startsWith("run--"))
                     .filter((m) => m.lc_serializable !== true)
                     .map((message, index) =>
                       message.type === "human" ? (
