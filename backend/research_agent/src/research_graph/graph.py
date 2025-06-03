@@ -189,11 +189,11 @@ async def generate_report_plan(state: ReportState, config: RunnableConfig):
         }]
     )
 
-    # Second AI message for report sections generation  
+    # Second AI message for report sections generation
     sections_generation_message = AIMessage(
         content="Generated report sections structure",
         tool_calls=[{
-            "id": "sections_generation_001", 
+            "id": "sections_generation_001",
             "name": "generate_report_sections",
             "args": {
                 "topic": topic,
@@ -205,14 +205,16 @@ async def generate_report_plan(state: ReportState, config: RunnableConfig):
 
     # Push the report sections to the UI with message
     ui_message = AIMessage(
-        content="Report sections generated successfully!")
+        content="Report sections generated successfully!"
+    )
+
     push_ui_message(UI_COMPONENT_NAME, {
                     "topic": topic, "sections": sections}, message=ui_message)
 
-    # Append all messages to existing messages 
+    # Append all messages to existing messages
     current_messages = state.get("messages", [])
-    logger.info(f"current_messages: {current_messages}")
-    updated_messages = list(current_messages) + [query_generation_message, sections_generation_message, ui_message]
+    updated_messages = list(
+        current_messages) + [query_generation_message, sections_generation_message, ui_message]
 
     return {"topic": topic, "sections": sections, "messages": updated_messages}
 
@@ -479,7 +481,8 @@ async def write_final_sections(state: SectionState, config: RunnableConfig):
 
     # Push the section content to the UI with message
     ui_message = AIMessage(
-        content=f"Section {section.name} generated successfully!")
+        content=f"Section {section.name} generated successfully!"
+    )
     push_ui_message(UI_COMPONENT_NAME, {
                     "content": section.content}, message=ui_message)
 

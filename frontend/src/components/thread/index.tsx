@@ -319,8 +319,6 @@ export function Thread() {
     };
   });
 
-  console.log("messages: ", messages);
-
   return (
     <div className="flex h-screen w-full overflow-hidden">
       <div className="relative hidden lg:flex">
