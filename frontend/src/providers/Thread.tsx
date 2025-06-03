@@ -51,19 +51,30 @@ export function ThreadProvider({
 
   const getThreads = useCallback(async (): Promise<Thread[]> => {
     if (!apiUrl || !assistantId) return [];
-    const client = await createLangGraphClient(
-      apiUrl,
-      process.env.NEXT_PUBLIC_LANGSMITH_API_KEY ?? undefined
-    );
+    
+    try {
+      const client = await createLangGraphClient(
+        apiUrl,
+        process.env.NEXT_PUBLIC_LANGSMITH_API_KEY ?? undefined
+      );
 
-    const threads = await client.threads.search({
-      metadata: {
-        ...getThreadSearchMetadata(assistantId),
-      },
-      limit: 100,
-    });
+      const threads = await client.threads.search({
+        metadata: {
+          ...getThreadSearchMetadata(assistantId),
+        },
+        limit: 100,
+      });
 
-    return threads;
+      return threads;
+    } catch (error: any) {
+      console.error("Error fetching threads:", error);
+      if (error.status === 403 || error.status === 401) {
+        console.error("Authentication error: User might not be logged in or session expired");
+        // You might want to redirect to login or refresh the session here
+        throw new Error("Authentication failed: Please log in again");
+      }
+      throw error;
+    }
   }, [apiUrl, assistantId]);
 
   const value = {
