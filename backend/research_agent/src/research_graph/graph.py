@@ -401,6 +401,18 @@ async def write_section(state: SectionState, config: RunnableConfig) -> Command[
     section_content = await writer_model.ainvoke([SystemMessage(content=section_writer_instructions),
                                                   HumanMessage(content=section_writer_inputs_formatted)])
 
+    # Push processing status to UI
+    ui_processing_message = AIMessage(
+        content=f"Processing section '{section.name}' content..."
+    )
+    push_ui_message(UI_COMPONENT_NAME, {
+        "section_update": {
+            "name": section.name,
+            "content": section_content.content,
+            "status": "processing"
+        }
+    }, message=ui_processing_message)
+
     # Write content to the section object
     section.content = section_content.content
 
