@@ -25,34 +25,39 @@ function CustomScrollableSidebar() {
   const [openInboxes, setOpenInboxes] = useState(true);
   const [openAgent, setOpenAgent] = useState(true);
   const [agents, setAgents] = useState<any[]>([]);
+  const [staffs, setStaffs] = useState<any[]>([]);
   const [isLoadingAgents, setIsLoadingAgents] = useState(true);
+  console.log("agentInboxes: ", agentInboxes);
 
   useEffect(() => {
-    const fetchAgents = async () => {
+    const fetchData = async () => {
       try {
         setIsLoadingAgents(true);
         const supabase = await import("@/utils/supabase/client");
         const client = supabase.createClient();
-        
-        const { data, error } = await client
+        // Fetch agents
+        const { data: agentsData, error: agentsError } = await client
           .from("agents")
           .select("id, name, description, graph_name")
           .order("name", { ascending: true });
-
-        if (error) {
-          throw new Error(error.message);
-        }
-
-        setAgents(data || []);
+        if (agentsError) throw new Error(agentsError.message);
+        setAgents(agentsData || []);
+        // Fetch staffs
+        const { data: staffsData, error: staffsError } = await client
+          .from("staffs")
+          .select("id, agent_id")
+          .order("created_at", { ascending: false });
+        if (staffsError) throw new Error(staffsError.message);
+        setStaffs(staffsData || []);
       } catch (error) {
-        console.error("Error fetching agents:", error);
+        console.error("Error fetching agents or staffs:", error);
         setAgents([]);
+        setStaffs([]);
       } finally {
         setIsLoadingAgents(false);
       }
     };
-
-    fetchAgents();
+    fetchData();
   }, []);
 
   const gradients = [
@@ -83,6 +88,11 @@ function CustomScrollableSidebar() {
     return Math.abs(hash);
   }
 
+  // Filter agents for Staff and Agent lists
+  const staffAgentIds = new Set(staffs.map((s: any) => s.agent_id));
+  const staffAgentInboxes = agentInboxes.filter((inbox) => staffAgentIds.has(inbox.id));
+  const otherAgentInboxes = agentInboxes.filter((inbox) => !staffAgentIds.has(inbox.id));
+
   return (
     <div className="flex-shrink-0 w-64 bg-[#F9FAFB] border-r-0">
       <div className="flex flex-col pb-9 pt-6">
@@ -105,17 +115,17 @@ function CustomScrollableSidebar() {
             </div>
           ) : (
             <>
-              {/* Collapsible Agent Inboxes Section */}
+              {/* Collapsible Staff Section */}
               <Collapsible open={openInboxes} onOpenChange={setOpenInboxes}>
                 <CollapsibleTrigger asChild>
                   <div className="flex items-center cursor-pointer select-none text-sm font-medium text-gray-500 mb-2 pl-2">
-                    <span className="mr-2">Inboxes</span>
+                    <span className="mr-2">Staff</span>
                     <span>{openInboxes ? "▾" : "▸"}</span>
                   </div>
                 </CollapsibleTrigger>
                 <CollapsibleContent>
                   <div className="flex flex-col gap-2 pl-7 mb-6">
-                    {agentInboxes.map((item, idx) => {
+                    {staffAgentInboxes.map((item, idx) => {
                       const label = item.name || prettifyText(item.graphId);
                       return (
                         <div
@@ -179,38 +189,46 @@ function CustomScrollableSidebar() {
                         ))}
                       </div>
                     ) : (
-                      agents.filter(
-                        (agent) =>
-                          !agentInboxes.some(
-                            (inbox) => inbox.graphId === agent.graph_name
-                          )
-                      ).map((agent) => (
-                        <div
-                          key={`agent-${agent.id}`}
-                          className="flex items-center w-full"
-                        >
-                          <TooltipProvider>
-                            <Tooltip delayduration={200}>
-                              <TooltipTrigger asChild>
-                                <button
-                                  className="flex items-center gap-2 p-2 w-full text-left hover:bg-gray-100 rounded-md"
-                                  onClick={() => {
-                                    console.log("Selected agent:", agent);
-                                  }}
-                                >
-                                  <div className="w-6 h-6 rounded-md flex-shrink-0 flex items-center justify-center text-white bg-blue-400">
-                                    {agent.name.slice(0, 1).toUpperCase()}
-                                  </div>
-                                  <span className="truncate min-w-0 font-medium text-gray-600">
-                                    {agent.name}
-                                  </span>
-                                </button>
-                              </TooltipTrigger>
-                              <TooltipContent>{agent.name}</TooltipContent>
-                            </Tooltip>
-                          </TooltipProvider>
-                        </div>
-                      ))
+                      otherAgentInboxes.map((item, idx) => {
+                        const label = item.name || prettifyText(item.graphId);
+                        return (
+                          <div
+                            key={`graph-id-${item.graphId}-${idx}`}
+                            className={cn(
+                              "flex items-center w-full",
+                              item.selected ? "bg-gray-100 rounded-md" : ""
+                            )}
+                          >
+                            <TooltipProvider>
+                              <Tooltip delayduration={200}>
+                                <TooltipTrigger asChild>
+                                  <button
+                                    className="flex items-center gap-2 p-2 w-full text-left hover:bg-gray-100 rounded-md"
+                                    onClick={() => changeAgentInbox(item.id, true)}
+                                  >
+                                    <div
+                                      className="w-6 h-6 rounded-md flex-shrink-0 flex items-center justify-center text-white"
+                                      style={{
+                                        background:
+                                          gradients[
+                                            hashString(item.graphId) %
+                                              gradients.length
+                                          ],
+                                      }}
+                                    >
+                                      {label.slice(0, 1).toUpperCase()}
+                                    </div>
+                                    <span className="truncate min-w-0 font-medium text-gray-600">
+                                      {label}
+                                    </span>
+                                  </button>
+                                </TooltipTrigger>
+                                <TooltipContent>{label}</TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                          </div>
+                        );
+                      })
                     )}
                   </div>
                 </CollapsibleContent>

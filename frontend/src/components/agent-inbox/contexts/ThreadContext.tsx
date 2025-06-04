@@ -200,51 +200,37 @@ export function ThreadsProvider<
 
     try {
       setLoading(true);
-      // Use Supabase JS SDK directly to fetch staff (favorite agents)
+      // Use Supabase JS SDK directly to fetch agents
       const supabase = await import("@/utils/supabase/client");
       const client = supabase.createClient();
-      // Fetch staff records for the current user
-      const { data: staffs, error } = await client
-        .from("staffs")
-        .select("id, name, description, agent_id")
-        .order("created_at", { ascending: false });
+      // Fetch all agents
+      const { data: agents, error } = await client
+        .from("agents")
+        .select("id, graph_name, name, description")
+        .order("name", { ascending: true });
 
       if (error) {
         throw new Error(error.message);
       }
 
-      if (!staffs || !Array.isArray(staffs)) {
+      if (!agents || !Array.isArray(agents)) {
         throw new Error("Invalid data format from Supabase");
       }
 
-      if (!staffs.length) {
+      if (!agents.length) {
         setAgentInboxes([]);
         setLoading(false);
         return;
       }
 
-      // Fetch agents table for graph_name and description
-      const { data: agents, error: agentsError } = await client
-        .from("agents")
-        .select("id, graph_name, description");
-      if (agentsError) {
-        throw new Error(agentsError.message);
-      }
-
-      // Transform staffs into AgentInbox format, matching agent_id to agent.id
-      const parsedAgentInboxes: AgentInbox[] = staffs
-        .map((staff: any) => {
-          const agent = agents?.find((a: any) => a.id === staff.agent_id);
-          if (!agent?.graph_name) return null; // skip if no graph_name
-          return {
-            id: staff.id,
-            graphId: agent.graph_name,
-            name: staff.name,
-            description: agent.description || staff.description,
-            selected: false,
-          };
-        })
-        .filter(Boolean); // remove nulls
+      // Transform agents into AgentInbox format
+      const parsedAgentInboxes: AgentInbox[] = agents.map((agent: any) => ({
+        id: agent.id,
+        graphId: agent.graph_name,
+        name: agent.name,
+        description: agent.description,
+        selected: false,
+      }));
 
       // If there is no agent inbox search param, or the search param is not
       // a valid UUID, update search param
@@ -282,6 +268,7 @@ export function ThreadsProvider<
           inbox.id === agentInboxSearchParam ||
           inbox.graphId === agentInboxSearchParam;
       });
+      console.log("parsedAgentInboxes: ", parsedAgentInboxes);
 
       setAgentInboxes(parsedAgentInboxes);
       // Fetch threads for the selected inbox
