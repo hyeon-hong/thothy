@@ -21,6 +21,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "../ui/tooltip";
+import { Collapsible, CollapsibleTrigger, CollapsibleContent } from "@/components/ui/collapsible";
 
 interface Team {
   id: string;
@@ -84,6 +85,20 @@ export function AppSidebar() {
   const { agentInboxes, changeAgentInbox, loading } = useThreadsContext();
   const [staffs, setStaffs] = useState<any[]>([]);
   const [isLoadingStaffs, setIsLoadingStaffs] = useState(true);
+  const [openStaff, setOpenStaff] = useState(true);
+  const [openAgent, setOpenAgent] = useState(true);
+
+  // Hardcoded agent list
+  const AGENT_LIST = [
+    { id: "chat_agent", name: "Chat Agent" },
+    { id: "data_agent", name: "Data Agent" },
+    { id: "research_agent", name: "Research Agent" },
+    { id: "slide_agent", name: "Slide Agent" },
+    { id: "slide_build_agent", name: "Slide Build Agent" },
+    { id: "ui_agent", name: "UI Agent" },
+    { id: "ui_build_agent", name: "UI Build Agent" },
+    { id: "ui_eval_agent", name: "UI Eval Agent" },
+  ];
 
   useEffect(() => {
     const fetchStaffs = async () => {
@@ -118,59 +133,118 @@ export function AppSidebar() {
                 <SidebarSkeleton />
               ) : (
                 <>
-                  {/* Staff Section */}
-                  <div className="flex flex-col gap-2 pl-7 mb-6">
-                    <div className="text-sm font-medium text-gray-500 mb-2 pl-2">Staff</div>
-                    {isLoadingStaffs ? (
-                      <div className="flex flex-col gap-2">
-                        {[1, 2, 3].map((i) => (
-                          <div
-                            key={i}
-                            className="h-8 bg-gray-100 rounded-md animate-pulse"
-                          />
-                        ))}
+                  {/* Collapsible Staff Section */}
+                  <Collapsible open={openStaff} onOpenChange={setOpenStaff}>
+                    <CollapsibleTrigger asChild>
+                      <div className="flex items-center cursor-pointer select-none text-sm font-medium text-gray-500 mb-2 pl-2">
+                        <span className="mr-2">Staff</span>
+                        <span>{openStaff ? "▾" : "▸"}</span>
                       </div>
-                    ) : staffs.length === 0 ? (
-                      <div className="text-sm text-gray-500 pl-2">No staff found</div>
-                    ) : (
-                      staffs.map((staff) => (
-                        <SidebarMenuItem
-                          key={`staff-${staff.id}`}
-                          className="flex items-center w-full"
-                        >
-                          <TooltipProvider>
-                            <Tooltip delayduration={200}>
-                              <TooltipTrigger asChild>
-                                <SidebarMenuButton
-                                  onClick={() => {
-                                    // TODO: Handle staff selection if needed
-                                    console.log("Selected staff:", staff);
-                                  }}
-                                >
-                                  <div
-                                    className="w-6 h-6 rounded-md flex-shrink-0 flex items-center justify-center text-white"
-                                    style={{
-                                      background:
-                                        gradients[
-                                          hashString(staff.id) % gradients.length
-                                        ],
-                                    }}
-                                  >
-                                    {staff.name.slice(0, 1).toUpperCase()}
-                                  </div>
-                                  <span className="truncate min-w-0 font-medium text-gray-600">
-                                    {staff.name}
-                                  </span>
-                                </SidebarMenuButton>
-                              </TooltipTrigger>
-                              <TooltipContent>{staff.name}</TooltipContent>
-                            </Tooltip>
-                          </TooltipProvider>
-                        </SidebarMenuItem>
-                      ))
-                    )}
-                  </div>
+                    </CollapsibleTrigger>
+                    <CollapsibleContent>
+                      <div className="flex flex-col gap-2 pl-7 mb-6">
+                        {isLoadingStaffs ? (
+                          <div className="flex flex-col gap-2">
+                            {[1, 2, 3].map((i) => (
+                              <div
+                                key={i}
+                                className="h-8 bg-gray-100 rounded-md animate-pulse"
+                              />
+                            ))}
+                          </div>
+                        ) : staffs.length === 0 ? (
+                          <div className="text-sm text-gray-500 pl-2">No staff found</div>
+                        ) : (
+                          staffs.map((staff) => (
+                            <SidebarMenuItem
+                              key={`staff-${staff.id}`}
+                              className="flex items-center w-full"
+                            >
+                              <TooltipProvider>
+                                <Tooltip delayduration={200}>
+                                  <TooltipTrigger asChild>
+                                    <SidebarMenuButton
+                                      onClick={() => {
+                                        // TODO: Handle staff selection if needed
+                                        console.log("Selected staff:", staff);
+                                      }}
+                                    >
+                                      <div
+                                        className="w-6 h-6 rounded-md flex-shrink-0 flex items-center justify-center text-white"
+                                        style={{
+                                          background:
+                                            gradients[
+                                              hashString(staff.id) % gradients.length
+                                            ],
+                                        }}
+                                      >
+                                        {staff.name.slice(0, 1).toUpperCase()}
+                                      </div>
+                                      <span className="truncate min-w-0 font-medium text-gray-600">
+                                        {staff.name}
+                                      </span>
+                                    </SidebarMenuButton>
+                                  </TooltipTrigger>
+                                  <TooltipContent>{staff.name}</TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
+                            </SidebarMenuItem>
+                          ))
+                        )}
+                      </div>
+                    </CollapsibleContent>
+                  </Collapsible>
 
+                  {/* Collapsible Agent Section */}
+                  <Collapsible open={openAgent} onOpenChange={setOpenAgent}>
+                    <div className="flex flex-col">
+                      <CollapsibleTrigger asChild>
+                        <div className="flex items-center cursor-pointer select-none text-sm font-medium text-gray-500 mb-2 pl-2">
+                          <span className="mr-2">Agent</span>
+                          <span>{openAgent ? "▾" : "▸"}</span>
+                        </div>
+                      </CollapsibleTrigger>
+                      <CollapsibleContent>
+                        <div className="flex flex-col gap-2 pl-7 mb-6">
+                          {AGENT_LIST.filter(agent =>
+                            !staffs.some(staff =>
+                              staff.id === agent.id || staff.name === agent.name
+                            )
+                          ).map((agent) => (
+                            <SidebarMenuItem
+                              key={`agent-${agent.id}`}
+                              className="flex items-center w-full"
+                            >
+                              <TooltipProvider>
+                                <Tooltip delayduration={200}>
+                                  <TooltipTrigger asChild>
+                                    <SidebarMenuButton
+                                      onClick={() => {
+                                        // TODO: Handle agent selection if needed
+                                        console.log("Selected agent:", agent);
+                                      }}
+                                    >
+                                      <div
+                                        className="w-6 h-6 rounded-md flex-shrink-0 flex items-center justify-center text-white bg-blue-400"
+                                      >
+                                        {agent.name.slice(0, 1).toUpperCase()}
+                                      </div>
+                                      <span className="truncate min-w-0 font-medium text-gray-600">
+                                        {agent.name}
+                                      </span>
+                                    </SidebarMenuButton>
+                                  </TooltipTrigger>
+                                  <TooltipContent>{agent.name}</TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
+                            </SidebarMenuItem>
+                          ))}
+                        </div>
+                      </CollapsibleContent>
+                    </div>
+                  </Collapsible>
+
+                  {/* Existing agent inboxes (if any) */}
                   <div className="flex flex-col gap-2 pl-7">
                     {agentInboxes.map((item, idx) => {
                       // Try to find a staff with the same id as the agent inbox
@@ -202,12 +276,7 @@ export function AppSidebar() {
                                   >
                                     {label.slice(0, 1).toUpperCase()}
                                   </div>
-                                  <span
-                                    className={cn(
-                                      "truncate min-w-0 font-medium",
-                                      item.selected ? "text-black" : "text-gray-600"
-                                    )}
-                                  >
+                                  <span className="truncate min-w-0 font-medium text-gray-600">
                                     {label}
                                   </span>
                                 </SidebarMenuButton>

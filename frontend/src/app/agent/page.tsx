@@ -34,13 +34,17 @@ export default function AgentPage() {
   }
 
   return (
-    <div className="container mx-auto px-4">
+    <div className="container mx-auto px-4 relative min-h-screen pb-24">
       <Header currentView="agent" />
       <div className="mt-4 mb-4 flex flex-col gap-2">
         <h1 className="text-3xl font-bold">Agents</h1>
         <p className="text-muted-foreground">Manage and launch your organization's agents</p>
       </div>
       <AgentHub />
+      <div className="fixed bottom-0 left-0 w-full z-50 bg-white border-t border-gray-200 py-4 px-4 flex justify-center gap-4 shadow-lg">
+        <Button className="w-40" onClick={() => { /* TODO: handle select */ }}>Select</Button>
+        <Button className="w-40" variant="outline" onClick={() => { /* TODO: handle run */ }}>Run</Button>
+      </div>
     </div>
   );
 } 

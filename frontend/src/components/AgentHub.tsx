@@ -80,12 +80,13 @@ export default function AgentHub() {
     return (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-4">
             {agents.map((agent) => (
-                <AgentCard
-                    key={agent.id}
-                    agent={{ ...agent, graph_name: agent.graph_name || '' }}
-                    onSelect={handleAgentSelect}
-                    isSelected={selectedAgentIds.has(agent.id)}
-                />
+                <div key={agent.id} className="h-full flex">
+                    <AgentCard
+                        agent={{ ...agent, graph_name: agent.graph_name || '' }}
+                        onSelect={handleAgentSelect}
+                        isSelected={selectedAgentIds.has(agent.id)}
+                    />
+                </div>
             ))}
         </div>
     );

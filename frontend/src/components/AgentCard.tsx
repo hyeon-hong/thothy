@@ -157,7 +157,7 @@ export default function AgentCard({
   const [gradientStart, gradientEnd] = getGradientColors(agent.name);
 
   return (
-    <Card className="flex flex-col h-[260px] w-full max-w-full hover:shadow-md transition-shadow">
+    <Card className="flex flex-col h-full w-full max-w-full hover:shadow-md transition-shadow">
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
         <div>
           <CardTitle>{agent.name}</CardTitle>
@@ -169,9 +169,9 @@ export default function AgentCard({
         </div>
       </CardHeader>
       <CardContent className="flex-1 flex flex-col justify-between">
-        <p className="text-sm text-muted-foreground mb-2 line-clamp-3">{agent.description}</p>
+        <p className="text-sm text-muted-foreground mb-2 line-clamp-3 break-words overflow-hidden text-ellipsis">{agent.description}</p>
       </CardContent>
-      <CardFooter className="flex flex-col gap-2 p-4">
+      <CardFooter className="flex flex-col gap-2 p-4 mt-auto sticky bottom-0 bg-white z-10">
         <Button
           variant={isSelected ? "secondary" : "default"}
           className="w-full"
