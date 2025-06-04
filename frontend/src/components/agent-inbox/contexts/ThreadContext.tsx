@@ -208,57 +208,38 @@ export function ThreadsProvider<
 
     try {
       setLoading(true);
-      // Fetch teams from the database with detailed error logging
-      const requestBody = {
-        action: "select",
-        table: "teams",
-        query: {
-          select: "*",
-          order: [{ column: "created_at", order: "desc" }]
-        },
-      };
+      // Use Supabase JS SDK directly to fetch staff (favorite agents)
+      const supabase = await import("@/utils/supabase/client");
+      const client = supabase.createClient();
+      // Fetch staff records for the current user
+      const { data: staffs, error } = await client
+        .from("staffs")
+        .select("id, name, description")
+        .order("created_at", { ascending: false });
 
-      console.log("[Debug] Sending request to /api/supabase:", requestBody);
-
-      const response = await fetch("/api/supabase", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(requestBody),
-      });
-
-      console.log("[Debug] Response status:", response.status);
-      
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error("[Debug] API Error response:", errorText);
-        throw new Error(`Failed to fetch teams: ${response.status} ${errorText}`);
+      if (error) {
+        console.error("[Debug] Supabase error fetching staffs:", error);
+        throw new Error(error.message);
       }
 
-      const teams = await response.json();
-      console.log("[Debug] Teams data:", teams);
-
-      if (!teams || !Array.isArray(teams)) {
-        console.error("[Debug] Invalid data format:", teams);
-        throw new Error("Invalid data format from API");
+      if (!staffs || !Array.isArray(staffs)) {
+        console.error("[Debug] Invalid data format:", staffs);
+        throw new Error("Invalid data format from Supabase");
       }
 
-      if (!teams.length) {
-        console.log("[Debug] No teams found in database");
-        // Don't show welcome dialog even if no teams found
+      if (!staffs.length) {
+        console.log("[Debug] No staff found in database");
         setAgentInboxes([]);
         setLoading(false);
         return;
       }
 
-      // Transform teams into AgentInbox format
-      const parsedAgentInboxes: AgentInbox[] = teams.map((team: any) => ({
-        id: team.id,
-        // TODO: Handle project_graph later
-        graphId: "team_graph",
-        name: team.name,
-        description: team.description,
+      // Transform staffs into AgentInbox format
+      const parsedAgentInboxes: AgentInbox[] = staffs.map((staff: any) => ({
+        id: staff.id,
+        graphId: "staff_graph", // or use staff.graph_name if available
+        name: staff.name,
+        description: staff.description,
         selected: false,
       }));
       console.log("[Debug] Transformed agent inboxes:", parsedAgentInboxes);
@@ -269,7 +250,6 @@ export function ThreadsProvider<
         parsedAgentInboxes[0].selected = true;
         updateQueryParams(AGENT_INBOX_PARAM, parsedAgentInboxes[0].id);
         setAgentInboxes(parsedAgentInboxes);
-        
         // Fetch threads for the first inbox
         const inboxSearchParam = getSearchParam(INBOX_PARAM) as ThreadStatusWithAll;
         if (inboxSearchParam) {
@@ -302,14 +282,13 @@ export function ThreadsProvider<
       });
 
       setAgentInboxes(parsedAgentInboxes);
-      
       // Fetch threads for the selected inbox
       const inboxSearchParam = getSearchParam(INBOX_PARAM) as ThreadStatusWithAll;
       if (inboxSearchParam) {
         await fetchThreads(inboxSearchParam);
       }
     } catch (error) {
-      console.error("[Debug] Error fetching teams:", error);
+      console.error("[Debug] Error fetching staffs:", error);
       toast({
         title: "Error",
         description: "Failed to fetch agent inboxes. Please try again.",
