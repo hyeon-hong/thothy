@@ -641,7 +641,12 @@ export default function StaffPage() {
                           style={{ marginTop: "auto" }}
                           onClick={(e) => {
                             e.stopPropagation();
-                            router.push(`/agents/${staff.graph_name}?mode=staff`);
+                            const agent = agents.find((a) => a.id === staff.agent_id);
+                            if (agent && agent.graph_name) {
+                              router.push(`/agents/${agent.graph_name}?mode=staff`);
+                            } else {
+                              alert("Assigned agent not found or missing name.");
+                            }
                           }}
                         >
                           Run

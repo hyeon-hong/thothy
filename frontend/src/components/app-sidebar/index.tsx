@@ -173,7 +173,9 @@ export function AppSidebar() {
 
                   <div className="flex flex-col gap-2 pl-7">
                     {agentInboxes.map((item, idx) => {
-                      const label = item.name || prettifyText(item.graphId);
+                      // Try to find a staff with the same id as the agent inbox
+                      const staff = staffs.find((s) => s.id === item.id);
+                      const label = staff ? staff.name : (item.name || prettifyText(item.graphId));
                       return (
                         <SidebarMenuItem
                           key={`graph-id-${item.graphId}-${idx}`}
