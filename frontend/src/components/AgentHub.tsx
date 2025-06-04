@@ -31,7 +31,6 @@ export default function AgentHub() {
                 setLoading(false);
             }
         };
-
         fetchAgents();
     }, []);
 
@@ -46,7 +45,6 @@ export default function AgentHub() {
                     `/api/agents/user?userId=${user.id}`
                 );
                 const data = await response.json();
-
                 if (Array.isArray(data)) {
                     setSelectedAgentIds(new Set(data.map((agent: Agent) => agent.id)));
                 } else {
@@ -56,7 +54,6 @@ export default function AgentHub() {
                 setSelectedAgentIds(new Set());
             }
         };
-
         fetchSelectedAgents();
     }, [user?.id]);
 
@@ -64,29 +61,32 @@ export default function AgentHub() {
         setSelectedAgentIds((prev) => new Set([...prev, agentId]));
     };
 
+    if (loading) {
+        return (
+            <div className="flex justify-center items-center min-h-[200px]">
+                <p>Loading...</p>
+            </div>
+        );
+    }
+
+    if (agents.length === 0) {
+        return (
+            <p className="text-center text-muted-foreground">
+                No agents found. Start by creating your first agent!
+            </p>
+        );
+    }
+
     return (
-        <div className="max-w-7xl mx-auto py-8 px-4">
-            <h1 className="text-3xl font-bold text-center mb-6 tracking-tight">Agent Hub</h1>
-            {loading ? (
-                <div className="flex justify-center items-center min-h-[300px]">
-                    <span className="animate-spin h-10 w-10 border-4 border-indigo-600 border-t-transparent rounded-full inline-block" />
-                </div>
-            ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 mt-2">
-                    {agents.map((agent) => (
-                        <div key={agent.id}>
-                            <AgentCard
-                                agent={{
-                                    ...agent,
-                                    graph_name: agent.graph_name || ''
-                                }}
-                                onSelect={handleAgentSelect}
-                                isSelected={selectedAgentIds.has(agent.id)}
-                            />
-                        </div>
-                    ))}
-                </div>
-            )}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-4">
+            {agents.map((agent) => (
+                <AgentCard
+                    key={agent.id}
+                    agent={{ ...agent, graph_name: agent.graph_name || '' }}
+                    onSelect={handleAgentSelect}
+                    isSelected={selectedAgentIds.has(agent.id)}
+                />
+            ))}
         </div>
     );
 } 
