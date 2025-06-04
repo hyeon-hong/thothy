@@ -730,22 +730,19 @@ const createTeamMessage = (
 
 const createLangGraphClient = async () => {
   const supabase = createSupabaseClient();
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
-
+  const { data: { user } } = await supabase.auth.getUser();
+  const session = supabase.auth.session ? supabase.auth.session() : null;
+  const accessToken = session?.access_token;
   const apiUrl = process.env.NEXT_PUBLIC_LANGGRAPH_API_URL;
   const apiKey = process.env.NEXT_PUBLIC_LANGSMITH_API_KEY;
-
-  if (!session?.access_token) {
+  if (!accessToken) {
     throw new Error("No access token found. User might not be authenticated.");
   }
-
   return new Client({
     apiUrl,
     apiKey,
     defaultHeaders: {
-      Authorization: `Bearer ${session.access_token}`,
+      Authorization: `Bearer ${accessToken}`,
     },
   });
 };

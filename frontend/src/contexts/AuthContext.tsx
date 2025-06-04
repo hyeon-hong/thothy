@@ -69,38 +69,34 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const initializeAuth = async () => {
             setLoading(true);
             try {
-                // This will use the existing session and refresh the token if needed
-                const { data: { session: currentSession }, error } = await supabase.auth.getSession();
-                
+                // Use getUser to authenticate the user
+                const { data: { user: supabaseUser }, error } = await supabase.auth.getUser();
+                const session = supabase.auth.session ? supabase.auth.session() : null;
                 if (error) throw error;
-                
-                if (currentSession?.user) {
+                if (supabaseUser) {
                     // Extract user metadata from Google OAuth
-                    const userMetadata = currentSession.user.user_metadata || {};
-
+                    const userMetadata = supabaseUser.user_metadata || {};
                     // Update user with Google profile information
                     const updatedUser = {
-                        ...currentSession.user,
+                        ...supabaseUser,
                         user_metadata: {
                             ...userMetadata,
                             full_name:
                                 userMetadata?.full_name ||
                                 userMetadata?.name ||
-                                currentSession.user.email,
+                                supabaseUser.email,
                             avatar_url:
                                 userMetadata?.avatar_url ||
                                 userMetadata?.picture,
                         },
                     };
-
-                    setSession(currentSession);
+                    setSession(session);
                     setUser(updatedUser);
-                    saveAuthState(updatedUser, currentSession);
+                    saveAuthState(updatedUser, session);
                 } else {
                     setSession(null);
                     setUser(null);
                     localStorage.removeItem(STORAGE_KEY);
-                    
                     // If on a protected path, redirect to login
                     const protectedPaths = ['/team', '/find', '/inbox', '/staff', '/blog'];
                     if (protectedPaths.some(path => pathname?.startsWith(path))) {

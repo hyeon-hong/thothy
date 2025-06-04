@@ -35,13 +35,13 @@ export function useThreadManager(userId, client, graph_name) {
 
                 // Use Supabase's built-in session refresh
                 const supabase = createClient();
-                const { data } = await supabase.auth.getSession();
-
-                if (data?.session?.access_token) {
+                const { data: { user } } = await supabase.auth.getUser();
+                const session = supabase.auth.session ? supabase.auth.session() : null;
+                if (session?.access_token) {
                     // Update client headers with new session
                     client.defaultHeaders = {
                         ...client.defaultHeaders,
-                        Authorization: `Bearer ${data.session.access_token}`,
+                        Authorization: `Bearer ${session.access_token}`,
                     };
                     return true;
                 }
@@ -401,12 +401,12 @@ export function useThreadManager(userId, client, graph_name) {
 
             // Use Supabase's built-in session refresh
             const supabase = createClient();
-            const { data } = await supabase.auth.getSession();
-
-            if (data?.session?.access_token) {
+            const { data: { user } } = await supabase.auth.getUser();
+            const session = supabase.auth.session ? supabase.auth.session() : null;
+            if (session?.access_token) {
                 client.defaultHeaders = {
                     ...client.defaultHeaders,
-                    Authorization: `Bearer ${data.session.access_token}`,
+                    Authorization: `Bearer ${session.access_token}`,
                 };
                 console.log("Session refreshed successfully");
             } else {

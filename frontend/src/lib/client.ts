@@ -10,9 +10,8 @@ export const createClient = async ({
 }) => {
   // Get supabase client instance and get access token
   const supabase = createSupabaseClient();
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
+  const { data: { user } } = await supabase.auth.getUser();
+  const session = supabase.auth.session ? supabase.auth.session() : null;
   const accessToken = session?.access_token;
   console.log("[createClient] accessToken:", accessToken);
   if (!accessToken) {
