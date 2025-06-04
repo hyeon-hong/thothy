@@ -293,7 +293,7 @@ def human_feedback(state: ReportState, config: RunnableConfig) -> Command[Litera
     if human_response.get("type") == "accept":
         return Command(goto=[
             Send("build_section_with_web_research", {
-                "topic": topic, "section": s, "search_iterations": 0})
+                "topic": topic, "section": [s], "search_iterations": [0]})
             for s in sections
             if s.research
         ])
@@ -323,7 +323,11 @@ async def generate_queries(state: SectionState, config: RunnableConfig):
 
     # Get state
     topic = state["topic"]
-    section = state["section"]
+    # Get the first (current) section from the list
+    section = state["section"][0] if state["section"] else None
+
+    if not section:
+        raise ValueError("No section found in state for query generation")
 
     # Get configuration
     configurable = Configuration.from_runnable_config(config)
@@ -389,7 +393,9 @@ async def search_web(state: SectionState, config: RunnableConfig):
     # Search the web with parameters
     source_str = await select_and_execute_search(search_api, query_list, params_to_pass)
 
-    return {"source_str": source_str, "search_iterations": state["search_iterations"] + 1}
+    # Get current search iterations (use last value or 0 if empty)
+    current_iterations = state["search_iterations"][-1] if state["search_iterations"] else 0
+    return {"source_str": [source_str], "search_iterations": [current_iterations + 1]}
 
 
 async def write_section(state: SectionState, config: RunnableConfig) -> Command[Literal[END, "search_web"]]:
@@ -414,8 +420,13 @@ async def write_section(state: SectionState, config: RunnableConfig) -> Command[
 
     # Get state
     topic = state["topic"]
-    section = state["section"]
-    source_str = state["source_str"]
+    # Get the first (current) section from the list
+    section = state["section"][0] if state["section"] else None
+    # Get the latest source string from the list
+    source_str = state["source_str"][-1] if state["source_str"] else ""
+
+    if not section:
+        raise ValueError("No section found in state for writing")
 
     # Get configuration
     configurable = Configuration.from_runnable_config(config)
@@ -466,8 +477,10 @@ async def write_section(state: SectionState, config: RunnableConfig) -> Command[
     feedback = await reflection_model.ainvoke([SystemMessage(content=section_grader_instructions_formatted),
                                                HumanMessage(content=section_grader_message)])
 
+    # Get current search iterations (use last value or 0 if empty)
+    current_iterations = state["search_iterations"][-1] if state["search_iterations"] else 0
     # If the section is passing or the max search depth is reached, publish the section to completed sections
-    if feedback.grade == "pass" or state["search_iterations"] >= configurable.max_search_depth:
+    if feedback.grade == "pass" or current_iterations >= configurable.max_search_depth:
         # Create a temporary section object with updated content
         temp_section = type(section)(
             name=section.name,
@@ -498,14 +511,14 @@ async def write_section(state: SectionState, config: RunnableConfig) -> Command[
 
     # Push the section status to UI indicating more research is needed
     ui_message = AIMessage(
-        content=f"Section '{section.name}' needs more research (iteration {state['search_iterations'] + 1})"
+        content=f"Section '{section.name}' needs more research (iteration {current_iterations + 1})"
     )
     push_ui_message(UI_COMPONENT_NAME, {
         "section_update": {
             "name": section.name,
             "content": temp_section_content,
             "status": "needs_more_research",
-            "iteration": state["search_iterations"] + 1
+            "iteration": current_iterations + 1
         }
     }, message=ui_message)
 
@@ -535,8 +548,14 @@ async def write_final_sections(state: SectionState, config: RunnableConfig):
 
     # Get state
     topic = state["topic"]
-    section = state["section"]
-    completed_report_sections = state["report_sections_from_research"]
+    # Get the first (current) section from the list
+    section = state["section"][0] if state["section"] else None
+    # Get the latest report sections from research (join all if multiple)
+    completed_report_sections = "\n\n".join(
+        state["report_sections_from_research"]) if state["report_sections_from_research"] else ""
+
+    if not section:
+        raise ValueError("No section found in state for final section writing")
 
     # Format system instructions
     system_instructions = final_section_writer_instructions.format(
@@ -601,7 +620,7 @@ def gather_completed_sections(state: ReportState):
 
     logger.info("gather_completed_sections end")
 
-    return {"report_sections_from_research": completed_report_sections}
+    return {"report_sections_from_research": [completed_report_sections]}
 
 
 def compile_final_report(state: ReportState):
@@ -646,7 +665,7 @@ def initiate_final_section_writing(state: ReportState):
 
     # Kick off section writing in parallel via Send() API for any sections that do not require research
     return [
-        Send("write_final_sections", {"topic": state["topic"], "section": s,
+        Send("write_final_sections", {"topic": state["topic"], "section": [s],
              "report_sections_from_research": state["report_sections_from_research"]})
         for s in state["sections"]
         if not s.research
@@ -708,10 +727,9 @@ builder.add_edge(START, "generate_report_plan")
 builder.add_edge("generate_report_plan", "human_feedback")
 builder.add_edge("build_section_with_web_research",
                  "gather_completed_sections")
-builder.add_edge("gather_completed_sections", END)
-# builder.add_conditional_edges("gather_completed_sections",
-#                               initiate_final_section_writing, ["write_final_sections"])
-# builder.add_edge("write_final_sections", "compile_final_report")
-# builder.add_edge("compile_final_report", END)
+builder.add_conditional_edges("gather_completed_sections",
+                              initiate_final_section_writing, ["write_final_sections"])
+builder.add_edge("write_final_sections", "compile_final_report")
+builder.add_edge("compile_final_report", END)
 
 graph = builder.compile()
