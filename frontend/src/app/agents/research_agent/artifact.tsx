@@ -7,7 +7,7 @@ import {
   CardContent,
   CardFooter,
 } from "@/components/ui/card";
-import Markdown from "react-markdown";
+import { MarkdownText } from "@/components/thread/markdown-text";
 
 // TypeScript interfaces matching the Python classes from state.py
 interface Section {
@@ -227,7 +227,7 @@ export default function ResearchGraphComponent(props: {
                           <div className="bg-white p-3 rounded border">
                             <h4 className="font-medium mb-2">Content:</h4>
                             <div className="text-gray-700 leading-relaxed prose prose-sm max-w-none">
-                              <Markdown>{section.content}</Markdown>
+                              <MarkdownText>{section.content}</MarkdownText>
                             </div>
                           </div>
                         )}

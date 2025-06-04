@@ -624,7 +624,7 @@ def compile_final_report(state: ReportState):
     report_data = {"content": all_sections}
     push_ui_message(UI_COMPONENT_NAME, report_data, message=ui_message)
 
-    return ReportStateOutput(final_report=all_sections)
+    return ReportStateOutput(final_report=all_sections, messages=all_sections)
 
 
 def initiate_final_section_writing(state: ReportState):
@@ -704,12 +704,9 @@ builder.add_edge(START, "generate_report_plan")
 builder.add_edge("generate_report_plan", "human_feedback")
 builder.add_edge("build_section_with_web_research",
                  "gather_completed_sections")
-builder.add_edge("gather_completed_sections", END)
-
-# TODO: Add conditional edges for final section writing
-# builder.add_conditional_edges("gather_completed_sections",
-#                               initiate_final_section_writing, ["write_final_sections"])
-# builder.add_edge("write_final_sections", "compile_final_report")
-# builder.add_edge("compile_final_report", END)
+builder.add_conditional_edges("gather_completed_sections",
+                              initiate_final_section_writing, ["write_final_sections"])
+builder.add_edge("write_final_sections", "compile_final_report")
+builder.add_edge("compile_final_report", END)
 
 graph = builder.compile()
