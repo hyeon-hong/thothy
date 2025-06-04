@@ -447,27 +447,28 @@ export default function StaffPage() {
     }
 
     try {
-      const response = await fetch(`/api/staff/${editingStaff.id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
+      const supabase = createSupabaseClient();
+      // Update the staff directly in Supabase
+      const { data, error } = await supabase
+        .from("staffs")
+        .update({
           name: staffName,
           description: staffDescription,
           agent_id: selectedAgent,
-        }),
-      });
+        })
+        .eq("id", editingStaff.id)
+        .select("*");
 
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || "Failed to update staff");
+      if (error) {
+        throw new Error(error.message || "Failed to update staff");
       }
 
-      const data = await response.json();
+      const updatedStaff = data && data[0] ? data[0] : editingStaff;
 
       // Update the staff in the staff list
       setStaffMembers((prevStaff) =>
         prevStaff.map((staff) =>
-          staff.id === editingStaff.id ? { ...staff, ...data } : staff
+          staff.id === editingStaff.id ? { ...staff, ...updatedStaff } : staff
         )
       );
 
@@ -479,7 +480,7 @@ export default function StaffPage() {
       setShowDialog(false);
     } catch (error) {
       console.error("Failed to update staff:", error);
-      alert("Failed to update staff: " + error.message);
+      alert("Failed to update staff: " + (error as Error).message);
     }
   };
 
