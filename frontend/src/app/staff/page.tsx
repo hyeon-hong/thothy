@@ -398,6 +398,8 @@ export default function StaffPage() {
           .insert({
             user_id: userData.user.id,
             agent_id: selectedAgent,
+            name: staffName,
+            description: staffDescription,
             // Note: created_at and updated_at have default values in the database
           })
           .select()
@@ -495,16 +497,6 @@ export default function StaffPage() {
       } else {
         setShowDialog(false);
       }
-    }
-  };
-
-  const handleAgentClick = (agentId: string) => {
-    const agent = agents.find((a) => a.id === agentId);
-    if (agent && agent.graph_name) {
-      router.push(`/agents/${agent.graph_name}?mode=staff`);
-    } else {
-      // Fallback to id if graph_name is not available
-      router.push(`/agents/${agentId}?mode=staff`);
     }
   };
 
