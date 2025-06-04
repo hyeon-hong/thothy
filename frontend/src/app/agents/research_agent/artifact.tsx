@@ -247,7 +247,7 @@ export default function ResearchGraphComponent(props: {
               </CardHeader>
               <CardContent>
                 <div className="prose max-w-none">
-                  <Markdown>{reportContent}</Markdown>
+                  <MarkdownText>{reportContent}</MarkdownText>
                 </div>
               </CardContent>
               <CardFooter className="text-sm text-gray-500">
