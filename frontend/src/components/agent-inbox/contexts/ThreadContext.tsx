@@ -206,7 +206,7 @@ export function ThreadsProvider<
       // Fetch staff records for the current user
       const { data: staffs, error } = await client
         .from("staffs")
-        .select("id, name, description")
+        .select("id, name, description, agent_id")
         .order("created_at", { ascending: false });
 
       if (error) {
@@ -223,14 +223,28 @@ export function ThreadsProvider<
         return;
       }
 
-      // Transform staffs into AgentInbox format
-      const parsedAgentInboxes: AgentInbox[] = staffs.map((staff: any) => ({
-        id: staff.id,
-        graphId: "staff_graph", // or use staff.graph_name if available
-        name: staff.name,
-        description: staff.description,
-        selected: false,
-      }));
+      // Fetch agents table for graph_name and description
+      const { data: agents, error: agentsError } = await client
+        .from("agents")
+        .select("id, graph_name, description");
+      if (agentsError) {
+        throw new Error(agentsError.message);
+      }
+
+      // Transform staffs into AgentInbox format, matching agent_id to agent.id
+      const parsedAgentInboxes: AgentInbox[] = staffs
+        .map((staff: any) => {
+          const agent = agents?.find((a: any) => a.id === staff.agent_id);
+          if (!agent?.graph_name) return null; // skip if no graph_name
+          return {
+            id: staff.id,
+            graphId: agent.graph_name,
+            name: staff.name,
+            description: agent.description || staff.description,
+            selected: false,
+          };
+        })
+        .filter(Boolean); // remove nulls
 
       // If there is no agent inbox search param, or the search param is not
       // a valid UUID, update search param

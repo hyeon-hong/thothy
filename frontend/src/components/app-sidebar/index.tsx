@@ -83,8 +83,6 @@ function SidebarSkeleton() {
 
 export function AppSidebar() {
   const { agentInboxes, changeAgentInbox, loading } = useThreadsContext();
-  const [staffs, setStaffs] = useState<any[]>([]);
-  const [isLoadingStaffs, setIsLoadingStaffs] = useState(true);
   const [openStaff, setOpenStaff] = useState(true);
   const [openAgent, setOpenAgent] = useState(true);
 
@@ -100,25 +98,6 @@ export function AppSidebar() {
     { id: "ui_eval_agent", name: "UI Eval Agent" },
   ];
 
-  useEffect(() => {
-    const fetchStaffs = async () => {
-      try {
-        const response = await fetch("/api/staff");
-        if (!response.ok) {
-          throw new Error("Failed to fetch staff");
-        }
-        const data = await response.json();
-        setStaffs(data);
-      } catch (error) {
-        console.error("Error fetching staff:", error);
-      } finally {
-        setIsLoadingStaffs(false);
-      }
-    };
-
-    fetchStaffs();
-  }, []);
-
   return (
     <Sidebar className="border-r-[0px] bg-[#F9FAFB]">
       <SidebarContent className="flex flex-col h-screen pb-9 pt-6">
@@ -133,68 +112,6 @@ export function AppSidebar() {
                 <SidebarSkeleton />
               ) : (
                 <>
-                  {/* Collapsible Staff Section */}
-                  <Collapsible open={openStaff} onOpenChange={setOpenStaff}>
-                    <CollapsibleTrigger asChild>
-                      <div className="flex items-center cursor-pointer select-none text-sm font-medium text-gray-500 mb-2 pl-2">
-                        <span className="mr-2">Staff</span>
-                        <span>{openStaff ? "▾" : "▸"}</span>
-                      </div>
-                    </CollapsibleTrigger>
-                    <CollapsibleContent>
-                      <div className="flex flex-col gap-2 pl-7 mb-6">
-                        {isLoadingStaffs ? (
-                          <div className="flex flex-col gap-2">
-                            {[1, 2, 3].map((i) => (
-                              <div
-                                key={i}
-                                className="h-8 bg-gray-100 rounded-md animate-pulse"
-                              />
-                            ))}
-                          </div>
-                        ) : staffs.length === 0 ? (
-                          <div className="text-sm text-gray-500 pl-2">No staff found</div>
-                        ) : (
-                          staffs.map((staff) => (
-                            <SidebarMenuItem
-                              key={`staff-${staff.id}`}
-                              className="flex items-center w-full"
-                            >
-                              <TooltipProvider>
-                                <Tooltip delayduration={200}>
-                                  <TooltipTrigger asChild>
-                                    <SidebarMenuButton
-                                      onClick={() => {
-                                        // TODO: Handle staff selection if needed
-                                        console.log("Selected staff:", staff);
-                                      }}
-                                    >
-                                      <div
-                                        className="w-6 h-6 rounded-md flex-shrink-0 flex items-center justify-center text-white"
-                                        style={{
-                                          background:
-                                            gradients[
-                                              hashString(staff.id) % gradients.length
-                                            ],
-                                        }}
-                                      >
-                                        {staff.name.slice(0, 1).toUpperCase()}
-                                      </div>
-                                      <span className="truncate min-w-0 font-medium text-gray-600">
-                                        {staff.name}
-                                      </span>
-                                    </SidebarMenuButton>
-                                  </TooltipTrigger>
-                                  <TooltipContent>{staff.name}</TooltipContent>
-                                </Tooltip>
-                              </TooltipProvider>
-                            </SidebarMenuItem>
-                          ))
-                        )}
-                      </div>
-                    </CollapsibleContent>
-                  </Collapsible>
-
                   {/* Collapsible Agent Section */}
                   <Collapsible open={openAgent} onOpenChange={setOpenAgent}>
                     <div className="flex flex-col">
@@ -206,11 +123,7 @@ export function AppSidebar() {
                       </CollapsibleTrigger>
                       <CollapsibleContent>
                         <div className="flex flex-col gap-2 pl-7 mb-6">
-                          {AGENT_LIST.filter(agent =>
-                            !staffs.some(staff =>
-                              staff.id === agent.id || staff.name === agent.name
-                            )
-                          ).map((agent) => (
+                          {AGENT_LIST.map((agent) => (
                             <SidebarMenuItem
                               key={`agent-${agent.id}`}
                               className="flex items-center w-full"
@@ -247,9 +160,7 @@ export function AppSidebar() {
                   {/* Existing agent inboxes (if any) */}
                   <div className="flex flex-col gap-2 pl-7">
                     {agentInboxes.map((item, idx) => {
-                      // Try to find a staff with the same id as the agent inbox
-                      const staff = staffs.find((s) => s.id === item.id);
-                      const label = staff ? staff.name : (item.name || prettifyText(item.graphId));
+                      const label = item.name || prettifyText(item.graphId);
                       return (
                         <SidebarMenuItem
                           key={`graph-id-${item.graphId}-${idx}`}
