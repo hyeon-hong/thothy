@@ -17,14 +17,17 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { Collapsible, CollapsibleTrigger, CollapsibleContent } from "@/components/ui/collapsible";
+import {
+  Collapsible,
+  CollapsibleTrigger,
+  CollapsibleContent,
+} from "@/components/ui/collapsible";
 
 // Custom Sidebar component that can scroll with parent
 function CustomScrollableSidebar() {
   const { agentInboxes, changeAgentInbox, loading } = useThreadsContext();
   const [openInboxes, setOpenInboxes] = useState(true);
   const [openAgent, setOpenAgent] = useState(true);
-  const [agents, setAgents] = useState<any[]>([]);
   const [staffs, setStaffs] = useState<any[]>([]);
   const [isLoadingAgents, setIsLoadingAgents] = useState(true);
   console.log("agentInboxes: ", agentInboxes);
@@ -35,13 +38,6 @@ function CustomScrollableSidebar() {
         setIsLoadingAgents(true);
         const supabase = await import("@/utils/supabase/client");
         const client = supabase.createClient();
-        // Fetch agents
-        const { data: agentsData, error: agentsError } = await client
-          .from("agents")
-          .select("id, name, description, graph_name")
-          .order("name", { ascending: true });
-        if (agentsError) throw new Error(agentsError.message);
-        setAgents(agentsData || []);
         // Fetch staffs
         const { data: staffsData, error: staffsError } = await client
           .from("staffs")
@@ -50,8 +46,7 @@ function CustomScrollableSidebar() {
         if (staffsError) throw new Error(staffsError.message);
         setStaffs(staffsData || []);
       } catch (error) {
-        console.error("Error fetching agents or staffs:", error);
-        setAgents([]);
+        console.error("Error fetching staffs:", error);
         setStaffs([]);
       } finally {
         setIsLoadingAgents(false);
@@ -90,8 +85,12 @@ function CustomScrollableSidebar() {
 
   // Filter agents for Staff and Agent lists
   const staffAgentIds = new Set(staffs.map((s: any) => s.agent_id));
-  const staffAgentInboxes = agentInboxes.filter((inbox) => staffAgentIds.has(inbox.id));
-  const otherAgentInboxes = agentInboxes.filter((inbox) => !staffAgentIds.has(inbox.id));
+  const staffAgentInboxes = agentInboxes.filter((inbox) =>
+    staffAgentIds.has(inbox.id)
+  );
+  const otherAgentInboxes = agentInboxes.filter(
+    (inbox) => !staffAgentIds.has(inbox.id)
+  );
 
   return (
     <div className="flex-shrink-0 w-64 bg-[#F9FAFB] border-r-0">
@@ -140,7 +139,9 @@ function CustomScrollableSidebar() {
                               <TooltipTrigger asChild>
                                 <button
                                   className="flex items-center gap-2 p-2 w-full text-left hover:bg-gray-100 rounded-md"
-                                  onClick={() => changeAgentInbox(item.id, true)}
+                                  onClick={() =>
+                                    changeAgentInbox(item.id, false)
+                                  }
                                 >
                                   <div
                                     className="w-6 h-6 rounded-md flex-shrink-0 flex items-center justify-center text-white"
@@ -204,7 +205,9 @@ function CustomScrollableSidebar() {
                                 <TooltipTrigger asChild>
                                   <button
                                     className="flex items-center gap-2 p-2 w-full text-left hover:bg-gray-100 rounded-md"
-                                    onClick={() => changeAgentInbox(item.id, true)}
+                                    onClick={() =>
+                                      changeAgentInbox(item.id, false)
+                                    }
                                   >
                                     <div
                                       className="w-6 h-6 rounded-md flex-shrink-0 flex items-center justify-center text-white"
