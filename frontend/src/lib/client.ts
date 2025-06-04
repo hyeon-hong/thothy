@@ -1,15 +1,15 @@
 import { Client } from "@langchain/langgraph-sdk";
-import { useAuth } from "@/contexts/AuthContext";
 
 export const createClient = async ({
   deploymentUrl,
   langchainApiKey,
+  supabase,
 }: {
   deploymentUrl: string;
   langchainApiKey: string | undefined;
+  supabase: any;
 }) => {
-  // Get supabase client instance and get access token
-  const { supabase } = useAuth();
+  // Get access token from supabase client
   const {
     data: { user },
   } = await supabase.auth.getUser();

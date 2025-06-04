@@ -34,6 +34,7 @@ import {
   processThreadWithoutInterrupts,
 } from "./utils";
 import { useLocalStorage } from "../hooks/use-local-storage";
+import { useAuth } from "@/contexts/AuthContext";
 
 // Define the ToastInput type that matches what useToast expects
 type ToastInput = {
@@ -101,7 +102,7 @@ interface GetClientArgs {
   toast: (input: ToastInput) => void;
 }
 
-const getClient = async ({ agentInboxes, getItem, toast }: GetClientArgs) => {
+const getClient = async ({ agentInboxes, getItem, toast, supabase }: GetClientArgs & { supabase: any }) => {
   if (agentInboxes.length === 0) {
     toast({
       title: "Error",
@@ -121,6 +122,7 @@ const getClient = async ({ agentInboxes, getItem, toast }: GetClientArgs) => {
     const client = await createClient({
       deploymentUrl,
       langchainApiKey,
+      supabase,
     });
 
     return client;
@@ -153,6 +155,7 @@ export function ThreadsProvider<
   const { getSearchParam, searchParams, updateQueryParams } = useQueryParams();
   const { getItem, setItem } = useLocalStorage();
   const { toast } = useToast();
+  const { supabase } = useAuth();
   const [loading, setLoading] = React.useState(false);
   const [threadData, setThreadData] = React.useState<
     ThreadData<ThreadValues>[]
@@ -360,6 +363,7 @@ export function ThreadsProvider<
           agentInboxes,
           getItem,
           toast,
+          supabase,
         });
 
         if (!client) {
@@ -489,6 +493,7 @@ export function ThreadsProvider<
         agentInboxes,
         getItem,
         toast,
+        supabase,
       });
       if (!client) {
         return undefined;
@@ -525,6 +530,7 @@ export function ThreadsProvider<
         agentInboxes,
         getItem,
         toast,
+        supabase,
       });
       if (!client) {
         return [];
@@ -562,6 +568,7 @@ export function ThreadsProvider<
       agentInboxes,
       getItem,
       toast,
+      supabase,
     });
     if (!client) {
       return;
@@ -595,6 +602,7 @@ export function ThreadsProvider<
       agentInboxes,
       getItem,
       toast,
+      supabase,
     });
     if (!client) {
       return;
@@ -655,6 +663,7 @@ export function ThreadsProvider<
       agentInboxes,
       getItem,
       toast,
+      supabase,
     });
     if (!client) {
       return undefined as any;
