@@ -56,10 +56,15 @@ class ReportStateOutput(TypedDict):
     final_report: str  # Final report
 
 
+def _keep_last_topic(left: str, right: str) -> str:
+    """Reducer function to keep the last topic value - they should all be the same anyway."""
+    return right if right else left
+
+
 class ReportState(TypedDict):
     messages: Annotated[Sequence[BaseMessage], add_messages]
     ui: Annotated[Sequence[AnyUIMessage], ui_message_reducer]
-    topic: str  # Report topic
+    topic: Annotated[str, _keep_last_topic]  # Report topic - use reducer for concurrent updates
     feedback_on_report_plan: str  # Feedback on the report plan
     sections: list[Section]  # List of report sections
     # Use Annotated type with add reducer
@@ -70,7 +75,7 @@ class ReportState(TypedDict):
 
 
 class SectionState(TypedDict):
-    topic: str  # Report topic
+    topic: Annotated[str, _keep_last_topic]  # Report topic - use reducer for concurrent updates
     section: Section  # Report section
     search_iterations: int  # Number of search iterations done
     search_queries: list[SearchQuery]  # List of search queries
