@@ -56,7 +56,8 @@ export function ThreadProvider({
 
     const accessToken = session?.access_token;
     if (!accessToken) {
-      throw new Error("No access token found. User might not be authenticated.");
+      console.warn("No access token found. User might not be authenticated.");
+      return [];
     }
 
     try {

@@ -434,8 +434,8 @@ async def write_section(state: SectionState, config: RunnableConfig) -> Command[
     section_content = await writer_model.ainvoke([SystemMessage(content=section_writer_instructions),
                                                   HumanMessage(content=section_writer_inputs_formatted)])
 
-    # Write content to the section object
-    section.content = section_content.content
+    # Use temporary variable instead of modifying section directly
+    temp_section_content = section_content.content
 
     # Grade prompt
     section_grader_message = ("Grade the report and consider follow-up questions for missing information. "
@@ -444,7 +444,7 @@ async def write_section(state: SectionState, config: RunnableConfig) -> Command[
 
     section_grader_instructions_formatted = section_grader_instructions.format(topic=topic,
                                                                                section_topic=section.description,
-                                                                               section=section.content,
+                                                                               section=temp_section_content,
                                                                                number_of_follow_up_queries=configurable.number_of_queries)
 
     # Use planner model for reflection
@@ -466,6 +466,14 @@ async def write_section(state: SectionState, config: RunnableConfig) -> Command[
 
     # If the section is passing or the max search depth is reached, publish the section to completed sections
     if feedback.grade == "pass" or state["search_iterations"] >= configurable.max_search_depth:
+        # Create a temporary section object with updated content
+        temp_section = type(section)(
+            name=section.name,
+            description=section.description,
+            research=section.research,
+            content=temp_section_content
+        )
+        
         # Push the completed section to UI with message
         ui_message = AIMessage(
             content=f"Section '{section.name}' completed successfully!"
@@ -473,14 +481,14 @@ async def write_section(state: SectionState, config: RunnableConfig) -> Command[
         push_ui_message(UI_COMPONENT_NAME, {
             "section_update": {
                 "name": section.name,
-                "content": section.content,
+                "content": temp_section_content,
                 "status": "completed"
             }
         }, message=ui_message)
 
         # Publish the section to completed sections
         return Command(
-            update={"completed_sections": [section]},
+            update={"completed_sections": [temp_section]},
             goto=END
         )
 
@@ -493,7 +501,7 @@ async def write_section(state: SectionState, config: RunnableConfig) -> Command[
         push_ui_message(UI_COMPONENT_NAME, {
             "section_update": {
                 "name": section.name,
-                "content": section.content,
+                "content": temp_section_content,
                 "status": "needs_more_research",
                 "iteration": state["search_iterations"] + 1
             }
@@ -540,8 +548,16 @@ async def write_final_sections(state: SectionState, config: RunnableConfig):
     section_content = await writer_model.ainvoke([SystemMessage(content=system_instructions),
                                                   HumanMessage(content="Generate a report section based on the provided sources.")])
 
-    # Write content to section
-    section.content = section_content.content
+    # Use temporary variable instead of modifying section directly
+    temp_section_content = section_content.content
+    
+    # Create a temporary section object with updated content
+    temp_section = type(section)(
+        name=section.name,
+        description=section.description,
+        research=section.research,
+        content=temp_section_content
+    )
 
     # Push the section content to the UI with message
     ui_message = AIMessage(
@@ -550,13 +566,13 @@ async def write_final_sections(state: SectionState, config: RunnableConfig):
     push_ui_message(UI_COMPONENT_NAME, {
         "section_update": {
             "name": section.name,
-            "content": section.content,
+            "content": temp_section_content,
             "status": "completed"
         }
     }, message=ui_message)
 
     # Write the updated section to completed sections
-    return {"completed_sections": [section]}
+    return {"completed_sections": [temp_section]}
 
 
 def gather_completed_sections(state: ReportState):
@@ -589,13 +605,14 @@ def compile_final_report(state: ReportState):
     completed_sections = {
         s.name: s.content for s in state["completed_sections"]}
 
-    # Update sections with completed content while maintaining original order
+    # Create temporary sections with completed content while maintaining original order
+    temp_sections = []
     for section in sections:
-        # Using parentheses and providing a default value  # Fixed parentheses and added default
-        section.content = completed_sections.get(section.name, "")
+        temp_section_content = completed_sections.get(section.name, "")
+        temp_sections.append(temp_section_content)
 
-    # Compile final report
-    all_sections = "\n\n".join([s.content for s in sections])
+    # Compile final report using temporary sections
+    all_sections = "\n\n".join(temp_sections)
 
     # Create a simple AI message for the UI message
     ui_message = AIMessage(content="Research report generated successfully!")
@@ -684,9 +701,10 @@ builder.add_edge(START, "generate_report_plan")
 builder.add_edge("generate_report_plan", "human_feedback")
 builder.add_edge("build_section_with_web_research",
                  "gather_completed_sections")
-builder.add_conditional_edges("gather_completed_sections",
-                              initiate_final_section_writing, ["write_final_sections"])
-builder.add_edge("write_final_sections", "compile_final_report")
-builder.add_edge("compile_final_report", END)
+builder.add_edge("gather_completed_sections", END)
+# builder.add_conditional_edges("gather_completed_sections",
+#                               initiate_final_section_writing, ["write_final_sections"])
+# builder.add_edge("write_final_sections", "compile_final_report")
+# builder.add_edge("compile_final_report", END)
 
 graph = builder.compile()

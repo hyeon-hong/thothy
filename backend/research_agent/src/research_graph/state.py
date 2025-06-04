@@ -47,7 +47,8 @@ class Feedback(BaseModel):
 
 
 class ReportStateInput(TypedDict):
-    messages: Annotated[Sequence[BaseMessage], add_messages]  # Messages from frontend
+    messages: Annotated[Sequence[BaseMessage],
+                        add_messages]  # Messages from frontend
 
 
 class ReportStateOutput(TypedDict):
@@ -64,9 +65,11 @@ def _keep_last_topic(left: str, right: str) -> str:
 class ReportState(TypedDict):
     messages: Annotated[Sequence[BaseMessage], add_messages]
     ui: Annotated[Sequence[AnyUIMessage], ui_message_reducer]
-    topic: Annotated[str, _keep_last_topic]  # Report topic - use reducer for concurrent updates
+    # Report topic - use reducer for concurrent updates
+    topic: Annotated[str, _keep_last_topic]
     feedback_on_report_plan: str  # Feedback on the report plan
-    sections: list[Section]  # List of report sections
+    # List of report sections - use reducer for concurrent updates
+    sections: Annotated[list[Section], operator.add]
     # Use Annotated type with add reducer
     completed_sections: Annotated[list[Section], operator.add]
     # String of any completed sections from research to write final sections
@@ -75,15 +78,19 @@ class ReportState(TypedDict):
 
 
 class SectionState(TypedDict):
-    topic: Annotated[str, _keep_last_topic]  # Report topic - use reducer for concurrent updates
-    section: Section  # Report section
+    # Report topic - use reducer for concurrent updates
+    topic: Annotated[str, _keep_last_topic]
+    section: Section
     search_iterations: int  # Number of search iterations done
-    search_queries: list[SearchQuery]  # List of search queries
+    # List of search queries - use reducer for concurrent updates
+    search_queries: Annotated[list[SearchQuery], operator.add]
     source_str: str  # String of formatted source content from web search
     # String of any completed sections from research to write final sections
     report_sections_from_research: str
     # Use Annotated type with add reducer
     completed_sections: Annotated[list[Section], operator.add]
+    # Messages with reducer for concurrent updates
+    messages: Annotated[Sequence[BaseMessage], add_messages]
 
 
 class SectionOutputState(TypedDict):
