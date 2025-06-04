@@ -11,8 +11,10 @@ from langgraph.store.base import BaseStore
 from team_graph.configuration import TeamConfigurable
 from blog_graph.graph import graph as blog_graph
 from news_graph.graph import graph as news_graph
-from thothy.backend.libs.utils import (  # type: ignore
+from langgraph.prebuilt.interrupt import (
     HumanInterrupt,
+)
+from thothy.backend.libs.utils import (  # type: ignore
     initialize_store,
     initialize_memory_manager,
     initialize_executor

@@ -6,8 +6,14 @@ from langchain_core.messages import HumanMessage, SystemMessage, AIMessage
 from langchain_core.runnables import RunnableConfig
 from langgraph.constants import Send
 from langgraph.graph import START, END, StateGraph
-from langgraph.types import Command
 from langgraph.graph.ui import push_ui_message
+from langgraph.types import Command, interrupt
+from langgraph.prebuilt.interrupt import (
+    ActionRequest,
+    HumanInterrupt,
+    HumanInterruptConfig,
+    HumanResponse,
+)
 
 from research_graph.state import (
     ReportStateInput,
@@ -251,27 +257,54 @@ def human_feedback(state: ReportState, config: RunnableConfig) -> Command[Litera
     #                     \n\n{sections_str}\n
     #                     \nDoes the report plan meet your needs?\nPass 'true' to approve the report plan.\nOr, provide feedback to regenerate the report plan:"""
 
-    # feedback = interrupt(interrupt_message)
+    action_request = ActionRequest(
+        action="Check Report Plan",
+        args={
+            "request": state["topic"],
+            "response": state["sections"],
+        }
+    )
+
+    interrupt_config = HumanInterruptConfig(
+        allow_ignore=True,
+        allow_respond=True,
+        allow_edit=True,
+        allow_accept=True
+    )
+
+    description = """Please review this report plan. You can:
+- Accept the report plan as-is
+- Edit the report plan before sending
+- Provide feedback or instructions for regeneration
+- Make any necessary corrections
+"""
+
+    request = HumanInterrupt(
+        action_request=action_request,
+        config=interrupt_config,
+        description=description
+    )
+
+    human_response: HumanResponse = interrupt([request])[0]
+    # TODO: Handle multiple feedbacks
+    logger.info(f"human_response: {human_response}")
 
     # If the user approves the report plan, kick off section writing
-    # if isinstance(feedback, bool) and feedback is True:
-    # Treat this as approve and kick off section writing
-    # return Command(goto=[
-    # print("Feedback",interrupt_message)
-    return Command(goto=[
-        Send("build_section_with_web_research", {
-             "topic": topic, "section": s, "search_iterations": 0})
-        for s in sections
-        if s.research
-    ])
-
-    # If the user provides feedback, regenerate the report plan
-    # elif isinstance(feedback, str):
-    # Treat this as feedback
-    # return Command(goto="generate_report_plan",
-    #    update={"feedback_on_report_plan": feedback})
-    # else:
-    # raise TypeError(f"Interrupt value of type {type(feedback)} is not supported.")
+    if human_response.get("type") == "accept":
+        return Command(goto=[
+            Send("build_section_with_web_research", {
+                "topic": topic, "section": [s], "search_iterations": [0]})
+            for s in sections
+            if s.research
+        ])
+    elif human_response.get("type") == "response":
+        return Command(goto="generate_report_plan",
+                       update={"feedback_on_report_plan": human_response.get("args")})
+    elif human_response.get("type") == "ignore":
+        return Command(goto=END)
+    else:
+        raise TypeError(
+            f"Interrupt value of type {type(human_response)} is not supported.")
 
 
 async def generate_queries(state: SectionState, config: RunnableConfig):
@@ -290,7 +323,11 @@ async def generate_queries(state: SectionState, config: RunnableConfig):
 
     # Get state
     topic = state["topic"]
-    section = state["section"]
+    # Get the first (current) section from the list
+    section = state["section"][0] if state["section"] else None
+
+    if not section:
+        raise ValueError("No section found in state for query generation")
 
     # Get configuration
     configurable = Configuration.from_runnable_config(config)
@@ -356,7 +393,9 @@ async def search_web(state: SectionState, config: RunnableConfig):
     # Search the web with parameters
     source_str = await select_and_execute_search(search_api, query_list, params_to_pass)
 
-    return {"source_str": source_str, "search_iterations": state["search_iterations"] + 1}
+    # Get current search iterations (use last value or 0 if empty)
+    current_iterations = state["search_iterations"][-1] if state["search_iterations"] else 0
+    return {"source_str": [source_str], "search_iterations": [current_iterations + 1]}
 
 
 async def write_section(state: SectionState, config: RunnableConfig) -> Command[Literal[END, "search_web"]]:
@@ -377,10 +416,17 @@ async def write_section(state: SectionState, config: RunnableConfig) -> Command[
         Command to either complete section or do more research
     """
 
+    logger.info("write_section start")
+
     # Get state
     topic = state["topic"]
-    section = state["section"]
-    source_str = state["source_str"]
+    # Get the first (current) section from the list
+    section = state["section"][0] if state["section"] else None
+    # Get the latest source string from the list
+    source_str = state["source_str"][-1] if state["source_str"] else ""
+
+    if not section:
+        raise ValueError("No section found in state for writing")
 
     # Get configuration
     configurable = Configuration.from_runnable_config(config)
@@ -401,27 +447,8 @@ async def write_section(state: SectionState, config: RunnableConfig) -> Command[
     section_content = await writer_model.ainvoke([SystemMessage(content=section_writer_instructions),
                                                   HumanMessage(content=section_writer_inputs_formatted)])
 
-    # Write content to the section object
-    section.content = section_content.content
-
-    # Push the completed section to UI with message
-    ui_message = AIMessage(
-        content=f"Section '{section.name}' completed successfully!"
-    )
-    push_ui_message(UI_COMPONENT_NAME, {
-        "section_update": {
-            "name": section.name,
-            "content": section.content,
-            "research": False,
-            "status": "completed"
-        }
-    }, message=ui_message)
-
-    # Publish the section to completed sections
-    return Command(
-        update={"completed_sections": [section]},
-        goto=END
-    )
+    # Use temporary variable instead of modifying section directly
+    temp_section_content = section_content.content
 
     # Grade prompt
     section_grader_message = ("Grade the report and consider follow-up questions for missing information. "
@@ -430,7 +457,7 @@ async def write_section(state: SectionState, config: RunnableConfig) -> Command[
 
     section_grader_instructions_formatted = section_grader_instructions.format(topic=topic,
                                                                                section_topic=section.description,
-                                                                               section=section.content,
+                                                                               section=temp_section_content,
                                                                                number_of_follow_up_queries=configurable.number_of_queries)
 
     # Use planner model for reflection
@@ -450,8 +477,18 @@ async def write_section(state: SectionState, config: RunnableConfig) -> Command[
     feedback = await reflection_model.ainvoke([SystemMessage(content=section_grader_instructions_formatted),
                                                HumanMessage(content=section_grader_message)])
 
+    # Get current search iterations (use last value or 0 if empty)
+    current_iterations = state["search_iterations"][-1] if state["search_iterations"] else 0
     # If the section is passing or the max search depth is reached, publish the section to completed sections
-    if feedback.grade == "pass" or state["search_iterations"] >= configurable.max_search_depth:
+    if feedback.grade == "pass" or current_iterations >= configurable.max_search_depth:
+        # Create a temporary section object with updated content
+        temp_section = type(section)(
+            name=section.name,
+            description=section.description,
+            research=section.research,
+            content=temp_section_content
+        )
+
         # Push the completed section to UI with message
         ui_message = AIMessage(
             content=f"Section '{section.name}' completed successfully!"
@@ -459,37 +496,37 @@ async def write_section(state: SectionState, config: RunnableConfig) -> Command[
         push_ui_message(UI_COMPONENT_NAME, {
             "section_update": {
                 "name": section.name,
-                "content": section.content,
+                "content": temp_section_content,
                 "status": "completed"
             }
         }, message=ui_message)
 
-        # Publish the section to completed sections
+        logger.info("write_section end")
+
+        # Store the completed section in the output state
         return Command(
-            update={"completed_sections": [section]},
+            update={"completed_sections": [temp_section]},
             goto=END
         )
 
-    # Update the existing section with new content and update search queries
-    else:
-        # Push the section status to UI indicating more research is needed
-        ui_message = AIMessage(
-            content=f"Section '{section.name}' needs more research (iteration {state['search_iterations'] + 1})"
-        )
-        push_ui_message(UI_COMPONENT_NAME, {
-            "section_update": {
-                "name": section.name,
-                "content": section.content,
-                "status": "needs_more_research",
-                "iteration": state["search_iterations"] + 1
-            }
-        }, message=ui_message)
+    # Push the section status to UI indicating more research is needed
+    ui_message = AIMessage(
+        content=f"Section '{section.name}' needs more research (iteration {current_iterations + 1})"
+    )
+    push_ui_message(UI_COMPONENT_NAME, {
+        "section_update": {
+            "name": section.name,
+            "content": temp_section_content,
+            "status": "needs_more_research",
+            "iteration": current_iterations + 1
+        }
+    }, message=ui_message)
 
-        return Command(
-            update={"search_queries": feedback.follow_up_queries,
-                    "section": section},
-            goto="search_web"
-        )
+    logger.info("write_section end")
+    return Command(
+        update={"search_queries": feedback.follow_up_queries},
+        goto="search_web"
+    )
 
 
 async def write_final_sections(state: SectionState, config: RunnableConfig):
@@ -511,8 +548,14 @@ async def write_final_sections(state: SectionState, config: RunnableConfig):
 
     # Get state
     topic = state["topic"]
-    section = state["section"]
-    completed_report_sections = state["report_sections_from_research"]
+    # Get the first (current) section from the list
+    section = state["section"][0] if state["section"] else None
+    # Get the latest report sections from research (join all if multiple)
+    completed_report_sections = "\n\n".join(
+        state["report_sections_from_research"]) if state["report_sections_from_research"] else ""
+
+    if not section:
+        raise ValueError("No section found in state for final section writing")
 
     # Format system instructions
     system_instructions = final_section_writer_instructions.format(
@@ -527,8 +570,16 @@ async def write_final_sections(state: SectionState, config: RunnableConfig):
     section_content = await writer_model.ainvoke([SystemMessage(content=system_instructions),
                                                   HumanMessage(content="Generate a report section based on the provided sources.")])
 
-    # Write content to section
-    section.content = section_content.content
+    # Use temporary variable instead of modifying section directly
+    temp_section_content = section_content.content
+
+    # Create a temporary section object with updated content
+    temp_section = type(section)(
+        name=section.name,
+        description=section.description,
+        research=section.research,
+        content=temp_section_content
+    )
 
     # Push the section content to the UI with message
     ui_message = AIMessage(
@@ -537,13 +588,13 @@ async def write_final_sections(state: SectionState, config: RunnableConfig):
     push_ui_message(UI_COMPONENT_NAME, {
         "section_update": {
             "name": section.name,
-            "content": section.content,
+            "content": temp_section_content,
             "status": "completed"
         }
     }, message=ui_message)
 
-    # Write the updated section to completed sections
-    return {"completed_sections": [section]}
+    # Return the completed section
+    return {"completed_sections": [temp_section]}
 
 
 def gather_completed_sections(state: ReportState):
@@ -559,13 +610,17 @@ def gather_completed_sections(state: ReportState):
         Dict with formatted sections as context
     """
 
+    logger.info("gather_completed_sections start")
+
     # List of completed sections
     completed_sections = state["completed_sections"]
 
     # Format completed section to str to use as context for final sections
     completed_report_sections = format_sections(completed_sections)
 
-    return {"report_sections_from_research": completed_report_sections}
+    logger.info("gather_completed_sections end")
+
+    return {"report_sections_from_research": [completed_report_sections]}
 
 
 def compile_final_report(state: ReportState):
@@ -576,13 +631,14 @@ def compile_final_report(state: ReportState):
     completed_sections = {
         s.name: s.content for s in state["completed_sections"]}
 
-    # Update sections with completed content while maintaining original order
+    # Create temporary sections with completed content while maintaining original order
+    temp_sections = []
     for section in sections:
-        # Using parentheses and providing a default value  # Fixed parentheses and added default
-        section.content = completed_sections.get(section.name, "")
+        temp_section_content = completed_sections.get(section.name, "")
+        temp_sections.append(temp_section_content)
 
-    # Compile final report
-    all_sections = "\n\n".join([s.content for s in sections])
+    # Compile final report using temporary sections
+    all_sections = "\n\n".join(temp_sections)
 
     # Create a simple AI message for the UI message
     ui_message = AIMessage(content="Research report generated successfully!")
@@ -591,7 +647,7 @@ def compile_final_report(state: ReportState):
     report_data = {"content": all_sections}
     push_ui_message(UI_COMPONENT_NAME, report_data, message=ui_message)
 
-    return ReportStateOutput(final_report=all_sections)
+    return ReportStateOutput(final_report=all_sections, messages=all_sections)
 
 
 def initiate_final_section_writing(state: ReportState):
@@ -609,7 +665,7 @@ def initiate_final_section_writing(state: ReportState):
 
     # Kick off section writing in parallel via Send() API for any sections that do not require research
     return [
-        Send("write_final_sections", {"topic": state["topic"], "section": s,
+        Send("write_final_sections", {"topic": state["topic"], "section": [s],
              "report_sections_from_research": state["report_sections_from_research"]})
         for s in state["sections"]
         if not s.research
@@ -671,12 +727,9 @@ builder.add_edge(START, "generate_report_plan")
 builder.add_edge("generate_report_plan", "human_feedback")
 builder.add_edge("build_section_with_web_research",
                  "gather_completed_sections")
-builder.add_edge("gather_completed_sections", END)
-
-# TODO: Add conditional edges for final section writing
-# builder.add_conditional_edges("gather_completed_sections",
-#                               initiate_final_section_writing, ["write_final_sections"])
-# builder.add_edge("write_final_sections", "compile_final_report")
-# builder.add_edge("compile_final_report", END)
+builder.add_conditional_edges("gather_completed_sections",
+                              initiate_final_section_writing, ["write_final_sections"])
+builder.add_edge("write_final_sections", "compile_final_report")
+builder.add_edge("compile_final_report", END)
 
 graph = builder.compile()

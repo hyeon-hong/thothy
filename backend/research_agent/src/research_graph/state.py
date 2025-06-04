@@ -47,38 +47,52 @@ class Feedback(BaseModel):
 
 
 class ReportStateInput(TypedDict):
-    messages: Annotated[Sequence[BaseMessage], add_messages]  # Messages from frontend
+    messages: Annotated[Sequence[BaseMessage],
+                        add_messages]  # Messages from frontend
 
 
 class ReportStateOutput(TypedDict):
+    messages: Annotated[Sequence[BaseMessage], add_messages]
+    ui: Annotated[Sequence[AnyUIMessage], ui_message_reducer]
     final_report: str  # Final report
+
+
+def _keep_last_topic(left: str, right: str) -> str:
+    """Reducer function to keep the last topic value - they should all be the same anyway."""
+    return right if right else left
 
 
 class ReportState(TypedDict):
     messages: Annotated[Sequence[BaseMessage], add_messages]
     ui: Annotated[Sequence[AnyUIMessage], ui_message_reducer]
-    topic: str  # Report topic
+    # Report topic - use reducer for concurrent updates
+    topic: Annotated[str, _keep_last_topic]
     feedback_on_report_plan: str  # Feedback on the report plan
-    sections: list[Section]  # List of report sections
+    # List of report sections - use reducer for concurrent updates
+    sections: Annotated[list[Section], operator.add]
     # Use Annotated type with add reducer
     completed_sections: Annotated[list[Section], operator.add]
-    # String of any completed sections from research to write final sections
-    report_sections_from_research: str
+    # Report sections from research list with reducer for concurrent updates
+    report_sections_from_research: Annotated[list[str], operator.add]
     final_report: str  # Final report
 
 
 class SectionState(TypedDict):
-    topic: str  # Report topic
-    section: Section  # Report section
-    search_iterations: int  # Number of search iterations done
-    search_queries: list[SearchQuery]  # List of search queries
-    source_str: str  # String of formatted source content from web search
-    # String of any completed sections from research to write final sections
-    report_sections_from_research: str
-    # Use Annotated type with add reducer
-    completed_sections: Annotated[list[Section], operator.add]
+    # Report topic - use reducer for concurrent updates
+    topic: Annotated[str, _keep_last_topic]
+    # Section list with reducer for concurrent updates
+    section: Annotated[list[Section], operator.add]
+    # Search iterations list with reducer for concurrent updates
+    search_iterations: Annotated[list[int], operator.add]
+    # List of search queries - use reducer for concurrent updates
+    search_queries: Annotated[list[SearchQuery], operator.add]
+    # Source strings list with reducer for concurrent updates
+    source_str: Annotated[list[str], operator.add]
+    # Report sections from research list with reducer for concurrent updates
+    report_sections_from_research: Annotated[list[str], operator.add]
+    # Messages with reducer for concurrent updates
+    messages: Annotated[Sequence[BaseMessage], add_messages]
 
 
 class SectionOutputState(TypedDict):
-    completed_sections: Annotated[list[Section],
-                                  operator.add]  # Use Annotated type here too
+    completed_sections: Annotated[list[Section], operator.add]  # Return completed section in list format

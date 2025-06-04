@@ -24,24 +24,6 @@ logging.getLogger("langmem").setLevel(logging.WARNING)
 # Define interrupt schema types
 
 
-class HumanInterruptConfig(TypedDict):
-    allow_ignore: bool
-    allow_respond: bool
-    allow_edit: bool
-    allow_accept: bool
-
-
-class ActionRequest(TypedDict):
-    action: str
-    args: dict
-
-
-class HumanInterrupt(TypedDict):
-    action_request: ActionRequest
-    config: HumanInterruptConfig
-    description: Optional[str]
-
-
 class ReconnectingPostgresStore:
     """PostgresStore wrapper that handles reconnection."""
 

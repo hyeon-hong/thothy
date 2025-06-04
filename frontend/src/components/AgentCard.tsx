@@ -10,9 +10,12 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
+  CardDescription,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { Badge } from "@/components/ui/badge";
+import { Pencil, Trash2 } from "lucide-react";
 
 interface Agent {
   id: string;
@@ -20,6 +23,7 @@ interface Agent {
   description: string;
   imageUrl?: string;
   graph_name: string;
+  created_at?: string;
 }
 
 interface AgentCardProps {
@@ -153,75 +157,42 @@ export default function AgentCard({
   const [gradientStart, gradientEnd] = getGradientColors(agent.name);
 
   return (
-    <Card 
-      className={cn(
-        "max-w-[345px] h-full flex flex-col transition-all duration-300 ease-in-out hover:-translate-y-1 backdrop-blur-lg shadow-lg overflow-hidden",
-        isSelected ? "bg-primary/5" : "bg-card"
-      )}
-    >
-      <div 
-        className="h-[220px] w-full relative group"
-        style={{
-          background: `linear-gradient(135deg, ${gradientStart}, ${gradientEnd})`,
-        }}
-      >
-        <div className="absolute inset-0 flex items-center justify-center p-6">
-          <div className="text-center">
-            <h3 className="font-mono text-[2.5rem] font-black tracking-tight text-white drop-shadow-sm mb-2">
-              {agent.name.split(' ').map((word, i) => (
-                <React.Fragment key={i}>
-                  {word}
-                  <br />
-                </React.Fragment>
-              ))}
-            </h3>
-            <div className="w-16 h-1 mx-auto bg-white/50 rounded-full shadow-sm" />
-          </div>
+    <Card className="flex flex-col h-full w-full max-w-full hover:shadow-md transition-shadow">
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+        <div>
+          <CardTitle>{agent.name}</CardTitle>
+          {agent.created_at && (
+            <CardDescription>
+              Added on {new Date(agent.created_at).toLocaleDateString()}
+            </CardDescription>
+          )}
         </div>
-        <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-      </div>
-      <CardContent className="flex-grow pt-6">
-        <p className="text-sm text-muted-foreground leading-relaxed">
-          {agent.description}
-        </p>
+      </CardHeader>
+      <CardContent className="flex-1 flex flex-col justify-between">
+        <p className="text-sm text-muted-foreground mb-2 line-clamp-3 break-words overflow-hidden text-ellipsis">{agent.description}</p>
       </CardContent>
-      <CardFooter className="flex flex-col gap-2 p-4">
-        {showUnselect ? (
-          <>
-            <Button
-              variant="destructive"
-              className="w-full"
-              onClick={handleUnselect}
-            >
-              Unselect
-            </Button>
-            <Button
-              variant="secondary"
-              className="w-full"
-              onClick={handleCardClick}
-            >
-              Run
-            </Button>
-          </>
-        ) : (
-          <>
-            <Button
-              variant={isSelected ? "outline" : "default"}
-              className="w-full"
-              onClick={handleSelect}
-              disabled={isSelected}
-            >
-              {isSelected ? "Selected" : "Select"}
-            </Button>
-            <Button
-              variant="secondary"
-              className="w-full"
-              onClick={handleCardClick}
-            >
-              Run
-            </Button>
-          </>
-        )}
+      <CardFooter className="flex flex-col gap-2 p-4 mt-auto sticky bottom-0 bg-white z-10">
+        <Button
+          variant={isSelected ? "secondary" : "default"}
+          className="w-full"
+          onClick={handleSelect}
+          disabled={isSelected}
+        >
+          {isSelected ? "Selected" : "Select"}
+        </Button>
+        <Button
+          variant="outline"
+          className="w-full"
+          onClick={() => {
+            if (agent.graph_name) {
+              router.push(`/agents/${agent.graph_name}`);
+            } else {
+              alert("This agent doesn't have a valid configuration");
+            }
+          }}
+        >
+          Run
+        </Button>
       </CardFooter>
     </Card>
   );

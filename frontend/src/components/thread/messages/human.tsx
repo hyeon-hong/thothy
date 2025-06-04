@@ -5,6 +5,7 @@ import { getContentImageUrls, getContentString } from "../utils";
 import { cn } from "@/lib/utils";
 import { Textarea } from "@/components/ui/textarea";
 import { BranchSwitcher, CommandBar } from "./shared";
+import { MarkdownText } from "../markdown-text";
 
 function EditableContent({
   value,
@@ -66,7 +67,7 @@ export function HumanMessage({
             messages: [...(values.messages ?? []), newMessage],
           };
         },
-      },
+      }
     );
   };
 
@@ -74,7 +75,7 @@ export function HumanMessage({
     <div
       className={cn(
         "group ml-auto flex items-center gap-2",
-        isEditing && "w-full max-w-xl",
+        isEditing && "w-full max-w-xl"
       )}
     >
       <div className={cn("flex flex-col gap-2", isEditing && "w-full")}>
@@ -98,9 +99,7 @@ export function HumanMessage({
                 ))}
               </div>
             )}
-            <p className="bg-muted ml-auto w-fit rounded-3xl px-4 py-2 whitespace-pre-wrap">
-              {contentString}
-            </p>
+            <MarkdownText>{contentString}</MarkdownText>
           </div>
         )}
 
@@ -108,7 +107,7 @@ export function HumanMessage({
           className={cn(
             "ml-auto flex items-center gap-2 transition-opacity",
             "opacity-0 group-focus-within:opacity-100 group-hover:opacity-100",
-            isEditing && "opacity-100",
+            isEditing && "opacity-100"
           )}
         >
           <BranchSwitcher

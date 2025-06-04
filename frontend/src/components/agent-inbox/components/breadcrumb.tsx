@@ -65,9 +65,9 @@ export function BreadCrumb({ className }: { className?: string }) {
   const constructBaseUrl = () => {
     const selectedAgentInbox = agentInboxes.find((a) => a.selected);
     if (!selectedAgentInbox) {
-      return "/";
+      return `/inbox?${INBOX_PARAM}=all`;
     }
-    return `/?${AGENT_INBOX_PARAM}=${selectedAgentInbox.id}`;
+    return `/inbox?${AGENT_INBOX_PARAM}=${selectedAgentInbox.id}&${INBOX_PARAM}=all`;
   };
 
   const constructInboxLink = () => {

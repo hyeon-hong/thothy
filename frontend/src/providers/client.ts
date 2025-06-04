@@ -6,9 +6,9 @@ export async function createLangGraphClient(
   apiKey: string | undefined
 ) {
   const supabase = createClient();
-  const { data } = await supabase.auth.getSession();
-
-  const accessToken = data.session?.access_token;
+  const { data: { user } } = await supabase.auth.getUser();
+  const session = supabase.auth.session ? supabase.auth.session() : null;
+  const accessToken = session?.access_token;
   
   if (!accessToken) {
     throw new Error("No access token found. User might not be authenticated.");
