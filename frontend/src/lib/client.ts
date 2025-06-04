@@ -1,5 +1,5 @@
 import { Client } from "@langchain/langgraph-sdk";
-import { createClient as createSupabaseClient } from "@/utils/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 
 export const createClient = async ({
   deploymentUrl,
@@ -9,14 +9,20 @@ export const createClient = async ({
   langchainApiKey: string | undefined;
 }) => {
   // Get supabase client instance and get access token
-  const supabase = createSupabaseClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  const session = supabase.auth.session ? supabase.auth.session() : null;
+  const { supabase } = useAuth();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) {
+    throw new Error("No user found. User may not be authenticated.");
+  }
+
+  const session = supabase.auth.getSession();
   const accessToken = session?.access_token;
-  console.log("[createClient] accessToken:", accessToken);
   if (!accessToken) {
     throw new Error("No access token found. User may not be authenticated.");
   }
+
   return new Client({
     apiUrl: deploymentUrl,
     apiKey: langchainApiKey,
