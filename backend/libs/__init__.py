@@ -1,9 +1,6 @@
 """Backend utilities package for Thothy project."""
 
 from .utils import (
-    HumanInterruptConfig,
-    ActionRequest,
-    HumanInterrupt,
     ReconnectingPostgresStore,
     Triple,
     initialize_store,
@@ -12,9 +9,6 @@ from .utils import (
 )
 
 __all__ = [
-    "HumanInterruptConfig",
-    "ActionRequest",
-    "HumanInterrupt",
     "ReconnectingPostgresStore",
     "Triple",
     "initialize_store",

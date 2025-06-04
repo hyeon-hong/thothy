@@ -8,7 +8,12 @@ from langgraph.constants import Send
 from langgraph.graph import START, END, StateGraph
 from langgraph.graph.ui import push_ui_message
 from langgraph.types import Command, interrupt
-from thothy.backend.libs.utils import HumanInterrupt  # type: ignore
+from langgraph.prebuilt.interrupt import (
+    ActionRequest,
+    HumanInterrupt,
+    HumanInterruptConfig,
+    HumanResponse,
+)
 
 from research_graph.state import (
     ReportStateInput,
@@ -252,48 +257,54 @@ def human_feedback(state: ReportState, config: RunnableConfig) -> Command[Litera
     #                     \n\n{sections_str}\n
     #                     \nDoes the report plan meet your needs?\nPass 'true' to approve the report plan.\nOr, provide feedback to regenerate the report plan:"""
 
-    interrupt_request: HumanInterrupt = {
-        "action_request": {
-            "action": "Check Report Plan",
-            "args": {
-                "request": state["topic"],
-                "response": state["sections"],
-            }
-        },
-        "config": {
-            "allow_ignore": True,
-            "allow_respond": True,
-            "allow_edit": True,
-            "allow_accept": True
-        },
-        "description": """Please review this report plan. You can:
+    action_request = ActionRequest(
+        action="Check Report Plan",
+        args={
+            "request": state["topic"],
+            "response": state["sections"],
+        }
+    )
+
+    interrupt_config = HumanInterruptConfig(
+        allow_ignore=True,
+        allow_respond=True,
+        allow_edit=True,
+        allow_accept=True
+    )
+
+    description = """Please review this report plan. You can:
 - Accept the report plan as-is
 - Edit the report plan before sending
 - Provide feedback or instructions for regeneration
 - Make any necessary corrections
 """
-    }
 
-    feedback = interrupt(interrupt_request)
-    logger.info(f"feedback: {feedback}")
+    request = HumanInterrupt(
+        action_request=action_request,
+        config=interrupt_config,
+        description=description
+    )
+
+    human_response: HumanResponse = interrupt([request])[0]
+    # TODO: Handle multiple feedbacks
+    logger.info(f"human_response: {human_response}")
 
     # If the user approves the report plan, kick off section writing
-    if isinstance(feedback, bool) and feedback is True:
+    if human_response.get("type") == "accept":
         return Command(goto=[
             Send("build_section_with_web_research", {
                 "topic": topic, "section": s, "search_iterations": 0})
             for s in sections
             if s.research
         ])
-
-    # If the user provides feedback, regenerate the report plan
-    elif isinstance(feedback, str):
-        # Treat this as feedback
+    elif human_response.get("type") == "response":
         return Command(goto="generate_report_plan",
-                       update={"feedback_on_report_plan": feedback})
+                       update={"feedback_on_report_plan": human_response.get("args")})
+    elif human_response.get("type") == "ignore":
+        return Command(goto=END)
     else:
         raise TypeError(
-            f"Interrupt value of type {type(feedback)} is not supported.")
+            f"Interrupt value of type {type(human_response)} is not supported.")
 
 
 async def generate_queries(state: SectionState, config: RunnableConfig):
