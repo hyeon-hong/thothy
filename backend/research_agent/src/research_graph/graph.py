@@ -6,8 +6,9 @@ from langchain_core.messages import HumanMessage, SystemMessage, AIMessage
 from langchain_core.runnables import RunnableConfig
 from langgraph.constants import Send
 from langgraph.graph import START, END, StateGraph
-from langgraph.types import Command
 from langgraph.graph.ui import push_ui_message
+from langgraph.types import Command, interrupt
+from thothy.backend.libs.utils import HumanInterrupt  # type: ignore
 
 from research_graph.state import (
     ReportStateInput,
@@ -251,27 +252,48 @@ def human_feedback(state: ReportState, config: RunnableConfig) -> Command[Litera
     #                     \n\n{sections_str}\n
     #                     \nDoes the report plan meet your needs?\nPass 'true' to approve the report plan.\nOr, provide feedback to regenerate the report plan:"""
 
-    # feedback = interrupt(interrupt_message)
+    interrupt_request: HumanInterrupt = {
+        "action_request": {
+            "action": "Check Report Plan",
+            "args": {
+                "request": state["topic"],
+                "response": state["sections"],
+            }
+        },
+        "config": {
+            "allow_ignore": True,
+            "allow_respond": True,
+            "allow_edit": True,
+            "allow_accept": True
+        },
+        "description": """Please review this report plan. You can:
+- Accept the report plan as-is
+- Edit the report plan before sending
+- Provide feedback or instructions for regeneration
+- Make any necessary corrections
+"""
+    }
+
+    feedback = interrupt(interrupt_request)
+    logger.info(f"feedback: {feedback}")
 
     # If the user approves the report plan, kick off section writing
-    # if isinstance(feedback, bool) and feedback is True:
-    # Treat this as approve and kick off section writing
-    # return Command(goto=[
-    # print("Feedback",interrupt_message)
-    return Command(goto=[
-        Send("build_section_with_web_research", {
-             "topic": topic, "section": s, "search_iterations": 0})
-        for s in sections
-        if s.research
-    ])
+    if isinstance(feedback, bool) and feedback is True:
+        return Command(goto=[
+            Send("build_section_with_web_research", {
+                "topic": topic, "section": s, "search_iterations": 0})
+            for s in sections
+            if s.research
+        ])
 
     # If the user provides feedback, regenerate the report plan
-    # elif isinstance(feedback, str):
-    # Treat this as feedback
-    # return Command(goto="generate_report_plan",
-    #    update={"feedback_on_report_plan": feedback})
-    # else:
-    # raise TypeError(f"Interrupt value of type {type(feedback)} is not supported.")
+    elif isinstance(feedback, str):
+        # Treat this as feedback
+        return Command(goto="generate_report_plan",
+                       update={"feedback_on_report_plan": feedback})
+    else:
+        raise TypeError(
+            f"Interrupt value of type {type(feedback)} is not supported.")
 
 
 async def generate_queries(state: SectionState, config: RunnableConfig):
