@@ -165,11 +165,7 @@ export function ThreadsProvider<
   const inboxParam = searchParams.get(INBOX_PARAM);
 
   React.useEffect(() => {
-    console.log("call useEffect");
-
     if (typeof window === "undefined") {
-      console.log("window is undefined");
-      console.log("window: ", window);
       return;
     }
 
@@ -201,10 +197,6 @@ export function ThreadsProvider<
 
   const getAgentInboxes = React.useCallback(async () => {
     const agentInboxSearchParam = getSearchParam(AGENT_INBOX_PARAM);
-    console.log(
-      "[Debug] Fetching agent inboxes, search param:",
-      agentInboxSearchParam
-    );
 
     try {
       setLoading(true);
@@ -218,17 +210,14 @@ export function ThreadsProvider<
         .order("created_at", { ascending: false });
 
       if (error) {
-        console.error("[Debug] Supabase error fetching staffs:", error);
         throw new Error(error.message);
       }
 
       if (!staffs || !Array.isArray(staffs)) {
-        console.error("[Debug] Invalid data format:", staffs);
         throw new Error("Invalid data format from Supabase");
       }
 
       if (!staffs.length) {
-        console.log("[Debug] No staff found in database");
         setAgentInboxes([]);
         setLoading(false);
         return;
@@ -242,7 +231,6 @@ export function ThreadsProvider<
         description: staff.description,
         selected: false,
       }));
-      console.log("[Debug] Transformed agent inboxes:", parsedAgentInboxes);
 
       // If there is no agent inbox search param, or the search param is not
       // a valid UUID, update search param
@@ -288,7 +276,6 @@ export function ThreadsProvider<
         await fetchThreads(inboxSearchParam);
       }
     } catch (error) {
-      console.error("[Debug] Error fetching staffs:", error);
       toast({
         title: "Error",
         description: "Failed to fetch agent inboxes. Please try again.",
@@ -365,7 +352,6 @@ export function ThreadsProvider<
 
   const fetchThreads = React.useCallback(
     async (inbox: ThreadStatusWithAll) => {
-      console.log("call fetchThreads");
       setLoading(true);
 
       try {
@@ -412,7 +398,6 @@ export function ThreadsProvider<
           ...statusInput,
           ...(metadataInput ? { metadata: metadataInput } : {}),
         };
-        console.log("threadSearchArgs: ", threadSearchArgs);
 
         const threads = await client.threads.search(threadSearchArgs);
         const data: ThreadData<ThreadValues>[] = [];
@@ -664,7 +649,6 @@ export function ThreadsProvider<
       });
       return undefined as any;
     }
-    console.log("graphId: ", graphId);
 
     const client = await getClient({
       agentInboxes,
