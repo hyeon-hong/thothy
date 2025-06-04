@@ -25,7 +25,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import { Users, Pencil, X } from "lucide-react";
+import { Users, Pencil, X, Trash2 } from "lucide-react";
 import { createClient as createSupabaseClient } from "@/utils/supabase/client";
 import {
   Command,
@@ -229,6 +229,8 @@ export default function StaffPage() {
   const [staffDescription, setStaffDescription] = useState("");
   const [selectedAgent, setSelectedAgent] = useState<string>("");
   const [editingStaff, setEditingStaff] = useState<Staff | null>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [staffToDelete, setStaffToDelete] = useState<Staff | null>(null);
 
   useEffect(() => {
     // Don't redirect while auth is loading
@@ -537,6 +539,20 @@ export default function StaffPage() {
     }
   };
 
+  const handleDeleteStaff = async () => {
+    if (!staffToDelete) return;
+    try {
+      const supabase = createSupabaseClient();
+      const { error } = await supabase.from("staffs").delete().eq("id", staffToDelete.id);
+      if (error) throw new Error(error.message);
+      setStaffMembers((prev) => prev.filter((s) => s.id !== staffToDelete.id));
+      setDeleteDialogOpen(false);
+      setStaffToDelete(null);
+    } catch (error) {
+      alert("Failed to delete staff: " + (error as Error).message);
+    }
+  };
+
   return (
     <div className="container mx-auto px-4">
       <Header currentView="staff" />
@@ -605,20 +621,34 @@ export default function StaffPage() {
                           {new Date(staff.created_at).toLocaleDateString()}
                         </CardDescription>
                       </div>
-                      <Button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setEditingStaff(staff);
-                          setStaffName(staff.name);
-                          setStaffDescription(staff.description);
-                          setSelectedAgent(staff.agent_id || "");
-                          setShowDialog(true);
-                        }}
-                        size="icon"
-                        variant="outline"
-                      >
-                        <Pencil className="h-4 w-4" />
-                      </Button>
+                      <div className="flex gap-2">
+                        <Button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setEditingStaff(staff);
+                            setStaffName(staff.name);
+                            setStaffDescription(staff.description);
+                            setSelectedAgent(staff.agent_id || "");
+                            setShowDialog(true);
+                          }}
+                          size="icon"
+                          variant="outline"
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setStaffToDelete(staff);
+                            setDeleteDialogOpen(true);
+                          }}
+                          size="icon"
+                          variant="ghost"
+                          aria-label="Delete staff"
+                        >
+                          <Trash2 className="h-4 w-4 text-red-500" />
+                        </Button>
+                      </div>
                     </CardHeader>
                     <CardContent
                       className={staff.agent_id ? "cursor-pointer" : ""}
@@ -664,6 +694,25 @@ export default function StaffPage() {
           </div>
         </>
       )}
+      {/* Delete confirmation dialog */}
+      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Staff</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete this staff member? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={handleDeleteStaff}>
+              Delete
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
