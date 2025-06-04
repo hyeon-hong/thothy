@@ -218,19 +218,6 @@ export default function Header({ currentView }: HeaderProps) {
                   </Button>
                 )}
 
-                {user && isMenuVisible('team') && (
-                  <Button
-                    color={currentView === 'team' ? 'primary' : 'inherit'}
-                    onClick={handleTeamClick}
-                    sx={{
-                      ...navButtonStyle,
-                      fontWeight: currentView === 'team' ? 700 : 400,
-                    }}
-                  >
-                    Team
-                  </Button>
-                )}
-
                 {user && isMenuVisible('project') && (
                   <Button
                     color={currentView === 'project' ? 'primary' : 'inherit'}
