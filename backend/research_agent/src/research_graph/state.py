@@ -87,12 +87,9 @@ class SectionState(TypedDict):
     source_str: str  # String of formatted source content from web search
     # String of any completed sections from research to write final sections
     report_sections_from_research: str
-    # Use Annotated type with add reducer
-    completed_sections: Annotated[list[Section], operator.add]
     # Messages with reducer for concurrent updates
     messages: Annotated[Sequence[BaseMessage], add_messages]
 
 
 class SectionOutputState(TypedDict):
-    completed_sections: Annotated[list[Section],
-                                  operator.add]  # Use Annotated type here too
+    completed_sections: Annotated[list[Section], operator.add]  # Return completed section in list format

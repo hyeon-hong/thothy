@@ -410,6 +410,8 @@ async def write_section(state: SectionState, config: RunnableConfig) -> Command[
         Command to either complete section or do more research
     """
 
+    logger.info("write_section start")
+
     # Get state
     topic = state["topic"]
     section = state["section"]
@@ -473,7 +475,7 @@ async def write_section(state: SectionState, config: RunnableConfig) -> Command[
             research=section.research,
             content=temp_section_content
         )
-        
+
         # Push the completed section to UI with message
         ui_message = AIMessage(
             content=f"Section '{section.name}' completed successfully!"
@@ -486,31 +488,32 @@ async def write_section(state: SectionState, config: RunnableConfig) -> Command[
             }
         }, message=ui_message)
 
-        # Publish the section to completed sections
+        logger.info("write_section end")
+
+        # Store the completed section in the output state
         return Command(
             update={"completed_sections": [temp_section]},
             goto=END
         )
 
-    # Update the existing section with new content and update search queries
-    else:
-        # Push the section status to UI indicating more research is needed
-        ui_message = AIMessage(
-            content=f"Section '{section.name}' needs more research (iteration {state['search_iterations'] + 1})"
-        )
-        push_ui_message(UI_COMPONENT_NAME, {
-            "section_update": {
-                "name": section.name,
-                "content": temp_section_content,
-                "status": "needs_more_research",
-                "iteration": state["search_iterations"] + 1
-            }
-        }, message=ui_message)
+    # Push the section status to UI indicating more research is needed
+    ui_message = AIMessage(
+        content=f"Section '{section.name}' needs more research (iteration {state['search_iterations'] + 1})"
+    )
+    push_ui_message(UI_COMPONENT_NAME, {
+        "section_update": {
+            "name": section.name,
+            "content": temp_section_content,
+            "status": "needs_more_research",
+            "iteration": state["search_iterations"] + 1
+        }
+    }, message=ui_message)
 
-        return Command(
-            update={"search_queries": feedback.follow_up_queries},
-            goto="search_web"
-        )
+    logger.info("write_section end")
+    return Command(
+        update={"search_queries": feedback.follow_up_queries},
+        goto="search_web"
+    )
 
 
 async def write_final_sections(state: SectionState, config: RunnableConfig):
@@ -550,7 +553,7 @@ async def write_final_sections(state: SectionState, config: RunnableConfig):
 
     # Use temporary variable instead of modifying section directly
     temp_section_content = section_content.content
-    
+
     # Create a temporary section object with updated content
     temp_section = type(section)(
         name=section.name,
@@ -571,7 +574,7 @@ async def write_final_sections(state: SectionState, config: RunnableConfig):
         }
     }, message=ui_message)
 
-    # Write the updated section to completed sections
+    # Return the completed section
     return {"completed_sections": [temp_section]}
 
 
@@ -588,11 +591,15 @@ def gather_completed_sections(state: ReportState):
         Dict with formatted sections as context
     """
 
+    logger.info("gather_completed_sections start")
+
     # List of completed sections
     completed_sections = state["completed_sections"]
 
     # Format completed section to str to use as context for final sections
     completed_report_sections = format_sections(completed_sections)
+
+    logger.info("gather_completed_sections end")
 
     return {"report_sections_from_research": completed_report_sections}
 
