@@ -30,7 +30,6 @@ function CustomScrollableSidebar() {
   const [openAgent, setOpenAgent] = useState(true);
   const [staffs, setStaffs] = useState<any[]>([]);
   const [isLoadingAgents, setIsLoadingAgents] = useState(true);
-  console.log("agentInboxes: ", agentInboxes);
 
   useEffect(() => {
     const fetchData = async () => {
