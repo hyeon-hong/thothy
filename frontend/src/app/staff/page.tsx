@@ -504,7 +504,10 @@ export default function StaffPage() {
     if (!staffToDelete) return;
     try {
       const supabase = createSupabaseClient();
-      const { error } = await supabase.from("staffs").delete().eq("id", staffToDelete.id);
+      const { error } = await supabase
+        .from("staffs")
+        .delete()
+        .eq("id", staffToDelete.id);
       if (error) throw new Error(error.message);
       setStaffMembers((prev) => prev.filter((s) => s.id !== staffToDelete.id));
       setDeleteDialogOpen(false);
@@ -618,14 +621,15 @@ export default function StaffPage() {
                         </p>
                         {staff.agent_id && (
                           <div className="flex items-center gap-2 mb-1">
-                            <p className="text-sm font-medium">Assigned Agent:</p>
+                            <p className="text-sm font-medium">
+                              Assigned Agent:
+                            </p>
                             {(() => {
-                              const agent = agents.find((a) => a.id === staff.agent_id);
+                              const agent = agents.find(
+                                (a) => a.id === staff.agent_id
+                              );
                               return agent ? (
-                                <Badge
-                                  key={agent.id}
-                                  variant="outline"
-                                >
+                                <Badge key={agent.id} variant="outline">
                                   {agent.name}
                                 </Badge>
                               ) : null;
@@ -641,11 +645,15 @@ export default function StaffPage() {
                           style={{ marginTop: "auto" }}
                           onClick={(e) => {
                             e.stopPropagation();
-                            const agent = agents.find((a) => a.id === staff.agent_id);
+                            const agent = agents.find(
+                              (a) => a.id === staff.agent_id
+                            );
                             if (agent && agent.graph_name) {
-                              router.push(`/agents/${agent.graph_name}?mode=staff`);
+                              router.push(`/agents/${agent.graph_name}`);
                             } else {
-                              alert("Assigned agent not found or missing name.");
+                              alert(
+                                "Assigned agent not found or missing name."
+                              );
                             }
                           }}
                         >
@@ -666,11 +674,15 @@ export default function StaffPage() {
           <DialogHeader>
             <DialogTitle>Delete Staff</DialogTitle>
             <DialogDescription>
-              Are you sure you want to delete this staff member? This action cannot be undone.
+              Are you sure you want to delete this staff member? This action
+              cannot be undone.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setDeleteDialogOpen(false)}>
+            <Button
+              variant="outline"
+              onClick={() => setDeleteDialogOpen(false)}
+            >
               Cancel
             </Button>
             <Button variant="destructive" onClick={handleDeleteStaff}>
