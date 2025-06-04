@@ -437,25 +437,6 @@ async def write_section(state: SectionState, config: RunnableConfig) -> Command[
     # Write content to the section object
     section.content = section_content.content
 
-    # Push the completed section to UI with message
-    ui_message = AIMessage(
-        content=f"Section '{section.name}' completed successfully!"
-    )
-    push_ui_message(UI_COMPONENT_NAME, {
-        "section_update": {
-            "name": section.name,
-            "content": section.content,
-            "research": False,
-            "status": "completed"
-        }
-    }, message=ui_message)
-
-    # Publish the section to completed sections
-    return Command(
-        update={"completed_sections": [section]},
-        goto=END
-    )
-
     # Grade prompt
     section_grader_message = ("Grade the report and consider follow-up questions for missing information. "
                               "If the grade is 'pass', return empty strings for all follow-up queries. "
@@ -519,8 +500,7 @@ async def write_section(state: SectionState, config: RunnableConfig) -> Command[
         }, message=ui_message)
 
         return Command(
-            update={"search_queries": feedback.follow_up_queries,
-                    "section": section},
+            update={"search_queries": feedback.follow_up_queries},
             goto="search_web"
         )
 
