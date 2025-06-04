@@ -441,66 +441,33 @@ export default function StaffPage() {
 
   const handleEditStaff = async () => {
     if (!editingStaff) return;
-
     if (!selectedAgent) {
       alert("Please select an agent for this staff member");
       return;
     }
 
     try {
-      const updatedStaff = {
-        ...editingStaff,
-        name: staffName,
-        description: staffDescription,
-        agent_id: selectedAgent,
-      };
+      const response = await fetch(`/api/staff/${editingStaff.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: staffName,
+          description: staffDescription,
+          agent_id: selectedAgent,
+        }),
+      });
 
-      let savedStaff;
-      try {
-        // If API fails, update directly in Supabase
-        console.warn("API failed, updating directly in Supabase");
-        const supabase = createSupabaseClient();
-
-        // Update according to the staffs table schema
-        const { data, error } = await supabase
-          .from("staffs")
-          .update({
-            agent_id: selectedAgent,
-            // We can't update user_id as it's likely a foreign key
-            // updated_at will be set automatically
-          })
-          .eq("id", editingStaff.id)
-          .select()
-          .single();
-
-        if (error) {
-          throw new Error(`Supabase error: ${error.message}`);
-        }
-
-        if (data) {
-          // Add our local fields to the returned data for our local state
-          savedStaff = {
-            ...editingStaff,
-            id: data.id,
-            name: staffName,
-            description: staffDescription,
-            agent_id: selectedAgent,
-            updated_at: data.updated_at,
-          };
-        } else {
-          // Use local object as last resort
-          savedStaff = updatedStaff;
-        }
-      } catch (error) {
-        console.error("Error updating staff:", error);
-        // Use local object if all else fails
-        savedStaff = updatedStaff;
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || "Failed to update staff");
       }
+
+      const data = await response.json();
 
       // Update the staff in the staff list
       setStaffMembers((prevStaff) =>
         prevStaff.map((staff) =>
-          staff.id === editingStaff.id ? savedStaff : staff
+          staff.id === editingStaff.id ? { ...staff, ...data } : staff
         )
       );
 
@@ -512,6 +479,7 @@ export default function StaffPage() {
       setShowDialog(false);
     } catch (error) {
       console.error("Failed to update staff:", error);
+      alert("Failed to update staff: " + error.message);
     }
   };
 
@@ -611,7 +579,7 @@ export default function StaffPage() {
                 {staffMembers.map((staff) => (
                   <Card
                     key={staff.id}
-                    className={`flex flex-col ${staff.agent_id ? "hover:shadow-md transition-shadow" : ""}`}
+                    className={`flex flex-col h-full ${staff.agent_id ? "hover:shadow-md transition-shadow" : ""}`}
                   >
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                       <div>
@@ -650,41 +618,41 @@ export default function StaffPage() {
                         </Button>
                       </div>
                     </CardHeader>
-                    <CardContent
-                      className={staff.agent_id ? "cursor-pointer" : ""}
-                      onClick={() =>
-                        staff.agent_id ? handleAgentClick(staff.agent_id) : null
-                      }
-                    >
-                      <p className="text-sm text-muted-foreground mb-2">
-                        {staff.description}
-                      </p>
-                      {staff.agent_id && (
-                        <div>
-                          <p className="text-sm font-medium mb-1">
-                            Assigned Agent:
-                          </p>
-                          <div className="flex flex-wrap gap-2">
+                    <CardContent className="flex-1 flex flex-col justify-between">
+                      <div>
+                        <p className="text-sm text-muted-foreground mb-2">
+                          {staff.description}
+                        </p>
+                        {staff.agent_id && (
+                          <div className="flex items-center gap-2 mb-1">
+                            <p className="text-sm font-medium">Assigned Agent:</p>
                             {(() => {
-                              const agent = agents.find(
-                                (a) => a.id === staff.agent_id
-                              );
+                              const agent = agents.find((a) => a.id === staff.agent_id);
                               return agent ? (
                                 <Badge
                                   key={agent.id}
                                   variant="outline"
-                                  className="cursor-pointer hover:bg-gray-100 transition-colors"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleAgentClick(agent.id);
-                                  }}
                                 >
                                   {agent.name}
                                 </Badge>
                               ) : null;
                             })()}
                           </div>
-                        </div>
+                        )}
+                      </div>
+                      {/* Run button for staff */}
+                      {staff.agent_id && (
+                        <Button
+                          variant="outline"
+                          className="w-full mt-2"
+                          style={{ marginTop: "auto" }}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            router.push(`/agents/${staff.graph_name}?mode=staff`);
+                          }}
+                        >
+                          Run
+                        </Button>
                       )}
                     </CardContent>
                   </Card>

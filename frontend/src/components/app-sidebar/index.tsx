@@ -82,26 +82,26 @@ function SidebarSkeleton() {
 
 export function AppSidebar() {
   const { agentInboxes, changeAgentInbox, loading } = useThreadsContext();
-  const [teams, setTeams] = useState<Team[]>([]);
-  const [isLoadingTeams, setIsLoadingTeams] = useState(true);
+  const [staffs, setStaffs] = useState<any[]>([]);
+  const [isLoadingStaffs, setIsLoadingStaffs] = useState(true);
 
   useEffect(() => {
-    const fetchTeams = async () => {
+    const fetchStaffs = async () => {
       try {
-        const response = await fetch("/api/teams");
+        const response = await fetch("/api/staff");
         if (!response.ok) {
-          throw new Error("Failed to fetch teams");
+          throw new Error("Failed to fetch staff");
         }
         const data = await response.json();
-        setTeams(data);
+        setStaffs(data);
       } catch (error) {
-        console.error("Error fetching teams:", error);
+        console.error("Error fetching staff:", error);
       } finally {
-        setIsLoadingTeams(false);
+        setIsLoadingStaffs(false);
       }
     };
 
-    fetchTeams();
+    fetchStaffs();
   }, []);
 
   return (
@@ -118,10 +118,10 @@ export function AppSidebar() {
                 <SidebarSkeleton />
               ) : (
                 <>
-                  {/* Teams Section - Moved up */}
+                  {/* Staff Section */}
                   <div className="flex flex-col gap-2 pl-7 mb-6">
-                    <div className="text-sm font-medium text-gray-500 mb-2 pl-2">Teams</div>
-                    {isLoadingTeams ? (
+                    <div className="text-sm font-medium text-gray-500 mb-2 pl-2">Staff</div>
+                    {isLoadingStaffs ? (
                       <div className="flex flex-col gap-2">
                         {[1, 2, 3].map((i) => (
                           <div
@@ -130,12 +130,12 @@ export function AppSidebar() {
                           />
                         ))}
                       </div>
-                    ) : teams.length === 0 ? (
-                      <div className="text-sm text-gray-500 pl-2">No teams found</div>
+                    ) : staffs.length === 0 ? (
+                      <div className="text-sm text-gray-500 pl-2">No staff found</div>
                     ) : (
-                      teams.map((team) => (
+                      staffs.map((staff) => (
                         <SidebarMenuItem
-                          key={`team-${team.id}`}
+                          key={`staff-${staff.id}`}
                           className="flex items-center w-full"
                         >
                           <TooltipProvider>
@@ -143,8 +143,8 @@ export function AppSidebar() {
                               <TooltipTrigger asChild>
                                 <SidebarMenuButton
                                   onClick={() => {
-                                    // TODO: Handle team selection
-                                    console.log("Selected team:", team);
+                                    // TODO: Handle staff selection if needed
+                                    console.log("Selected staff:", staff);
                                   }}
                                 >
                                   <div
@@ -152,19 +152,18 @@ export function AppSidebar() {
                                     style={{
                                       background:
                                         gradients[
-                                          hashString(team.id) %
-                                            gradients.length
+                                          hashString(staff.id) % gradients.length
                                         ],
                                     }}
                                   >
-                                    {team.name.slice(0, 1).toUpperCase()}
+                                    {staff.name.slice(0, 1).toUpperCase()}
                                   </div>
                                   <span className="truncate min-w-0 font-medium text-gray-600">
-                                    {team.name}
+                                    {staff.name}
                                   </span>
                                 </SidebarMenuButton>
                               </TooltipTrigger>
-                              <TooltipContent>{team.name}</TooltipContent>
+                              <TooltipContent>{staff.name}</TooltipContent>
                             </Tooltip>
                           </TooltipProvider>
                         </SidebarMenuItem>

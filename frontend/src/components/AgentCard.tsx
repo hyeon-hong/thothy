@@ -180,6 +180,19 @@ export default function AgentCard({
         >
           {isSelected ? "Selected" : "Select"}
         </Button>
+        <Button
+          variant="outline"
+          className="w-full"
+          onClick={() => {
+            if (agent.graph_name) {
+              router.push(`/agents/${agent.graph_name}`);
+            } else {
+              alert("This agent doesn't have a valid configuration");
+            }
+          }}
+        >
+          Run
+        </Button>
       </CardFooter>
     </Card>
   );
