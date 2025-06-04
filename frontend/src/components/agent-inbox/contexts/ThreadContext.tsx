@@ -102,7 +102,12 @@ interface GetClientArgs {
   toast: (input: ToastInput) => void;
 }
 
-const getClient = async ({ agentInboxes, getItem, toast, supabase }: GetClientArgs & { supabase: any }) => {
+const getClient = async ({
+  agentInboxes,
+  getItem,
+  toast,
+  supabase,
+}: GetClientArgs & { supabase: any }) => {
   if (agentInboxes.length === 0) {
     toast({
       title: "Error",
@@ -181,7 +186,9 @@ export function ThreadsProvider<
           await getAgentInboxes();
         } else {
           // If we already have agent inboxes, just fetch threads if needed
-          const inboxSearchParam = getSearchParam(INBOX_PARAM) as ThreadStatusWithAll;
+          const inboxSearchParam = getSearchParam(
+            INBOX_PARAM
+          ) as ThreadStatusWithAll;
           if (inboxSearchParam && mounted) {
             await fetchThreads(inboxSearchParam);
           }
@@ -242,7 +249,9 @@ export function ThreadsProvider<
         updateQueryParams(AGENT_INBOX_PARAM, parsedAgentInboxes[0].id);
         setAgentInboxes(parsedAgentInboxes);
         // Fetch threads for the first inbox
-        const inboxSearchParam = getSearchParam(INBOX_PARAM) as ThreadStatusWithAll;
+        const inboxSearchParam = getSearchParam(
+          INBOX_PARAM
+        ) as ThreadStatusWithAll;
         if (inboxSearchParam) {
           await fetchThreads(inboxSearchParam);
         }
@@ -275,7 +284,9 @@ export function ThreadsProvider<
 
       setAgentInboxes(parsedAgentInboxes);
       // Fetch threads for the selected inbox
-      const inboxSearchParam = getSearchParam(INBOX_PARAM) as ThreadStatusWithAll;
+      const inboxSearchParam = getSearchParam(
+        INBOX_PARAM
+      ) as ThreadStatusWithAll;
       if (inboxSearchParam) {
         await fetchThreads(inboxSearchParam);
       }

@@ -17,7 +17,7 @@ export const createClient = async ({
     throw new Error("No user found. User may not be authenticated.");
   }
 
-  const session = supabase.auth.getSession();
+  const { data: { session } } = await supabase.auth.getSession();
   const accessToken = session?.access_token;
   if (!accessToken) {
     throw new Error("No access token found. User may not be authenticated.");

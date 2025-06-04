@@ -49,6 +49,18 @@ const loadAuthState = () => {
     return null;
 };
 
+// Helper function to fetch session from API
+async function fetchSessionFromApi() {
+    try {
+        const res = await fetch('/api/auth/session');
+        const { session } = await res.json();
+        return session;
+    } catch (error) {
+        console.error('Error fetching session from API:', error);
+        return null;
+    }
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
     const [user, setUser] = useState<User | null>(null);
     const [session, setSession] = useState<Session | null>(null);
@@ -161,6 +173,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             subscription.unsubscribe();
         };
     }, [pathname]);
+
+    // Rehydrate session from API on every route change if missing
+    useEffect(() => {
+        const checkSession = async () => {
+            if (!session) {
+                const apiSession = await fetchSessionFromApi();
+                if (apiSession) {
+                    setSession(apiSession);
+                    setUser(apiSession.user);
+                    saveAuthState(apiSession.user, apiSession);
+                }
+            }
+        };
+        checkSession();
+    }, [pathname, session]);
 
     const signIn = useCallback(async () => {
         try {
