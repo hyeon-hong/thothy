@@ -74,12 +74,13 @@ async def generate_report_plan(state: ReportState, config: RunnableConfig):
 
     # Method 1: Try to get from messages (standard chat flow)
     messages = state.get("messages", [])
+    logger.info(f"messages: {messages}")
 
     if messages and len(messages) > 0:
         try:
-            topic = messages[-1].content
+            topic = messages[0]["content"]
             logger.info(f"Topic extracted from messages: {topic}")
-        except (AttributeError, IndexError) as e:
+        except (KeyError, IndexError, TypeError) as e:
             logger.warning(f"Could not extract topic from messages: {e}")
 
     # Method 2: Try to get topic directly from state (alternative input format)

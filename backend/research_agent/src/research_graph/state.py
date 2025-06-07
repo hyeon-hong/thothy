@@ -108,7 +108,7 @@ class SectionState(TypedDict):
     report_sections_from_research: Annotated[list[str], operator.add]
 
     # Messages (no reducer)
-    messages: Sequence[BaseMessage]
+    # messages: Sequence[BaseMessage]
 
 
 class SectionOutputState(TypedDict):
