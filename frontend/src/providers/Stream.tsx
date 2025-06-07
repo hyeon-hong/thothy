@@ -21,6 +21,7 @@ import { useQueryState } from "nuqs";
 import { useThreads } from "./Thread";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
+import { domainToASCII } from "url";
 
 export type StateType = { messages: Message[]; ui?: UIMessage[] };
 
@@ -94,6 +95,7 @@ const StreamSession = ({
     },
     onMetadataEvent(data) {
       console.log("Metadata event: ", data);
+      return data;
     },
     onCustomEvent: (event, options) => {
       console.log("Custom event: ", event);
@@ -105,8 +107,6 @@ const StreamSession = ({
           return { ...prev, ui };
         });
       }
-
-      return event;
     },
     onThreadId: (id) => {
       setThreadId(id);

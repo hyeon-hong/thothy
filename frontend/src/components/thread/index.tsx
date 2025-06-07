@@ -109,7 +109,6 @@ export function Thread() {
   const isLargeScreen = useMediaQuery("(min-width: 1024px)");
 
   const stream = useStreamContext();
-  console.log("Stream: ", stream);
   const messages = stream.messages;
   console.log("Messages: ", messages);
   const isLoading = stream.isLoading;
