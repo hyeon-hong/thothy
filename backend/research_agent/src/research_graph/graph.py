@@ -352,8 +352,6 @@ async def generate_queries(state: SectionState, config: RunnableConfig):
         "args": {"queries": [query.search_query for query in queries.queries]}
     }])]
 
-    push_ui_message(UI_COMPONENT_NAME, {"search_queries": queries.queries})
-
     # Return the updated messages
     return {"search_queries": queries.queries, "messages": updated_messages}
 
@@ -588,8 +586,6 @@ def gather_completed_sections(state: ReportState):
 
     logger.info("gather_completed_sections end")
 
-    push_ui_message(UI_COMPONENT_NAME, {
-                    "report_sections_from_research": [completed_report_sections]})
     return {"report_sections_from_research": [completed_report_sections]}
 
 
@@ -610,14 +606,6 @@ def compile_final_report(state: ReportState):
     # Compile final report using temporary sections
     all_sections = "\n\n".join(temp_sections)
 
-    # Create a simple AI message for the UI message
-    ui_message = AIMessage(content="Research report generated successfully!")
-
-    # Send the report data to frontend
-    report_data = {"content": all_sections}
-    push_ui_message(UI_COMPONENT_NAME, report_data, message=ui_message)
-
-    push_ui_message(UI_COMPONENT_NAME, {"final_report": all_sections})
     return ReportStateOutput(final_report=all_sections, messages=all_sections)
 
 
@@ -664,7 +652,6 @@ This is a fallback report generated due to an error in the report generation pro
 - Please try again with a more specific topic or different configuration
     """
 
-    push_ui_message(UI_COMPONENT_NAME, {"final_report": fallback_report})
     return ReportStateOutput(final_report=fallback_report)
 
 # Report section sub-graph --
