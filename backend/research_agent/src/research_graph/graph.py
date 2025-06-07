@@ -5,6 +5,7 @@ from langchain.chat_models import init_chat_model
 from langchain_core.messages import HumanMessage, SystemMessage, AIMessage
 from langchain_core.runnables import RunnableConfig
 from langgraph.constants import Send
+from langgraph.config import get_stream_writer
 from langgraph.graph import START, END, StateGraph
 from langgraph.graph.ui import push_ui_message
 from langgraph.types import Command, interrupt
@@ -74,12 +75,18 @@ async def generate_report_plan(state: ReportState, config: RunnableConfig):
 
     # Method 1: Try to get from messages (standard chat flow)
     messages = state.get("messages", [])
+    logger.info(f"messages: {messages}")
 
     if messages and len(messages) > 0:
         try:
-            topic = messages[-1].content
+            first_msg = messages[0]
+            # Try dict access first, then attribute access
+            if isinstance(first_msg, dict):
+                topic = first_msg.get("content", "")
+            else:
+                topic = getattr(first_msg, "content", "")
             logger.info(f"Topic extracted from messages: {topic}")
-        except (AttributeError, IndexError) as e:
+        except Exception as e:
             logger.warning(f"Could not extract topic from messages: {e}")
 
     # Method 2: Try to get topic directly from state (alternative input format)
@@ -179,49 +186,13 @@ async def generate_report_plan(state: ReportState, config: RunnableConfig):
     # Get sections
     sections = report_sections.sections
 
-    # Create AI messages with tool_calls for the LLM interactions
-    # First AI message for query generation
-    query_generation_message = AIMessage(
-        content="Generated search queries for report planning",
-        tool_calls=[{
-            "id": "query_generation_001",
-            "name": "generate_search_queries",
-            "args": {
-                "topic": topic,
-                "queries": [query.search_query for query in results.queries],
-                "number_of_queries": len(results.queries)
-            }
-        }]
-    )
-
-    # Second AI message for report sections generation
-    sections_generation_message = AIMessage(
-        content="Generated report sections structure",
-        tool_calls=[{
-            "id": "sections_generation_001",
-            "name": "generate_report_sections",
-            "args": {
-                "topic": topic,
-                "sections": [{"name": s.name, "description": s.description, "research": s.research} for s in sections],
-                "total_sections": len(sections)
-            }
-        }]
-    )
-
     # Push the report sections to the UI with message
     ui_message = AIMessage(
         content="Report sections generated successfully!"
     )
+    push_ui_message(UI_COMPONENT_NAME, {"topic": topic, "sections": sections})
 
-    push_ui_message(UI_COMPONENT_NAME, {
-                    "topic": topic, "sections": sections}, message=ui_message)
-
-    # Append all messages to existing messages
-    current_messages = state.get("messages", [])
-    updated_messages = list(
-        current_messages) + [query_generation_message, sections_generation_message, ui_message]
-
-    return {"topic": topic, "sections": sections, "messages": updated_messages}
+    return {"topic": topic, "sections": sections, "messages": [ui_message]}
 
 
 def human_feedback(state: ReportState, config: RunnableConfig) -> Command[Literal["generate_report_plan", "build_section_with_web_research"]]:
@@ -245,17 +216,6 @@ def human_feedback(state: ReportState, config: RunnableConfig) -> Command[Litera
     # Get sections
     topic = state["topic"]
     sections = state['sections']
-    # sections_str = "\n\n".join(
-    #     f"Section: {section.name}\n"
-    #     f"Description: {section.description}\n"
-    #     f"Research needed: {'Yes' if section.research else 'No'}\n"
-    #     for section in sections
-    # )
-
-    # Get feedback on the report plan from interrupt
-    # interrupt_message = f"""Please provide feedback on the following report plan.
-    #                     \n\n{sections_str}\n
-    #                     \nDoes the report plan meet your needs?\nPass 'true' to approve the report plan.\nOr, provide feedback to regenerate the report plan:"""
 
     action_request = ActionRequest(
         action="Check Report Plan",
@@ -285,15 +245,28 @@ def human_feedback(state: ReportState, config: RunnableConfig) -> Command[Litera
         description=description
     )
 
+    return Command(goto=[
+        Send(
+            "build_section_with_web_research",
+            {"topic": topic, "section": [s], "search_iterations": [0]}
+        )
+        for s in sections
+        if s.research
+    ])
+
+    # TODO: Handle later
     human_response: HumanResponse = interrupt([request])[0]
+
     # TODO: Handle multiple feedbacks
     logger.info(f"human_response: {human_response}")
 
     # If the user approves the report plan, kick off section writing
     if human_response.get("type") == "accept":
         return Command(goto=[
-            Send("build_section_with_web_research", {
-                "topic": topic, "section": [s], "search_iterations": [0]})
+            Send(
+                "build_section_with_web_research",
+                {"topic": topic, "section": [s], "search_iterations": [0]}
+            )
             for s in sections
             if s.research
         ])
@@ -349,15 +322,8 @@ async def generate_queries(state: SectionState, config: RunnableConfig):
     queries = await structured_llm.ainvoke([SystemMessage(content=system_instructions),
                                             HumanMessage(content="Generate search queries on the provided topic.")])
 
-    # Convert queries to ai message format and append to existing messages
-    current_messages = state.get("messages", [])
-    updated_messages = list(current_messages) + [AIMessage(content=f"Generated search queries for {section.name}", tool_calls=[{
-        "id": "query_generation_001",
-        "name": "generate_search_queries",
-        "args": {"queries": [query.search_query for query in queries.queries]}
-    }])]
-
-    return {"search_queries": queries.queries, "messages": updated_messages}
+    # Return the updated messages
+    return {"search_queries": queries.queries}
 
 
 async def search_web(state: SectionState, config: RunnableConfig):
@@ -395,6 +361,8 @@ async def search_web(state: SectionState, config: RunnableConfig):
 
     # Get current search iterations (use last value or 0 if empty)
     current_iterations = state["search_iterations"][-1] if state["search_iterations"] else 0
+
+    # Return the updated messages
     return {"source_str": [source_str], "search_iterations": [current_iterations + 1]}
 
 
@@ -416,12 +384,12 @@ async def write_section(state: SectionState, config: RunnableConfig) -> Command[
         Command to either complete section or do more research
     """
 
-    logger.info("write_section start")
-
     # Get state
     topic = state["topic"]
+
     # Get the first (current) section from the list
     section = state["section"][0] if state["section"] else None
+
     # Get the latest source string from the list
     source_str = state["source_str"][-1] if state["source_str"] else ""
 
@@ -490,39 +458,16 @@ async def write_section(state: SectionState, config: RunnableConfig) -> Command[
         )
 
         # Push the completed section to UI with message
-        ui_message = AIMessage(
-            content=f"Section '{section.name}' completed successfully!"
-        )
         push_ui_message(UI_COMPONENT_NAME, {
-            "section_update": {
-                "name": section.name,
-                "content": temp_section_content,
-                "status": "completed"
-            }
-        }, message=ui_message)
+                        "completed_sections": [temp_section]})
 
-        logger.info("write_section end")
-
-        # Store the completed section in the output state
+        # Return the completed section
         return Command(
             update={"completed_sections": [temp_section]},
             goto=END
         )
 
-    # Push the section status to UI indicating more research is needed
-    ui_message = AIMessage(
-        content=f"Section '{section.name}' needs more research (iteration {current_iterations + 1})"
-    )
-    push_ui_message(UI_COMPONENT_NAME, {
-        "section_update": {
-            "name": section.name,
-            "content": temp_section_content,
-            "status": "needs_more_research",
-            "iteration": current_iterations + 1
-        }
-    }, message=ui_message)
-
-    logger.info("write_section end")
+    # Return the updated messages
     return Command(
         update={"search_queries": feedback.follow_up_queries},
         goto="search_web"
@@ -582,16 +527,7 @@ async def write_final_sections(state: SectionState, config: RunnableConfig):
     )
 
     # Push the section content to the UI with message
-    ui_message = AIMessage(
-        content=f"Section '{section.name}' generated successfully!"
-    )
-    push_ui_message(UI_COMPONENT_NAME, {
-        "section_update": {
-            "name": section.name,
-            "content": temp_section_content,
-            "status": "completed"
-        }
-    }, message=ui_message)
+    push_ui_message(UI_COMPONENT_NAME, {"completed_sections": [temp_section]})
 
     # Return the completed section
     return {"completed_sections": [temp_section]}
@@ -639,13 +575,6 @@ def compile_final_report(state: ReportState):
 
     # Compile final report using temporary sections
     all_sections = "\n\n".join(temp_sections)
-
-    # Create a simple AI message for the UI message
-    ui_message = AIMessage(content="Research report generated successfully!")
-
-    # Send the report data to frontend
-    report_data = {"content": all_sections}
-    push_ui_message(UI_COMPONENT_NAME, report_data, message=ui_message)
 
     return ReportStateOutput(final_report=all_sections, messages=all_sections)
 

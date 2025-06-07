@@ -36,7 +36,7 @@ export function useThreadManager(userId, client, graph_name) {
                 // Use Supabase's built-in session refresh
                 const supabase = createClient();
                 const { data: { user } } = await supabase.auth.getUser();
-                const session = supabase.auth.session ? supabase.auth.session() : null;
+                const { data: { session } } = await supabase.auth.getSession();
                 if (session?.access_token) {
                     // Update client headers with new session
                     client.defaultHeaders = {
@@ -402,7 +402,7 @@ export function useThreadManager(userId, client, graph_name) {
             // Use Supabase's built-in session refresh
             const supabase = createClient();
             const { data: { user } } = await supabase.auth.getUser();
-            const session = supabase.auth.session ? supabase.auth.session() : null;
+            const { data: { session } } = await supabase.auth.getSession();
             if (session?.access_token) {
                 client.defaultHeaders = {
                     ...client.defaultHeaders,

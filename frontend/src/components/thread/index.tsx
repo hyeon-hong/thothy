@@ -110,6 +110,7 @@ export function Thread() {
 
   const stream = useStreamContext();
   const messages = stream.messages;
+  console.log("Messages: ", messages);
   const isLoading = stream.isLoading;
 
   const lastError = useRef<string | undefined>(undefined);

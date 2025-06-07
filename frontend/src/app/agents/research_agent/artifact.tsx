@@ -25,18 +25,9 @@ export default function ResearchGraphComponent(props: {
   content?: string;
   topic?: string;
   sections?: Sections;
-  section_update?: {
-    name: string;
-    content: string;
-    status: string;
-    research: boolean;
-    iteration?: number;
-  };
+  completed_sections?: Section[];
 }) {
-  const { meta } = useStreamContext<
-    { research_report?: { content: string } },
-    { MetaType: { ui: any; artifact: any } }
-  >();
+  const { meta } = useStreamContext<{ MetaType: { ui: any; artifact: any } }>();
 
   const [ArtifactContent, { open, setOpen, context, setContext }] =
     meta.artifact;
@@ -54,7 +45,7 @@ export default function ResearchGraphComponent(props: {
 
   useEffect(() => {
     setOpen(true);
-  }, [props.sections, props.content, props.topic, props.section_update]);
+  }, [props.sections, props.content, props.topic]);
 
   // Initialize updated sections when props.sections changes
   useEffect(() => {
@@ -64,45 +55,23 @@ export default function ResearchGraphComponent(props: {
     }
   }, [props.sections]);
 
-  // Update section content when section_update is received
+  // Track persistentSections changes
+  useEffect(() => {}, [persistentSectionsRef.current]);
+
+  // Update persistentSectionsRef when completed_sections prop changes
   useEffect(() => {
-    if (props.section_update) {
-      setCompletedSections((prev) => {
-        const updated = new Map(prev);
-        updated.set(props.section_update!.name, props.section_update!.content);
-        return updated;
-      });
-
-      setSectionStatuses((prev) => {
-        const updated = new Map(prev);
-        updated.set(props.section_update!.name, {
-          status: props.section_update!.status,
-          iteration: props.section_update!.iteration,
-        });
-        return updated;
-      });
-
-      // Update research and status in persistentSectionsRef
+    if (props.completed_sections && props.completed_sections.length > 0) {
+      // Update sections in persistentSectionsRef by matching name
       persistentSectionsRef.current = persistentSectionsRef.current.map(
         (section) => {
-          if (section.name === props.section_update!.name) {
-            return {
-              ...section,
-              content: props.section_update!.content,
-              research: props.section_update!.research,
-              status: props.section_update!.status,
-              iteration: props.section_update!.iteration,
-            };
-          }
-          return section;
+          const updated = props.completed_sections!.find(
+            (completed) => completed.name === section.name
+          );
+          return updated ? { ...section, ...updated } : section;
         }
       );
     }
-  }, [props.section_update]);
-
-  // Track persistentSections changes
-  useEffect(() => {
-  }, [persistentSectionsRef.current]);
+  }, [props.completed_sections]);
 
   // Get content from props or context, prioritizing props
   const reportContent = props.content || context.research_report?.content;
@@ -187,17 +156,6 @@ export default function ResearchGraphComponent(props: {
                             )}
                           </h3>
                           <div className="flex gap-2">
-                            <span
-                              className={`px-2 py-1 text-xs rounded ${
-                                section.research
-                                  ? "bg-blue-100 text-blue-800"
-                                  : "bg-gray-100 text-gray-800"
-                              }`}
-                            >
-                              {section.research
-                                ? "Research Required"
-                                : "Research Done"}
-                            </span>
                             <span
                               className={`px-2 py-1 text-xs rounded ${
                                 status === "completed"

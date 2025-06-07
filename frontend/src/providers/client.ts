@@ -7,7 +7,7 @@ export async function createLangGraphClient(
 ) {
   const supabase = createClient();
   const { data: { user } } = await supabase.auth.getUser();
-  const session = supabase.auth.session ? supabase.auth.session() : null;
+  const { data: { session } } = await supabase.auth.getSession();
   const accessToken = session?.access_token;
   
   if (!accessToken) {
