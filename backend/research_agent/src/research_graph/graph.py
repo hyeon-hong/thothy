@@ -353,6 +353,8 @@ async def generate_queries(state: SectionState, config: RunnableConfig):
     }])]
 
     push_ui_message(UI_COMPONENT_NAME, {"search_queries": queries.queries})
+
+    # Return the updated messages
     return {"search_queries": queries.queries, "messages": updated_messages}
 
 
@@ -391,8 +393,8 @@ async def search_web(state: SectionState, config: RunnableConfig):
 
     # Get current search iterations (use last value or 0 if empty)
     current_iterations = state["search_iterations"][-1] if state["search_iterations"] else 0
-    push_ui_message(UI_COMPONENT_NAME, {"source_str": [
-                    source_str], "search_iterations": [current_iterations + 1]})
+
+    # Return the updated messages
     return {"source_str": [source_str], "search_iterations": [current_iterations + 1]}
 
 
@@ -414,12 +416,12 @@ async def write_section(state: SectionState, config: RunnableConfig) -> Command[
         Command to either complete section or do more research
     """
 
-    logger.info("write_section start")
-
     # Get state
     topic = state["topic"]
+
     # Get the first (current) section from the list
     section = state["section"][0] if state["section"] else None
+
     # Get the latest source string from the list
     source_str = state["source_str"][-1] if state["source_str"] else ""
 
@@ -488,39 +490,16 @@ async def write_section(state: SectionState, config: RunnableConfig) -> Command[
         )
 
         # Push the completed section to UI with message
-        ui_message = AIMessage(
-            content=f"Section '{section.name}' completed successfully!"
-        )
-        push_ui_message(UI_COMPONENT_NAME, {
-            "section_update": {
-                "name": section.name,
-                "content": temp_section_content,
-                "status": "completed"
-            }
-        }, message=ui_message)
         push_ui_message(UI_COMPONENT_NAME, {
                         "completed_sections": [temp_section]})
-        logger.info("write_section end")
+
+        # Return the completed section
         return Command(
             update={"completed_sections": [temp_section]},
             goto=END
         )
 
-    # Push the section status to UI indicating more research is needed
-    ui_message = AIMessage(
-        content=f"Section '{section.name}' needs more research (iteration {current_iterations + 1})"
-    )
-    push_ui_message(UI_COMPONENT_NAME, {
-        "section_update": {
-            "name": section.name,
-            "content": temp_section_content,
-            "status": "needs_more_research",
-            "iteration": current_iterations + 1
-        }
-    }, message=ui_message)
-    push_ui_message(UI_COMPONENT_NAME, {
-                    "search_queries": feedback.follow_up_queries})
-    logger.info("write_section end")
+    # Return the updated messages
     return Command(
         update={"search_queries": feedback.follow_up_queries},
         goto="search_web"
@@ -580,16 +559,6 @@ async def write_final_sections(state: SectionState, config: RunnableConfig):
     )
 
     # Push the section content to the UI with message
-    ui_message = AIMessage(
-        content=f"Section '{section.name}' generated successfully!"
-    )
-    push_ui_message(UI_COMPONENT_NAME, {
-        "section_update": {
-            "name": section.name,
-            "content": temp_section_content,
-            "status": "completed"
-        }
-    }, message=ui_message)
     push_ui_message(UI_COMPONENT_NAME, {"completed_sections": [temp_section]})
 
     # Return the completed section
