@@ -73,52 +73,25 @@ async def generate_report_plan(state: ReportState, config: RunnableConfig):
         Dict containing the generated sections
     """
 
-    # Try to get topic from different possible sources
-    topic = None
-
-    # Method 1: Try to get from messages (standard chat flow)
+    # Get topic from the latest message
     messages = state.get("messages", [])
-    logger.info(f"messages: {messages}")
 
-    if messages and len(messages) > 0:
-        try:
-            first_msg = messages[0]
-            # Try dict access first, then attribute access
-            if isinstance(first_msg, dict):
-                topic = first_msg.get("content", "")
-            else:
-                topic = getattr(first_msg, "content", "")
-            logger.info(f"Topic extracted from messages: {topic}")
-        except Exception as e:
-            logger.warning(f"Could not extract topic from messages: {e}")
-
-    # Method 2: Try to get topic directly from state (alternative input format)
-    if not topic:
-        topic = state.get("topic")
-        if topic:
-            logger.info(f"Topic found directly in state: {topic}")
-
-    # Method 3: Check if we have any string values in state that could be the topic
-    if not topic:
-        logger.info(
-            f"Full state keys: {list(state.keys()) if hasattr(state, 'keys') else 'Not a dict'}")
-        logger.info(f"Full state content: {state}")
-
-        # Look for any string that might be the topic
-        for key, value in state.items():
-            if isinstance(value, str) and len(value) > 0 and key != "feedback_on_report_plan":
-                topic = value
-                logger.info(
-                    f"Found potential topic in state['{key}']: {topic}")
-                break
-
-    if not topic:
-        logger.error(
-            "No topic found in any format! This indicates a problem with input processing.")
+    if not messages:
         raise ValueError(
-            "No topic received. Please provide a topic for report generation.")
+            "No messages found. Please provide a topic for report generation.")
 
-    logger.info(f"Final topic set: {topic}")
+    # Get the latest message content as topic
+    latest_message = messages[-1]
+    if isinstance(latest_message, dict):
+        topic = latest_message.get("content", "")
+    else:
+        topic = getattr(latest_message, "content", "")
+
+    if not topic:
+        raise ValueError(
+            "No topic found in the latest message. Please provide a topic for report generation.")
+
+    logger.info(f"Topic extracted from latest message: {topic}")
 
     feedback = state.get("feedback_on_report_plan", None)
 
