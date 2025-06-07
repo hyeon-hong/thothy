@@ -160,17 +160,6 @@ export default function ResearchGraphComponent(props: {
                           <div className="flex gap-2">
                             <span
                               className={`px-2 py-1 text-xs rounded ${
-                                section.research
-                                  ? "bg-blue-100 text-blue-800"
-                                  : "bg-gray-100 text-gray-800"
-                              }`}
-                            >
-                              {section.research
-                                ? "Research Required"
-                                : "Research Done"}
-                            </span>
-                            <span
-                              className={`px-2 py-1 text-xs rounded ${
                                 status === "completed"
                                   ? "bg-green-100 text-green-800"
                                   : status === "needs_more_research"
