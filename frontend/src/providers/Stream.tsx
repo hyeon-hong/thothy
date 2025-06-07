@@ -80,13 +80,25 @@ const StreamSession = ({
 
   const streamValue = useTypedStream({
     defaultHeaders: {
-      Authorization: `Bearer ${session?.access_token || ''}`,
+      Authorization: `Bearer ${session?.access_token || ""}`,
     },
     apiUrl,
     apiKey: apiKey ?? undefined,
     assistantId,
     threadId: threadId ?? null,
+    onLangChainEvent(data) {
+      console.log("LangChain event: ", data);
+    },
+    onUpdateEvent(data) {
+      console.log("Update event: ", data);
+    },
+    onMetadataEvent(data) {
+      console.log("Metadata event: ", data);
+    },
     onCustomEvent: (event, options) => {
+      console.log("Custom event: ", event);
+      console.log("Options: ", options);
+
       if (isUIMessage(event) || isRemoveUIMessage(event)) {
         options.mutate((prev) => {
           const ui = uiMessageReducer(prev.ui ?? [], event);
@@ -142,11 +154,7 @@ export const StreamProvider: React.FC<{
   const assistantId = assistantIdProp ?? assistantIdQuery;
 
   return (
-    <StreamSession
-      apiKey={apiKey}
-      apiUrl={apiUrl}
-      assistantId={assistantId}
-    >
+    <StreamSession apiKey={apiKey} apiUrl={apiUrl} assistantId={assistantId}>
       {children}
     </StreamSession>
   );

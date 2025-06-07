@@ -27,13 +27,7 @@ export default function ResearchGraphComponent(props: {
   sections?: Sections;
   completed_sections?: Section[];
 }) {
-  const { meta } = useStreamContext<
-    { custom_key: string },
-    { MetaType: { ui: any; artifact: any } }
-  >();
-
-  console.log("meta: ", meta);
-  console.log("custom_key: ", meta.custom_key);
+  const { meta } = useStreamContext<{ MetaType: { ui: any; artifact: any } }>();
 
   const [ArtifactContent, { open, setOpen, context, setContext }] =
     meta.artifact;

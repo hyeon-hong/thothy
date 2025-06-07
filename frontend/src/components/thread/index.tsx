@@ -109,7 +109,9 @@ export function Thread() {
   const isLargeScreen = useMediaQuery("(min-width: 1024px)");
 
   const stream = useStreamContext();
+  console.log("Stream: ", stream);
   const messages = stream.messages;
+  console.log("Messages: ", messages);
   const isLoading = stream.isLoading;
 
   const lastError = useRef<string | undefined>(undefined);
@@ -214,6 +216,7 @@ export function Thread() {
     const context =
       Object.keys(artifactContext).length > 0 ? artifactContext : undefined;
 
+    console.log("Sending message: ", newHumanMessage);
     stream.submit(
       { messages: [...toolMessages, newHumanMessage], context },
       {

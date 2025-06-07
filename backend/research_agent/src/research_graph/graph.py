@@ -117,10 +117,6 @@ async def generate_report_plan(state: ReportState, config: RunnableConfig):
 
     logger.info(f"Final topic set: {topic}")
 
-    writer = get_stream_writer()
-    writer({"custom_key": "Generating custom data inside node"})
-    return Command(goto=END)
-
     feedback = state.get("feedback_on_report_plan", None)
 
     # Get configuration
@@ -326,16 +322,8 @@ async def generate_queries(state: SectionState, config: RunnableConfig):
     queries = await structured_llm.ainvoke([SystemMessage(content=system_instructions),
                                             HumanMessage(content="Generate search queries on the provided topic.")])
 
-    # Convert queries to ai message format and append to existing messages
-    current_messages = state.get("messages", [])
-    updated_messages = list(current_messages) + [AIMessage(content=f"Generated search queries for {section.name}", tool_calls=[{
-        "id": "query_generation_001",
-        "name": "generate_search_queries",
-        "args": {"queries": [query.search_query for query in queries.queries]}
-    }])]
-
     # Return the updated messages
-    return {"search_queries": queries.queries, "messages": updated_messages}
+    return {"search_queries": queries.queries}
 
 
 async def search_web(state: SectionState, config: RunnableConfig):
@@ -665,14 +653,12 @@ builder.add_node("compile_final_report", compile_final_report)
 
 # Add edges
 builder.add_edge(START, "generate_report_plan")
-builder.add_edge("generate_report_plan", END)
-
-# builder.add_edge("generate_report_plan", "human_feedback")
-# builder.add_edge("build_section_with_web_research",
-#                  "gather_completed_sections")
-# builder.add_conditional_edges("gather_completed_sections",
-#                               initiate_final_section_writing, ["write_final_sections"])
-# builder.add_edge("write_final_sections", "compile_final_report")
-# builder.add_edge("compile_final_report", END)
+builder.add_edge("generate_report_plan", "human_feedback")
+builder.add_edge("build_section_with_web_research",
+                 "gather_completed_sections")
+builder.add_conditional_edges("gather_completed_sections",
+                              initiate_final_section_writing, ["write_final_sections"])
+builder.add_edge("write_final_sections", "compile_final_report")
+builder.add_edge("compile_final_report", END)
 
 graph = builder.compile()
