@@ -284,23 +284,19 @@ def human_feedback(state: ReportState, config: RunnableConfig) -> Command[Litera
 
     # If the user approves the report plan, kick off section writing
     if human_response.get("type") == "accept":
-        cmd = Command(goto=[
-            Send("build_section_with_web_research", {
-                "topic": topic, "section": [s], "search_iterations": [0]})
+        return Command(goto=[
+            Send(
+                "build_section_with_web_research",
+                {"topic": topic, "section": [s], "search_iterations": [0]}
+            )
             for s in sections
             if s.research
         ])
-        push_ui_message(UI_COMPONENT_NAME, cmd)
-        return cmd
     elif human_response.get("type") == "response":
-        cmd = Command(goto="generate_report_plan",
-                      update={"feedback_on_report_plan": human_response.get("args")})
-        push_ui_message(UI_COMPONENT_NAME, cmd)
-        return cmd
+        return Command(goto="generate_report_plan",
+                       update={"feedback_on_report_plan": human_response.get("args")})
     elif human_response.get("type") == "ignore":
-        cmd = Command(goto=END)
-        push_ui_message(UI_COMPONENT_NAME, cmd)
-        return cmd
+        return Command(goto=END)
     else:
         raise TypeError(
             f"Interrupt value of type {type(human_response)} is not supported.")
@@ -502,7 +498,8 @@ async def write_section(state: SectionState, config: RunnableConfig) -> Command[
                 "status": "completed"
             }
         }, message=ui_message)
-        push_ui_message(UI_COMPONENT_NAME, {"completed_sections": [temp_section]})
+        push_ui_message(UI_COMPONENT_NAME, {
+                        "completed_sections": [temp_section]})
         logger.info("write_section end")
         return Command(
             update={"completed_sections": [temp_section]},
@@ -521,7 +518,8 @@ async def write_section(state: SectionState, config: RunnableConfig) -> Command[
             "iteration": current_iterations + 1
         }
     }, message=ui_message)
-    push_ui_message(UI_COMPONENT_NAME, {"search_queries": feedback.follow_up_queries})
+    push_ui_message(UI_COMPONENT_NAME, {
+                    "search_queries": feedback.follow_up_queries})
     logger.info("write_section end")
     return Command(
         update={"search_queries": feedback.follow_up_queries},
@@ -621,7 +619,8 @@ def gather_completed_sections(state: ReportState):
 
     logger.info("gather_completed_sections end")
 
-    push_ui_message(UI_COMPONENT_NAME, {"report_sections_from_research": [completed_report_sections]})
+    push_ui_message(UI_COMPONENT_NAME, {
+                    "report_sections_from_research": [completed_report_sections]})
     return {"report_sections_from_research": [completed_report_sections]}
 
 
