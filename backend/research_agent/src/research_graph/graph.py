@@ -213,8 +213,7 @@ async def generate_report_plan(state: ReportState, config: RunnableConfig):
         content="Report sections generated successfully!"
     )
 
-    push_ui_message(UI_COMPONENT_NAME, {"topic": topic, "sections": sections, "messages": [
-                    query_generation_message, sections_generation_message, ui_message]})
+    push_ui_message(UI_COMPONENT_NAME, {"topic": topic, "sections": sections})
     return {"topic": topic, "sections": sections, "messages": [query_generation_message, sections_generation_message, ui_message]}
 
 
@@ -357,8 +356,7 @@ async def generate_queries(state: SectionState, config: RunnableConfig):
         "args": {"queries": [query.search_query for query in queries.queries]}
     }])]
 
-    push_ui_message(UI_COMPONENT_NAME, {
-                    "search_queries": queries.queries, "messages": updated_messages})
+    push_ui_message(UI_COMPONENT_NAME, {"search_queries": queries.queries})
     return {"search_queries": queries.queries, "messages": updated_messages}
 
 
@@ -504,8 +502,7 @@ async def write_section(state: SectionState, config: RunnableConfig) -> Command[
                 "status": "completed"
             }
         }, message=ui_message)
-        push_ui_message(UI_COMPONENT_NAME, {
-                        "completed_sections": [temp_section]})
+        push_ui_message(UI_COMPONENT_NAME, {"completed_sections": [temp_section]})
         logger.info("write_section end")
         return Command(
             update={"completed_sections": [temp_section]},
@@ -524,8 +521,7 @@ async def write_section(state: SectionState, config: RunnableConfig) -> Command[
             "iteration": current_iterations + 1
         }
     }, message=ui_message)
-    push_ui_message(UI_COMPONENT_NAME, {
-                    "search_queries": feedback.follow_up_queries})
+    push_ui_message(UI_COMPONENT_NAME, {"search_queries": feedback.follow_up_queries})
     logger.info("write_section end")
     return Command(
         update={"search_queries": feedback.follow_up_queries},
@@ -625,8 +621,7 @@ def gather_completed_sections(state: ReportState):
 
     logger.info("gather_completed_sections end")
 
-    push_ui_message(UI_COMPONENT_NAME, {
-                    "report_sections_from_research": [completed_report_sections]})
+    push_ui_message(UI_COMPONENT_NAME, {"report_sections_from_research": [completed_report_sections]})
     return {"report_sections_from_research": [completed_report_sections]}
 
 
@@ -654,8 +649,7 @@ def compile_final_report(state: ReportState):
     report_data = {"content": all_sections}
     push_ui_message(UI_COMPONENT_NAME, report_data, message=ui_message)
 
-    push_ui_message(UI_COMPONENT_NAME, {
-                    "final_report": all_sections, "messages": all_sections})
+    push_ui_message(UI_COMPONENT_NAME, {"final_report": all_sections})
     return ReportStateOutput(final_report=all_sections, messages=all_sections)
 
 
