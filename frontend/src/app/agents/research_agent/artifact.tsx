@@ -45,7 +45,7 @@ export default function ResearchGraphComponent(props: {
 
   useEffect(() => {
     setOpen(true);
-  }, [props.sections, props.content, props.topic]);
+  }, [props]);
 
   // Initialize updated sections when props.sections changes
   useEffect(() => {
@@ -60,6 +60,7 @@ export default function ResearchGraphComponent(props: {
 
   // Update persistentSectionsRef when completed_sections prop changes
   useEffect(() => {
+    console.log("Completed sections: ", props.completed_sections);
     if (props.completed_sections && props.completed_sections.length > 0) {
       // Update sections in persistentSectionsRef by matching name
       persistentSectionsRef.current = persistentSectionsRef.current.map(
