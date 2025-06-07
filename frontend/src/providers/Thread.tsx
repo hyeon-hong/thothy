@@ -79,7 +79,6 @@ export function ThreadProvider({
 
       return threads;
     } catch (error: any) {
-      console.error("Error fetching threads:", error);
       if (error.status === 403 || error.status === 401) {
         console.error(
           "Authentication error: User might not be logged in or session expired"

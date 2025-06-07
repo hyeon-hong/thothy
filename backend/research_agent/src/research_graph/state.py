@@ -51,7 +51,7 @@ class ReportStateInput(TypedDict):
 
 
 class ReportStateOutput(TypedDict):
-    messages: Sequence[BaseMessage]
+    # messages: Sequence[BaseMessage]
     ui: Annotated[Sequence[AnyUIMessage], ui_message_reducer]
     final_report: str  # Final report
 

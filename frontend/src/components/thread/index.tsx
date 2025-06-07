@@ -110,7 +110,6 @@ export function Thread() {
 
   const stream = useStreamContext();
   const messages = stream.messages;
-  console.log("Messages: ", messages);
   const isLoading = stream.isLoading;
 
   const lastError = useRef<string | undefined>(undefined);
@@ -218,7 +217,7 @@ export function Thread() {
     stream.submit(
       { messages: [...toolMessages, newHumanMessage], context },
       {
-        streamMode: ["values"],
+        streamMode: ["messages"],
         optimisticValues: (prev) => ({
           ...prev,
           context,
@@ -244,7 +243,7 @@ export function Thread() {
     setFirstTokenReceived(false);
     stream.submit(undefined, {
       checkpoint: parentCheckpoint,
-      streamMode: ["values"],
+      streamMode: ["messages"],
     });
   };
 
@@ -453,8 +452,8 @@ export function Thread() {
                 <>
                   {messages
                     .filter((m) => !m.id?.startsWith(DO_NOT_RENDER_ID_PREFIX))
-                    // .filter((m) => !m.id?.startsWith("run--"))
-                    // .filter((m) => m.lc_serializable !== true)
+                    // "run--" prefix is added by langgraph to the message id as stream mode is "messages"
+                    .filter((m) => !m.id?.startsWith("run--"))
                     .map((message, index) =>
                       message.type === "human" ? (
                         <HumanMessage

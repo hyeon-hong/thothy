@@ -87,20 +87,10 @@ const StreamSession = ({
     apiKey: apiKey ?? undefined,
     assistantId,
     threadId: threadId ?? null,
-    onLangChainEvent(data) {
-      console.log("LangChain event: ", data);
-    },
-    onUpdateEvent(data) {
-      console.log("Update event: ", data);
-    },
-    onMetadataEvent(data) {
-      console.log("Metadata event: ", data);
-      return data;
-    },
+    onLangChainEvent(data) {},
+    onUpdateEvent(data) {},
+    onMetadataEvent(data) {},
     onCustomEvent: (event, options) => {
-      console.log("Custom event: ", event);
-      console.log("Options: ", options);
-
       if (isUIMessage(event) || isRemoveUIMessage(event)) {
         options.mutate((prev) => {
           const ui = uiMessageReducer(prev.ui ?? [], event);

@@ -1,10 +1,11 @@
 """Simple chat agent using LangGraph."""
 
-import logging
 import datetime  # Import datetime for getting current time
 import os
 from typing import Optional
 
+from langchain.chat_models import init_chat_model
+from langchain_core.messages import AIMessage
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langgraph.graph import MessagesState, StateGraph, START, END
 from langgraph.store.base import BaseStore
@@ -20,11 +21,13 @@ def get_llm() -> ChatGoogleGenerativeAI:
     global llm
     if llm is None:
         # api_key = os.getenv("GOOGLE_API_KEY")
-        llm = ChatGoogleGenerativeAI(
-            model="gemini-2.5-flash-preview-05-20",
-            temperature=0.8,
-            # google_api_key=api_key
-        )
+        llm = init_chat_model(
+            model="gemini-2.5-flash-preview-05-20", model_provider="google_genai")
+        # llm = ChatGoogleGenerativeAI(
+        #     model="gemini-2.5-flash-preview-05-20",
+        #     temperature=0.8,
+        #     # google_api_key=api_key
+        # )
     return llm
 
 
@@ -51,8 +54,9 @@ async def chatbot(
     response = await chat_model.ainvoke(
         [{"role": "system", "content": system_msg}] + state["messages"]
     )
+    ai_message = AIMessage(content=response.content)
 
-    return {"messages": response}
+    return {"messages": [ai_message]}
 
 
 """Build and return the chat graph."""

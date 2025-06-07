@@ -5,7 +5,7 @@ from langchain.chat_models import init_chat_model
 from langchain_core.messages import HumanMessage, SystemMessage, AIMessage
 from langchain_core.runnables import RunnableConfig
 from langgraph.constants import Send
-from langgraph.config import get_stream_writer
+
 from langgraph.graph import START, END, StateGraph
 from langgraph.graph.ui import push_ui_message
 from langgraph.types import Command, interrupt
@@ -52,6 +52,9 @@ logger = logging.getLogger("thothy-devlop")
 # UI Component name for research agent
 UI_COMPONENT_NAME = "research_graph"
 
+# Global variable to store UI message ID
+ui_message_id = None
+
 
 async def generate_report_plan(state: ReportState, config: RunnableConfig):
     """Generate the initial report plan with sections.
@@ -70,52 +73,25 @@ async def generate_report_plan(state: ReportState, config: RunnableConfig):
         Dict containing the generated sections
     """
 
-    # Try to get topic from different possible sources
-    topic = None
-
-    # Method 1: Try to get from messages (standard chat flow)
+    # Get topic from the latest message
     messages = state.get("messages", [])
-    logger.info(f"messages: {messages}")
 
-    if messages and len(messages) > 0:
-        try:
-            first_msg = messages[0]
-            # Try dict access first, then attribute access
-            if isinstance(first_msg, dict):
-                topic = first_msg.get("content", "")
-            else:
-                topic = getattr(first_msg, "content", "")
-            logger.info(f"Topic extracted from messages: {topic}")
-        except Exception as e:
-            logger.warning(f"Could not extract topic from messages: {e}")
-
-    # Method 2: Try to get topic directly from state (alternative input format)
-    if not topic:
-        topic = state.get("topic")
-        if topic:
-            logger.info(f"Topic found directly in state: {topic}")
-
-    # Method 3: Check if we have any string values in state that could be the topic
-    if not topic:
-        logger.info(
-            f"Full state keys: {list(state.keys()) if hasattr(state, 'keys') else 'Not a dict'}")
-        logger.info(f"Full state content: {state}")
-
-        # Look for any string that might be the topic
-        for key, value in state.items():
-            if isinstance(value, str) and len(value) > 0 and key != "feedback_on_report_plan":
-                topic = value
-                logger.info(
-                    f"Found potential topic in state['{key}']: {topic}")
-                break
-
-    if not topic:
-        logger.error(
-            "No topic found in any format! This indicates a problem with input processing.")
+    if not messages:
         raise ValueError(
-            "No topic received. Please provide a topic for report generation.")
+            "No messages found. Please provide a topic for report generation.")
 
-    logger.info(f"Final topic set: {topic}")
+    # Get the latest message content as topic
+    latest_message = messages[-1]
+    if isinstance(latest_message, dict):
+        topic = latest_message.get("content", "")
+    else:
+        topic = getattr(latest_message, "content", "")
+
+    if not topic:
+        raise ValueError(
+            "No topic found in the latest message. Please provide a topic for report generation.")
+
+    logger.info(f"Topic extracted from latest message: {topic}")
 
     feedback = state.get("feedback_on_report_plan", None)
 
@@ -178,8 +154,9 @@ async def generate_report_plan(state: ReportState, config: RunnableConfig):
 
     # Generate the report sections with structured output
     structured_llm = planner_llm.with_structured_output(Sections)
-    report_sections = await structured_llm.ainvoke([SystemMessage(content=system_instructions_sections),
-                                                   HumanMessage(content=planner_message)])
+    report_sections = await structured_llm.ainvoke(
+        [SystemMessage(content=system_instructions_sections),
+         HumanMessage(content=planner_message)])
 
     logger.info(f"report_sections: {report_sections}")
 
@@ -187,12 +164,15 @@ async def generate_report_plan(state: ReportState, config: RunnableConfig):
     sections = report_sections.sections
 
     # Push the report sections to the UI with message
-    ui_message = AIMessage(
+    global ui_message_id
+    ai_message = AIMessage(
         content="Report sections generated successfully!"
     )
-    push_ui_message(UI_COMPONENT_NAME, {"topic": topic, "sections": sections})
+    ui_message = push_ui_message(
+        UI_COMPONENT_NAME, {"topic": topic, "sections": sections})
+    ui_message_id = ui_message["id"]
 
-    return {"topic": topic, "sections": sections, "messages": [ui_message]}
+    return {"topic": topic, "sections": sections, "messages": [ai_message]}
 
 
 def human_feedback(state: ReportState, config: RunnableConfig) -> Command[Literal["generate_report_plan", "build_section_with_web_research"]]:
@@ -283,7 +263,7 @@ def human_feedback(state: ReportState, config: RunnableConfig) -> Command[Litera
 async def generate_queries(state: SectionState, config: RunnableConfig):
     """Generate search queries for researching a specific section.
 
-    This node uses an LLM to generate targeted search queries based on the 
+    This node uses an LLM to generate targeted search queries based on the
     section topic and description.
 
     Args:
@@ -412,8 +392,9 @@ async def write_section(state: SectionState, config: RunnableConfig) -> Command[
     writer_model = init_chat_model(
         model=writer_model_name, model_provider=writer_provider)
 
-    section_content = await writer_model.ainvoke([SystemMessage(content=section_writer_instructions),
-                                                  HumanMessage(content=section_writer_inputs_formatted)])
+    section_content = await writer_model.ainvoke(
+        [SystemMessage(content=section_writer_instructions),
+         HumanMessage(content=section_writer_inputs_formatted)])
 
     # Use temporary variable instead of modifying section directly
     temp_section_content = section_content.content
@@ -458,8 +439,9 @@ async def write_section(state: SectionState, config: RunnableConfig) -> Command[
         )
 
         # Push the completed section to UI with message
-        push_ui_message(UI_COMPONENT_NAME, {
-                        "completed_sections": [temp_section]})
+        # global ui_message_id
+        # push_ui_message(UI_COMPONENT_NAME, {
+        #                 "completed_sections": [temp_section]}, id=ui_message_id)
 
         # Return the completed section
         return Command(
@@ -527,7 +509,9 @@ async def write_final_sections(state: SectionState, config: RunnableConfig):
     )
 
     # Push the section content to the UI with message
-    push_ui_message(UI_COMPONENT_NAME, {"completed_sections": [temp_section]})
+    # global ui_message_id
+    # push_ui_message(UI_COMPONENT_NAME, {"completed_sections": [
+    #                 temp_section]}, id=ui_message_id)
 
     # Return the completed section
     return {"completed_sections": [temp_section]}
@@ -573,10 +557,19 @@ def compile_final_report(state: ReportState):
         temp_section_content = completed_sections.get(section.name, "")
         temp_sections.append(temp_section_content)
 
+    global ui_message_id
+    push_ui_message(UI_COMPONENT_NAME, {
+                    "completed_sections": state["completed_sections"]}, id=ui_message_id)
+
     # Compile final report using temporary sections
     all_sections = "\n\n".join(temp_sections)
 
-    return ReportStateOutput(final_report=all_sections, messages=all_sections)
+    # Wrap the final report with AIMessage type
+    # ai_message = AIMessage(content=all_sections)
+
+    # TODO: With messages, canvas would be reset
+    # return ReportStateOutput(final_report=all_sections, messages=[ai_message])
+    return {"final_report": all_sections}
 
 
 def initiate_final_section_writing(state: ReportState):

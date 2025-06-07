@@ -4,6 +4,7 @@ globs:
 alwaysApply: false
 ---
 
+- You should wrap the response of llm invoke function with AIMessage type and return it as a list. This is because we avoid "run--" prefix in message id which is filtered out in frontend.
 - When you create a new directory for a new LangGraph agent, check the error using "langgraph dev" command.
 - If possible, call an interrupt function in the start of node function. (https://langchain-ai.github.io/langgraph/concepts/human_in_the_loop/#common-pitfalls)
 - Should add description field to the interrupt function for frontend to display.
