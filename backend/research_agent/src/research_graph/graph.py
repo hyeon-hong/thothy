@@ -5,7 +5,7 @@ from langchain.chat_models import init_chat_model
 from langchain_core.messages import HumanMessage, SystemMessage, AIMessage
 from langchain_core.runnables import RunnableConfig
 from langgraph.constants import Send
-from langgraph.config import get_stream_writer
+
 from langgraph.graph import START, END, StateGraph
 from langgraph.graph.ui import push_ui_message
 from langgraph.types import Command, interrupt
@@ -283,7 +283,7 @@ def human_feedback(state: ReportState, config: RunnableConfig) -> Command[Litera
 async def generate_queries(state: SectionState, config: RunnableConfig):
     """Generate search queries for researching a specific section.
 
-    This node uses an LLM to generate targeted search queries based on the 
+    This node uses an LLM to generate targeted search queries based on the
     section topic and description.
 
     Args:
@@ -412,8 +412,9 @@ async def write_section(state: SectionState, config: RunnableConfig) -> Command[
     writer_model = init_chat_model(
         model=writer_model_name, model_provider=writer_provider)
 
-    section_content = await writer_model.ainvoke([SystemMessage(content=section_writer_instructions),
-                                                  HumanMessage(content=section_writer_inputs_formatted)])
+    section_content = await writer_model.ainvoke(
+        [SystemMessage(content=section_writer_instructions),
+         HumanMessage(content=section_writer_inputs_formatted)])
 
     # Use temporary variable instead of modifying section directly
     temp_section_content = section_content.content

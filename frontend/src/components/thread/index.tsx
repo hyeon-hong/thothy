@@ -109,6 +109,7 @@ export function Thread() {
   const isLargeScreen = useMediaQuery("(min-width: 1024px)");
 
   const stream = useStreamContext();
+  console.log("Stream: ", stream);
   const messages = stream.messages;
   console.log("Messages: ", messages);
   const isLoading = stream.isLoading;
@@ -218,7 +219,7 @@ export function Thread() {
     stream.submit(
       { messages: [...toolMessages, newHumanMessage], context },
       {
-        streamMode: ["values"],
+        streamMode: ["messages"],
         optimisticValues: (prev) => ({
           ...prev,
           context,
@@ -244,7 +245,7 @@ export function Thread() {
     setFirstTokenReceived(false);
     stream.submit(undefined, {
       checkpoint: parentCheckpoint,
-      streamMode: ["values"],
+      streamMode: ["messages"],
     });
   };
 
