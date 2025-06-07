@@ -109,8 +109,8 @@ class SectionState(TypedDict):
     # Report sections from research list with reducer for concurrent updates
     report_sections_from_research: Annotated[list[str], operator.add]
 
-    # Messages with reducer for concurrent updates
-    messages: Annotated[Sequence[BaseMessage], add_messages]
+    # Messages (no reducer)
+    messages: Sequence[BaseMessage]
 
 
 class SectionOutputState(TypedDict):
