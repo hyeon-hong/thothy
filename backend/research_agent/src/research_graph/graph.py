@@ -52,6 +52,9 @@ logger = logging.getLogger("thothy-devlop")
 # UI Component name for research agent
 UI_COMPONENT_NAME = "research_graph"
 
+# Global variable to store UI message ID
+ui_message_id = None
+
 
 async def generate_report_plan(state: ReportState, config: RunnableConfig):
     """Generate the initial report plan with sections.
@@ -188,12 +191,15 @@ async def generate_report_plan(state: ReportState, config: RunnableConfig):
     sections = report_sections.sections
 
     # Push the report sections to the UI with message
-    ui_message = AIMessage(
+    global ui_message_id
+    ai_message = AIMessage(
         content="Report sections generated successfully!"
     )
-    push_ui_message(UI_COMPONENT_NAME, {"topic": topic, "sections": sections})
+    ui_message = push_ui_message(
+        UI_COMPONENT_NAME, {"topic": topic, "sections": sections})
+    ui_message_id = ui_message["id"]
 
-    return {"topic": topic, "sections": sections, "messages": [ui_message]}
+    return {"topic": topic, "sections": sections, "messages": [ai_message]}
 
 
 def human_feedback(state: ReportState, config: RunnableConfig) -> Command[Literal["generate_report_plan", "build_section_with_web_research"]]:
@@ -460,8 +466,9 @@ async def write_section(state: SectionState, config: RunnableConfig) -> Command[
         )
 
         # Push the completed section to UI with message
-        push_ui_message(UI_COMPONENT_NAME, {
-                        "completed_sections": [temp_section]})
+        # global ui_message_id
+        # push_ui_message(UI_COMPONENT_NAME, {
+        #                 "completed_sections": [temp_section]}, id=ui_message_id)
 
         # Return the completed section
         return Command(
@@ -529,7 +536,9 @@ async def write_final_sections(state: SectionState, config: RunnableConfig):
     )
 
     # Push the section content to the UI with message
-    push_ui_message(UI_COMPONENT_NAME, {"completed_sections": [temp_section]})
+    # global ui_message_id
+    # push_ui_message(UI_COMPONENT_NAME, {"completed_sections": [
+    #                 temp_section]}, id=ui_message_id)
 
     # Return the completed section
     return {"completed_sections": [temp_section]}
@@ -575,12 +584,19 @@ def compile_final_report(state: ReportState):
         temp_section_content = completed_sections.get(section.name, "")
         temp_sections.append(temp_section_content)
 
+    global ui_message_id
+    push_ui_message(UI_COMPONENT_NAME, {
+                    "completed_sections": state["completed_sections"]}, id=ui_message_id)
+
     # Compile final report using temporary sections
     all_sections = "\n\n".join(temp_sections)
 
     # Wrap the final report with AIMessage type
-    ai_message = AIMessage(content=all_sections)
-    return ReportStateOutput(final_report=all_sections, messages=[ai_message])
+    # ai_message = AIMessage(content=all_sections)
+
+    # TODO: With messages, canvas would be reset
+    # return ReportStateOutput(final_report=all_sections, messages=[ai_message])
+    return {"final_report": all_sections}
 
 
 def initiate_final_section_writing(state: ReportState):

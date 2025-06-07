@@ -17,14 +17,9 @@ interface Section {
   content: string;
 }
 
-interface Sections {
-  sections: Section[];
-}
-
 export default function ResearchGraphComponent(props: {
-  content?: string;
   topic?: string;
-  sections?: Sections;
+  sections?: Section[];
   completed_sections?: Section[];
 }) {
   const { meta } = useStreamContext<{ MetaType: { ui: any; artifact: any } }>();
@@ -39,13 +34,11 @@ export default function ResearchGraphComponent(props: {
 
   // State to persistently store sections so they don't get lost when props.sections becomes undefined
   const persistentSectionsRef = useRef<Section[]>([]);
-
-  // Add a state to trigger re-renders when persistent sections change
-  const [persistentSectionsVersion, setPersistentSectionsVersion] = useState(0);
+  const [sectionData, setSectionData] = useState<Section[]>([]);
 
   useEffect(() => {
     setOpen(true);
-  }, [props.sections, props.content, props.topic, props.completed_sections]);
+  }, [props.sections, props.topic, props.completed_sections]);
 
   // Helper function to safely get sections array
   const getSectionsArray = (): Section[] => {
@@ -54,13 +47,8 @@ export default function ResearchGraphComponent(props: {
     }
 
     // Check if sections is the expected Sections object with sections property
-    if (props.sections.sections && Array.isArray(props.sections.sections)) {
-      return props.sections.sections;
-    }
-
-    // Check if sections is directly an array (fallback case)
     if (Array.isArray(props.sections)) {
-      return props.sections as Section[];
+      return props.sections;
     }
 
     return [];
@@ -68,7 +56,12 @@ export default function ResearchGraphComponent(props: {
 
   // Initialize updated sections when props.sections changes
   useEffect(() => {
-    if (props.completed_sections && props.completed_sections.length > 0) {
+    if (
+      props.sections &&
+      props.sections.length > 0 &&
+      props.completed_sections &&
+      props.completed_sections.length > 0
+    ) {
       return;
     }
 
@@ -82,8 +75,9 @@ export default function ResearchGraphComponent(props: {
           JSON.stringify(sectionsArray.map((s) => s.name));
 
       if (shouldUpdate) {
-        persistentSectionsRef.current = [...sectionsArray]; // Create a new array to avoid reference issues
-        setPersistentSectionsVersion((prev) => prev + 1); // Trigger re-render
+        // Create a new array to avoid reference issues
+        persistentSectionsRef.current = [...sectionsArray];
+        setSectionData(persistentSectionsRef.current);
       }
     }
   }, [props.sections]);
@@ -104,7 +98,7 @@ export default function ResearchGraphComponent(props: {
       });
 
       persistentSectionsRef.current = updatedSections;
-      setPersistentSectionsVersion((prev) => prev + 1); // Trigger re-render
+      setSectionData(persistentSectionsRef.current);
     }
   }, [props.completed_sections]);
 
@@ -124,14 +118,14 @@ export default function ResearchGraphComponent(props: {
           style={{ scrollbarGutter: "stable", scrollbarWidth: "thin" }}
         >
           {/* Display sections if available */}
-          {persistentSectionsRef.current.length > 0 && (
+          {sectionData.length > 0 && (
             <Card>
               <CardHeader>
                 <CardTitle>Report Sections</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {persistentSectionsRef.current.map((section, index) => {
+                  {sectionData.map((section, index) => {
                     return (
                       <div
                         key={index}
@@ -148,9 +142,8 @@ export default function ResearchGraphComponent(props: {
 
                         {section.content && (
                           <div className="bg-white p-3 rounded border">
-                            <h4 className="font-medium mb-2">Content:</h4>
                             <div className="text-gray-700 leading-relaxed prose prose-sm max-w-none">
-                              {section.content}
+                              <MarkdownText>{section.content}</MarkdownText>
                             </div>
                           </div>
                         )}
