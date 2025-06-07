@@ -179,42 +179,13 @@ async def generate_report_plan(state: ReportState, config: RunnableConfig):
     # Get sections
     sections = report_sections.sections
 
-    # Create AI messages with tool_calls for the LLM interactions
-    # First AI message for query generation
-    query_generation_message = AIMessage(
-        content="Generated search queries for report planning",
-        tool_calls=[{
-            "id": "query_generation_001",
-            "name": "generate_search_queries",
-            "args": {
-                "topic": topic,
-                "queries": [query.search_query for query in results.queries],
-                "number_of_queries": len(results.queries)
-            }
-        }]
-    )
-
-    # Second AI message for report sections generation
-    sections_generation_message = AIMessage(
-        content="Generated report sections structure",
-        tool_calls=[{
-            "id": "sections_generation_001",
-            "name": "generate_report_sections",
-            "args": {
-                "topic": topic,
-                "sections": [{"name": s.name, "description": s.description, "research": s.research} for s in sections],
-                "total_sections": len(sections)
-            }
-        }]
-    )
-
     # Push the report sections to the UI with message
     ui_message = AIMessage(
         content="Report sections generated successfully!"
     )
 
     push_ui_message(UI_COMPONENT_NAME, {"topic": topic, "sections": sections})
-    return {"topic": topic, "sections": sections, "messages": [query_generation_message, sections_generation_message, ui_message]}
+    return {"topic": topic, "sections": sections, "messages": [ui_message]}
 
 
 def human_feedback(state: ReportState, config: RunnableConfig) -> Command[Literal["generate_report_plan", "build_section_with_web_research"]]:
