@@ -216,7 +216,6 @@ export function Thread() {
     const context =
       Object.keys(artifactContext).length > 0 ? artifactContext : undefined;
 
-    console.log("Sending message: ", newHumanMessage);
     stream.submit(
       { messages: [...toolMessages, newHumanMessage], context },
       {
