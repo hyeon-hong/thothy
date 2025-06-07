@@ -238,17 +238,6 @@ def human_feedback(state: ReportState, config: RunnableConfig) -> Command[Litera
     # Get sections
     topic = state["topic"]
     sections = state['sections']
-    # sections_str = "\n\n".join(
-    #     f"Section: {section.name}\n"
-    #     f"Description: {section.description}\n"
-    #     f"Research needed: {'Yes' if section.research else 'No'}\n"
-    #     for section in sections
-    # )
-
-    # Get feedback on the report plan from interrupt
-    # interrupt_message = f"""Please provide feedback on the following report plan.
-    #                     \n\n{sections_str}\n
-    #                     \nDoes the report plan meet your needs?\nPass 'true' to approve the report plan.\nOr, provide feedback to regenerate the report plan:"""
 
     action_request = ActionRequest(
         action="Check Report Plan",
@@ -278,7 +267,18 @@ def human_feedback(state: ReportState, config: RunnableConfig) -> Command[Litera
         description=description
     )
 
+    return Command(goto=[
+        Send(
+            "build_section_with_web_research",
+            {"topic": topic, "section": [s], "search_iterations": [0]}
+        )
+        for s in sections
+        if s.research
+    ])
+
+    # TODO: Handle later
     human_response: HumanResponse = interrupt([request])[0]
+
     # TODO: Handle multiple feedbacks
     logger.info(f"human_response: {human_response}")
 
