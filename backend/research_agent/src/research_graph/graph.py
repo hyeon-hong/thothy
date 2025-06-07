@@ -577,7 +577,9 @@ def compile_final_report(state: ReportState):
     # Compile final report using temporary sections
     all_sections = "\n\n".join(temp_sections)
 
-    return ReportStateOutput(final_report=all_sections, messages=all_sections)
+    # Wrap the final report with AIMessage type
+    ai_message = AIMessage(content=all_sections)
+    return ReportStateOutput(final_report=all_sections, messages=[ai_message])
 
 
 def initiate_final_section_writing(state: ReportState):
