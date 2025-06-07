@@ -83,7 +83,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             try {
                 // Use getUser to authenticate the user
                 const { data: { user: supabaseUser }, error } = await supabase.auth.getUser();
-                const session = supabase.auth.session ? supabase.auth.session() : null;
+                const { data: { session } } = await supabase.auth.getSession();
                 if (error) throw error;
                 if (supabaseUser) {
                     // Extract user metadata from Google OAuth

@@ -28,9 +28,12 @@ export default function ResearchGraphComponent(props: {
   completed_sections?: Section[];
 }) {
   const { meta } = useStreamContext<
-    { research_report?: { content: string } },
+    { custom_key: string },
     { MetaType: { ui: any; artifact: any } }
   >();
+
+  console.log("meta: ", meta);
+  console.log("custom_key: ", meta.custom_key);
 
   const [ArtifactContent, { open, setOpen, context, setContext }] =
     meta.artifact;
@@ -59,19 +62,20 @@ export default function ResearchGraphComponent(props: {
   }, [props.sections]);
 
   // Track persistentSections changes
-  useEffect(() => {
-  }, [persistentSectionsRef.current]);
+  useEffect(() => {}, [persistentSectionsRef.current]);
 
   // Update persistentSectionsRef when completed_sections prop changes
   useEffect(() => {
     if (props.completed_sections && props.completed_sections.length > 0) {
       // Update sections in persistentSectionsRef by matching name
-      persistentSectionsRef.current = persistentSectionsRef.current.map((section) => {
-        const updated = props.completed_sections!.find(
-          (completed) => completed.name === section.name
-        );
-        return updated ? { ...section, ...updated } : section;
-      });
+      persistentSectionsRef.current = persistentSectionsRef.current.map(
+        (section) => {
+          const updated = props.completed_sections!.find(
+            (completed) => completed.name === section.name
+          );
+          return updated ? { ...section, ...updated } : section;
+        }
+      );
     }
   }, [props.completed_sections]);
 

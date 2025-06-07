@@ -93,6 +93,8 @@ const StreamSession = ({
           return { ...prev, ui };
         });
       }
+
+      return event;
     },
     onThreadId: (id) => {
       setThreadId(id);
