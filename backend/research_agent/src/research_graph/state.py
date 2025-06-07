@@ -2,6 +2,7 @@ from typing import Annotated, List, TypedDict, Literal, Sequence
 import operator  # Add this import
 from pydantic import BaseModel, Field
 from langchain_core.messages import BaseMessage
+from langgraph.graph.message import add_messages
 from langgraph.graph.ui import AnyUIMessage, ui_message_reducer
 
 
@@ -64,7 +65,8 @@ def _keep_last_topic(left: str, right: str) -> str:
 class ReportState(TypedDict):
     """State for the entire report."""
 
-    messages: Sequence[BaseMessage]
+    # Messages with reducer for concurrent updates
+    messages: Annotated[Sequence[BaseMessage], add_messages]
     ui: Annotated[Sequence[AnyUIMessage], ui_message_reducer]
 
     # Report topic - use reducer for concurrent updates
@@ -89,6 +91,10 @@ class ReportState(TypedDict):
 class SectionState(TypedDict):
     """State for a single section of the report."""
 
+    # Messages with reducer for concurrent updates
+    messages: Annotated[Sequence[BaseMessage], add_messages]
+    ui: Annotated[Sequence[AnyUIMessage], ui_message_reducer]
+
     # Report topic - use reducer for concurrent updates
     topic: Annotated[str, _keep_last_topic]
 
@@ -106,9 +112,6 @@ class SectionState(TypedDict):
 
     # Report sections from research list with reducer for concurrent updates
     report_sections_from_research: Annotated[list[str], operator.add]
-
-    # Messages (no reducer)
-    # messages: Sequence[BaseMessage]
 
 
 class SectionOutputState(TypedDict):

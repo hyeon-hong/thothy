@@ -78,9 +78,14 @@ async def generate_report_plan(state: ReportState, config: RunnableConfig):
 
     if messages and len(messages) > 0:
         try:
-            topic = messages[0]["content"]
+            first_msg = messages[0]
+            # Try dict access first, then attribute access
+            if isinstance(first_msg, dict):
+                topic = first_msg.get("content", "")
+            else:
+                topic = getattr(first_msg, "content", "")
             logger.info(f"Topic extracted from messages: {topic}")
-        except (KeyError, IndexError, TypeError) as e:
+        except Exception as e:
             logger.warning(f"Could not extract topic from messages: {e}")
 
     # Method 2: Try to get topic directly from state (alternative input format)
