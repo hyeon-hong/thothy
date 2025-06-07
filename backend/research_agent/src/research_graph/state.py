@@ -59,17 +59,23 @@ class ReportStateOutput(TypedDict):
 
 def _keep_last_topic(left: str, right: str) -> str:
     """Reducer function to keep the last topic value - they should all be the same anyway."""
+
     return right if right else left
 
 
 class ReportState(TypedDict):
+    """State for the entire report."""
+
     messages: Annotated[Sequence[BaseMessage], add_messages]
     ui: Annotated[Sequence[AnyUIMessage], ui_message_reducer]
+
     # Report topic - use reducer for concurrent updates
     topic: Annotated[str, _keep_last_topic]
     feedback_on_report_plan: str  # Feedback on the report plan
+
     # List of report sections - use reducer for concurrent updates
     sections: Annotated[list[Section], operator.add]
+
     # Use Annotated type with add reducer
     completed_sections: Annotated[list[Section], operator.add]
     # Report sections from research list with reducer for concurrent updates
@@ -78,21 +84,30 @@ class ReportState(TypedDict):
 
 
 class SectionState(TypedDict):
+    """State for a single section of the report."""
+
     # Report topic - use reducer for concurrent updates
     topic: Annotated[str, _keep_last_topic]
+
     # Section list with reducer for concurrent updates
     section: Annotated[list[Section], operator.add]
+
     # Search iterations list with reducer for concurrent updates
     search_iterations: Annotated[list[int], operator.add]
+
     # List of search queries - use reducer for concurrent updates
     search_queries: Annotated[list[SearchQuery], operator.add]
+
     # Source strings list with reducer for concurrent updates
     source_str: Annotated[list[str], operator.add]
+
     # Report sections from research list with reducer for concurrent updates
     report_sections_from_research: Annotated[list[str], operator.add]
+
     # Messages with reducer for concurrent updates
     messages: Annotated[Sequence[BaseMessage], add_messages]
 
 
 class SectionOutputState(TypedDict):
-    completed_sections: Annotated[list[Section], operator.add]  # Return completed section in list format
+    # Return completed section in list format
+    completed_sections: Annotated[list[Section], operator.add]
