@@ -71,15 +71,20 @@ class ReportState(TypedDict):
 
     # Report topic - use reducer for concurrent updates
     topic: Annotated[str, _keep_last_topic]
-    feedback_on_report_plan: str  # Feedback on the report plan
+
+    # Feedback on the report plan
+    feedback_on_report_plan: str
 
     # List of report sections - use reducer for concurrent updates
     sections: Annotated[list[Section], operator.add]
 
     # Use Annotated type with add reducer
     completed_sections: Annotated[list[Section], operator.add]
+
     # Report sections from research list with reducer for concurrent updates
     report_sections_from_research: Annotated[list[str], operator.add]
+
+    # Final report - use reducer for concurrent updates
     final_report: str  # Final report
 
 

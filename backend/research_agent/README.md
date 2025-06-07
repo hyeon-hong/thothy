@@ -4,17 +4,17 @@ This agent is designed to generate structured research reports by orchestrating 
 
 ## Node Flow Scenario
 
-The research agent's workflow is implemented as a LangGraph state machine. The main flow is as follows:
+The research agent's workflow is implemented as a LangGraph state machine. The main flow and the section subgraph are shown below. State type for each node is indicated in parentheses.
 
 ```mermaid
 graph TD
     START((Start))
-    PLAN["generate_report_plan"]
-    FEEDBACK["human_feedback"]
-    SECTION["build_section_with_web_research (subgraph)"]
-    GATHER["gather_completed_sections"]
-    FINAL["write_final_sections"]
-    COMPILE["compile_final_report"]
+    PLAN["generate_report_plan<br>(ReportState)"]
+    FEEDBACK["human_feedback<br>(ReportState)"]
+    SECTION["build_section_with_web_research<br>(section_builder subgraph)<br>(SectionState)"]
+    GATHER["gather_completed_sections<br>(ReportState)"]
+    FINAL["write_final_sections<br>(SectionState)"]
+    COMPILE["compile_final_report<br>(ReportState)"]
     END((End))
 
     START --> PLAN
@@ -25,32 +25,39 @@ graph TD
     GATHER --> FINAL
     FINAL --> COMPILE
     COMPILE --> END
-```
 
-### Subgraph: build_section_with_web_research
+    %% Section builder subgraph
+    subgraph section_builder [build_section_with_web_research]
+        direction TB
+        S_START((Start))
+        Q["generate_queries<br>(SectionState)"]
+        SEARCH["search_web<br>(SectionState)"]
+        WRITE["write_section<br>(SectionState)"]
+        S_END((End, SectionOutputState))
 
-```mermaid
-graph TD
-    S_START((Start))
-    Q["generate_queries"]
-    SEARCH["search_web"]
-    WRITE["write_section"]
-    S_END((End))
-
-    S_START --> Q
-    Q --> SEARCH
-    SEARCH --> WRITE
-    WRITE -->|Pass/Max Depth| S_END
-    WRITE -->|Needs More Research| SEARCH
+        S_START --> Q
+        Q --> SEARCH
+        SEARCH --> WRITE
+        WRITE --|Pass/Max Depth|--> S_END
+        WRITE --|Needs More Research|--> SEARCH
+    end
+    SECTION -.-> S_START
+    S_END -.-> GATHER
 ```
 
 ### Node Descriptions
-- **generate_report_plan**: Generates the initial report structure and sections based on the topic.
-- **human_feedback**: Requests human review/feedback on the proposed report plan. Can accept, edit, or request regeneration.
-- **build_section_with_web_research**: For each section requiring research, generates queries, performs web search, and writes the section iteratively.
-- **gather_completed_sections**: Collects completed research sections for use as context in summary/final sections.
-- **write_final_sections**: Writes sections that do not require research (e.g., introduction, conclusion).
-- **compile_final_report**: Assembles all sections into the final report.
+- **generate_report_plan**: Generates the initial report structure and sections based on the topic. *(ReportState)*
+- **human_feedback**: Requests human review/feedback on the proposed report plan. Can accept, edit, or request regeneration. *(ReportState)*
+- **build_section_with_web_research**: For each section requiring research, generates queries, performs web search, and writes the section iteratively. *(SectionState, see subgraph)*
+- **gather_completed_sections**: Collects completed research sections for use as context in summary/final sections. *(ReportState)*
+- **write_final_sections**: Writes sections that do not require research (e.g., introduction, conclusion). *(SectionState)*
+- **compile_final_report**: Assembles all sections into the final report. *(ReportState)*
+
+#### Section Subgraph Node Descriptions
+- **generate_queries**: Generates search queries for the section. *(SectionState)*
+- **search_web**: Performs web search for the generated queries. *(SectionState)*
+- **write_section**: Writes the section using search results and determines if more research is needed. *(SectionState)*
+- **End**: Returns completed section(s). *(SectionOutputState)*
 
 ## State Data Types
 

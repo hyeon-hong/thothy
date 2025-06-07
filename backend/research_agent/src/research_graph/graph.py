@@ -213,15 +213,9 @@ async def generate_report_plan(state: ReportState, config: RunnableConfig):
         content="Report sections generated successfully!"
     )
 
-    push_ui_message(UI_COMPONENT_NAME, {
-                    "topic": topic, "sections": sections}, message=ui_message)
-
-    # Append all messages to existing messages
-    current_messages = state.get("messages", [])
-    updated_messages = list(
-        current_messages) + [query_generation_message, sections_generation_message, ui_message]
-
-    return {"topic": topic, "sections": sections, "messages": updated_messages}
+    push_ui_message(UI_COMPONENT_NAME, {"topic": topic, "sections": sections, "messages": [
+                    query_generation_message, sections_generation_message, ui_message]})
+    return {"topic": topic, "sections": sections, "messages": [query_generation_message, sections_generation_message, ui_message]}
 
 
 def human_feedback(state: ReportState, config: RunnableConfig) -> Command[Literal["generate_report_plan", "build_section_with_web_research"]]:
@@ -291,17 +285,23 @@ def human_feedback(state: ReportState, config: RunnableConfig) -> Command[Litera
 
     # If the user approves the report plan, kick off section writing
     if human_response.get("type") == "accept":
-        return Command(goto=[
+        cmd = Command(goto=[
             Send("build_section_with_web_research", {
                 "topic": topic, "section": [s], "search_iterations": [0]})
             for s in sections
             if s.research
         ])
+        push_ui_message(UI_COMPONENT_NAME, cmd)
+        return cmd
     elif human_response.get("type") == "response":
-        return Command(goto="generate_report_plan",
-                       update={"feedback_on_report_plan": human_response.get("args")})
+        cmd = Command(goto="generate_report_plan",
+                      update={"feedback_on_report_plan": human_response.get("args")})
+        push_ui_message(UI_COMPONENT_NAME, cmd)
+        return cmd
     elif human_response.get("type") == "ignore":
-        return Command(goto=END)
+        cmd = Command(goto=END)
+        push_ui_message(UI_COMPONENT_NAME, cmd)
+        return cmd
     else:
         raise TypeError(
             f"Interrupt value of type {type(human_response)} is not supported.")
@@ -357,6 +357,8 @@ async def generate_queries(state: SectionState, config: RunnableConfig):
         "args": {"queries": [query.search_query for query in queries.queries]}
     }])]
 
+    push_ui_message(UI_COMPONENT_NAME, {
+                    "search_queries": queries.queries, "messages": updated_messages})
     return {"search_queries": queries.queries, "messages": updated_messages}
 
 
@@ -395,6 +397,8 @@ async def search_web(state: SectionState, config: RunnableConfig):
 
     # Get current search iterations (use last value or 0 if empty)
     current_iterations = state["search_iterations"][-1] if state["search_iterations"] else 0
+    push_ui_message(UI_COMPONENT_NAME, {"source_str": [
+                    source_str], "search_iterations": [current_iterations + 1]})
     return {"source_str": [source_str], "search_iterations": [current_iterations + 1]}
 
 
@@ -500,10 +504,9 @@ async def write_section(state: SectionState, config: RunnableConfig) -> Command[
                 "status": "completed"
             }
         }, message=ui_message)
-
+        push_ui_message(UI_COMPONENT_NAME, {
+                        "completed_sections": [temp_section]})
         logger.info("write_section end")
-
-        # Store the completed section in the output state
         return Command(
             update={"completed_sections": [temp_section]},
             goto=END
@@ -521,7 +524,8 @@ async def write_section(state: SectionState, config: RunnableConfig) -> Command[
             "iteration": current_iterations + 1
         }
     }, message=ui_message)
-
+    push_ui_message(UI_COMPONENT_NAME, {
+                    "search_queries": feedback.follow_up_queries})
     logger.info("write_section end")
     return Command(
         update={"search_queries": feedback.follow_up_queries},
@@ -592,6 +596,7 @@ async def write_final_sections(state: SectionState, config: RunnableConfig):
             "status": "completed"
         }
     }, message=ui_message)
+    push_ui_message(UI_COMPONENT_NAME, {"completed_sections": [temp_section]})
 
     # Return the completed section
     return {"completed_sections": [temp_section]}
@@ -620,6 +625,8 @@ def gather_completed_sections(state: ReportState):
 
     logger.info("gather_completed_sections end")
 
+    push_ui_message(UI_COMPONENT_NAME, {
+                    "report_sections_from_research": [completed_report_sections]})
     return {"report_sections_from_research": [completed_report_sections]}
 
 
@@ -647,6 +654,8 @@ def compile_final_report(state: ReportState):
     report_data = {"content": all_sections}
     push_ui_message(UI_COMPONENT_NAME, report_data, message=ui_message)
 
+    push_ui_message(UI_COMPONENT_NAME, {
+                    "final_report": all_sections, "messages": all_sections})
     return ReportStateOutput(final_report=all_sections, messages=all_sections)
 
 
@@ -693,6 +702,7 @@ This is a fallback report generated due to an error in the report generation pro
 - Please try again with a more specific topic or different configuration
     """
 
+    push_ui_message(UI_COMPONENT_NAME, {"final_report": fallback_report})
     return ReportStateOutput(final_report=fallback_report)
 
 # Report section sub-graph --
