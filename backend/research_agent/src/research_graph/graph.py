@@ -178,8 +178,9 @@ async def generate_report_plan(state: ReportState, config: RunnableConfig):
 
     # Generate the report sections with structured output
     structured_llm = planner_llm.with_structured_output(Sections)
-    report_sections = await structured_llm.ainvoke([SystemMessage(content=system_instructions_sections),
-                                                   HumanMessage(content=planner_message)])
+    report_sections = await structured_llm.ainvoke(
+        [SystemMessage(content=system_instructions_sections),
+         HumanMessage(content=planner_message)])
 
     logger.info(f"report_sections: {report_sections}")
 
