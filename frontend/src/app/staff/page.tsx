@@ -25,7 +25,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import { Users, Pencil, X } from "lucide-react";
+import { Users, Pencil, X, Trash2 } from "lucide-react";
 import { createClient as createSupabaseClient } from "@/utils/supabase/client";
 import {
   Command,
@@ -229,6 +229,8 @@ export default function StaffPage() {
   const [staffDescription, setStaffDescription] = useState("");
   const [selectedAgent, setSelectedAgent] = useState<string>("");
   const [editingStaff, setEditingStaff] = useState<Staff | null>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [staffToDelete, setStaffToDelete] = useState<Staff | null>(null);
 
   useEffect(() => {
     // Don't redirect while auth is loading
@@ -396,6 +398,8 @@ export default function StaffPage() {
           .insert({
             user_id: userData.user.id,
             agent_id: selectedAgent,
+            name: staffName,
+            description: staffDescription,
             // Note: created_at and updated_at have default values in the database
           })
           .select()
@@ -439,66 +443,34 @@ export default function StaffPage() {
 
   const handleEditStaff = async () => {
     if (!editingStaff) return;
-
     if (!selectedAgent) {
       alert("Please select an agent for this staff member");
       return;
     }
 
     try {
-      const updatedStaff = {
-        ...editingStaff,
-        name: staffName,
-        description: staffDescription,
-        agent_id: selectedAgent,
-      };
+      const supabase = createSupabaseClient();
+      // Update the staff directly in Supabase
+      const { data, error } = await supabase
+        .from("staffs")
+        .update({
+          name: staffName,
+          description: staffDescription,
+          agent_id: selectedAgent,
+        })
+        .eq("id", editingStaff.id)
+        .select("*");
 
-      let savedStaff;
-      try {
-        // If API fails, update directly in Supabase
-        console.warn("API failed, updating directly in Supabase");
-        const supabase = createSupabaseClient();
-
-        // Update according to the staffs table schema
-        const { data, error } = await supabase
-          .from("staffs")
-          .update({
-            agent_id: selectedAgent,
-            // We can't update user_id as it's likely a foreign key
-            // updated_at will be set automatically
-          })
-          .eq("id", editingStaff.id)
-          .select()
-          .single();
-
-        if (error) {
-          throw new Error(`Supabase error: ${error.message}`);
-        }
-
-        if (data) {
-          // Add our local fields to the returned data for our local state
-          savedStaff = {
-            ...editingStaff,
-            id: data.id,
-            name: staffName,
-            description: staffDescription,
-            agent_id: selectedAgent,
-            updated_at: data.updated_at,
-          };
-        } else {
-          // Use local object as last resort
-          savedStaff = updatedStaff;
-        }
-      } catch (error) {
-        console.error("Error updating staff:", error);
-        // Use local object if all else fails
-        savedStaff = updatedStaff;
+      if (error) {
+        throw new Error(error.message || "Failed to update staff");
       }
+
+      const updatedStaff = data && data[0] ? data[0] : editingStaff;
 
       // Update the staff in the staff list
       setStaffMembers((prevStaff) =>
         prevStaff.map((staff) =>
-          staff.id === editingStaff.id ? savedStaff : staff
+          staff.id === editingStaff.id ? { ...staff, ...updatedStaff } : staff
         )
       );
 
@@ -510,6 +482,7 @@ export default function StaffPage() {
       setShowDialog(false);
     } catch (error) {
       console.error("Failed to update staff:", error);
+      alert("Failed to update staff: " + (error as Error).message);
     }
   };
 
@@ -527,13 +500,20 @@ export default function StaffPage() {
     }
   };
 
-  const handleAgentClick = (agentId: string) => {
-    const agent = agents.find((a) => a.id === agentId);
-    if (agent && agent.graph_name) {
-      router.push(`/agents/${agent.graph_name}?mode=staff`);
-    } else {
-      // Fallback to id if graph_name is not available
-      router.push(`/agents/${agentId}?mode=staff`);
+  const handleDeleteStaff = async () => {
+    if (!staffToDelete) return;
+    try {
+      const supabase = createSupabaseClient();
+      const { error } = await supabase
+        .from("staffs")
+        .delete()
+        .eq("id", staffToDelete.id);
+      if (error) throw new Error(error.message);
+      setStaffMembers((prev) => prev.filter((s) => s.id !== staffToDelete.id));
+      setDeleteDialogOpen(false);
+      setStaffToDelete(null);
+    } catch (error) {
+      alert("Failed to delete staff: " + (error as Error).message);
     }
   };
 
@@ -595,7 +575,7 @@ export default function StaffPage() {
                 {staffMembers.map((staff) => (
                   <Card
                     key={staff.id}
-                    className={`flex flex-col ${staff.agent_id ? "hover:shadow-md transition-shadow" : ""}`}
+                    className={`flex flex-col h-full ${staff.agent_id ? "hover:shadow-md transition-shadow" : ""}`}
                   >
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                       <div>
@@ -605,56 +585,80 @@ export default function StaffPage() {
                           {new Date(staff.created_at).toLocaleDateString()}
                         </CardDescription>
                       </div>
-                      <Button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setEditingStaff(staff);
-                          setStaffName(staff.name);
-                          setStaffDescription(staff.description);
-                          setSelectedAgent(staff.agent_id || "");
-                          setShowDialog(true);
-                        }}
-                        size="icon"
-                        variant="outline"
-                      >
-                        <Pencil className="h-4 w-4" />
-                      </Button>
+                      <div className="flex gap-2">
+                        <Button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setEditingStaff(staff);
+                            setStaffName(staff.name);
+                            setStaffDescription(staff.description);
+                            setSelectedAgent(staff.agent_id || "");
+                            setShowDialog(true);
+                          }}
+                          size="icon"
+                          variant="outline"
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setStaffToDelete(staff);
+                            setDeleteDialogOpen(true);
+                          }}
+                          size="icon"
+                          variant="ghost"
+                          aria-label="Delete staff"
+                        >
+                          <Trash2 className="h-4 w-4 text-red-500" />
+                        </Button>
+                      </div>
                     </CardHeader>
-                    <CardContent
-                      className={staff.agent_id ? "cursor-pointer" : ""}
-                      onClick={() =>
-                        staff.agent_id ? handleAgentClick(staff.agent_id) : null
-                      }
-                    >
-                      <p className="text-sm text-muted-foreground mb-2">
-                        {staff.description}
-                      </p>
-                      {staff.agent_id && (
-                        <div>
-                          <p className="text-sm font-medium mb-1">
-                            Assigned Agent:
-                          </p>
-                          <div className="flex flex-wrap gap-2">
+                    <CardContent className="flex-1 flex flex-col justify-between">
+                      <div>
+                        <p className="text-sm text-muted-foreground mb-2">
+                          {staff.description}
+                        </p>
+                        {staff.agent_id && (
+                          <div className="flex items-center gap-2 mb-1">
+                            <p className="text-sm font-medium">
+                              Assigned Agent:
+                            </p>
                             {(() => {
                               const agent = agents.find(
                                 (a) => a.id === staff.agent_id
                               );
                               return agent ? (
-                                <Badge
-                                  key={agent.id}
-                                  variant="outline"
-                                  className="cursor-pointer hover:bg-gray-100 transition-colors"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleAgentClick(agent.id);
-                                  }}
-                                >
+                                <Badge key={agent.id} variant="outline">
                                   {agent.name}
                                 </Badge>
                               ) : null;
                             })()}
                           </div>
-                        </div>
+                        )}
+                      </div>
+                      {/* Run button for staff */}
+                      {staff.agent_id && (
+                        <Button
+                          variant="outline"
+                          className="w-full mt-2"
+                          style={{ marginTop: "auto" }}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            const agent = agents.find(
+                              (a) => a.id === staff.agent_id
+                            );
+                            if (agent && agent.graph_name) {
+                              router.push(`/agents/${agent.graph_name}`);
+                            } else {
+                              alert(
+                                "Assigned agent not found or missing name."
+                              );
+                            }
+                          }}
+                        >
+                          Run
+                        </Button>
                       )}
                     </CardContent>
                   </Card>
@@ -664,6 +668,29 @@ export default function StaffPage() {
           </div>
         </>
       )}
+      {/* Delete confirmation dialog */}
+      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Staff</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete this staff member? This action
+              cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setDeleteDialogOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={handleDeleteStaff}>
+              Delete
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

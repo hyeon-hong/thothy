@@ -1,10 +1,11 @@
 import { useStreamContext } from "@/providers/Stream";
 import type { Message } from "@langchain/langgraph-sdk";
 import { useState } from "react";
-import { getContentString } from "../utils";
+import { getContentImageUrls, getContentString } from "../utils";
 import { cn } from "@/lib/utils";
 import { Textarea } from "@/components/ui/textarea";
 import { BranchSwitcher, CommandBar } from "./shared";
+import { MarkdownText } from "../markdown-text";
 
 function EditableContent({
   value,
@@ -46,15 +47,12 @@ export function HumanMessage({
   const [isEditing, setIsEditing] = useState(false);
   const [value, setValue] = useState("");
   const contentString = getContentString(message.content);
+  const contentImageUrls = getContentImageUrls(message.content);
 
   const handleSubmitEdit = () => {
     setIsEditing(false);
 
     const newMessage: Message = { type: "human", content: value };
-    console.log("thread: ", thread);
-    console.log("message: ", message);
-    console.log("newMessage: ", newMessage);
-
     thread.submit(
       { messages: [newMessage] },
       {
@@ -69,7 +67,7 @@ export function HumanMessage({
             messages: [...(values.messages ?? []), newMessage],
           };
         },
-      },
+      }
     );
   };
 
@@ -77,7 +75,7 @@ export function HumanMessage({
     <div
       className={cn(
         "group ml-auto flex items-center gap-2",
-        isEditing && "w-full max-w-xl",
+        isEditing && "w-full max-w-xl"
       )}
     >
       <div className={cn("flex flex-col gap-2", isEditing && "w-full")}>
@@ -88,16 +86,28 @@ export function HumanMessage({
             onSubmit={handleSubmitEdit}
           />
         ) : (
-          <p className="bg-muted ml-auto w-fit rounded-3xl px-4 py-2 whitespace-pre-wrap">
-            {contentString}
-          </p>
+          <div className="flex flex-col gap-2">
+            {contentImageUrls.length > 0 && (
+              <div className="flex flex-wrap justify-end gap-2">
+                {contentImageUrls.map((imageUrl, index) => (
+                  <img
+                    key={index}
+                    src={imageUrl}
+                    alt="uploaded image"
+                    className="bg-muted h-16 w-16 rounded-md object-cover"
+                  />
+                ))}
+              </div>
+            )}
+            <MarkdownText>{contentString}</MarkdownText>
+          </div>
         )}
 
         <div
           className={cn(
             "ml-auto flex items-center gap-2 transition-opacity",
             "opacity-0 group-focus-within:opacity-100 group-hover:opacity-100",
-            isEditing && "opacity-100",
+            isEditing && "opacity-100"
           )}
         >
           <BranchSwitcher

@@ -24,24 +24,6 @@ logging.getLogger("langmem").setLevel(logging.WARNING)
 # Define interrupt schema types
 
 
-class HumanInterruptConfig(TypedDict):
-    allow_ignore: bool
-    allow_respond: bool
-    allow_edit: bool
-    allow_accept: bool
-
-
-class ActionRequest(TypedDict):
-    action: str
-    args: dict
-
-
-class HumanInterrupt(TypedDict):
-    action_request: ActionRequest
-    config: HumanInterruptConfig
-    description: Optional[str]
-
-
 class ReconnectingPostgresStore:
     """PostgresStore wrapper that handles reconnection."""
 
@@ -152,7 +134,7 @@ def initialize_memory_manager(
 
     memory_manager = create_memory_store_manager(
         # "anthropic:claude-3-5-sonnet-latest",
-        "openai:gpt-4o-mini",
+        "google_genai:gemini-2.5-flash-preview-05-20",
         schemas=[Triple],
         enable_inserts=True,
         enable_deletes=True,

@@ -1,5 +1,5 @@
 import { v4 as uuidv4 } from "uuid";
-import { type ReactNode, useEffect, useRef } from "react";
+import { type ReactNode, useEffect, useRef, ChangeEvent } from "react";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { useStreamContext } from "@/providers/Stream";
@@ -12,7 +12,6 @@ import {
   DO_NOT_RENDER_ID_PREFIX,
   ensureToolCallsHaveResponses,
 } from "@/lib/ensure-tool-responses";
-import { LangGraphLogoSVG } from "../icons/langgraph";
 import { TooltipIconButton } from "./tooltip-icon-button";
 import {
   ArrowDown,
@@ -21,6 +20,8 @@ import {
   PanelRightClose,
   SquarePen,
   XIcon,
+  Plus,
+  CircleX,
 } from "lucide-react";
 import { useQueryState, parseAsBoolean } from "nuqs";
 import { StickToBottom, useStickToBottomContext } from "use-stick-to-bottom";
@@ -29,7 +30,6 @@ import { toast } from "sonner";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
 import { Label } from "../ui/label";
 import { Switch } from "../ui/switch";
-import { GitHubSVG } from "../icons/github";
 import {
   Tooltip,
   TooltipContent,
@@ -42,6 +42,14 @@ import {
   ArtifactTitle,
   useArtifactContext,
 } from "./artifact";
+import {
+  fileToImageBlock,
+  fileToPDFBlock,
+  toOpenAIImageBlock,
+  toOpenAIPDFBlock,
+} from "@/lib/multimodal-utils";
+import type { Base64ContentBlock } from "@langchain/core/messages";
+import { convertToOpenAIImageBlock } from "@langchain/core/messages";
 
 function StickyToBottomContent(props: {
   content: ReactNode;
@@ -56,10 +64,7 @@ function StickyToBottomContent(props: {
       style={{ width: "100%", height: "100%" }}
       className={props.className}
     >
-      <div
-        ref={context.contentRef}
-        className={props.contentClassName}
-      >
+      <div ref={context.contentRef} className={props.contentClassName}>
         {props.content}
       </div>
 
@@ -84,30 +89,6 @@ function ScrollToBottom(props: { className?: string }) {
   );
 }
 
-function OpenGitHubRepo() {
-  return (
-    <TooltipProvider>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <a
-            href="https://github.com/langchain-ai/agent-chat-ui"
-            target="_blank"
-            className="flex items-center justify-center"
-          >
-            <GitHubSVG
-              width="24"
-              height="24"
-            />
-          </a>
-        </TooltipTrigger>
-        <TooltipContent side="left">
-          <p>Open GitHub repo</p>
-        </TooltipContent>
-      </Tooltip>
-    </TooltipProvider>
-  );
-}
-
 export function Thread() {
   const [artifactContext, setArtifactContext] = useArtifactContext();
   const [artifactOpen, closeArtifact] = useArtifactOpen();
@@ -115,13 +96,15 @@ export function Thread() {
   const [threadId, _setThreadId] = useQueryState("threadId");
   const [chatHistoryOpen, setChatHistoryOpen] = useQueryState(
     "chatHistoryOpen",
-    parseAsBoolean.withDefault(false),
+    parseAsBoolean.withDefault(false)
   );
   const [hideToolCalls, setHideToolCalls] = useQueryState(
     "hideToolCalls",
-    parseAsBoolean.withDefault(false),
+    parseAsBoolean.withDefault(false)
   );
   const [input, setInput] = useState("");
+  const [imageUrlList, setImageUrlList] = useState<Base64ContentBlock[]>([]);
+  const [pdfUrlList, setPdfUrlList] = useState<Base64ContentBlock[]>([]);
   const [firstTokenReceived, setFirstTokenReceived] = useState(false);
   const isLargeScreen = useMediaQuery("(min-width: 1024px)");
 
@@ -130,6 +113,7 @@ export function Thread() {
   const isLoading = stream.isLoading;
 
   const lastError = useRef<string | undefined>(undefined);
+  const dropRef = useRef<HTMLDivElement>(null);
 
   const setThreadId = (id: string | null) => {
     _setThreadId(id);
@@ -181,26 +165,59 @@ export function Thread() {
     prevMessageLength.current = messages.length;
   }, [messages]);
 
+  const handleImageUpload = async (e: ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (files) {
+      const imageBlocks = await Promise.all(
+        Array.from(files).map(fileToImageBlock)
+      );
+      setImageUrlList((prev) => [...prev, ...imageBlocks]);
+    }
+    e.target.value = "";
+  };
+
+  const handlePDFUpload = async (e: ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (files) {
+      const pdfBlocks = await Promise.all(
+        Array.from(files).map(fileToPDFBlock)
+      );
+      setPdfUrlList((prev) => [...prev, ...pdfBlocks]);
+    }
+    e.target.value = "";
+  };
+
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
     if (!input.trim() || isLoading) return;
     setFirstTokenReceived(false);
 
+    // TODO: check configurable object for modelname camelcase or snakecase else do openai format
+    const isOpenAI = true;
+
+    const pdfBlocks = pdfUrlList.map(toOpenAIPDFBlock);
+
     const newHumanMessage: Message = {
       id: uuidv4(),
       type: "human",
-      content: input,
+      content:
+        imageUrlList.length || pdfBlocks.length
+          ? ([
+              { type: "text", text: input },
+              ...imageUrlList.map(toOpenAIImageBlock),
+              ...pdfBlocks,
+            ] as Message["content"])
+          : input,
     };
 
     const toolMessages = ensureToolCallsHaveResponses(stream.messages);
-
     const context =
       Object.keys(artifactContext).length > 0 ? artifactContext : undefined;
 
     stream.submit(
       { messages: [...toolMessages, newHumanMessage], context },
       {
-        streamMode: ["values"],
+        streamMode: ["messages"],
         optimisticValues: (prev) => ({
           ...prev,
           context,
@@ -210,28 +227,97 @@ export function Thread() {
             newHumanMessage,
           ],
         }),
-      },
+      }
     );
 
     setInput("");
+    setImageUrlList([]);
+    setPdfUrlList([]);
   };
 
   const handleRegenerate = (
-    parentCheckpoint: Checkpoint | null | undefined,
+    parentCheckpoint: Checkpoint | null | undefined
   ) => {
     // Do this so the loading state is correct
     prevMessageLength.current = prevMessageLength.current - 1;
     setFirstTokenReceived(false);
     stream.submit(undefined, {
       checkpoint: parentCheckpoint,
-      streamMode: ["values"],
+      streamMode: ["messages"],
     });
   };
 
   const chatStarted = !!threadId || !!messages.length;
   const hasNoAIOrToolMessages = !messages.find(
-    (m) => m.type === "ai" || m.type === "tool",
+    (m) => m.type === "ai" || m.type === "tool"
   );
+
+  useEffect(() => {
+    if (!dropRef.current) return;
+
+    const handleDragOver = (e: DragEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+    };
+
+    const handleDrop = async (e: DragEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+
+      if (!e.dataTransfer) return;
+
+      const files = Array.from(e.dataTransfer.files);
+      const imageFiles = files.filter((file) => file.type.startsWith("image/"));
+      const pdfFiles = files.filter((file) => file.type === "application/pdf");
+      const invalidFiles = files.filter(
+        (file) =>
+          !file.type.startsWith("image/") && file.type !== "application/pdf"
+      );
+
+      if (invalidFiles.length > 0) {
+        toast.error(
+          "You have uploaded invalid file type. Please upload an image or a PDF."
+        );
+      }
+
+      if (imageFiles.length) {
+        const imageBlocks: Base64ContentBlock[] = await Promise.all(
+          imageFiles.map(fileToImageBlock)
+        );
+        setImageUrlList((prev) => [...prev, ...imageBlocks]);
+      }
+
+      if (pdfFiles.length) {
+        const pdfBlocks: Base64ContentBlock[] = await Promise.all(
+          pdfFiles.map(fileToPDFBlock)
+        );
+        setPdfUrlList((prev) => [...prev, ...pdfBlocks]);
+      }
+    };
+
+    const handleDragEnter = (e: DragEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+    };
+
+    const handleDragLeave = (e: DragEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+    };
+
+    const element = dropRef.current;
+    element.addEventListener("dragover", handleDragOver);
+    element.addEventListener("drop", handleDrop);
+    element.addEventListener("dragenter", handleDragEnter);
+    element.addEventListener("dragleave", handleDragLeave);
+
+    return () => {
+      element.removeEventListener("dragover", handleDragOver);
+      element.removeEventListener("drop", handleDrop);
+      element.removeEventListener("dragenter", handleDragEnter);
+      element.removeEventListener("dragleave", handleDragLeave);
+    };
+  });
 
   return (
     <div className="flex h-screen w-full overflow-hidden">
@@ -251,10 +337,7 @@ export function Thread() {
               : { duration: 0 }
           }
         >
-          <div
-            className="relative h-full"
-            style={{ width: 300 }}
-          >
+          <div className="relative h-full" style={{ width: 300 }}>
             <ThreadHistory />
           </div>
         </motion.div>
@@ -263,13 +346,13 @@ export function Thread() {
       <div
         className={cn(
           "grid w-full grid-cols-[1fr_0fr] transition-all duration-500",
-          artifactOpen && "grid-cols-[3fr_2fr]",
+          artifactOpen && "grid-cols-[3fr_2fr]"
         )}
       >
         <motion.div
           className={cn(
             "relative flex min-w-0 flex-1 flex-col overflow-hidden",
-            !chatStarted && "grid-rows-[1fr]",
+            !chatStarted && "grid-rows-[1fr]"
           )}
           layout={isLargeScreen}
           animate={{
@@ -303,9 +386,6 @@ export function Thread() {
                   </Button>
                 )}
               </div>
-              <div className="absolute top-2 right-4 flex items-center">
-                <OpenGitHubRepo />
-              </div>
             </div>
           )}
           {chatStarted && (
@@ -338,10 +418,6 @@ export function Thread() {
                     damping: 30,
                   }}
                 >
-                  <LangGraphLogoSVG
-                    width={32}
-                    height={32}
-                  />
                   <span className="text-xl font-semibold tracking-tight">
                     Agent Chat
                   </span>
@@ -349,9 +425,6 @@ export function Thread() {
               </div>
 
               <div className="flex items-center gap-4">
-                <div className="flex items-center">
-                  <OpenGitHubRepo />
-                </div>
                 <TooltipIconButton
                   size="lg"
                   className="p-4"
@@ -372,13 +445,15 @@ export function Thread() {
               className={cn(
                 "absolute inset-0 overflow-y-scroll px-4 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-gray-300 [&::-webkit-scrollbar-track]:bg-transparent",
                 !chatStarted && "mt-[25vh] flex flex-col items-stretch",
-                chatStarted && "grid grid-rows-[1fr_auto]",
+                chatStarted && "grid grid-rows-[1fr_auto]"
               )}
               contentClassName="pt-8 pb-16  max-w-3xl mx-auto flex flex-col gap-4 w-full"
               content={
                 <>
                   {messages
                     .filter((m) => !m.id?.startsWith(DO_NOT_RENDER_ID_PREFIX))
+                    // "run--" prefix is added by langgraph to the message id as stream mode is "messages"
+                    .filter((m) => !m.id?.startsWith("run--"))
                     .map((message, index) =>
                       message.type === "human" ? (
                         <HumanMessage
@@ -393,7 +468,7 @@ export function Thread() {
                           isLoading={isLoading}
                           handleRegenerate={handleRegenerate}
                         />
-                      ),
+                      )
                     )}
                   {/* Special rendering case where there are no AI/tool messages, but there is an interrupt.
                     We need to render it outside of the messages list, since there are no messages to render */}
@@ -411,10 +486,9 @@ export function Thread() {
                 </>
               }
               footer={
-                <div className="sticky bottom-0 flex flex-col items-center gap-8 bg-white">
+                <div className="sticky bottom-12 flex flex-col items-center gap-8 bg-white">
                   {!chatStarted && (
                     <div className="flex items-center gap-3">
-                      <LangGraphLogoSVG className="h-8 flex-shrink-0" />
                       <h1 className="text-2xl font-semibold tracking-tight">
                         Agent Chat
                       </h1>
@@ -423,11 +497,64 @@ export function Thread() {
 
                   <ScrollToBottom className="animate-in fade-in-0 zoom-in-95 absolute bottom-full left-1/2 mb-4 -translate-x-1/2" />
 
-                  <div className="bg-muted relative z-10 mx-auto mb-8 w-full max-w-3xl rounded-2xl border shadow-xs">
+                  <div
+                    ref={dropRef}
+                    className="bg-muted relative z-10 mx-auto mb-8 w-full max-w-3xl rounded-2xl border shadow-xs"
+                  >
                     <form
                       onSubmit={handleSubmit}
                       className="mx-auto grid max-w-3xl grid-rows-[1fr_auto] gap-2"
                     >
+                      {imageUrlList.length > 0 && (
+                        <div className="flex flex-wrap gap-2 p-3.5 pb-0">
+                          {imageUrlList.map((imageBlock, idx) => {
+                            const imageUrlString = `data:${imageBlock.mime_type};base64,${imageBlock.data}`;
+                            return (
+                              <div className="relative" key={idx}>
+                                <img
+                                  src={imageUrlString}
+                                  alt="uploaded"
+                                  className="h-16 w-16 rounded-md object-cover"
+                                />
+                                <CircleX
+                                  className="absolute top-[2px] right-[2px] size-4 cursor-pointer rounded-full bg-gray-500 text-white"
+                                  onClick={() =>
+                                    setImageUrlList(
+                                      imageUrlList.filter((_, i) => i !== idx)
+                                    )
+                                  }
+                                />
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                      {pdfUrlList.length > 0 && (
+                        <div className="flex flex-wrap gap-2 p-3.5 pb-0">
+                          {pdfUrlList.map((pdfBlock, idx) => (
+                            <div
+                              className="relative flex items-center gap-2 rounded rounded-md border-1 border-teal-700 bg-gray-100 bg-teal-900 px-2 py-1 py-2 text-white"
+                              key={idx}
+                            >
+                              <span className="max-w-xs truncate text-sm">
+                                {String(
+                                  pdfBlock.metadata?.filename ??
+                                    pdfBlock.metadata?.name ??
+                                    ""
+                                )}
+                              </span>
+                              <CircleX
+                                className="size-4 cursor-pointer text-teal-600 hover:text-teal-500"
+                                onClick={() =>
+                                  setPdfUrlList(
+                                    pdfUrlList.filter((_, i) => i !== idx)
+                                  )
+                                }
+                              />
+                            </div>
+                          ))}
+                        </div>
+                      )}
                       <textarea
                         value={input}
                         onChange={(e) => setInput(e.target.value)}
@@ -449,7 +576,41 @@ export function Thread() {
                       />
 
                       <div className="flex items-center justify-between p-2 pt-4">
-                        <div>
+                        <div className="flex items-center gap-2">
+                          <Label
+                            htmlFor="image-input"
+                            className="flex cursor-pointer items-center gap-2"
+                          >
+                            <Plus className="size-5 text-gray-600" />
+                            <span className="text-sm text-gray-600">
+                              Upload Image
+                            </span>
+                          </Label>
+                          <input
+                            id="image-input"
+                            type="file"
+                            onChange={handleImageUpload}
+                            multiple
+                            accept="image/*"
+                            className="hidden"
+                          />
+                          <Label
+                            htmlFor="file-input"
+                            className="flex cursor-pointer items-center gap-2"
+                          >
+                            <Plus className="size-5 text-gray-600" />
+                            <span className="text-sm text-gray-600">
+                              Upload PDF
+                            </span>
+                          </Label>
+                          <input
+                            id="file-input"
+                            type="file"
+                            onChange={handlePDFUpload}
+                            multiple
+                            accept="application/pdf"
+                            className="hidden"
+                          />
                           <div className="flex items-center space-x-2">
                             <Switch
                               id="render-tool-calls"
@@ -465,10 +626,7 @@ export function Thread() {
                           </div>
                         </div>
                         {stream.isLoading ? (
-                          <Button
-                            key="stop"
-                            onClick={() => stream.stop()}
-                          >
+                          <Button key="stop" onClick={() => stream.stop()}>
                             <LoaderCircle className="h-4 w-4 animate-spin" />
                             Cancel
                           </Button>
@@ -493,10 +651,7 @@ export function Thread() {
           <div className="absolute inset-0 flex min-w-[30vw] flex-col">
             <div className="grid grid-cols-[1fr_auto] border-b p-4">
               <ArtifactTitle className="truncate overflow-hidden" />
-              <button
-                onClick={closeArtifact}
-                className="cursor-pointer"
-              >
+              <button onClick={closeArtifact} className="cursor-pointer">
                 <XIcon className="size-5" />
               </button>
             </div>

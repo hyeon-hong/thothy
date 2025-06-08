@@ -2,25 +2,25 @@
 
 import React from "react";
 import { useParams } from "next/navigation";
-import ChatAgentPage from "@/app/agents/chat_agent/page";
-import DataAgentPage from "@/app/agents/data_agent/page";
-import UIAgentPage from "@/app/agents/ui_agent/page";
+import { Thread } from "@/components/thread";
 
 export default function AgentPage() {
   // Get the assistantId from the URL
   const params = useParams();
-  const apiUrl = process.env.NEXT_PUBLIC_LANGGRAPH_API_URL;
   const assistantId = params?.graph_name as string;
 
-  // Function to render the appropriate agent component
-  const renderAgentComponent = () => {
+  // Function to render the appropriate content based on agent type
+  const renderAgentContent = () => {
     switch (assistantId) {
       case "chat_graph":
-        return <ChatAgentPage />;
       case "data_graph":
-        return <DataAgentPage />;
+      case "research_graph":
+      case "slide_graph":
+      case "slide_build_graph":
       case "ui_graph":
-        return <UIAgentPage apiUrl={apiUrl} assistantId={assistantId} />;
+      case "ui_eval_graph":
+      case "ui_build_graph":
+        return <Thread />;
       default:
         return (
           <div className="container mx-auto px-4 py-8">
@@ -33,5 +33,5 @@ export default function AgentPage() {
     }
   };
 
-  return renderAgentComponent();
+  return renderAgentContent();
 }

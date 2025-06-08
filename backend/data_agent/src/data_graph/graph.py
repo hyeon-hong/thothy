@@ -1,7 +1,7 @@
 from typing import Annotated, Sequence, TypedDict
 from langgraph.graph import StateGraph, END, START
 from langgraph.graph.ui import AnyUIMessage, ui_message_reducer, push_ui_message
-from langchain_openai import ChatOpenAI
+from langchain_google_genai import ChatGoogleGenerativeAI
 from langgraph.graph.message import add_messages
 from langchain_core.messages import SystemMessage, AIMessage, BaseMessage
 from langgraph.prebuilt import ToolNode
@@ -10,12 +10,12 @@ from data_graph.tools import ALL_TOOLS_LIST
 UI_COMPONENT_NAME = "data_graph"
 
 
-class AgentState(TypedDict):  # noqa: D101
+class AgentState(TypedDict):
     messages: Annotated[Sequence[BaseMessage], add_messages]
     ui: Annotated[Sequence[AnyUIMessage], ui_message_reducer]
 
 
-def call_model(state: AgentState) -> dict:
+async def call_model(state: AgentState) -> dict:
     """Call the model"""
 
     # Get the messages
@@ -47,14 +47,15 @@ def call_model(state: AgentState) -> dict:
     system_message = SystemMessage(content=system_message_content)
 
     # Get the LLM
-    llm = ChatOpenAI(model="gpt-4o-mini", temperature=0)
+    llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash-preview-05-20", temperature=0)
 
     # Bind the tools to the LLM
     llm_with_tools = llm.bind_tools(ALL_TOOLS_LIST)
 
     # Invoke the LLM
-    response = llm_with_tools.invoke([system_message] + messages)
+    response = await llm_with_tools.ainvoke([system_message] + messages)
 
+    # Push the response to the UI
     push_ui_message(UI_COMPONENT_NAME, {}, message=response)
 
     # Return the result
@@ -90,32 +91,23 @@ def should_continue(state: AgentState) -> str:
     return "tools"
 
 
-def build_graph():
-    """Build the graph"""
+# Create the workflow
+workflow = StateGraph(AgentState)
 
-    # Create the workflow
-    workflow = StateGraph(AgentState)
+# Add nodes
+workflow.add_node("call_model", call_model)
+workflow.add_node("tools", ToolNode(ALL_TOOLS_LIST, messages_key="messages"))
 
-    # Add nodes
-    workflow.add_node("call_model", call_model)
-    workflow.add_node("tools", ToolNode(ALL_TOOLS_LIST))
+# Add edges
+workflow.add_edge(START, "call_model")
+workflow.add_conditional_edges(
+    "call_model", should_continue, ["tools", END])
+workflow.add_edge("tools", "call_model")
 
-    # Add edges
-    workflow.add_edge(START, "call_model")
-    workflow.add_conditional_edges(
-        "call_model", should_continue, ["tools", END])
-    workflow.add_edge("tools", "call_model")
+# Compile the graph
+graph = workflow.compile()
+graph.name = "data_graph"
 
-    # Compile the graph
-    graph = workflow.compile()
-    graph.name = "data_graph"
-
-    # Return the graph
-    return graph
-
-
-# Build the graph
-graph = build_graph()
 
 # Return the graph
 __all__ = ["graph"]

@@ -1,1 +1,5 @@
-version = "0.0.1"
+"""Research Agent"""
+
+from research_graph.graph import graph
+
+__all__ = ["graph"]

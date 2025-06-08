@@ -8,7 +8,14 @@
     "dev": "env-cmd -f ../.env next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "test:e2e:headed": "playwright test --headed",
+    "test:e2e:debug": "playwright test --debug",
+    "test:research-agent": "playwright test tests/e2e/research-agent.spec.ts",
+    "test:research-artifact": "playwright test tests/e2e/research-agent-artifact.spec.ts",
+    "test:research-integration": "playwright test tests/e2e/research-agent-integration.spec.ts"
   },
   "dependencies": {
     "@assistant-ui/react": "^0.10.5",
@@ -17,6 +24,7 @@
     "@assistant-ui/react-markdown": "^0.10.3",
     "@assistant-ui/react-syntax-highlighter": "^0.10.3",
     "@codesandbox/sandpack-react": "^2.20.0",
+    "@codesandbox/sandpack-themes": "^2.0.21",
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.0",
     "@ffmpeg/ffmpeg": "^0.12.15",
@@ -106,6 +114,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.24.0",
+    "@playwright/test": "^1.52.0",
     "@types/eslint__js": "^9.14.0",
     "@types/js-cookie": "^3.0.6",
     "@types/lodash": "^4.17.16",

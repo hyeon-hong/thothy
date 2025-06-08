@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 import { useThreads } from "@/providers/Thread";
 import { Thread } from "@langchain/langgraph-sdk";
 import { useEffect } from "react";
+import { useAuth } from "@/contexts/AuthContext";
 
 import { getContentString } from "../utils";
 import { useQueryState, parseAsBoolean } from "nuqs";
@@ -81,18 +82,22 @@ export default function ThreadHistory() {
     "chatHistoryOpen",
     parseAsBoolean.withDefault(false),
   );
+  const { session, loading } = useAuth();
 
   const { getThreads, threads, setThreads, threadsLoading, setThreadsLoading } =
     useThreads();
 
   useEffect(() => {
     if (typeof window === "undefined") return;
+    // Don't try to fetch threads if auth is still loading or user is not authenticated
+    if (loading || !session?.access_token) return;
+    
     setThreadsLoading(true);
     getThreads()
       .then(setThreads)
       .catch(console.error)
       .finally(() => setThreadsLoading(false));
-  }, []);
+  }, [getThreads, loading, session?.access_token]);
 
   return (
     <>

@@ -6,14 +6,15 @@ from langgraph.types import Command, interrupt
 from langgraph.graph import MessagesState
 from typing_extensions import TypedDict
 from langchain.chat_models import init_chat_model
-from langgraph.checkpoint.memory import MemorySaver
 from langgraph.store.base import BaseStore
 
 from team_graph.configuration import TeamConfigurable
 from blog_graph.graph import graph as blog_graph
 from news_graph.graph import graph as news_graph
-from thothy.backend.libs.utils import (  # type: ignore
+from langgraph.prebuilt.interrupt import (
     HumanInterrupt,
+)
+from thothy.backend.libs.utils import (  # type: ignore
     initialize_store,
     initialize_memory_manager,
     initialize_executor
@@ -129,7 +130,7 @@ async def init_request_node(
     # Generate todo list using LLM
     todo_prompt = get_todo_prompt(system_msg + "\n\n" + initial_request)
     try:
-        response = llm.with_structured_output(TodoListResponse).invoke(
+        response = await llm.with_structured_output(TodoListResponse).ainvoke(
             [{"role": "user", "content": todo_prompt}]
         )
     except Exception as e:
@@ -180,8 +181,9 @@ async def init_request_node(
     )
 
 
-def team_supervisor_node(
-    state: State
+async def team_supervisor(
+    state: State,
+    config: TeamConfigurable
 ) -> Command[Literal["news_agent", "blog_agent", "__end__"]]:
     system_prompt = get_system_prompt(state["initial_request"], state["todos"])
     messages = [
@@ -192,7 +194,7 @@ def team_supervisor_node(
     logging.debug(f"state['messages']: {state['messages']}")
     logging.debug(f"messages: {messages}")
     try:
-        response = llm.with_structured_output(Router).invoke(messages)
+        response = await llm.with_structured_output(Router).ainvoke(messages)
     except Exception as e:
         logging.error(f"Error in team supervisor routing: {str(e)}")
         raise RuntimeError(f"Failed to determine next action: {str(e)}")
@@ -365,7 +367,7 @@ builder = StateGraph(State, TeamConfigurable)
 
 # Add the nodes
 builder.add_node("init_request", init_request_node)
-builder.add_node("team_supervisor", team_supervisor_node)
+builder.add_node("team_supervisor", team_supervisor)
 builder.add_node("news_agent", news_agent_node)
 builder.add_node("blog_agent", blog_agent_node)
 builder.add_node("finish_node", finish_node)
@@ -376,7 +378,5 @@ builder.add_edge("init_request", "team_supervisor")
 builder.add_edge("finish_node", END)
 
 # Compile the graph
-graph = builder.compile(checkpointer=MemorySaver(), store=store)
+graph = builder.compile(store=store)
 graph.name = "team_graph"
-
-__all__ = ["graph"]

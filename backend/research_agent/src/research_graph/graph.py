@@ -1,335 +1,657 @@
-import json
+from typing import Literal
 import logging
 
-from langchain_openai import ChatOpenAI
-from typing_extensions import Literal
-
-from langchain_core.messages import HumanMessage, SystemMessage
+from langchain.chat_models import init_chat_model
+from langchain_core.messages import HumanMessage, SystemMessage, AIMessage
 from langchain_core.runnables import RunnableConfig
-from langchain_ollama import ChatOllama
+from langgraph.constants import Send
+
 from langgraph.graph import START, END, StateGraph
+from langgraph.graph.ui import push_ui_message
+from langgraph.types import Command, interrupt
+from langgraph.prebuilt.interrupt import (
+    ActionRequest,
+    HumanInterrupt,
+    HumanInterruptConfig,
+    HumanResponse,
+)
+
+from research_graph.state import (
+    ReportStateInput,
+    ReportStateOutput,
+    Sections,
+    ReportState,
+    SectionState,
+    SectionOutputState,
+    Queries,
+    Feedback
+)
+
+from research_graph.prompts import (
+    report_planner_query_writer_instructions,
+    report_planner_instructions,
+    query_writer_instructions,
+    section_writer_instructions,
+    final_section_writer_instructions,
+    section_grader_instructions,
+    section_writer_inputs
+)
 
 from research_graph.configuration import Configuration
-from research_graph.utils import deduplicate_and_format_sources, tavily_search, format_sources, perplexity_search, duckduckgo_search, searxng_search, strip_thinking_tokens, get_config_value
-from research_graph.state import SummaryState, SummaryStateInput, SummaryStateOutput
-from research_graph.prompts import query_writer_instructions, summarizer_instructions, reflection_instructions, get_current_date
-from research_graph.lmstudio import ChatLMStudio
+from research_graph.utils import (
+    init_model_with_provider,
+    format_sections,
+    get_config_value,
+    get_search_params,
+    select_and_execute_search
+)
 
-# Nodes
+# Set up logger with the specified name
+logger = logging.getLogger("thothy-devlop")
 
+# UI Component name for research agent
+UI_COMPONENT_NAME = "research_graph"
 
-def generate_query(state: SummaryState, config: RunnableConfig):
-    """LangGraph node that generates a search query based on the research topic.
-
-    Uses an LLM to create an optimized search query for web research based on
-    the user's research topic. Supports both LMStudio and Ollama as LLM providers.
-
-    Args:
-        state: Current graph state containing the research topic
-        config: Configuration for the runnable, including LLM provider settings
-
-    Returns:
-        Dictionary with state update, including search_query key containing the generated query
-    """
-
-    # Format the prompt
-    current_date = get_current_date()
-    formatted_prompt = query_writer_instructions.format(
-        current_date=current_date,
-        research_topic=state.research_topic
-    )
-
-    # Generate a query
-    configurable = Configuration.from_runnable_config(config)
-
-    # Choose the appropriate LLM based on the provider
-    if configurable.llm_provider == "lmstudio":
-        llm_json_mode = ChatLMStudio(
-            base_url=configurable.lmstudio_base_url,
-            model=configurable.local_llm,
-            temperature=0,
-            format="json"
-        )
-    else:  # Default to Ollama
-        llm_json_mode = ChatOllama(
-            base_url=configurable.ollama_base_url,
-            model=configurable.local_llm,
-            temperature=0,
-            format="json"
-        )
-    llm_json_mode = ChatOpenAI(
-        model="gpt-4o-mini",
-        temperature=0,
-        # format="json"
-    )
-
-    logging.info(
-        f"configurable.ollama_base_url: {configurable.ollama_base_url}")
-    logging.info(f"configurable.local_llm: {configurable.local_llm}")
-    logging.info(f"llm_json_mode: {llm_json_mode}")
-    result = llm_json_mode.invoke(
-        [SystemMessage(content=formatted_prompt),
-         HumanMessage(content="Generate a query for web search:")]
-    )
-    logging.info(f"result: {result}")
-
-    # Get the content
-    content = result.content
-
-    # Parse the JSON response and get the query
-    try:
-        query = json.loads(content)
-        search_query = query['query']
-    except (json.JSONDecodeError, KeyError):
-        # If parsing fails or the key is not found, use a fallback query
-        if configurable.strip_thinking_tokens:
-            content = strip_thinking_tokens(content)
-        search_query = content
-    return {"search_query": search_query}
+# Global variable to store UI message ID
+ui_message_id = None
 
 
-def web_research(state: SummaryState, config: RunnableConfig):
-    """LangGraph node that performs web research using the generated search query.
+async def generate_report_plan(state: ReportState, config: RunnableConfig):
+    """Generate the initial report plan with sections.
 
-    Executes a web search using the configured search API (tavily, perplexity,
-    duckduckgo, or searxng) and formats the results for further processing.
+    This node:
+    1. Gets configuration for the report structure and search parameters
+    2. Generates search queries to gather context for planning
+    3. Performs web searches using those queries
+    4. Uses an LLM to generate a structured plan with sections
 
     Args:
-        state: Current graph state containing the search query and research loop count
-        config: Configuration for the runnable, including search API settings
+        state: Current graph state containing the report topic
+        config: Configuration for models, search APIs, etc.
 
     Returns:
-        Dictionary with state update, including sources_gathered, research_loop_count, and web_research_results
+        Dict containing the generated sections
     """
 
-    # Configure
-    configurable = Configuration.from_runnable_config(config)
+    # Get topic from the latest message
+    messages = state.get("messages", [])
 
-    # Get the search API
+    if not messages:
+        raise ValueError(
+            "No messages found. Please provide a topic for report generation.")
+
+    # Get the latest message content as topic
+    latest_message = messages[-1]
+    if isinstance(latest_message, dict):
+        topic = latest_message.get("content", "")
+    else:
+        topic = getattr(latest_message, "content", "")
+
+    if not topic:
+        raise ValueError(
+            "No topic found in the latest message. Please provide a topic for report generation.")
+
+    logger.info(f"Topic extracted from latest message: {topic}")
+
+    feedback = state.get("feedback_on_report_plan", None)
+
+    # Get configuration
+    configurable = Configuration.from_runnable_config(config)
+    report_structure = configurable.report_structure
+    number_of_queries = configurable.number_of_queries
     search_api = get_config_value(configurable.search_api)
 
-    # Search the web
-    if search_api == "tavily":
-        search_results = tavily_search(
-            state.search_query, fetch_full_page=configurable.fetch_full_page, max_results=1)
-        search_str = deduplicate_and_format_sources(
-            search_results, max_tokens_per_source=1000, fetch_full_page=configurable.fetch_full_page)
-    elif search_api == "perplexity":
-        search_results = perplexity_search(
-            state.search_query, state.research_loop_count)
-        search_str = deduplicate_and_format_sources(
-            search_results, max_tokens_per_source=1000, fetch_full_page=configurable.fetch_full_page)
-    elif search_api == "duckduckgo":
-        search_results = duckduckgo_search(
-            state.search_query, max_results=3, fetch_full_page=configurable.fetch_full_page)
-        search_str = deduplicate_and_format_sources(
-            search_results, max_tokens_per_source=1000, fetch_full_page=configurable.fetch_full_page)
-    elif search_api == "searxng":
-        search_results = searxng_search(
-            state.search_query, max_results=3, fetch_full_page=configurable.fetch_full_page)
-        search_str = deduplicate_and_format_sources(
-            search_results, max_tokens_per_source=1000, fetch_full_page=configurable.fetch_full_page)
+    # Get the config dict, default to empty
+    search_api_config = configurable.search_api_config or {}
+    params_to_pass = get_search_params(
+        search_api, search_api_config)  # Filter parameters
+
+    # Convert JSON object to string if necessary
+    if isinstance(report_structure, dict):
+        report_structure = str(report_structure)
+
+    # Set writer model (model used for query writing)
+    writer_provider = get_config_value(configurable.writer_provider)
+    writer_model_name = get_config_value(configurable.writer_model)
+    writer_model = init_model_with_provider(writer_model_name, writer_provider)
+    structured_llm = writer_model.with_structured_output(Queries)
+
+    # Format system instructions
+    system_instructions_query = report_planner_query_writer_instructions.format(
+        topic=topic, report_organization=report_structure, number_of_queries=number_of_queries)
+
+    # Generate queries
+    results = await structured_llm.ainvoke([SystemMessage(content=system_instructions_query),
+                                            HumanMessage(content="Generate search queries that will help with planning the sections of the report.")])
+
+    # Web search
+    query_list = [query.search_query for query in results.queries]
+
+    # Search the web with parameters
+    source_str = await select_and_execute_search(search_api, query_list, params_to_pass)
+
+    # Format system instructions
+    system_instructions_sections = report_planner_instructions.format(
+        topic=topic, report_organization=report_structure, context=source_str, feedback=feedback)
+
+    # Get the planner
+    planner_provider = get_config_value(configurable.planner_provider)
+    planner_model = get_config_value(configurable.planner_model)
+
+    # Report planner instructions
+    planner_message = """Generate the sections of the report. Each section must have: name, description, research (boolean indicating if research is needed), and content fields.
+                      Format your response as a valid JSON object containing a 'sections' array."""
+
+    # Use structured output for all providers
+    if planner_model == "claude-3-7-sonnet-latest":
+        planner_llm = init_chat_model(model=planner_model,
+                                      model_provider=planner_provider,
+                                      max_tokens=20_000,
+                                      thinking={"type": "enabled", "budget_tokens": 16_000})
     else:
-        raise ValueError(f"Unsupported search API: {configurable.search_api}")
+        planner_llm = init_chat_model(model=planner_model,
+                                      model_provider=planner_provider)
 
-    return {"sources_gathered": [format_sources(search_results)], "research_loop_count": state.research_loop_count + 1, "web_research_results": [search_str]}
+    # Generate the report sections with structured output
+    structured_llm = planner_llm.with_structured_output(Sections)
+    report_sections = await structured_llm.ainvoke(
+        [SystemMessage(content=system_instructions_sections),
+         HumanMessage(content=planner_message)])
+
+    logger.info(f"report_sections: {report_sections}")
+
+    # Get sections
+    sections = report_sections.sections
+
+    # Push the report sections to the UI with message
+    global ui_message_id
+    ai_message = AIMessage(
+        content="Report sections generated successfully!"
+    )
+    ui_message = push_ui_message(
+        UI_COMPONENT_NAME, {"topic": topic, "sections": sections})
+    ui_message_id = ui_message["id"]
+
+    return {"topic": topic, "sections": sections, "messages": [ai_message]}
 
 
-def summarize_sources(state: SummaryState, config: RunnableConfig):
-    """LangGraph node that summarizes web research results.
+def human_feedback(state: ReportState, config: RunnableConfig) -> Command[Literal["generate_report_plan", "build_section_with_web_research"]]:
+    """Get human feedback on the report plan and route to next steps.
 
-    Uses an LLM to create or update a running summary based on the newest web research
-    results, integrating them with any existing summary.
+    This node:
+    1. Formats the current report plan for human review
+    2. Gets feedback via an interrupt
+    3. Routes to either:
+       - Section writing if plan is approved
+       - Plan regeneration if feedback is provided
 
     Args:
-        state: Current graph state containing research topic, running summary,
-              and web research results
-        config: Configuration for the runnable, including LLM provider settings
+        state: Current graph state with sections to review
+        config: Configuration for the workflow
 
     Returns:
-        Dictionary with state update, including running_summary key containing the updated summary
+        Command to either regenerate plan or start section writing
     """
 
-    # Existing summary
-    existing_summary = state.running_summary
+    # Get sections
+    topic = state["topic"]
+    sections = state['sections']
 
-    # Most recent web research
-    most_recent_web_research = state.web_research_results[-1]
+    action_request = ActionRequest(
+        action="Check Report Plan",
+        args={
+            "request": state["topic"],
+            "response": state["sections"],
+        }
+    )
 
-    # Build the human message
-    if existing_summary:
-        human_message_content = (
-            f"<Existing Summary> \n {existing_summary} \n <Existing Summary>\n\n"
-            f"<New Context> \n {most_recent_web_research} \n <New Context>"
-            f"Update the Existing Summary with the New Context on this topic: \n <User Input> \n {state.research_topic} \n <User Input>\n\n"
+    interrupt_config = HumanInterruptConfig(
+        allow_ignore=True,
+        allow_respond=True,
+        allow_edit=True,
+        allow_accept=True
+    )
+
+    description = """Please review this report plan. You can:
+- Accept the report plan as-is
+- Edit the report plan before sending
+- Provide feedback or instructions for regeneration
+- Make any necessary corrections
+"""
+
+    request = HumanInterrupt(
+        action_request=action_request,
+        config=interrupt_config,
+        description=description
+    )
+
+    return Command(goto=[
+        Send(
+            "build_section_with_web_research",
+            {"topic": topic, "section": [s], "search_iterations": [0]}
         )
+        for s in sections
+        if s.research
+    ])
+
+    # TODO: Handle later
+    human_response: HumanResponse = interrupt([request])[0]
+
+    # TODO: Handle multiple feedbacks
+    logger.info(f"human_response: {human_response}")
+
+    # If the user approves the report plan, kick off section writing
+    if human_response.get("type") == "accept":
+        return Command(goto=[
+            Send(
+                "build_section_with_web_research",
+                {"topic": topic, "section": [s], "search_iterations": [0]}
+            )
+            for s in sections
+            if s.research
+        ])
+    elif human_response.get("type") == "response":
+        return Command(goto="generate_report_plan",
+                       update={"feedback_on_report_plan": human_response.get("args")})
+    elif human_response.get("type") == "ignore":
+        return Command(goto=END)
     else:
-        human_message_content = (
-            f"<Context> \n {most_recent_web_research} \n <Context>"
-            f"Create a Summary using the Context on this topic: \n <User Input> \n {state.research_topic} \n <User Input>\n\n"
-        )
+        raise TypeError(
+            f"Interrupt value of type {type(human_response)} is not supported.")
 
-    # Run the LLM
+
+async def generate_queries(state: SectionState, config: RunnableConfig):
+    """Generate search queries for researching a specific section.
+
+    This node uses an LLM to generate targeted search queries based on the
+    section topic and description.
+
+    Args:
+        state: Current state containing section details
+        config: Configuration including number of queries to generate
+
+    Returns:
+        Dict containing the generated search queries
+    """
+
+    # Get state
+    topic = state["topic"]
+    # Get the first (current) section from the list
+    section = state["section"][0] if state["section"] else None
+
+    if not section:
+        raise ValueError("No section found in state for query generation")
+
+    # Get configuration
+    configurable = Configuration.from_runnable_config(config)
+    number_of_queries = configurable.number_of_queries
+
+    # Generate queries
+    writer_provider = get_config_value(configurable.writer_provider)
+    writer_model_name = get_config_value(configurable.writer_model)
+    writer_model = init_chat_model(
+        model=writer_model_name, model_provider=writer_provider)
+    structured_llm = writer_model.with_structured_output(Queries)
+
+    # Format system instructions
+    system_instructions = query_writer_instructions.format(topic=topic,
+                                                           section_topic=section.description,
+                                                           number_of_queries=number_of_queries)
+
+    # Generate queries
+    queries = await structured_llm.ainvoke([SystemMessage(content=system_instructions),
+                                            HumanMessage(content="Generate search queries on the provided topic.")])
+
+    # Return the updated messages
+    return {"search_queries": queries.queries}
+
+
+async def search_web(state: SectionState, config: RunnableConfig):
+    """Execute web searches for the section queries.
+
+    This node:
+    1. Takes the generated queries
+    2. Executes searches using configured search API
+    3. Formats results into usable context
+
+    Args:
+        state: Current state with search queries
+        config: Search API configuration
+
+    Returns:
+        Dict with search results and updated iteration count
+    """
+
+    # Get state
+    search_queries = state["search_queries"]
+
+    # Get configuration
+    configurable = Configuration.from_runnable_config(config)
+    search_api = get_config_value(configurable.search_api)
+    # Get the config dict, default to empty
+    search_api_config = configurable.search_api_config or {}
+    params_to_pass = get_search_params(
+        search_api, search_api_config)  # Filter parameters
+
+    # Web search
+    query_list = [query.search_query for query in search_queries]
+    # print("\n-------Query List:----------",query_list)
+    # Search the web with parameters
+    source_str = await select_and_execute_search(search_api, query_list, params_to_pass)
+
+    # Get current search iterations (use last value or 0 if empty)
+    current_iterations = state["search_iterations"][-1] if state["search_iterations"] else 0
+
+    # Return the updated messages
+    return {"source_str": [source_str], "search_iterations": [current_iterations + 1]}
+
+
+async def write_section(state: SectionState, config: RunnableConfig) -> Command[Literal[END, "search_web"]]:
+    """Write a section of the report and evaluate if more research is needed.
+
+    This node:
+    1. Writes section content using search results
+    2. Evaluates the quality of the section
+    3. Either:
+       - Completes the section if quality passes
+       - Triggers more research if quality fails
+
+    Args:
+        state: Current state with search results and section info
+        config: Configuration for writing and evaluation
+
+    Returns:
+        Command to either complete section or do more research
+    """
+
+    # Get state
+    topic = state["topic"]
+
+    # Get the first (current) section from the list
+    section = state["section"][0] if state["section"] else None
+
+    # Get the latest source string from the list
+    source_str = state["source_str"][-1] if state["source_str"] else ""
+
+    if not section:
+        raise ValueError("No section found in state for writing")
+
+    # Get configuration
     configurable = Configuration.from_runnable_config(config)
 
-    # Choose the appropriate LLM based on the provider
-    if configurable.llm_provider == "lmstudio":
-        llm = ChatLMStudio(
-            base_url=configurable.lmstudio_base_url,
-            model=configurable.local_llm,
-            temperature=0
-        )
-    else:  # Default to Ollama
-        llm = ChatOllama(
-            base_url=configurable.ollama_base_url,
-            model=configurable.local_llm,
-            temperature=0
-        )
-    llm = ChatOpenAI(
-        model="gpt-4o-mini",
-        temperature=0,
-    )
+    # Format system instructions
+    section_writer_inputs_formatted = section_writer_inputs.format(topic=topic,
+                                                                   section_name=section.name,
+                                                                   section_topic=section.description,
+                                                                   context=source_str,
+                                                                   section_content=section.content)
 
-    result = llm.invoke(
-        [SystemMessage(content=summarizer_instructions),
-         HumanMessage(content=human_message_content)]
-    )
+    # Generate section
+    writer_provider = get_config_value(configurable.writer_provider)
+    writer_model_name = get_config_value(configurable.writer_model)
+    writer_model = init_chat_model(
+        model=writer_model_name, model_provider=writer_provider)
 
-    # Strip thinking tokens if configured
-    running_summary = result.content
-    if configurable.strip_thinking_tokens:
-        running_summary = strip_thinking_tokens(running_summary)
+    section_content = await writer_model.ainvoke(
+        [SystemMessage(content=section_writer_instructions),
+         HumanMessage(content=section_writer_inputs_formatted)])
 
-    return {"running_summary": running_summary}
+    # Use temporary variable instead of modifying section directly
+    temp_section_content = section_content.content
 
+    # Grade prompt
+    section_grader_message = ("Grade the report and consider follow-up questions for missing information. "
+                              "If the grade is 'pass', return empty strings for all follow-up queries. "
+                              "If the grade is 'fail', provide specific search queries to gather missing information.")
 
-def reflect_on_summary(state: SummaryState, config: RunnableConfig):
-    """LangGraph node that identifies knowledge gaps and generates follow-up queries.
+    section_grader_instructions_formatted = section_grader_instructions.format(topic=topic,
+                                                                               section_topic=section.description,
+                                                                               section=temp_section_content,
+                                                                               number_of_follow_up_queries=configurable.number_of_queries)
 
-    Analyzes the current summary to identify areas for further research and generates
-    a new search query to address those gaps. Uses structured output to extract
-    the follow-up query in JSON format.
+    # Use planner model for reflection
+    planner_provider = get_config_value(configurable.planner_provider)
+    planner_model = get_config_value(configurable.planner_model)
 
-    Args:
-        state: Current graph state containing the running summary and research topic
-        config: Configuration for the runnable, including LLM provider settings
-
-    Returns:
-        Dictionary with state update, including search_query key containing the generated follow-up query
-    """
-
-    # Generate a query
-    configurable = Configuration.from_runnable_config(config)
-
-    # Choose the appropriate LLM based on the provider
-    if configurable.llm_provider == "lmstudio":
-        llm_json_mode = ChatLMStudio(
-            base_url=configurable.lmstudio_base_url,
-            model=configurable.local_llm,
-            temperature=0,
-            format="json"
-        )
-    else:  # Default to Ollama
-        llm_json_mode = ChatOllama(
-            base_url=configurable.ollama_base_url,
-            model=configurable.local_llm,
-            temperature=0,
-            format="json"
-        )
-    llm_json_mode = ChatOpenAI(
-        model="gpt-4o-mini",
-        temperature=0,
-    )
-
-    result = llm_json_mode.invoke(
-        [SystemMessage(content=reflection_instructions.format(research_topic=state.research_topic)),
-         HumanMessage(content=f"Reflect on our existing knowledge: \n === \n {state.running_summary}, \n === \n And now identify a knowledge gap and generate a follow-up web search query:")]
-    )
-
-    # Strip thinking tokens if configured
-    try:
-        # Try to parse as JSON first
-        reflection_content = json.loads(result.content)
-        # Get the follow-up query
-        query = reflection_content.get('follow_up_query')
-        # Check if query is None or empty
-        if not query:
-            # Use a fallback query
-            return {"search_query": f"Tell me more about {state.research_topic}"}
-        return {"search_query": query}
-    except (json.JSONDecodeError, KeyError, AttributeError):
-        # If parsing fails or the key is not found, use a fallback query
-        return {"search_query": f"Tell me more about {state.research_topic}"}
-
-
-def finalize_summary(state: SummaryState):
-    """LangGraph node that finalizes the research summary.
-
-    Prepares the final output by deduplicating and formatting sources, then
-    combining them with the running summary to create a well-structured
-    research report with proper citations.
-
-    Args:
-        state: Current graph state containing the running summary and sources gathered
-
-    Returns:
-        Dictionary with state update, including running_summary key containing the formatted final summary with sources
-    """
-
-    # Deduplicate sources before joining
-    seen_sources = set()
-    unique_sources = []
-
-    for source in state.sources_gathered:
-        # Split the source into lines and process each individually
-        for line in source.split('\n'):
-            # Only process non-empty lines
-            if line.strip() and line not in seen_sources:
-                seen_sources.add(line)
-                unique_sources.append(line)
-
-    # Join the deduplicated sources
-    all_sources = "\n".join(unique_sources)
-    state.running_summary = f"## Summary\n{state.running_summary}\n\n ### Sources:\n{all_sources}"
-    return {"running_summary": state.running_summary}
-
-
-def route_research(state: SummaryState, config: RunnableConfig) -> Literal["finalize_summary", "web_research"]:
-    """LangGraph routing function that determines the next step in the research flow.
-
-    Controls the research loop by deciding whether to continue gathering information
-    or to finalize the summary based on the configured maximum number of research loops.
-
-    Args:
-        state: Current graph state containing the research loop count
-        config: Configuration for the runnable, including max_web_research_loops setting
-
-    Returns:
-        String literal indicating the next node to visit ("web_research" or "finalize_summary")
-    """
-
-    configurable = Configuration.from_runnable_config(config)
-    if state.research_loop_count <= configurable.max_web_research_loops:
-        return "web_research"
+    if planner_model == "claude-3-7-sonnet-latest":
+        # Allocate a thinking budget for claude-3-7-sonnet-latest as the planner model
+        reflection_model = init_chat_model(model=planner_model,
+                                           model_provider=planner_provider,
+                                           max_tokens=20_000,
+                                           thinking={"type": "enabled", "budget_tokens": 16_000}).with_structured_output(Feedback)
     else:
-        return "finalize_summary"
+        reflection_model = init_chat_model(model=planner_model,
+                                           model_provider=planner_provider).with_structured_output(Feedback)
+    # Generate feedback
+    feedback = await reflection_model.ainvoke([SystemMessage(content=section_grader_instructions_formatted),
+                                               HumanMessage(content=section_grader_message)])
+
+    # Get current search iterations (use last value or 0 if empty)
+    current_iterations = state["search_iterations"][-1] if state["search_iterations"] else 0
+    # If the section is passing or the max search depth is reached, publish the section to completed sections
+    if feedback.grade == "pass" or current_iterations >= configurable.max_search_depth:
+        # Create a temporary section object with updated content
+        temp_section = type(section)(
+            name=section.name,
+            description=section.description,
+            research=section.research,
+            content=temp_section_content
+        )
+
+        # Push the completed section to UI with message
+        # global ui_message_id
+        # push_ui_message(UI_COMPONENT_NAME, {
+        #                 "completed_sections": [temp_section]}, id=ui_message_id)
+
+        # Return the completed section
+        return Command(
+            update={"completed_sections": [temp_section]},
+            goto=END
+        )
+
+    # Return the updated messages
+    return Command(
+        update={"search_queries": feedback.follow_up_queries},
+        goto="search_web"
+    )
 
 
-# Add nodes and edges
-builder = StateGraph(SummaryState, input=SummaryStateInput,
-                     output=SummaryStateOutput, config_schema=Configuration)
-builder.add_node("generate_query", generate_query)
-builder.add_node("web_research", web_research)
-builder.add_node("summarize_sources", summarize_sources)
-builder.add_node("reflect_on_summary", reflect_on_summary)
-builder.add_node("finalize_summary", finalize_summary)
+async def write_final_sections(state: SectionState, config: RunnableConfig):
+    """Write sections that don't require research using completed sections as context.
+
+    This node handles sections like conclusions or summaries that build on
+    the researched sections rather than requiring direct research.
+
+    Args:
+        state: Current state with completed sections as context
+        config: Configuration for the writing model
+
+    Returns:
+        Dict containing the newly written section
+    """
+
+    # Get configuration
+    configurable = Configuration.from_runnable_config(config)
+
+    # Get state
+    topic = state["topic"]
+    # Get the first (current) section from the list
+    section = state["section"][0] if state["section"] else None
+    # Get the latest report sections from research (join all if multiple)
+    completed_report_sections = "\n\n".join(
+        state["report_sections_from_research"]) if state["report_sections_from_research"] else ""
+
+    if not section:
+        raise ValueError("No section found in state for final section writing")
+
+    # Format system instructions
+    system_instructions = final_section_writer_instructions.format(
+        topic=topic, section_name=section.name, section_topic=section.description, context=completed_report_sections)
+
+    # Generate section
+    writer_provider = get_config_value(configurable.writer_provider)
+    writer_model_name = get_config_value(configurable.writer_model)
+    writer_model = init_chat_model(
+        model=writer_model_name, model_provider=writer_provider)
+
+    section_content = await writer_model.ainvoke([SystemMessage(content=system_instructions),
+                                                  HumanMessage(content="Generate a report section based on the provided sources.")])
+
+    # Use temporary variable instead of modifying section directly
+    temp_section_content = section_content.content
+
+    # Create a temporary section object with updated content
+    temp_section = type(section)(
+        name=section.name,
+        description=section.description,
+        research=section.research,
+        content=temp_section_content
+    )
+
+    # Push the section content to the UI with message
+    # global ui_message_id
+    # push_ui_message(UI_COMPONENT_NAME, {"completed_sections": [
+    #                 temp_section]}, id=ui_message_id)
+
+    # Return the completed section
+    return {"completed_sections": [temp_section]}
+
+
+def gather_completed_sections(state: ReportState):
+    """Format completed sections as context for writing final sections.
+
+    This node takes all completed research sections and formats them into
+    a single context string for writing summary sections.
+
+    Args:
+        state: Current state with completed sections
+
+    Returns:
+        Dict with formatted sections as context
+    """
+
+    logger.info("gather_completed_sections start")
+
+    # List of completed sections
+    completed_sections = state["completed_sections"]
+
+    # Format completed section to str to use as context for final sections
+    completed_report_sections = format_sections(completed_sections)
+
+    logger.info("gather_completed_sections end")
+
+    return {"report_sections_from_research": [completed_report_sections]}
+
+
+def compile_final_report(state: ReportState):
+    """Compile all sections into the final report."""
+
+    # Get sections
+    sections = state["sections"]
+    completed_sections = {
+        s.name: s.content for s in state["completed_sections"]}
+
+    # Create temporary sections with completed content while maintaining original order
+    temp_sections = []
+    for section in sections:
+        temp_section_content = completed_sections.get(section.name, "")
+        temp_sections.append(temp_section_content)
+
+    global ui_message_id
+    push_ui_message(UI_COMPONENT_NAME, {
+                    "completed_sections": state["completed_sections"]}, id=ui_message_id)
+
+    # Compile final report using temporary sections
+    all_sections = "\n\n".join(temp_sections)
+
+    # Wrap the final report with AIMessage type
+    # ai_message = AIMessage(content=all_sections)
+
+    # TODO: With messages, canvas would be reset
+    # return ReportStateOutput(final_report=all_sections, messages=[ai_message])
+    return {"final_report": all_sections}
+
+
+def initiate_final_section_writing(state: ReportState):
+    """Create parallel tasks for writing non-research sections.
+
+    This edge function identifies sections that don't need research and
+    creates parallel writing tasks for each one.
+
+    Args:
+        state: Current state with all sections and research context
+
+    Returns:
+        List of Send commands for parallel section writing
+    """
+
+    # Kick off section writing in parallel via Send() API for any sections that do not require research
+    return [
+        Send("write_final_sections", {"topic": state["topic"], "section": [s],
+             "report_sections_from_research": state["report_sections_from_research"]})
+        for s in state["sections"]
+        if not s.research
+    ]
+
+# Add this fallback node at the end of the file, before compiling the graph
+
+
+def fallback_handler(state: ReportState) -> ReportStateOutput:
+    """Handle errors and provide a fallback response."""
+    print("Executing fallback handler")
+    # Get whatever information we have
+    topic = state.get("topic", "")
+
+    # Create a fallback report
+    fallback_report = f"""
+# Report on {topic}
+
+## Introduction
+This is a fallback report generated due to an error in the report generation process.
+
+## Key Points
+- The requested topic was: {topic}
+- Due to technical limitations, a full report could not be generated
+- Please try again with a more specific topic or different configuration
+    """
+
+    return ReportStateOutput(final_report=fallback_report)
+
+# Report section sub-graph --
+
+
+# Add nodes
+section_builder = StateGraph(SectionState, output=SectionOutputState)
+section_builder.add_node("generate_queries", generate_queries)
+section_builder.add_node("search_web", search_web)
+section_builder.add_node("write_section", write_section)
 
 # Add edges
-builder.add_edge(START, "generate_query")
-builder.add_edge("generate_query", "web_research")
-builder.add_edge("web_research", "summarize_sources")
-builder.add_edge("summarize_sources", "reflect_on_summary")
-builder.add_conditional_edges("reflect_on_summary", route_research)
-builder.add_edge("finalize_summary", END)
+section_builder.add_edge(START, "generate_queries")
+section_builder.add_edge("generate_queries", "search_web")
+section_builder.add_edge("search_web", "write_section")
+
+# Outer graph for initial report plan compiling results from each section --
+
+
+# Add Nodes
+builder = StateGraph(ReportState, input=ReportStateInput,
+                     output=ReportStateOutput, config_schema=Configuration)
+builder.add_node("generate_report_plan", generate_report_plan)
+builder.add_node("human_feedback", human_feedback)
+builder.add_node("build_section_with_web_research", section_builder.compile())
+builder.add_node("gather_completed_sections", gather_completed_sections)
+builder.add_node("write_final_sections", write_final_sections)
+builder.add_node("compile_final_report", compile_final_report)
+
+# Add edges
+builder.add_edge(START, "generate_report_plan")
+builder.add_edge("generate_report_plan", "human_feedback")
+builder.add_edge("build_section_with_web_research",
+                 "gather_completed_sections")
+builder.add_conditional_edges("gather_completed_sections",
+                              initiate_final_section_writing, ["write_final_sections"])
+builder.add_edge("write_final_sections", "compile_final_report")
+builder.add_edge("compile_final_report", END)
 
 graph = builder.compile()

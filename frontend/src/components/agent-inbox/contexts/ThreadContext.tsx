@@ -34,6 +34,7 @@ import {
   processThreadWithoutInterrupts,
 } from "./utils";
 import { useLocalStorage } from "../hooks/use-local-storage";
+import { useAuth } from "@/contexts/AuthContext";
 
 // Define the ToastInput type that matches what useToast expects
 type ToastInput = {
@@ -101,7 +102,12 @@ interface GetClientArgs {
   toast: (input: ToastInput) => void;
 }
 
-const getClient = async ({ agentInboxes, getItem, toast }: GetClientArgs) => {
+const getClient = async ({
+  agentInboxes,
+  getItem,
+  toast,
+  supabase,
+}: GetClientArgs & { supabase: any }) => {
   if (agentInboxes.length === 0) {
     toast({
       title: "Error",
@@ -121,6 +127,7 @@ const getClient = async ({ agentInboxes, getItem, toast }: GetClientArgs) => {
     const client = await createClient({
       deploymentUrl,
       langchainApiKey,
+      supabase,
     });
 
     return client;
@@ -153,6 +160,7 @@ export function ThreadsProvider<
   const { getSearchParam, searchParams, updateQueryParams } = useQueryParams();
   const { getItem, setItem } = useLocalStorage();
   const { toast } = useToast();
+  const { supabase } = useAuth();
   const [loading, setLoading] = React.useState(false);
   const [threadData, setThreadData] = React.useState<
     ThreadData<ThreadValues>[]
@@ -165,11 +173,7 @@ export function ThreadsProvider<
   const inboxParam = searchParams.get(INBOX_PARAM);
 
   React.useEffect(() => {
-    console.log("call useEffect");
-
     if (typeof window === "undefined") {
-      console.log("window is undefined");
-      console.log("window: ", window);
       return;
     }
 
@@ -182,7 +186,9 @@ export function ThreadsProvider<
           await getAgentInboxes();
         } else {
           // If we already have agent inboxes, just fetch threads if needed
-          const inboxSearchParam = getSearchParam(INBOX_PARAM) as ThreadStatusWithAll;
+          const inboxSearchParam = getSearchParam(
+            INBOX_PARAM
+          ) as ThreadStatusWithAll;
           if (inboxSearchParam && mounted) {
             await fetchThreads(inboxSearchParam);
           }
@@ -201,67 +207,40 @@ export function ThreadsProvider<
 
   const getAgentInboxes = React.useCallback(async () => {
     const agentInboxSearchParam = getSearchParam(AGENT_INBOX_PARAM);
-    console.log(
-      "[Debug] Fetching agent inboxes, search param:",
-      agentInboxSearchParam
-    );
 
     try {
       setLoading(true);
-      // Fetch teams from the database with detailed error logging
-      const requestBody = {
-        action: "select",
-        table: "teams",
-        query: {
-          select: "*",
-          order: [{ column: "created_at", order: "desc" }]
-        },
-      };
+      // Use Supabase JS SDK directly to fetch agents
+      const supabase = await import("@/utils/supabase/client");
+      const client = supabase.createClient();
+      // Fetch all agents
+      const { data: agents, error } = await client
+        .from("agents")
+        .select("id, graph_name, name, description")
+        .order("name", { ascending: true });
 
-      console.log("[Debug] Sending request to /api/supabase:", requestBody);
-
-      const response = await fetch("/api/supabase", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(requestBody),
-      });
-
-      console.log("[Debug] Response status:", response.status);
-      
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error("[Debug] API Error response:", errorText);
-        throw new Error(`Failed to fetch teams: ${response.status} ${errorText}`);
+      if (error) {
+        throw new Error(error.message);
       }
 
-      const teams = await response.json();
-      console.log("[Debug] Teams data:", teams);
-
-      if (!teams || !Array.isArray(teams)) {
-        console.error("[Debug] Invalid data format:", teams);
-        throw new Error("Invalid data format from API");
+      if (!agents || !Array.isArray(agents)) {
+        throw new Error("Invalid data format from Supabase");
       }
 
-      if (!teams.length) {
-        console.log("[Debug] No teams found in database");
-        // Don't show welcome dialog even if no teams found
+      if (!agents.length) {
         setAgentInboxes([]);
         setLoading(false);
         return;
       }
 
-      // Transform teams into AgentInbox format
-      const parsedAgentInboxes: AgentInbox[] = teams.map((team: any) => ({
-        id: team.id,
-        // TODO: Handle project_graph later
-        graphId: "team_graph",
-        name: team.name,
-        description: team.description,
+      // Transform agents into AgentInbox format
+      const parsedAgentInboxes: AgentInbox[] = agents.map((agent: any) => ({
+        id: agent.id,
+        graphId: agent.graph_name,
+        name: agent.name,
+        description: agent.description,
         selected: false,
       }));
-      console.log("[Debug] Transformed agent inboxes:", parsedAgentInboxes);
 
       // If there is no agent inbox search param, or the search param is not
       // a valid UUID, update search param
@@ -269,9 +248,10 @@ export function ThreadsProvider<
         parsedAgentInboxes[0].selected = true;
         updateQueryParams(AGENT_INBOX_PARAM, parsedAgentInboxes[0].id);
         setAgentInboxes(parsedAgentInboxes);
-        
         // Fetch threads for the first inbox
-        const inboxSearchParam = getSearchParam(INBOX_PARAM) as ThreadStatusWithAll;
+        const inboxSearchParam = getSearchParam(
+          INBOX_PARAM
+        ) as ThreadStatusWithAll;
         if (inboxSearchParam) {
           await fetchThreads(inboxSearchParam);
         }
@@ -300,16 +280,17 @@ export function ThreadsProvider<
           inbox.id === agentInboxSearchParam ||
           inbox.graphId === agentInboxSearchParam;
       });
+      console.log("parsedAgentInboxes: ", parsedAgentInboxes);
 
       setAgentInboxes(parsedAgentInboxes);
-      
       // Fetch threads for the selected inbox
-      const inboxSearchParam = getSearchParam(INBOX_PARAM) as ThreadStatusWithAll;
+      const inboxSearchParam = getSearchParam(
+        INBOX_PARAM
+      ) as ThreadStatusWithAll;
       if (inboxSearchParam) {
         await fetchThreads(inboxSearchParam);
       }
     } catch (error) {
-      console.error("[Debug] Error fetching teams:", error);
       toast({
         title: "Error",
         description: "Failed to fetch agent inboxes. Please try again.",
@@ -386,7 +367,6 @@ export function ThreadsProvider<
 
   const fetchThreads = React.useCallback(
     async (inbox: ThreadStatusWithAll) => {
-      console.log("call fetchThreads");
       setLoading(true);
 
       try {
@@ -394,6 +374,7 @@ export function ThreadsProvider<
           agentInboxes,
           getItem,
           toast,
+          supabase,
         });
 
         if (!client) {
@@ -433,7 +414,6 @@ export function ThreadsProvider<
           ...statusInput,
           ...(metadataInput ? { metadata: metadataInput } : {}),
         };
-        console.log("threadSearchArgs: ", threadSearchArgs);
 
         const threads = await client.threads.search(threadSearchArgs);
         const data: ThreadData<ThreadValues>[] = [];
@@ -524,6 +504,7 @@ export function ThreadsProvider<
         agentInboxes,
         getItem,
         toast,
+        supabase,
       });
       if (!client) {
         return undefined;
@@ -560,6 +541,7 @@ export function ThreadsProvider<
         agentInboxes,
         getItem,
         toast,
+        supabase,
       });
       if (!client) {
         return [];
@@ -597,6 +579,7 @@ export function ThreadsProvider<
       agentInboxes,
       getItem,
       toast,
+      supabase,
     });
     if (!client) {
       return;
@@ -630,6 +613,7 @@ export function ThreadsProvider<
       agentInboxes,
       getItem,
       toast,
+      supabase,
     });
     if (!client) {
       return;
@@ -685,12 +669,12 @@ export function ThreadsProvider<
       });
       return undefined as any;
     }
-    console.log("graphId: ", graphId);
 
     const client = await getClient({
       agentInboxes,
       getItem,
       toast,
+      supabase,
     });
     if (!client) {
       return undefined as any;

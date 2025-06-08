@@ -30,6 +30,9 @@ importers:
       '@codesandbox/sandpack-react':
         specifier: ^2.20.0
         version: 2.20.0(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
+      '@codesandbox/sandpack-themes':
+        specifier: ^2.0.21
+        version: 2.0.21
       '@emotion/react':
         specifier: ^11.14.0
         version: 11.14.0(@types/react@19.0.1)(react@19.1.0)
@@ -585,6 +588,9 @@ packages:
     peerDependencies:
       react: ^16.8.0 || ^17 || ^18 || ^19
       react-dom: ^16.8.0 || ^17 || ^18 || ^19
+
+  '@codesandbox/sandpack-themes@2.0.21':
+    resolution: {integrity: sha512-CMH/MO/dh6foPYb/3eSn2Cu/J3+1+/81Fsaj7VggICkCrmRk0qG5dmgjGAearPTnRkOGORIPHuRqwNXgw0E6YQ==}
 
   '@colors/colors@1.6.0':
     resolution: {integrity: sha512-Ir+AOibqzrIsL6ajt3Rz3LskB7OiMVHqltZmspbW/TJuTVuyOMirVqAkjfY6JISiLHgyNqicAC8AyHHGzNd/dA==}
@@ -6882,6 +6888,8 @@ snapshots:
       react-devtools-inline: 4.4.0
       react-dom: 19.1.0(react@19.1.0)
       react-is: 17.0.2
+
+  '@codesandbox/sandpack-themes@2.0.21': {}
 
   '@colors/colors@1.6.0': {}
 

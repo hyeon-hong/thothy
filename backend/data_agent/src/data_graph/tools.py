@@ -5,6 +5,8 @@ from pydantic import BaseModel, Field
 from langchain.tools import tool
 from langchain_community.tools.tavily_search import TavilySearchResults
 
+UI_COMPONENT_NAME = "data_graph"
+
 FINANCIAL_DATASETS_API_KEY = os.getenv("FINANCIAL_DATASETS_API_KEY")
 BASE_URL = "https://api.financialdatasets.ai"
 SEARXNG_URL = os.getenv("SEARXNG_URL")
@@ -146,6 +148,7 @@ def price_snapshot_tool(input: PriceSnapshotInput = None, **kwargs) -> Tuple[str
             "/prices/snapshot",
             {"ticker": input.ticker},
         )
+
         return str(data), {"title": "Price Snapshot", "price_snapshot": data}
     except Exception as e:
         return f"An error occurred while fetching price snapshots: {e}", {}
@@ -206,11 +209,11 @@ def prices_tool(input: PricesInput = None, **kwargs) -> Tuple[str, dict]:
 
 
 @tool("web_search", args_schema=None, response_format="content_and_artifact")
-def web_search_tool(query: str) -> Tuple[str, dict]:
+async def web_search_tool(query: str) -> Tuple[str, dict]:
     """Search the web using Tavily and return the top result(s)."""
     try:
         tavily = TavilySearchResults(max_results=1)
-        results = tavily.invoke(query)
+        results = await tavily.ainvoke(query)
         if not results:
             return "No results found.", {"title": "Web Search", "web_search": "No results found."}
         # Tavily returns a list of dicts with 'title', 'url', and 'content'

@@ -5,13 +5,13 @@ import os
 from typing import Optional, Annotated, Sequence, TypedDict
 import json
 
-from langchain_openai import ChatOpenAI
+from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.messages import AIMessage, BaseMessage
 from langgraph.graph.message import add_messages
 from langgraph.graph.ui import AnyUIMessage, ui_message_reducer, push_ui_message
 from langgraph.graph import StateGraph, START, END
 from langgraph.prebuilt import ToolNode
-from ui_graph.prompts import SYSTEM_PROMPT
+from ui_graph.prompts import get_coding_prompt
 from ui_graph.tools import generate_shadcn_widget
 
 
@@ -20,7 +20,7 @@ logging.basicConfig(level=logging.INFO)
 
 # Initialize global LLM
 VLLM_API_URL = os.getenv("VLLM_API_URL")
-llm: Optional[ChatOpenAI] = None
+llm: Optional[ChatGoogleGenerativeAI] = None
 
 UI_COMPONENT_NAME = "ui_graph"
 
@@ -30,17 +30,12 @@ class AgentState(TypedDict):  # noqa: D101
     ui: Annotated[Sequence[AnyUIMessage], ui_message_reducer]
 
 
-def get_llm() -> ChatOpenAI:
+def get_llm() -> ChatGoogleGenerativeAI:
     """Get or initialize the LLM with shadcn tools bound."""
     global llm
     if llm is None:
-        # base_llm = ChatOpenAI(
-        #     model="Qwen/Qwen2.5-1.5B-Instruct",
-        #     base_url=VLLM_API_URL,
-        #     temperature=0.5
-        # )
-        llm = ChatOpenAI(
-            model="gpt-4o-mini",
+        llm = ChatGoogleGenerativeAI(
+            model="gemini-2.5-flash-preview-05-20",
             temperature=0.5
         )
     return llm
@@ -62,13 +57,12 @@ def should_continue(state: AgentState):
     return END
 
 
-def call_model(state: AgentState):
-    messages = [{"role": "system", "content": SYSTEM_PROMPT}] + \
+async def call_model(state: AgentState):
+    messages = [{"role": "system", "content": get_coding_prompt()}] + \
         state["messages"]
-    response = model_with_tools.invoke(messages)
+    response = await model_with_tools.ainvoke(messages)
 
     artifact = extract_artifact_from_response(response)
-    artifact = "export default function App() { return " + artifact + " }"
 
     class Code(TypedDict):
         code: str
@@ -119,6 +113,6 @@ workflow.add_edge("tools", END)
 
 # Compile graph
 graph = workflow.compile()
-graph.name = "ui_graph"
+graph.name = UI_COMPONENT_NAME
 
 __all__ = ["graph"]

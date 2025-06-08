@@ -14,8 +14,10 @@ load_dotenv()
 supabase_url = os.getenv("NEXT_PUBLIC_SUPABASE_URL")
 supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
 
-if not supabase_url or not supabase_key:
-    raise ValueError("Supabase environment variables are not set")
+if not supabase_url:
+    raise ValueError("Supabase URL is not set")
+if not supabase_key:
+    raise ValueError("Supabase key is not set")
 
 supabase: Client = create_client(supabase_url, supabase_key)
 

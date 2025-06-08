@@ -251,7 +251,9 @@ export function StateView({
       className={cn(
         "flex w-full flex-row gap-0",
         view === "state" &&
-          "border-t-[1px] border-gray-100 lg:border-t-[0px] lg:border-l-[1px]",
+          "border-t-[1px] border-gray-100 lg:border-t-[0px] lg:border-l-[1px] max-w-lg",
+        view === "description" &&
+          "max-w-lg"
       )}
     >
       {view === "description" && (
@@ -262,7 +264,7 @@ export function StateView({
         </div>
       )}
       {view === "state" && (
-        <div className="flex flex-col items-start justify-start gap-1">
+        <div className="flex flex-col items-start justify-start gap-1 max-w-lg">
           {Object.entries(values).map(([k, v], idx) => (
             <StateViewObject
               expanded={expanded}

@@ -1,33 +1,33 @@
 """Simple chat agent using LangGraph."""
 
-import logging
 import datetime  # Import datetime for getting current time
 import os
 from typing import Optional
 
-from langchain_openai import ChatOpenAI
-from langgraph.checkpoint.memory import MemorySaver
+from langchain.chat_models import init_chat_model
+from langchain_core.messages import AIMessage
+from langchain_google_genai import ChatGoogleGenerativeAI
 from langgraph.graph import MessagesState, StateGraph, START, END
 from langgraph.store.base import BaseStore
 from chat_graph.configuration import ChatConfigurable
 
-# Configure logging to hide INFO messages
-logging.basicConfig(level=logging.DEBUG)
-
 # Initialize global LLM
 VLLM_API_URL = os.getenv("VLLM_API_URL")
-llm: Optional[ChatOpenAI] = None
+llm: Optional[ChatGoogleGenerativeAI] = None
 
 
-def get_llm() -> ChatOpenAI:
-    """Get or initialize the LLM."""
+def get_llm() -> ChatGoogleGenerativeAI:
+    """Get or initialize the LLM asynchronously."""
     global llm
     if llm is None:
-        llm = ChatOpenAI(
-            model="Qwen/Qwen2.5-1.5B-Instruct",
-            base_url=VLLM_API_URL,
-            temperature=0.8
-        )
+        # api_key = os.getenv("GOOGLE_API_KEY")
+        llm = init_chat_model(
+            model="gemini-2.5-flash-preview-05-20", model_provider="google_genai")
+        # llm = ChatGoogleGenerativeAI(
+        #     model="gemini-2.5-flash-preview-05-20",
+        #     temperature=0.8,
+        #     # google_api_key=api_key
+        # )
     return llm
 
 
@@ -49,16 +49,14 @@ async def chatbot(
 
     # Get the LLM instance
     chat_model = get_llm()
-    logging.info(f"Using model: {chat_model}")
 
     # Invoke the LLM
-    logging.info(f"Message: {state['messages']}")
-    response = chat_model.invoke(
+    response = await chat_model.ainvoke(
         [{"role": "system", "content": system_msg}] + state["messages"]
     )
-    logging.info(f"Response: {response}")
+    ai_message = AIMessage(content=response.content)
 
-    return {"messages": response}
+    return {"messages": [ai_message]}
 
 
 """Build and return the chat graph."""
@@ -74,7 +72,5 @@ workflow.add_edge(START, "chatbot")
 workflow.add_edge("chatbot", END)
 
 # Compile graph
-graph = workflow.compile(checkpointer=MemorySaver())
+graph = workflow.compile()
 graph.name = "chat_graph"
-
-__all__ = ["graph"]

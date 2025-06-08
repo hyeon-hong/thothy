@@ -84,6 +84,10 @@ export interface AgentInbox {
    */
   name?: string;
   /**
+   * Optional description for the inbox, used in the UI to describe the agent.
+   */
+  description?: string;
+  /**
    * Whether or not the inbox is selected.
    */
   selected: boolean;

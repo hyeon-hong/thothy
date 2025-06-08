@@ -1,8 +1,6 @@
 """Simple staff agent using LangGraph."""
 
-import logging
 from langchain.chat_models import init_chat_model
-from langgraph.checkpoint.memory import MemorySaver
 from langgraph.graph import END, START, MessagesState, StateGraph
 from langgraph.store.base import BaseStore
 
@@ -10,14 +8,11 @@ from staff_graph.configuration import StaffConfigurable
 from blog_graph.graph import graph as blog_graph
 from chat_graph.graph import graph as chat_graph
 from news_graph.graph import graph as news_graph
-from thothy.backend.libs.utils import (
+from thothy.backend.libs.utils import (  # type: ignore
     initialize_store,
     initialize_memory_manager,
     initialize_executor
 )
-
-# Configure logging to hide INFO messages
-logging.basicConfig(level=logging.WARNING)
 
 # Initialize store with reconnection capability
 store = initialize_store()
@@ -108,7 +103,5 @@ workflow.add_edge(START, "staff_assistant")
 workflow.add_edge("staff_assistant", END)
 
 # Compile graph
-graph = workflow.compile(checkpointer=MemorySaver(), store=store)
+graph = workflow.compile(store=store)
 graph.name = "staff_graph"
-
-__all__ = ["graph"]
