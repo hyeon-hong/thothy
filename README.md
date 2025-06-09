@@ -7,11 +7,9 @@
 [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/realbits-lab/thothy)
 [![GitHub Stars](https://img.shields.io/github/stars/realbits-lab/thothy?style=social)](https://github.com/realbits-lab/thothy)
 
-**A powerful AI-driven web crawling and data extraction toolkit.**
+**A vertical AI agent automation platform for web, data, research, chat, and presentations.**
 
 [Getting Started](#getting-started) •
-[Examples](#examples) •
-[Documentation](#documentation) •
 [Contributing](#contributing) •
 [License](#license)
 
@@ -105,33 +103,6 @@ Make sure to include the security module in your dependencies:
 ```
 
 Any directory referenced in the configuration must be included in the dependencies array.
-
-## 📚 Examples
-
-Thothy comes with several example scripts that demonstrate its capabilities:
-
-### Amazon Clothes Crawler
-
-A script that crawls Amazon's clothing section and extracts product information including names, prices, ratings, reviews, and image URLs.
-
-```bash
-# Navigate to the examples directory
-cd examples
-
-# Run the Amazon clothes crawler
-python amazon_clothes_crawler.py
-```
-
-See the [examples directory](examples/) for more detailed examples and documentation.
-
-## 📖 Documentation
-
-Comprehensive documentation is available in the [docs](docs/) directory. Key topics include:
-
-- [Quickstart Guide](docs/)
-- [API Reference](docs/)
-- [Advanced Usage](docs/)
-- [Best Practices](docs/)
 
 ## 🧩 Project Structure
 
