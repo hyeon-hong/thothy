@@ -1,11 +1,9 @@
- // Add logging function
+// Add logging function
 export const logOperation = (message: string) => {
-  // @ts-ignore
-  window.electron.writeNextjsLog(message)
+  console.log(`[SlideAgent] ${message}`);
 };
 
-  // Add clear logs function
+// Add clear logs function
 export const clearLogs = () => {
-  // @ts-ignore
-  window.electron.clearNextjsLogs();
+  console.clear();
 };
