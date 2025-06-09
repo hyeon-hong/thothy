@@ -2,7 +2,7 @@ import json
 from typing import Optional
 from pydantic import BaseModel
 
-from api.sql_models import PresentationSqlModel
+from slide_graph.api.sql_models import PresentationSqlModel
 
 
 class LogMetadata(BaseModel):

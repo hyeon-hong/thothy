@@ -1,6 +1,6 @@
 import asyncio
 import os
-from api.services.instances import temp_file_service
+from slide_graph.api.services.instances import temp_file_service
 import pdfplumber
 
 

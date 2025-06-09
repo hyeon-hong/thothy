@@ -3,8 +3,6 @@ from typing import List, Optional
 import uuid
 from sqlmodel import SQLModel, Field, Column, JSON
 
-from ppt_generator.models.other_models import SlideType
-
 
 def get_random_uuid() -> str:
     return str(uuid.uuid4())

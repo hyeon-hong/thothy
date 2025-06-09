@@ -2,7 +2,7 @@ from enum import Enum
 from typing import List, Optional
 from pydantic import BaseModel, Field, model_validator
 
-from graph_processor.utils import clip_text
+from slide_graph.graph_processor.utils import clip_text
 
 
 class PointModel(BaseModel):

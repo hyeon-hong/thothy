@@ -74,10 +74,6 @@ async def create_presentation_node(
             images=state.get("images")
         )
 
-        # Create handler and call it
-        handler = GeneratePresentationRequirementsHandler(
-            presentation_id, request_data)
-
         # Create mock logging service and metadata for the handler
         # Note: In a real implementation, you'd want to properly initialize these
         logging_service = LoggingService()
@@ -86,8 +82,9 @@ async def create_presentation_node(
             endpoint="/ppt/create"
         )
 
-        # Call the handler
-        presentation = await handler.post(logging_service, log_metadata)
+        # Call the GeneratePresentationRequirementsHandler
+        presentation = await GeneratePresentationRequirementsHandler(
+            presentation_id, request_data).post(logging_service, log_metadata)
 
         return {
             "presentation_id": presentation_id,
@@ -119,9 +116,6 @@ async def generate_titles_node(
             presentation_id=state["presentation_id"]
         )
 
-        # Create handler and call it
-        handler = PresentationTitlesGenerateHandler(request_data)
-
         # Create mock logging service and metadata for the handler
         logging_service = LoggingService()
         log_metadata = LogMetadata(
@@ -129,8 +123,9 @@ async def generate_titles_node(
             endpoint="/ppt/titles/generate"
         )
 
-        # Call the handler
-        presentation = await handler.post(logging_service, log_metadata)
+        # Call the PresentationTitlesGenerateHandler
+        presentation = await PresentationTitlesGenerateHandler(
+            request_data).post(logging_service, log_metadata)
 
         return {
             "presentation": presentation,

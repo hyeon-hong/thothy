@@ -1,13 +1,13 @@
 from typing import List, Optional
 from pydantic import BaseModel
 
-from ppt_generator.models.pptx_models import PptxPresentationModel
-from ppt_generator.models.query_and_prompt_models import (
+from slide_graph.ppt_generator.models.pptx_models import PptxPresentationModel
+from slide_graph.ppt_generator.models.query_and_prompt_models import (
     IconCategoryEnum,
     ImagePromptWithThemeAndAspectRatio,
 )
-from ppt_generator.models.slide_model import SlideModel
-from api.sql_models import PresentationSqlModel, SlideSqlModel
+from slide_graph.ppt_generator.models.slide_model import SlideModel
+from slide_graph.api.sql_models import PresentationSqlModel, SlideSqlModel
 
 
 class DocumentsAndImagesPath(BaseModel):

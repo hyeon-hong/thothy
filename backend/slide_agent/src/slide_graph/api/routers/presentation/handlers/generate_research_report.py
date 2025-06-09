@@ -1,9 +1,9 @@
 import uuid
-from api.models import LogMetadata
-from api.routers.presentation.models import GenerateResearchReportRequest
-from api.services.logging import LoggingService
-from api.services.instances import temp_file_service
-from research_report.generator import get_report
+from slide_graph.api.models import LogMetadata
+from slide_graph.api.routers.presentation.models import GenerateResearchReportRequest
+from slide_graph.api.services.logging import LoggingService
+from slide_graph.api.services.instances import temp_file_service
+from slide_graph.research_report.generator import get_report
 
 
 class GenerateResearchReportHandler:

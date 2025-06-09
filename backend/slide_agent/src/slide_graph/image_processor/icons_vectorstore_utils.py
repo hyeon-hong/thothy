@@ -3,7 +3,7 @@ import os
 from langchain_core.vectorstores import InMemoryVectorStore
 
 from langchain_core.documents import Document
-from api.utils import get_resource
+from slide_graph.api.utils import get_resource
 from langchain_community.embeddings.fastembed import FastEmbedEmbeddings
 
 # Pyinstaller

@@ -1,7 +1,7 @@
 from typing import Optional
 
-from api.models import LogMetadata
-from api.services.logging import LoggingService
+from slide_graph.api.models import LogMetadata
+from slide_graph.api.services.logging import LoggingService
 
 
 class RequestUtils:

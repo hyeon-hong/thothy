@@ -1,13 +1,13 @@
 import uuid
-from api.models import LogMetadata
-from api.routers.presentation.models import (
+from slide_graph.api.models import LogMetadata
+from slide_graph.api.routers.presentation.models import (
     PresentationAndPaths,
     SearchIconRequest,
 )
-from api.services.logging import LoggingService
-from image_processor.icons_finder import get_icons
-from api.services.instances import temp_file_service
-from image_processor.icons_vectorstore_utils import get_icons_vectorstore
+from slide_graph.api.services.logging import LoggingService
+from slide_graph.image_processor.icons_finder import get_icons
+from slide_graph.api.services.instances import temp_file_service
+from slide_graph.image_processor.icons_vectorstore_utils import get_icons_vectorstore
 
 
 class SearchIconHandler:

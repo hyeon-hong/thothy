@@ -1,9 +1,9 @@
 from typing import List, Mapping
 from pydantic import BaseModel, Field
 
-from graph_processor.models import GraphModel
-from ppt_generator.models.content_type_models import SlideContentModel
-from ppt_generator.models.other_models import SlideType
+from slide_graph.graph_processor.models import GraphModel
+from slide_graph.ppt_generator.models.content_type_models import SlideContentModel
+from slide_graph.ppt_generator.models.other_models import SlideType
 
 
 class LLMHeadingModel(BaseModel):

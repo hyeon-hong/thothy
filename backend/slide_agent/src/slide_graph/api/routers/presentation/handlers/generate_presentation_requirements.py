@@ -1,12 +1,12 @@
 import uuid
-from api.models import LogMetadata
-from api.routers.presentation.models import GeneratePresentationRequirementsRequest
-from api.services.logging import LoggingService
-from api.services.database import get_sql_session
-from api.services.instances import temp_file_service
-from api.sql_models import PresentationSqlModel
-from document_processor.loader import DocumentsLoader
-from ppt_config_generator.document_summary_generator import generate_document_summary
+from slide_graph.api.models import LogMetadata
+from slide_graph.api.routers.presentation.models import GeneratePresentationRequirementsRequest
+from slide_graph.api.services.logging import LoggingService
+from slide_graph.api.services.database import get_sql_session
+from slide_graph.api.services.instances import temp_file_service
+from slide_graph.api.sql_models import PresentationSqlModel
+from slide_graph.document_processor.loader import DocumentsLoader
+from slide_graph.ppt_config_generator.document_summary_generator import generate_document_summary
 
 
 class GeneratePresentationRequirementsHandler:

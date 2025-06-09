@@ -1,8 +1,8 @@
 from sqlmodel import select, exists
-from api.models import LogMetadata
-from api.services.logging import LoggingService
-from api.sql_models import PresentationSqlModel, SlideSqlModel
-from api.services.database import get_sql_session
+from slide_graph.api.models import LogMetadata
+from slide_graph.api.services.logging import LoggingService
+from slide_graph.api.sql_models import PresentationSqlModel, SlideSqlModel
+from slide_graph.api.services.database import get_sql_session
 
 
 class GetPresentationsHandler:

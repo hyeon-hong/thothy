@@ -10,8 +10,8 @@ import aiohttp
 from fastapi import HTTPException, UploadFile
 from fastapi.responses import StreamingResponse
 
-from api.models import LogMetadata, UserConfig
-from api.services.logging import LoggingService
+from slide_graph.api.models import LogMetadata, UserConfig
+from slide_graph.api.services.logging import LoggingService
 
 
 def get_presentation_dir(presentation_id: str) -> str:

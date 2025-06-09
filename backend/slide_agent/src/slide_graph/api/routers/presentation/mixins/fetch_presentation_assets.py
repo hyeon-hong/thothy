@@ -1,8 +1,8 @@
 import os
 from urllib.parse import unquote, urlparse
 import uuid
-from api.utils import download_files, replace_file_name
-from ppt_generator.models.pptx_models import PptxPictureBoxModel
+from slide_graph.api.utils import download_files, replace_file_name
+from slide_graph.ppt_generator.models.pptx_models import PptxPictureBoxModel
 
 
 class FetchPresentationAssetsMixin:

@@ -19,7 +19,7 @@ from lxml.etree import fromstring, tostring
 from PIL import Image
 
 from pptx.util import Pt
-from graph_processor.models import (
+from slide_graph.graph_processor.models import (
     BarGraphDataModel,
     BubbleChartDataModel,
     GraphTypeEnum,
@@ -27,7 +27,7 @@ from graph_processor.models import (
     PieChartDataModel,
 )
 from pptx.dml.color import RGBColor
-from ppt_generator.models.pptx_models import (
+from slide_graph.ppt_generator.models.pptx_models import (
     PptxAutoShapeBoxModel,
     PptxBoxShapeEnum,
     PptxConnectorModel,
@@ -45,7 +45,7 @@ from ppt_generator.models.pptx_models import (
     PptxTextBoxModel,
     PptxTextRunModel,
 )
-from ppt_generator.utils import (
+from slide_graph.ppt_generator.utils import (
     clip_image,
     fit_image,
     round_image_corners,

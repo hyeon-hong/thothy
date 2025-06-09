@@ -4,8 +4,8 @@ from langchain_core.prompts import ChatPromptTemplate
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_openai import ChatOpenAI
 
-from ppt_config_generator.models import PresentationTitlesModel
-from ppt_generator.fix_validation_errors import get_validated_response
+from slide_graph.ppt_config_generator.models import PresentationTitlesModel
+from slide_graph.ppt_generator.fix_validation_errors import get_validated_response
 
 user_prompt_text = {
     "type": "text",

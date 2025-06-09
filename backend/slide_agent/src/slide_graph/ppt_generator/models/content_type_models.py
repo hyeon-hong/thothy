@@ -1,8 +1,8 @@
 from typing import List, Mapping
 from pydantic import BaseModel, Field
 
-from ppt_generator.models.other_models import SlideType
-from graph_processor.models import GraphModel
+from slide_graph.ppt_generator.models.other_models import SlideType
+from slide_graph.graph_processor.models import GraphModel
 
 
 class HeadingModel(BaseModel):

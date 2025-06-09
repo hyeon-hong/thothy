@@ -3,7 +3,7 @@ from typing import Optional
 
 from pydantic import BaseModel
 
-from ppt_generator.models.content_type_models import IconQueryCollectionModel
+from slide_graph.ppt_generator.models.content_type_models import IconQueryCollectionModel
 
 
 class ImageAspectRatio(Enum):

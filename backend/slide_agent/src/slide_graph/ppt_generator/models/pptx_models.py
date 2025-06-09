@@ -6,7 +6,7 @@ from pptx.util import Pt
 from pptx.enum.text import PP_ALIGN
 from pptx.enum.shapes import MSO_AUTO_SHAPE_TYPE, MSO_CONNECTOR_TYPE
 
-from graph_processor.models import GraphModel
+from slide_graph.graph_processor.models import GraphModel
 
 
 class PptxBoxShapeEnum(Enum):

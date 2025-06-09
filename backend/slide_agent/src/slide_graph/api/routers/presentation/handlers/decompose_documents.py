@@ -1,14 +1,14 @@
 import asyncio
 from typing import List
 import uuid
-from api.models import LogMetadata
-from api.routers.presentation.models import (
+from slide_graph.api.models import LogMetadata
+from slide_graph.api.routers.presentation.models import (
     DecomposeDocumentsRequest,
     DecomposeDocumentsResponse,
 )
-from api.services.instances import temp_file_service
-from api.services.logging import LoggingService
-from document_processor.loader import DocumentsLoader
+from slide_graph.api.services.instances import temp_file_service
+from slide_graph.api.services.logging import LoggingService
+from slide_graph.document_processor.loader import DocumentsLoader
 
 
 class DecomposeDocumentsHandler:

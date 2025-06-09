@@ -1,12 +1,12 @@
 from typing import List, Optional
 import uuid
 from fastapi import UploadFile
-from api.models import LogMetadata
-from api.routers.presentation.models import DocumentsAndImagesPath
-from api.services.logging import LoggingService
-from api.validators import validate_files
-from document_processor.loader import UPLOAD_ACCEPTED_DOCUMENTS
-from api.services.instances import temp_file_service
+from slide_graph.api.models import LogMetadata
+from slide_graph.api.routers.presentation.models import DocumentsAndImagesPath
+from slide_graph.api.services.logging import LoggingService
+from slide_graph.api.validators import validate_files
+from slide_graph.document_processor.loader import UPLOAD_ACCEPTED_DOCUMENTS
+from slide_graph.api.services.instances import temp_file_service
 
 
 class UploadFilesHandler:

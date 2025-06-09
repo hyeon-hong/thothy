@@ -1,19 +1,19 @@
 import os
 import uuid
-from api.models import LogMetadata
-from api.routers.presentation.mixins.fetch_presentation_assets import (
+from slide_graph.api.models import LogMetadata
+from slide_graph.api.routers.presentation.mixins.fetch_presentation_assets import (
     FetchPresentationAssetsMixin,
 )
-from api.routers.presentation.models import (
+from slide_graph.api.routers.presentation.models import (
     ExportAsRequest,
     PresentationAndPath,
 )
-from api.services.logging import LoggingService
-from api.services.instances import temp_file_service
-from api.sql_models import PresentationSqlModel
-from api.utils import get_presentation_dir, sanitize_filename
-from ppt_generator.pptx_presentation_creator import PptxPresentationCreator
-from api.services.database import get_sql_session
+from slide_graph.api.services.logging import LoggingService
+from slide_graph.api.services.instances import temp_file_service
+from slide_graph.api.sql_models import PresentationSqlModel
+from slide_graph.api.utils import get_presentation_dir, sanitize_filename
+from slide_graph.ppt_generator.pptx_presentation_creator import PptxPresentationCreator
+from slide_graph.api.services.database import get_sql_session
 
 
 class ExportAsPptxHandler(FetchPresentationAssetsMixin):

@@ -1,13 +1,13 @@
 import uuid
 
-from api.models import LogMetadata
-from api.routers.presentation.models import GenerateTitleRequest
-from api.services.instances import temp_file_service
-from api.services.logging import LoggingService
-from api.sql_models import PresentationSqlModel
-from ppt_config_generator.models import PresentationTitlesModel
-from ppt_config_generator.ppt_title_summary_generator import generate_ppt_titles
-from api.services.database import get_sql_session
+from slide_graph.api.models import LogMetadata
+from slide_graph.api.routers.presentation.models import GenerateTitleRequest
+from slide_graph.api.services.instances import temp_file_service
+from slide_graph.api.services.logging import LoggingService
+from slide_graph.api.sql_models import PresentationSqlModel
+from slide_graph.ppt_config_generator.models import PresentationTitlesModel
+from slide_graph.ppt_config_generator.ppt_title_summary_generator import generate_ppt_titles
+from slide_graph.api.services.database import get_sql_session
 
 
 class PresentationTitlesGenerateHandler:

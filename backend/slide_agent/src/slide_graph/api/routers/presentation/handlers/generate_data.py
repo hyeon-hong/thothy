@@ -1,11 +1,11 @@
 import uuid
 
 from fastapi import HTTPException
-from api.models import LogMetadata, SessionModel
-from api.routers.presentation.models import PresentationGenerateRequest
-from api.services.logging import LoggingService
-from api.sql_models import KeyValueSqlModel
-from api.services.database import get_sql_session
+from slide_graph.api.models import LogMetadata, SessionModel
+from slide_graph.api.routers.presentation.models import PresentationGenerateRequest
+from slide_graph.api.services.logging import LoggingService
+from slide_graph.api.sql_models import KeyValueSqlModel
+from slide_graph.api.services.database import get_sql_session
 
 
 class PresentationGenerateDataHandler:

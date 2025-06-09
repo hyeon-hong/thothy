@@ -1,10 +1,10 @@
 import os
 import shutil
-from api.models import LogMetadata
-from api.services.logging import LoggingService
-from api.sql_models import PresentationSqlModel
-from api.services.database import get_sql_session
-from api.utils import get_presentation_dir
+from slide_graph.api.models import LogMetadata
+from slide_graph.api.services.logging import LoggingService
+from slide_graph.api.sql_models import PresentationSqlModel
+from slide_graph.api.services.database import get_sql_session
+from slide_graph.api.utils import get_presentation_dir
 
 
 class DeletePresentationHandler:

@@ -3,7 +3,7 @@ from pptx.util import Pt
 
 from PIL import Image, ImageDraw
 
-from ppt_generator.models.pptx_models import PptxObjectFitEnum, PptxObjectFitModel
+from slide_graph.ppt_generator.models.pptx_models import PptxObjectFitEnum, PptxObjectFitModel
 
 
 def pt_from_optional_int(num: Optional[int]):

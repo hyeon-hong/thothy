@@ -8,7 +8,7 @@ from langchain_text_splitters import CharacterTextSplitter, MarkdownTextSplitter
 from pptx import Presentation
 from docx import Document as DocxDocument
 
-from image_processor.utils import get_page_images_from_pdf_async
+from slide_graph.image_processor.utils import get_page_images_from_pdf_async
 
 PDF_MIME_TYPES = ["application/pdf"]
 TEXT_MIME_TYPES = ["text/plain"]

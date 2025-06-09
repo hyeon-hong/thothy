@@ -1,8 +1,8 @@
-from api.models import LogMetadata
-from api.routers.presentation.models import UpdatePresentationThemeRequest
-from api.services.logging import LoggingService
-from api.sql_models import PreferencesSqlModel, PresentationSqlModel
-from api.services.database import get_sql_session
+from slide_graph.api.models import LogMetadata
+from slide_graph.api.routers.presentation.models import UpdatePresentationThemeRequest
+from slide_graph.api.services.logging import LoggingService
+from slide_graph.api.sql_models import PreferencesSqlModel, PresentationSqlModel
+from slide_graph.api.services.database import get_sql_session
 
 
 class UpdatePresentationThemeHandler:

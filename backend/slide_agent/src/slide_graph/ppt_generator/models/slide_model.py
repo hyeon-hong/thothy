@@ -2,8 +2,8 @@ import uuid
 from typing import List, Optional
 from pydantic import BaseModel
 
-from ppt_generator.models.other_models import SlideType
-from ppt_generator.models.content_type_models import (
+from slide_graph.ppt_generator.models.other_models import SlideType
+from slide_graph.ppt_generator.models.content_type_models import (
     CONTENT_TYPE_MAPPING,
     Type1Content,
     Type2Content,

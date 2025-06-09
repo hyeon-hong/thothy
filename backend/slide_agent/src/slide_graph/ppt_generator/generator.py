@@ -4,7 +4,7 @@ from typing import AsyncIterator, List
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_openai import ChatOpenAI
 from langchain_core.messages import SystemMessage, HumanMessage, AIMessageChunk
-from ppt_generator.models.llm_models import LLMPresentationModel
+from slide_graph.ppt_generator.models.llm_models import LLMPresentationModel
 
 CREATE_PRESENTATION_PROMPT = """
                 You're a professional presenter with years of experience in creating clear and engaging presentations. 

@@ -4,29 +4,29 @@ import uuid
 
 from sqlalchemy import update
 from sqlmodel import select
-from api.models import LogMetadata
-from api.routers.presentation.models import (
+from slide_graph.api.models import LogMetadata
+from slide_graph.api.routers.presentation.models import (
     EditPresentationSlideRequest,
 )
-from api.services.instances import temp_file_service
-from api.services.logging import LoggingService
-from api.utils import get_presentation_dir, get_presentation_images_dir
-from image_processor.icons_vectorstore_utils import get_icons_vectorstore
-from image_processor.images_finder import generate_image
-from image_processor.icons_finder import get_icon
-from ppt_generator.models.other_models import SlideType
-from ppt_generator.models.query_and_prompt_models import (
+from slide_graph.api.services.instances import temp_file_service
+from slide_graph.api.services.logging import LoggingService
+from slide_graph.api.utils import get_presentation_dir, get_presentation_images_dir
+from slide_graph.image_processor.icons_vectorstore_utils import get_icons_vectorstore
+from slide_graph.image_processor.images_finder import generate_image
+from slide_graph.image_processor.icons_finder import get_icon
+from slide_graph.ppt_generator.models.other_models import SlideType
+from slide_graph.ppt_generator.models.query_and_prompt_models import (
     IconQueryCollectionWithData,
     ImagePromptWithThemeAndAspectRatio,
 )
-from ppt_generator.models.slide_model import SlideModel
-from ppt_generator.slide_generator import (
+from slide_graph.ppt_generator.models.slide_model import SlideModel
+from slide_graph.ppt_generator.slide_generator import (
     get_edited_slide_content_model,
     get_slide_type_from_prompt,
 )
-from ppt_generator.slide_model_utils import SlideModelUtils
-from api.sql_models import PresentationSqlModel, SlideSqlModel
-from api.services.database import get_sql_session
+from slide_graph.ppt_generator.slide_model_utils import SlideModelUtils
+from slide_graph.api.sql_models import PresentationSqlModel, SlideSqlModel
+from slide_graph.api.services.database import get_sql_session
 
 
 class PresentationEditHandler:

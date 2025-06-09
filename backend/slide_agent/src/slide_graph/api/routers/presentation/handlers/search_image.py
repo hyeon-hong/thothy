@@ -1,7 +1,7 @@
 import uuid
-from api.models import LogMetadata
-from api.routers.presentation.models import PresentationAndUrls, SearchImageRequest
-from api.services.logging import LoggingService
+from slide_graph.api.models import LogMetadata
+from slide_graph.api.routers.presentation.models import PresentationAndUrls, SearchImageRequest
+from slide_graph.api.services.logging import LoggingService
 
 
 class SearchImageHandler:

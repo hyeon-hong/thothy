@@ -1,7 +1,7 @@
 from typing import List, Optional
 
-from api.utils import get_resource
-from ppt_generator.models.query_and_prompt_models import (
+from slide_graph.api.utils import get_resource
+from slide_graph.ppt_generator.models.query_and_prompt_models import (
     IconCategoryEnum,
     IconQueryCollectionWithData,
 )

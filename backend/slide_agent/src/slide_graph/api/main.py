@@ -4,9 +4,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlmodel import SQLModel
 from contextlib import asynccontextmanager
 
-from api.routers.presentation.router import presentation_router
-from api.services.database import sql_engine
-from api.utils import update_env_with_user_config
+from slide_graph.api.routers.presentation.router import presentation_router
+from slide_graph.api.services.database import sql_engine
+from slide_graph.api.utils import update_env_with_user_config
 
 
 @asynccontextmanager

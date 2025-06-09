@@ -4,21 +4,21 @@ from urllib.parse import unquote, urlparse
 import uuid
 
 from sqlmodel import delete
-from api.models import LogMetadata
-from api.routers.presentation.models import (
+from slide_graph.api.models import LogMetadata
+from slide_graph.api.routers.presentation.models import (
     PresentationUpdateRequest,
     PresentationAndSlides,
 )
-from api.services.logging import LoggingService
-from api.sql_models import PresentationSqlModel, SlideSqlModel
-from api.utils import (
+from slide_graph.api.services.logging import LoggingService
+from slide_graph.api.sql_models import PresentationSqlModel, SlideSqlModel
+from slide_graph.api.utils import (
     download_files,
     get_presentation_dir,
     get_presentation_images_dir,
     replace_file_name,
 )
-from api.services.database import get_sql_session
-from api.services.instances import temp_file_service
+from slide_graph.api.services.database import get_sql_session
+from slide_graph.api.services.instances import temp_file_service
 
 
 class UpdateSlideModelsHandler:

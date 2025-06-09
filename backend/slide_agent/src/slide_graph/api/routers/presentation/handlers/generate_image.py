@@ -1,14 +1,14 @@
 import os
 import uuid
-from api.models import LogMetadata
-from api.routers.presentation.models import (
+from slide_graph.api.models import LogMetadata
+from slide_graph.api.routers.presentation.models import (
     GenerateImageRequest,
     PresentationAndPaths,
 )
-from api.services.logging import LoggingService
-from api.services.instances import temp_file_service
-from api.utils import get_presentation_dir, get_presentation_images_dir
-from image_processor.images_finder import generate_image
+from slide_graph.api.services.logging import LoggingService
+from slide_graph.api.services.instances import temp_file_service
+from slide_graph.api.utils import get_presentation_dir, get_presentation_images_dir
+from slide_graph.image_processor.images_finder import generate_image
 
 
 class GenerateImageHandler:

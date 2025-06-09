@@ -2,51 +2,51 @@ from typing import Annotated, List, Optional
 import uuid
 from fastapi import APIRouter, Body, File, UploadFile
 
-from api.models import SessionModel
-from api.request_utils import RequestUtils
-from api.routers.presentation.handlers.decompose_documents import (
+from slide_graph.api.models import SessionModel
+from slide_graph.api.request_utils import RequestUtils
+from slide_graph.api.routers.presentation.handlers.decompose_documents import (
     DecomposeDocumentsHandler,
 )
-from api.routers.presentation.handlers.delete_presentation import (
+from slide_graph.api.routers.presentation.handlers.delete_presentation import (
     DeletePresentationHandler,
 )
-from api.routers.presentation.handlers.delete_slide import DeleteSlideHandler
-from api.routers.presentation.handlers.edit import PresentationEditHandler
-from api.routers.presentation.handlers.export_as_pptx import ExportAsPptxHandler
-from api.routers.presentation.handlers.generate_data import (
+from slide_graph.api.routers.presentation.handlers.delete_slide import DeleteSlideHandler
+from slide_graph.api.routers.presentation.handlers.edit import PresentationEditHandler
+from slide_graph.api.routers.presentation.handlers.export_as_pptx import ExportAsPptxHandler
+from slide_graph.api.routers.presentation.handlers.generate_data import (
     PresentationGenerateDataHandler,
 )
-from api.routers.presentation.handlers.generate_image import GenerateImageHandler
-from api.routers.presentation.handlers.generate_presentation_requirements import (
+from slide_graph.api.routers.presentation.handlers.generate_image import GenerateImageHandler
+from slide_graph.api.routers.presentation.handlers.generate_presentation_requirements import (
     GeneratePresentationRequirementsHandler,
 )
-from api.routers.presentation.handlers.generate_research_report import (
+from slide_graph.api.routers.presentation.handlers.generate_research_report import (
     GenerateResearchReportHandler,
 )
-from api.routers.presentation.handlers.generate_stream import (
+from slide_graph.api.routers.presentation.handlers.generate_stream import (
     PresentationGenerateStreamHandler,
 )
-from api.routers.presentation.handlers.generate_titles import (
+from slide_graph.api.routers.presentation.handlers.generate_titles import (
     PresentationTitlesGenerateHandler,
 )
-from api.routers.presentation.handlers.get_presentation import GetPresentationHandler
-from api.routers.presentation.handlers.get_presentations import GetPresentationsHandler
-from api.routers.presentation.handlers.search_icon import SearchIconHandler
-from api.routers.presentation.handlers.search_image import SearchImageHandler
-from api.routers.presentation.handlers.update_parsed_document import (
+from slide_graph.api.routers.presentation.handlers.get_presentation import GetPresentationHandler
+from slide_graph.api.routers.presentation.handlers.get_presentations import GetPresentationsHandler
+from slide_graph.api.routers.presentation.handlers.search_icon import SearchIconHandler
+from slide_graph.api.routers.presentation.handlers.search_image import SearchImageHandler
+from slide_graph.api.routers.presentation.handlers.update_parsed_document import (
     UpdateParsedDocumentHandler,
 )
-from api.routers.presentation.handlers.update_presentation_theme import (
+from slide_graph.api.routers.presentation.handlers.update_presentation_theme import (
     UpdatePresentationThemeHandler,
 )
-from api.routers.presentation.handlers.update_slide_models import (
+from slide_graph.api.routers.presentation.handlers.update_slide_models import (
     UpdateSlideModelsHandler,
 )
-from api.routers.presentation.handlers.upload_files import UploadFilesHandler
-from api.routers.presentation.handlers.upload_presentation_thumbnail import (
+from slide_graph.api.routers.presentation.handlers.upload_files import UploadFilesHandler
+from slide_graph.api.routers.presentation.handlers.upload_presentation_thumbnail import (
     UploadPresentationThumbnailHandler,
 )
-from api.routers.presentation.models import (
+from slide_graph.api.routers.presentation.models import (
     DecomposeDocumentsRequest,
     DecomposeDocumentsResponse,
     DocumentsAndImagesPath,
@@ -66,9 +66,9 @@ from api.routers.presentation.models import (
     UpdatePresentationThemeRequest,
     PresentationUpdateRequest,
 )
-from api.sql_models import PresentationSqlModel
-from api.utils import handle_errors
-from ppt_generator.models.slide_model import SlideModel
+from slide_graph.api.sql_models import PresentationSqlModel
+from slide_graph.api.utils import handle_errors
+from slide_graph.ppt_generator.models.slide_model import SlideModel
 
 presentation_router = APIRouter(prefix="/ppt")
 

@@ -1,13 +1,13 @@
 from typing import List, Optional
-from ppt_generator.models.other_models import SlideType
-from ppt_generator.models.query_and_prompt_models import (
+from slide_graph.ppt_generator.models.other_models import SlideType
+from slide_graph.ppt_generator.models.query_and_prompt_models import (
     IconCategoryEnum,
     IconFrameEnum,
     IconQueryCollectionWithData,
     ImageAspectRatio,
     ImagePromptWithThemeAndAspectRatio,
 )
-from ppt_generator.models.slide_model import SlideModel
+from slide_graph.ppt_generator.models.slide_model import SlideModel
 
 SLIDE_WITHOUT_IMAGE = [
     SlideType.type2,

@@ -6,10 +6,10 @@ import aiohttp
 from langchain_google_genai import ChatGoogleGenerativeAI
 from openai import OpenAI
 
-from ppt_generator.models.query_and_prompt_models import (
+from slide_graph.ppt_generator.models.query_and_prompt_models import (
     ImagePromptWithThemeAndAspectRatio,
 )
-from api.utils import get_resource
+from slide_graph.api.utils import get_resource
 
 
 async def generate_image(
