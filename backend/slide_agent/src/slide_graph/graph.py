@@ -355,6 +355,13 @@ async def update_slides_node(
             try:
                 slide_model = SlideModel.from_dict(slide_data)
                 slides.append(slide_model)
+                
+                # Log both local and Supabase image URLs for verification
+                if slide_model.images:
+                    logging.info(f"Slide {slide_model.index} local images: {slide_model.images}")
+                if slide_model.supabase_images:
+                    logging.info(f"Slide {slide_model.index} Supabase images: {slide_model.supabase_images}")
+                    
             except Exception as e:
                 return {"error": f"Failed to convert slide data to SlideModel: {str(e)}"}
 
@@ -373,11 +380,15 @@ async def update_slides_node(
         push_ui_message(UI_COMPONENT_NAME, {
             "presentation_and_slides": result,
             "slides_count": len(slides),
-            "presentation_id": state["presentation_id"]
+            "presentation_id": state["presentation_id"],
+            "local_images_count": sum(len(slide.images or []) for slide in slides),
+            "supabase_images_count": sum(len(slide.supabase_images or []) for slide in slides)
         }, id=UI_COMPONENT_ID)
 
         from langchain_core.messages import AIMessage
-        ai_message = AIMessage(content="Successfully generated presentation")
+        local_images_count = sum(len(slide.images or []) for slide in slides)
+        supabase_images_count = sum(len(slide.supabase_images or []) for slide in slides)
+        ai_message = AIMessage(content=f"Successfully generated presentation with {len(slides)} slides, {local_images_count} local images, and {supabase_images_count} Supabase-hosted images")
 
         return {
             "presentation_and_slides": result,

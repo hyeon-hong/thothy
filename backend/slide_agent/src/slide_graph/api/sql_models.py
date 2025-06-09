@@ -35,6 +35,9 @@ class SlideSqlModel(SQLModel, table=True):
     images: Optional[List[str]] = Field(
         sa_column=Column(JSON, nullable=True), default=None
     )
+    supabase_images: Optional[List[str]] = Field(
+        sa_column=Column(JSON, nullable=True), default=None
+    )
     icons: Optional[List[str]] = Field(
         sa_column=Column(JSON, nullable=True), default=None
     )

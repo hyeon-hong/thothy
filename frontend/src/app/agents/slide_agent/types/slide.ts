@@ -28,6 +28,7 @@ export interface Slide {
   type: number;
   design_index: number | null;
   images: string[] | null;
+  supabase_images: string[] | null;
   properties: null | any;
   icons: string[] | null;
   graph_id: string | null;

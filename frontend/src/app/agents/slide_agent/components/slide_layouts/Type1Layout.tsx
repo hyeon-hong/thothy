@@ -53,14 +53,16 @@ const Type1Layout = ({
           />
         </div>
 
-        <ImageEditor
+        <img src={images[0]} alt="slide-image" />
+
+        {/* <ImageEditor
           elementId={`slide-${slideIndex}-image`}
           slideIndex={slideIndex}
           initialImage={images[0]}
           title={title}
           promptContent={image_prompts?.[0]}
           properties={properties}
-        />
+        /> */}
 
         {/* {imagePosition === 'left' ? (
                     <>

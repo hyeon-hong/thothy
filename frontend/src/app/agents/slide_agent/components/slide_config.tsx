@@ -53,7 +53,7 @@ export const renderSlideContent = (slide: Slide, language: string) => {
               ? slide.content.body
               : slide.content.body[0]?.description || ""
           }
-          images={slide.images || []}
+          images={slide.supabase_images || slide.images || []}
           image_prompts={slide.content.image_prompts || []}
           properties={slide.properties}
         />
@@ -76,7 +76,7 @@ export const renderSlideContent = (slide: Slide, language: string) => {
           title={slide.content.title}
           slideId={slide.id}
           slideIndex={slide.index}
-          images={slide.images || []}
+          images={slide.supabase_images || slide.images || []}
           body={Array.isArray(slide.content.body) ? slide.content.body : []}
           image_prompts={slide.content.image_prompts || []}
           properties={slide.properties}
@@ -148,7 +148,6 @@ export const renderSlideContent = (slide: Slide, language: string) => {
         />
       );
 
-
     default:
       return null;
   }
@@ -167,7 +166,7 @@ export const renderMiniSlideContent = (slide: Slide) => {
               ? slide.content.body
               : slide.content.body[0]?.description || ""
           }
-          image={slide.images?.[0] || ""}
+          image={(slide.supabase_images || slide.images)?.[0] || ""}
         />
       );
     case 2:
@@ -183,7 +182,7 @@ export const renderMiniSlideContent = (slide: Slide) => {
         <Type4Mini
           title={slide.content.title}
           body={Array.isArray(slide.content.body) ? slide.content.body : []}
-          images={slide.images || []}
+          images={slide.supabase_images || slide.images || []}
         />
       );
     case 5:
@@ -389,14 +388,14 @@ export const renderChart = (
                 dataKey={serie.name || `Series ${index + 1}`}
                 stroke={chartColors[index % chartColors.length]}
                 style={{ cursor: "pointer" }}
-              // label={(chartSettings?.showDataLabel && localChartData.data.series.length === 1) ? {
-              //     position: chartSettings?.dataLabel.dataLabelPosition === "Outside" ? "top" : "center",
-              //     formatter: (value: number) => formatYAxisTick(value),
-              //     fill: chartSettings?.dataLabel.dataLabelPosition === "Outside" ? theme.slideTitle : '#ffffff',
-              //     fontWeight: 'bold',
-              //     fontSize: '12px',
-              //     fontFamily: theme.fontFamily
-              // } : undefined}
+                // label={(chartSettings?.showDataLabel && localChartData.data.series.length === 1) ? {
+                //     position: chartSettings?.dataLabel.dataLabelPosition === "Outside" ? "top" : "center",
+                //     formatter: (value: number) => formatYAxisTick(value),
+                //     fill: chartSettings?.dataLabel.dataLabelPosition === "Outside" ? theme.slideTitle : '#ffffff',
+                //     fontWeight: 'bold',
+                //     fontSize: '12px',
+                //     fontFamily: theme.fontFamily
+                // } : undefined}
               />
             ))}
           </LineChart>
@@ -558,27 +557,27 @@ export const renderChart = (
                   label={
                     chartSettings?.showDataLabel
                       ? {
-                        position:
-                          chartSettings?.dataLabel.dataLabelPosition ===
+                          position:
+                            chartSettings?.dataLabel.dataLabelPosition ===
                             "Outside"
-                            ? "top"
-                            : chartSettings?.dataLabel.dataLabelAlignment ===
-                              "Base"
-                              ? "insideBottom"
+                              ? "top"
                               : chartSettings?.dataLabel.dataLabelAlignment ===
-                                "Center"
-                                ? "center"
-                                : "insideTop",
-                        formatter: (value: number) => formatYAxisTick(value),
-                        fill:
-                          chartSettings?.dataLabel.dataLabelPosition ===
+                                  "Base"
+                                ? "insideBottom"
+                                : chartSettings?.dataLabel
+                                      .dataLabelAlignment === "Center"
+                                  ? "center"
+                                  : "insideTop",
+                          formatter: (value: number) => formatYAxisTick(value),
+                          fill:
+                            chartSettings?.dataLabel.dataLabelPosition ===
                             "Outside"
-                            ? theme.slideTitle
-                            : "#ffffff",
-                        fontWeight: "bold",
-                        fontSize: "14px",
-                        fontFamily: theme.fontFamily,
-                      }
+                              ? theme.slideTitle
+                              : "#ffffff",
+                          fontWeight: "bold",
+                          fontSize: "14px",
+                          fontFamily: theme.fontFamily,
+                        }
                       : undefined
                   }
                 />

@@ -109,7 +109,8 @@ const Type4Layout = ({
             className="flex slide-box flex-col  w-full  rounded-lg overflow-hidden relative group"
           >
             <ElementMenu index={index} handleDeleteItem={DeleteItem} />
-            <ImageEditor
+            <img src={images[index]} alt="slide-image" />
+            {/* <ImageEditor
               elementId={`slide-${slideIndex}-item-${index}-image`}
               slideIndex={slideIndex}
               initialImage={images[index]}
@@ -118,7 +119,7 @@ const Type4Layout = ({
               promptContent={image_prompts?.[index]}
               imageIdx={index}
               properties={properties}
-            />
+            /> */}
 
             <div className="space-y-2 p-3 lg:p-6">
               <EditableText
