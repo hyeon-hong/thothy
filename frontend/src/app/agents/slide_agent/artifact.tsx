@@ -3,6 +3,7 @@
 import { useStreamContext } from "@langchain/langgraph-sdk/react-ui";
 import { useEffect, useState } from "react";
 import SlideContent from "./presentation/components/SlideContent";
+import { FooterProvider } from "./context/footerContext";
 
 interface SlideGraphProps {
   presentation_and_slides: any;
@@ -58,7 +59,7 @@ export default function SlideGraphComponent(props: SlideGraphProps) {
           </div>
 
           <div className="bg-gray-50 p-4 rounded-lg">
-            <>
+            <FooterProvider>
               {props.presentation_and_slides &&
                 props.presentation_and_slides.slides &&
                 props.presentation_and_slides.slides.length > 0 &&
@@ -71,7 +72,7 @@ export default function SlideGraphComponent(props: SlideGraphProps) {
                     onDeleteSlide={() => {}}
                   />
                 ))}
-            </>
+            </FooterProvider>
           </div>
         </div>
       </ArtifactContent>
