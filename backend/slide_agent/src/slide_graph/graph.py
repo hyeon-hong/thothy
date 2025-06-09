@@ -1,7 +1,6 @@
 """Simple slide agent using LangGraph."""
 
 import datetime  # Import datetime for getting current time
-import os
 from typing import Optional
 
 from langchain.chat_models import init_chat_model
@@ -11,8 +10,6 @@ from langgraph.graph import MessagesState, StateGraph, START, END
 from langgraph.store.base import BaseStore
 from slide_graph.configuration import SlideConfigurable
 
-# Initialize global LLM
-VLLM_API_URL = os.getenv("VLLM_API_URL")
 llm: Optional[ChatGoogleGenerativeAI] = None
 
 
@@ -25,7 +22,7 @@ def get_llm() -> ChatGoogleGenerativeAI:
     return llm
 
 
-async def chatbot(
+async def generate_slide(
     state: MessagesState,
     config: SlideConfigurable,
     *,
@@ -58,15 +55,13 @@ async def chatbot(
 # Initialize graph builder with state schema
 workflow = StateGraph(MessagesState, SlideConfigurable)
 
-# Add chatbot node
-workflow.add_node("chatbot", chatbot)
+# Add generate_slide node
+workflow.add_node("generate_slide", generate_slide)
 
-# Add edges - start at chatbot and can end after chatbot
-workflow.add_edge(START, "chatbot")
-workflow.add_edge("chatbot", END)
+# Add edges - start at generate_slide and can end after generate_slide
+workflow.add_edge(START, "generate_slide")
+workflow.add_edge("generate_slide", END)
 
 # Compile graph
 graph = workflow.compile()
 graph.name = "slide_graph"
-
-__all__ = ["graph"]
