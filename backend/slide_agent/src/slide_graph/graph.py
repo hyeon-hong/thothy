@@ -107,7 +107,7 @@ async def create_presentation_node(
         # Create the request object
         request_data = GeneratePresentationRequirementsRequest(
             prompt=state.get("prompt", ""),
-            n_slides=int(state.get("n_slides", 1)),
+            n_slides=int(state.get("n_slides", 3)),
             language=state.get("language", "en"),
             documents=state.get("documents", []),
             research_reports=state.get("research_reports", []),
