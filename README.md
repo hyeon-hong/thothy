@@ -4,7 +4,8 @@
 
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Python Version](https://img.shields.io/badge/python-3.7%2B-blue)](https://www.python.org/downloads/)
-[![GitHub Stars](https://img.shields.io/github/stars/ai.thothy/thothy?style=social)](https://github.com/ai.thothy/thothy)
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/realbits-lab/thothy)
+[![GitHub Stars](https://img.shields.io/github/stars/realbits-lab/thothy?style=social)](https://github.com/realbits-lab/thothy)
 
 **A powerful AI-driven web crawling and data extraction toolkit.**
 
@@ -18,14 +19,16 @@
 
 ## 🚀 Overview
 
-Thothy is a modern, flexible toolkit for web crawling, data extraction, and web automation. It provides an easy-to-use API for scraping websites, with powerful features like:
+Thothy is a modular, agent-based AI automation toolkit designed for web crawling, data extraction, research report generation, chat automation, and AI-powered slide/presentation creation. It provides a flexible framework for orchestrating specialized agents, each tailored for different tasks, including:
 
--   **Headless browser automation** via Chrome/Chromium
--   **Smart extraction** for structured data
--   **Rate-limiting** and polite crawling built-in
--   **Asynchronous support** for high-performance operations
--   **Caching capabilities** to reduce bandwidth usage
--   **Customizable agents** for specialized tasks
+- **Web crawling and smart data extraction** (with headless browser automation)
+- **Research agent** for multi-step, LLM-driven report generation and web research
+- **Chat agent** for conversational automation and integration
+- **Data agent** for structured data collection and processing
+- **Slide agent** for generating AI-powered presentations from prompts or outlines
+- **Customizable agent framework** for building new automation workflows
+
+Thothy leverages [LangGraph](https://github.com/langchain-ai/langgraph) for agent orchestration, supports asynchronous operations, and is designed for extensibility and high performance.
 
 ## 🛠️ Installation
 
@@ -74,8 +77,8 @@ langgraph dev --config langgraph.json
 
 The main difference between development and production configurations is the `disable_studio_auth` option:
 
--   **Development**: Authentication is enabled (`disable_studio_auth: false`)
--   **Production**: Authentication is disabled (`disable_studio_auth: true`)
+- **Development**: Authentication is enabled (`disable_studio_auth: false`)
+- **Production**: Authentication is disabled (`disable_studio_auth: true`)
 
 Choose the appropriate configuration based on your security requirements and deployment environment.
 
@@ -84,12 +87,14 @@ Choose the appropriate configuration based on your security requirements and dep
 **Auth File Not Covered by Dependencies**
 
 If you encounter this error:
+
 ```
 ValueError: Auth file '/workspace/thothy/agents/security/auth.py' not covered by dependencies.
 Add its parent directory to the 'dependencies' array in your config.
 ```
 
 Make sure to include the security module in your dependencies:
+
 ```json
 "dependencies": [
   "./agents/chat_agent/src/chat_graph",
@@ -123,10 +128,10 @@ See the [examples directory](examples/) for more detailed examples and documenta
 
 Comprehensive documentation is available in the [docs](docs/) directory. Key topics include:
 
--   [Quickstart Guide](docs/)
--   [API Reference](docs/)
--   [Advanced Usage](docs/)
--   [Best Practices](docs/)
+- [Quickstart Guide](docs/)
+- [API Reference](docs/)
+- [Advanced Usage](docs/)
+- [Best Practices](docs/)
 
 ## 🧩 Project Structure
 
@@ -159,8 +164,8 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 
 Our repository uses `develop` as the default branch instead of `main` because the project is currently under active development and not yet ready for production use. This follows the Git Flow branching model where:
 
--   `develop`: Contains the latest development changes
--   `main`: Will be used for production-ready releases in the future
+- `develop`: Contains the latest development changes
+- `main`: Will be used for production-ready releases in the future
 
 When contributing, please:
 
@@ -171,105 +176,3 @@ When contributing, please:
 #### 🔄 Git Flow Commands
 
 We use Git Flow for branch management. Here are the essential commands:
-
-```bash
-# Initialize Git Flow in your repository
-git flow init
-
-# Start a new feature
-git flow feature start feature-name
-
-# Finish a feature (merges back to develop)
-git flow feature finish feature-name
-
-# Start a bugfix
-git flow bugfix start bugfix-name
-
-# Finish a bugfix
-git flow bugfix finish bugfix-name
-
-# Start a release
-git flow release start 1.0.0
-
-# Finish a release (merges to main and develop)
-git flow release finish 1.0.0
-
-# Start a hotfix
-git flow hotfix start hotfix-name
-
-# Finish a hotfix (merges to main and develop)
-git flow hotfix finish hotfix-name
-```
-
-### 📝 Pull Request Guidelines
-
--   **Title**: Use a clear, descriptive title that explains the purpose of the PR
--   **Description**: Provide a detailed description of your changes, including:
-    -   What changes were made
-    -   Why these changes are necessary
-    -   Any related issues or PRs
--   **Code Quality**:
-    -   Ensure all tests pass
-    -   Follow the project's coding style
-    -   Keep PRs focused and small (ideally under 400 lines)
-    -   Include tests for new features
--   **Review Process**:
-    -   Address all review comments
-    -   Keep the PR up to date with the base branch
-    -   Mark the PR as "Ready for Review" when complete
-
-### 💬 Commit Message Guidelines
-
-We follow the [Conventional Commits](https://www.conventionalcommits.org/) specification:
-
-```
-<type> #<issue_number> <description>
-
-[optional body]
-
-[optional footer(s)]
-```
-
-**Types**:
-
--   `feat`: New feature
--   `fix`: Bug fix
--   `docs`: Documentation changes
--   `style`: Code style changes (formatting, etc.)
--   `refactor`: Code refactoring
--   `perf`: Performance improvements
--   `test`: Adding or modifying tests
--   `chore`: Maintenance tasks
-
-**Examples**:
-
-```
-feat #123 add OAuth2 login support
-fix #123 resolve memory leak in long-running sessions
-docs #123 update installation instructions
-```
-
-### 🔒 Automatic Issue Closing
-
-Issues will be automatically closed when:
-
--   A PR is merged with the commit message containing `fixes #123` or `closes #123`
--   The PR description includes `Fixes #123` or `Closes #123`
--   The PR is linked to an issue and marked as "merged"
-
-## 📄 License
-
-This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENSE) file for details.
-
-## 🙏 Acknowledgements
-
--   [Selenium](https://www.selenium.dev/) - WebDriver automation
--   [Playwright](https://playwright.dev/) - Browser automation
--   [Beautiful Soup](https://www.crummy.com/software/BeautifulSoup/) - HTML parsing
--   All contributors who have helped shape this project
-
----
-
-<div align="center">
-  <sub>Built with ❤️ by the Thothy team</sub>
-</div>
