@@ -15,7 +15,7 @@ from slide_graph.api.routers.presentation.models import (
 from slide_graph.api.services.database import get_sql_session
 from slide_graph.api.services.logging import LoggingService
 from slide_graph.api.sql_models import KeyValueSqlModel, PresentationSqlModel, SlideSqlModel
-from slide_graph.api.utils import get_presentation_dir, get_presentation_images_dir
+from slide_graph.api.utils import get_presentation_dir, get_presentation_images_dir, get_resource
 from slide_graph.image_processor.icons_vectorstore_utils import get_icons_vectorstore
 from slide_graph.image_processor.images_finder import generate_image
 from slide_graph.image_processor.icons_finder import get_icon
@@ -185,24 +185,53 @@ class PresentationGenerateStreamHandler:
         image_prompts_len = len(image_prompts)
 
         # Separate image results (tuples) from icon results (strings)
-        image_results = assets[:image_prompts_len]  # These are tuples (local_path, supabase_url)
+        # These are tuples (local_path, supabase_url)
+        image_results = assets[:image_prompts_len]
         icons = assets[image_prompts_len:]  # These are strings (local paths)
 
-        # Extract local paths and Supabase URLs from image results
-        local_image_paths = [result[0] for result in image_results]
-        supabase_image_urls = [result[1] for result in image_results]
+        # Validate image results and extract paths/URLs
+        local_image_paths = []
+        supabase_image_urls = []
+
+        for i, result in enumerate(image_results):
+            if result is None:
+                print(f"Image result {i} is None, using placeholder")
+                placeholder = get_resource("assets/images/placeholder.jpg")
+                local_image_paths.append(placeholder)
+                supabase_image_urls.append(placeholder)
+            elif isinstance(result, tuple) and len(result) == 2:
+                local_path, supabase_url = result
+                local_image_paths.append(local_path)
+                supabase_image_urls.append(supabase_url)
+            elif isinstance(result, str):
+                # Fallback: if only one path is returned, use it for both
+                print(
+                    f"Image result {i} returned single path instead of tuple: {result}")
+                local_image_paths.append(result)
+                supabase_image_urls.append(result)
+            else:
+                print(
+                    f"Unexpected image result format at index {i}: {type(result)} - {result}")
+                placeholder = get_resource("assets/images/placeholder.jpg")
+                local_image_paths.append(placeholder)
+                supabase_image_urls.append(placeholder)
+
+        print(
+            f"Processed {len(local_image_paths)} local paths and {len(supabase_image_urls)} Supabase URLs")
 
         # Assign both local paths and Supabase URLs to slides
         local_images_index = 0
         supabase_images_index = 0
-        
+
         for each_slide_model in slide_models:
             # Assign local image paths to images field
-            each_slide_model.images = local_image_paths[local_images_index:local_images_index + each_slide_model.images_count]
+            each_slide_model.images = local_image_paths[local_images_index:
+                                                        local_images_index + each_slide_model.images_count]
             local_images_index += each_slide_model.images_count
-            
+
             # Assign Supabase URLs to supabase_images field
-            each_slide_model.supabase_images = supabase_image_urls[supabase_images_index:supabase_images_index + each_slide_model.images_count]
+            each_slide_model.supabase_images = supabase_image_urls[
+                supabase_images_index:supabase_images_index + each_slide_model.images_count]
             supabase_images_index += each_slide_model.images_count
 
             # Assign icons (these remain local paths)

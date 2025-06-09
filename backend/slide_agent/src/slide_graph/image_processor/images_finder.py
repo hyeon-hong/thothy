@@ -43,19 +43,64 @@ async def upload_image_to_supabase_store(image_path: str, presentation_id: str) 
             storage_path, image_data, {"content-type": "image/jpeg"}
         )
 
-        if result.get("error"):
-            print(f"Error uploading to Supabase: {result['error']}")
+        # Check if result is None
+        if result is None:
+            print("Upload result is None")
+            return image_path
+
+        # Check for upload errors - handle both dict and object formats
+        if hasattr(result, 'error') and result.error:
+            print(f"Error uploading to Supabase (object): {result.error}")
+            return image_path
+        elif isinstance(result, dict) and result.get("error"):
+            print(f"Error uploading to Supabase (dict): {result['error']}")
             return image_path
 
         # Get public URL
-        public_url = supabase.storage.from_(
+        public_url_response = supabase.storage.from_(
             BUCKET_NAME).get_public_url(storage_path)
+
+        # Check if public_url_response is None
+        if public_url_response is None:
+            print("Public URL response is None")
+            return image_path
+
+        # Extract URL from response according to Supabase docs
+        # The response should be: { data: { publicUrl: "..." } }
+        if hasattr(public_url_response, 'data') and hasattr(public_url_response.data, 'publicUrl'):
+            public_url = public_url_response.data.publicUrl
+        elif isinstance(public_url_response, dict) and 'data' in public_url_response:
+            if isinstance(public_url_response['data'], dict) and 'publicUrl' in public_url_response['data']:
+                public_url = public_url_response['data']['publicUrl']
+            elif isinstance(public_url_response['data'], str):
+                public_url = public_url_response['data']
+            else:
+                print(
+                    f"Unexpected data structure in response: {public_url_response['data']}")
+                return image_path
+        elif hasattr(public_url_response, 'url'):
+            # Fallback for older versions
+            public_url = public_url_response.url
+        elif isinstance(public_url_response, str):
+            # Direct string response
+            public_url = public_url_response
+        else:
+            print(
+                f"Unexpected public URL response format: {type(public_url_response)} - {public_url_response}")
+            return image_path
+
+        # Final check if URL is valid
+        if not public_url or public_url == "None":
+            print("Generated public URL is invalid")
+            return image_path
 
         print(f"Image uploaded to Supabase: {public_url}")
         return public_url
 
     except Exception as e:
         print(f"Error uploading image to Supabase: {e}")
+        import traceback
+        traceback.print_exc()
         return image_path
 
 
@@ -74,15 +119,22 @@ async def generate_image(
             else generate_image_google
         )
         image_path = await image_gen_func(image_prompt, output_directory)
+
         if image_path and os.path.exists(image_path):
             # Upload image to Supabase storage
             supabase_url = await upload_image_to_supabase_store(image_path, presentation_id)
+            print(
+                f"Generated image - Local: {image_path}, Supabase: {supabase_url}")
             return image_path, supabase_url  # Return both local path and Supabase URL
         raise Exception(f"Image not found at {image_path}")
 
     except Exception as e:
         print(f"Error generating image: {e}")
+        import traceback
+        traceback.print_exc()
         placeholder_path = get_resource("assets/images/placeholder.jpg")
+        print(
+            f"Returning placeholder - Local: {placeholder_path}, Supabase: {placeholder_path}")
         return placeholder_path, placeholder_path  # Return same path for both if error
 
 
