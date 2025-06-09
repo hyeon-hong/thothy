@@ -2,7 +2,6 @@
 
 import uuid
 from typing import Optional, List, TypedDict
-import logging
 
 from langchain.chat_models import init_chat_model
 from langchain_google_genai import ChatGoogleGenerativeAI
@@ -16,13 +15,20 @@ from slide_graph.api.routers.presentation.handlers.generate_presentation_require
 from slide_graph.api.routers.presentation.handlers.generate_titles import (
     PresentationTitlesGenerateHandler,
 )
+from slide_graph.api.routers.presentation.handlers.generate_data import (
+    PresentationGenerateDataHandler,
+)
+from slide_graph.api.routers.presentation.handlers.generate_stream import (
+    PresentationGenerateStreamHandler,
+)
 from slide_graph.api.routers.presentation.models import (
     GeneratePresentationRequirementsRequest,
     GenerateTitleRequest,
+    PresentationGenerateRequest,
 )
 from slide_graph.api.sql_models import PresentationSqlModel
 from slide_graph.api.services.logging import LoggingService
-from slide_graph.api.models import LogMetadata
+from slide_graph.api.models import LogMetadata, SessionModel
 
 
 class PresentationState(TypedDict):
@@ -38,6 +44,15 @@ class PresentationState(TypedDict):
     # Intermediate and output data
     presentation_id: Optional[str]
     presentation: Optional[PresentationSqlModel]
+    
+    # New fields for generate data and stream processes
+    theme: Optional[dict]
+    titles: Optional[List[str]]
+    watermark: Optional[bool]
+    session: Optional[str]
+    session_model: Optional[SessionModel]
+    stream_result: Optional[dict]
+    
     error: Optional[str]
 
 
@@ -77,11 +92,10 @@ async def create_presentation_node(
 
         # Create mock logging service and metadata for the handler
         # Note: In a real implementation, you'd want to properly initialize these
-        end_point = "/ppt/create"
         logging_service = LoggingService()
         log_metadata = LogMetadata(
             presentation_id=presentation_id,
-            endpoint=end_point
+            endpoint="/ppt/create"
         )
 
         # Call the GeneratePresentationRequirementsHandler
@@ -131,12 +145,107 @@ async def generate_titles_node(
 
         return {
             "presentation": presentation,
+            "titles": presentation.titles,
             "error": None
         }
 
     except Exception as e:
         return {
             "error": f"Failed to generate titles: {str(e)}"
+        }
+
+
+async def generate_data_node(
+    state: PresentationState,
+    config: SlideConfigurable,
+    *,
+    store: BaseStore
+) -> dict:
+    """Node that generates presentation data using PresentationGenerateDataHandler."""
+
+    try:
+        # Check if we have required data from previous steps
+        if not state.get("presentation_id"):
+            return {"error": "No presentation ID available from previous step"}
+        
+        if not state.get("titles"):
+            return {"error": "No titles available from previous step"}
+
+        # Create the request object
+        request_data = PresentationGenerateRequest(
+            presentation_id=state["presentation_id"],
+            theme=state.get("theme"),
+            images=state.get("images", []),
+            watermark=state.get("watermark", True),
+            titles=state["titles"]
+        )
+
+        # Create logging service and metadata for the handler
+        logging_service = LoggingService()
+        log_metadata = LogMetadata(
+            presentation_id=state["presentation_id"],
+            endpoint="/ppt/generate/data"
+        )
+
+        # Call the PresentationGenerateDataHandler
+        session_model = await PresentationGenerateDataHandler(
+            request_data).post(logging_service, log_metadata)
+
+        return {
+            "session": session_model.session,
+            "session_model": session_model,
+            "error": None
+        }
+
+    except Exception as e:
+        return {
+            "error": f"Failed to generate presentation data: {str(e)}"
+        }
+
+
+async def generate_stream_node(
+    state: PresentationState,
+    config: SlideConfigurable,
+    *,
+    store: BaseStore
+) -> dict:
+    """Node that generates presentation stream using PresentationGenerateStreamHandler."""
+
+    try:
+        # Check if we have required data from previous steps
+        if not state.get("presentation_id"):
+            return {"error": "No presentation ID available from previous step"}
+        
+        if not state.get("session"):
+            return {"error": "No session available from previous step"}
+
+        # Create logging service and metadata for the handler
+        logging_service = LoggingService()
+        log_metadata = LogMetadata(
+            presentation_id=state["presentation_id"],
+            endpoint="/ppt/generate/stream"
+        )
+
+        # Call the PresentationGenerateStreamHandler
+        # Note: The get method returns a StreamingResponse, but for the graph
+        # we need to call get_stream directly to get the actual streaming data
+        handler = PresentationGenerateStreamHandler(
+            state["presentation_id"], state["session"])
+        
+        # Since we're in a graph context, we collect the stream results
+        # In a real streaming scenario, this would be handled differently
+        stream_results = []
+        async for result in handler.get_stream(logging_service, log_metadata):
+            stream_results.append(result)
+
+        return {
+            "stream_result": {"results": stream_results},
+            "error": None
+        }
+
+    except Exception as e:
+        return {
+            "error": f"Failed to generate presentation stream: {str(e)}"
         }
 
 
@@ -148,11 +257,15 @@ workflow = StateGraph(PresentationState, SlideConfigurable)
 # Add nodes
 workflow.add_node("create_presentation", create_presentation_node)
 workflow.add_node("generate_titles", generate_titles_node)
+workflow.add_node("generate_data", generate_data_node)
+workflow.add_node("generate_stream", generate_stream_node)
 
-# Add edges - create presentation first, then generate titles
+# Add edges - sequential flow: create presentation -> generate titles -> generate data -> generate stream
 workflow.add_edge(START, "create_presentation")
 workflow.add_edge("create_presentation", "generate_titles")
-workflow.add_edge("generate_titles", END)
+workflow.add_edge("generate_titles", "generate_data")
+workflow.add_edge("generate_data", "generate_stream")
+workflow.add_edge("generate_stream", END)
 
 # Compile graph
 graph = workflow.compile()
