@@ -18,17 +18,17 @@ export default function SlideGraphComponent(props: SlideGraphProps) {
   useEffect(() => {
     setOpen(true);
     console.log("Slide data received:", props);
-  }, [props]);
+  }, []);
 
   return (
-    <div className="bg-white border border-gray-200 rounded-lg p-4">
+    <div className="bg-white rounded-lg p-4">
       <button
         className="mb-4 px-4 py-2 rounded text-white bg-blue-600 hover:bg-blue-700 transition-colors font-semibold shadow"
         onClick={() => setOpen(!open)}
       >
         {open ? "Hide Slide Data" : "Show Slide Data"}
       </button>
-      
+
       <ArtifactContent title={<div>Slide Generation Results</div>}>
         <div className="space-y-4">
           <div className="bg-gray-50 p-4 rounded-lg">
@@ -37,7 +37,9 @@ export default function SlideGraphComponent(props: SlideGraphProps) {
             </h3>
             <div className="grid grid-cols-2 gap-4 text-sm">
               <div>
-                <span className="font-medium text-gray-600">Presentation ID:</span>
+                <span className="font-medium text-gray-600">
+                  Presentation ID:
+                </span>
                 <div className="font-mono text-xs bg-gray-100 p-1 rounded mt-1">
                   {props.presentation_id}
                 </div>
