@@ -1,3 +1,5 @@
+"use client";
+
 import { useStreamContext } from "@langchain/langgraph-sdk/react-ui";
 import { useEffect, useState } from "react";
 import SlideContent from "./presentation/components/SlideContent";
