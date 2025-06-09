@@ -19,4 +19,5 @@ SYSTEM_PROMPT = (
     "-- Use the latest version of react, react-dom, and tailwind css.\n"
     "-- If you are not generating code, use the default react component template.\n"
     "-- Add the return character at the end of the each line of code.\n"
+    "\n\nSystem Time: {time}"
 )
