@@ -44,7 +44,7 @@ class PresentationState(TypedDict):
     # Intermediate and output data
     presentation_id: Optional[str]
     presentation: Optional[PresentationSqlModel]
-    
+
     # New fields for generate data and stream processes
     theme: Optional[dict]
     titles: Optional[List[str]]
@@ -52,7 +52,7 @@ class PresentationState(TypedDict):
     session: Optional[str]
     session_model: Optional[SessionModel]
     stream_result: Optional[dict]
-    
+
     error: Optional[str]
 
 
@@ -167,7 +167,7 @@ async def generate_data_node(
         # Check if we have required data from previous steps
         if not state.get("presentation_id"):
             return {"error": "No presentation ID available from previous step"}
-        
+
         if not state.get("titles"):
             return {"error": "No titles available from previous step"}
 
@@ -215,7 +215,7 @@ async def generate_stream_node(
         # Check if we have required data from previous steps
         if not state.get("presentation_id"):
             return {"error": "No presentation ID available from previous step"}
-        
+
         if not state.get("session"):
             return {"error": "No session available from previous step"}
 
@@ -226,16 +226,16 @@ async def generate_stream_node(
             endpoint="/ppt/generate/stream"
         )
 
-        # Call the PresentationGenerateStreamHandler
-        # Note: The get method returns a StreamingResponse, but for the graph
-        # we need to call get_stream directly to get the actual streaming data
+        # Create the handler and call get method to get StreamingResponse
         handler = PresentationGenerateStreamHandler(
             state["presentation_id"], state["session"])
-        
-        # Since we're in a graph context, we collect the stream results
-        # In a real streaming scenario, this would be handled differently
+
+        # Call the get method which returns a StreamingResponse
+        streaming_response = await handler.get(logging_service, log_metadata)
+
+        # Extract the body_iterator from StreamingResponse and collect results
         stream_results = []
-        async for result in handler.get_stream(logging_service, log_metadata):
+        async for result in streaming_response.body_iterator:
             stream_results.append(result)
 
         return {
