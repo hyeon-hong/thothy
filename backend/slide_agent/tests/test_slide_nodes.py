@@ -42,10 +42,10 @@ class TestCreatePresentationNode:
             side_effect=Exception("Database connection failed"))
         return mock_handler
 
+    @pytest.mark.asyncio
     @patch('slide_graph.graph.GeneratePresentationRequirementsHandler')
     @patch('slide_graph.graph.LoggingService')
     @patch('slide_graph.graph.LogMetadata')
-    @pytest.mark.success
     async def test_create_presentation_node_success(
         self,
         mock_log_metadata_cls,
@@ -88,6 +88,7 @@ class TestCreatePresentationNode:
             mock_logging_service, mock_log_metadata
         )
 
+    @pytest.mark.asyncio
     @patch('slide_graph.graph.GeneratePresentationRequirementsHandler')
     @patch('slide_graph.graph.LoggingService')
     @patch('slide_graph.graph.LogMetadata')
@@ -127,6 +128,7 @@ class TestCreatePresentationNode:
         mock_handler_cls.assert_called_once()
         mock_presentation_handler_failure.post.assert_called_once()
 
+    @pytest.mark.asyncio
     async def test_create_presentation_node_with_minimal_state(
         self,
         mock_slide_config,
@@ -191,6 +193,7 @@ class TestGenerateTitlesNode:
             side_effect=Exception("Title generation failed"))
         return mock_handler
 
+    @pytest.mark.asyncio
     @patch('slide_graph.graph.PresentationTitlesGenerateHandler')
     @patch('slide_graph.graph.LoggingService')
     @patch('slide_graph.graph.LogMetadata')
@@ -233,6 +236,7 @@ class TestGenerateTitlesNode:
             mock_logging_service, mock_log_metadata
         )
 
+    @pytest.mark.asyncio
     @patch('slide_graph.graph.PresentationTitlesGenerateHandler')
     @patch('slide_graph.graph.LoggingService')
     @patch('slide_graph.graph.LogMetadata')
@@ -272,6 +276,7 @@ class TestGenerateTitlesNode:
         mock_handler_cls.assert_called_once()
         mock_titles_handler_failure.post.assert_called_once()
 
+    @pytest.mark.asyncio
     async def test_generate_titles_node_no_presentation_id(
         self,
         mock_presentation_state,
@@ -296,6 +301,7 @@ class TestGenerateTitlesNode:
 class TestCompiledGraph:
     """Test the compiled slide graph."""
 
+    @pytest.mark.asyncio
     @patch('slide_graph.graph.GeneratePresentationRequirementsHandler')
     @patch('slide_graph.graph.PresentationTitlesGenerateHandler')
     @patch('slide_graph.graph.LoggingService')
@@ -360,6 +366,7 @@ class TestCompiledGraph:
         mock_presentation_handler.post.assert_called_once()
         mock_titles_handler.post.assert_called_once()
 
+    @pytest.mark.asyncio
     @patch('slide_graph.graph.GeneratePresentationRequirementsHandler')
     @patch('slide_graph.graph.LoggingService')
     @patch('slide_graph.graph.LogMetadata')
@@ -400,6 +407,7 @@ class TestCompiledGraph:
         mock_presentation_handler_cls.assert_called_once()
         mock_presentation_handler.post.assert_called_once()
 
+    @pytest.mark.asyncio
     async def test_compiled_graph_properties(self):
         """Test that the compiled graph has the expected properties."""
 
@@ -415,6 +423,7 @@ class TestCompiledGraph:
         assert "create_presentation" in node_names
         assert "generate_titles" in node_names
 
+    @pytest.mark.asyncio
     @patch('slide_graph.graph.GeneratePresentationRequirementsHandler')
     @patch('slide_graph.graph.PresentationTitlesGenerateHandler')
     @patch('slide_graph.graph.LoggingService')
@@ -524,6 +533,7 @@ class TestSlideGraphIntegration:
             "updated_presentation": updated_presentation
         }
 
+    @pytest.mark.asyncio
     @patch('slide_graph.graph.GeneratePresentationRequirementsHandler')
     @patch('slide_graph.graph.PresentationTitlesGenerateHandler')
     @patch('slide_graph.graph.LoggingService')

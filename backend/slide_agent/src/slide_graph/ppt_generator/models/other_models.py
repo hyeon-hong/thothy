@@ -29,5 +29,5 @@ class SlideType(Enum):
 
 class SlideTypeModel(BaseModel):
     slide_type: int = Field(
-        default=1, gte=1, lte=9, description="Slide type from 1 to 9"
+        default=1, description="Slide type from 1 to 9", json_schema_extra={"gte": 1, "lte": 9}
     )
