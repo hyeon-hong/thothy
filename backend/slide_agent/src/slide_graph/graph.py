@@ -1,11 +1,14 @@
 """Simple slide agent using LangGraph."""
 
+import logging
 import uuid
-from typing import Optional, List, TypedDict
+import json
+from typing import Optional, List, TypedDict, Annotated, Sequence
 
 from langchain.chat_models import init_chat_model
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langgraph.graph import StateGraph, START, END
+from langgraph.graph.ui import AnyUIMessage, ui_message_reducer, push_ui_message
 from langgraph.store.base import BaseStore
 
 from slide_graph.configuration import SlideConfigurable
@@ -36,6 +39,9 @@ from slide_graph.api.services.logging import LoggingService
 from slide_graph.api.models import LogMetadata, SessionModel
 from slide_graph.ppt_generator.models.slide_model import SlideModel
 
+# UI Component name for slide agent
+UI_COMPONENT_NAME = "slide_graph"
+
 
 class PresentationState(TypedDict):
     """State for the presentation workflow."""
@@ -62,6 +68,9 @@ class PresentationState(TypedDict):
     # Fields for update slides process
     slides: Optional[List[SlideModel]]
     presentation_and_slides: Optional[PresentationAndSlides]
+
+    # UI messages field
+    ui: Annotated[Sequence[AnyUIMessage], ui_message_reducer]
 
     error: Optional[str]
 
@@ -272,26 +281,94 @@ async def update_slides_node(
         if not state.get("presentation_id"):
             return {"error": "No presentation ID available for slide update"}
 
-        if not state.get("slides"):
-            return {"error": "No slides provided for update"}
+        if not state.get("stream_result"):
+            return {"error": "No stream result available for slide update"}
 
-        # Create the request object
-        request_data = PresentationUpdateRequest(
-            presentation_id=state["presentation_id"],
-            slides=state["slides"]
-        )
-
-        # Create logging service and metadata for the handler
+        # Create logging service for debugging
         logging_service = LoggingService()
         log_metadata = LogMetadata(
             presentation_id=state["presentation_id"],
             endpoint="/ppt/slides/update"
         )
 
+        # Find the "complete" event in stream results
+        slides_data = None
+        stream_results = state["stream_result"].get("results", [])
+
+        for result in stream_results:
+            try:
+                # Handle both string and bytes data
+                if isinstance(result, bytes):
+                    result_str = result.decode('utf-8')
+                else:
+                    result_str = str(result)
+
+                # Handle SSE format - split by lines and look for data lines
+                lines = result_str.split('\n')
+                for line in lines:
+                    line = line.strip()
+                    if line.startswith('data: '):
+                        data_line = line[6:].strip()  # Remove 'data: ' prefix
+
+                        # Parse JSON data
+                        if data_line and not data_line.startswith('[DONE]'):
+                            try:
+                                data = json.loads(data_line)
+
+                                logging.info(f"Parsed stream data: {data}")
+
+                                # Check if this is the completion event
+                                if data.get("type") == "complete" and "presentation" in data:
+                                    presentation_data = data["presentation"]
+                                    if "slides" in presentation_data:
+                                        slides_data = presentation_data["slides"]
+
+                                        logging.info(
+                                            f"Found completion event with {len(slides_data)} slides")
+                                        break
+
+                            except json.JSONDecodeError as json_e:
+                                logging.warning(
+                                    f"Failed to parse JSON from data line: {json_e}")
+                                continue
+
+                # Break out of outer loop if we found slides_data
+                if slides_data:
+                    break
+
+            except (UnicodeDecodeError, KeyError) as e:
+                logging.warning(f"Failed to process stream result: {e}")
+                continue
+
+        if not slides_data:
+            return {"error": "No completion event found in stream results"}
+
+        # Convert slides data to SlideModel objects
+        slides = []
+        for slide_data in slides_data:
+            try:
+                slide_model = SlideModel.from_dict(slide_data)
+                slides.append(slide_model)
+            except Exception as e:
+                return {"error": f"Failed to convert slide data to SlideModel: {str(e)}"}
+
+        # Create the request object
+        request_data = PresentationUpdateRequest(
+            presentation_id=state["presentation_id"],
+            slides=slides
+        )
+
         # Call the UpdateSlideModelsHandler
         result = await UpdateSlideModelsHandler(request_data).post(
             logging_service, log_metadata
         )
+
+        # Push UI message with result data
+        push_ui_message(UI_COMPONENT_NAME, {
+            "presentation_and_slides": result,
+            "slides_count": len(slides),
+            "presentation_id": state["presentation_id"]
+        })
 
         return {
             "presentation_and_slides": result,
