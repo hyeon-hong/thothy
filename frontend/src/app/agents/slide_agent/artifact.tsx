@@ -11,6 +11,7 @@ export default function SlideGraphComponent(props: SlideGraphProps) {
   // Get the data from an agent by two way
   // 1. Use the props from push_ui_message function
   // 2. Use the context from the artifact
+  console.log("Slide data received props: ", props);
 
   const { meta } = useStreamContext<{ MetaType: { ui: any; artifact: any } }>();
   const [ArtifactContent, { open, setOpen }] = (meta as any).artifact;
