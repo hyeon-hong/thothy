@@ -1,5 +1,6 @@
 import { useStreamContext } from "@langchain/langgraph-sdk/react-ui";
 import { useEffect, useState } from "react";
+import SlideContent from "./presentation/components/SlideContent";
 
 interface SlideGraphProps {
   presentation_and_slides: any;
@@ -55,12 +56,20 @@ export default function SlideGraphComponent(props: SlideGraphProps) {
           </div>
 
           <div className="bg-gray-50 p-4 rounded-lg">
-            <h3 className="text-lg font-semibold text-gray-800 mb-2">
-              Complete Data (JSON)
-            </h3>
-            <pre className="bg-gray-900 text-green-400 p-4 rounded text-xs overflow-auto max-h-96">
-              {JSON.stringify(props, null, 2)}
-            </pre>
+            <>
+              {props.presentation_and_slides &&
+                props.presentation_and_slides.slides &&
+                props.presentation_and_slides.slides.length > 0 &&
+                props.presentation_and_slides.slides.map((slide, index) => (
+                  <SlideContent
+                    key={`${slide.type}-${index}-${slide.index}}`}
+                    slide={slide}
+                    index={index}
+                    presentationId={props.presentation_id}
+                    onDeleteSlide={() => {}}
+                  />
+                ))}
+            </>
           </div>
         </div>
       </ArtifactContent>
