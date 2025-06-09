@@ -45,6 +45,7 @@ class TestCreatePresentationNode:
     @patch('slide_graph.graph.GeneratePresentationRequirementsHandler')
     @patch('slide_graph.graph.LoggingService')
     @patch('slide_graph.graph.LogMetadata')
+    @pytest.mark.success
     async def test_create_presentation_node_success(
         self,
         mock_log_metadata_cls,
