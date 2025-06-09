@@ -15,6 +15,14 @@ def get_database_url():
         if supabase_url.startswith("postgres://"):
             supabase_url = supabase_url.replace(
                 "postgres://", "postgresql://", 1)
+        
+        # Add slide_agent schema to the URL
+        schema_param = "options=-csearch_path%3Dslide_agent"
+        if "?" in supabase_url:
+            supabase_url = f"{supabase_url}&{schema_param}"
+        else:
+            supabase_url = f"{supabase_url}?{schema_param}"
+        
         return supabase_url
 
     # Fallback error
