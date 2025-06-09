@@ -81,7 +81,7 @@ async def create_presentation_node(
         # Note: In a real implementation, you'd want to properly initialize these
         end_point = "/ppt/create"
         logging.info("Call LoggingService")
-        logging_service = LoggingService(stream_name=end_point)
+        logging_service = LoggingService()
         logging.info("Call LogMetadata")
         log_metadata = LogMetadata(
             presentation_id=presentation_id,

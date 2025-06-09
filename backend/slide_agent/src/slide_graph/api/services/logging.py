@@ -6,6 +6,9 @@ import json
 
 
 class PrintingLogger(Logger):
+    def __init__(self, name="PrintingLogger"):
+        super().__init__(name)
+
     def info(self, msg, *args, **kwargs):
         extra = kwargs.get('extra')
         print(f"[Logger.info msg] {msg}")
@@ -16,8 +19,8 @@ class PrintingLogger(Logger):
 
 class LoggingService:
 
-    def __init__(self, stream_name: str):
-        self._logger = PrintingLogger(stream_name)
+    def __init__(self):
+        self._logger = PrintingLogger()
 
         # TODO: Handle blocking functions in the future
         log_file_path = os.path.join(
