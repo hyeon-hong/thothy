@@ -4,9 +4,8 @@ from typing import Optional, Union
 
 
 class TempFileService:
-    base_dir = os.getenv("TEMP_DIRECTORY")
-
     def __init__(self):
+        self.base_dir = os.path.join("/tmp", str(uuid.uuid4()))
         self.cleanup_base_dir()
         os.makedirs(self.base_dir, exist_ok=True)
 
