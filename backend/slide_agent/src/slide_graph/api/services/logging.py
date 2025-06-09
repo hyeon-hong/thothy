@@ -11,10 +11,10 @@ class PrintingLogger(Logger):
 
     def info(self, msg, *args, **kwargs):
         extra = kwargs.get('extra')
-        logging.info(f"[PrintingLogger.info msg] {msg}")
+        logging.info(f"[PrintingLogger:msg] {msg}")
         if extra is not None:
             logging.info(
-                f"[PrintingLogger.info extra] {json.dumps(extra, indent=2)}")
+                f"[PrintingLogger:extra] {json.dumps(extra, indent=2)}")
         super().info(msg, *args, **kwargs)
 
 
