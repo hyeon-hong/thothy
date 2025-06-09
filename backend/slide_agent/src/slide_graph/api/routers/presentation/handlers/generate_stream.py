@@ -184,13 +184,28 @@ class PresentationGenerateStreamHandler:
 
         image_prompts_len = len(image_prompts)
 
-        images = assets[:image_prompts_len]
-        icons = assets[image_prompts_len:]
+        # Separate image results (tuples) from icon results (strings)
+        image_results = assets[:image_prompts_len]  # These are tuples (local_path, supabase_url)
+        icons = assets[image_prompts_len:]  # These are strings (local paths)
 
+        # Extract local paths and Supabase URLs from image results
+        local_image_paths = [result[0] for result in image_results]
+        supabase_image_urls = [result[1] for result in image_results]
+
+        # Assign both local paths and Supabase URLs to slides
+        local_images_index = 0
+        supabase_images_index = 0
+        
         for each_slide_model in slide_models:
-            each_slide_model.images = images[:each_slide_model.images_count]
-            images = images[each_slide_model.images_count:]
+            # Assign local image paths to images field
+            each_slide_model.images = local_image_paths[local_images_index:local_images_index + each_slide_model.images_count]
+            local_images_index += each_slide_model.images_count
+            
+            # Assign Supabase URLs to supabase_images field
+            each_slide_model.supabase_images = supabase_image_urls[supabase_images_index:supabase_images_index + each_slide_model.images_count]
+            supabase_images_index += each_slide_model.images_count
 
+            # Assign icons (these remain local paths)
             each_slide_model.icons = icons[:each_slide_model.icons_count]
             icons = icons[each_slide_model.icons_count:]
 

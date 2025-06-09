@@ -23,6 +23,7 @@ class SlideModel(BaseModel):
     type: SlideType
     design_index: Optional[int] = None
     images: Optional[List[str]] = None
+    supabase_images: Optional[List[str]] = None
     icons: Optional[List[str]] = None
     presentation: str
     content: (

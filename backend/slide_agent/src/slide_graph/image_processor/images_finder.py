@@ -63,7 +63,7 @@ async def generate_image(
     input: ImagePromptWithThemeAndAspectRatio,
     output_directory: str,
     presentation_id: str,
-) -> str:
+) -> tuple[str, str]:  # Returns (local_path, supabase_url)
     image_prompt = f"{input.image_prompt}, {input.theme_prompt}"
     print(f"Request - Generating Image for {image_prompt}")
 
@@ -77,12 +77,13 @@ async def generate_image(
         if image_path and os.path.exists(image_path):
             # Upload image to Supabase storage
             supabase_url = await upload_image_to_supabase_store(image_path, presentation_id)
-            return supabase_url
+            return image_path, supabase_url  # Return both local path and Supabase URL
         raise Exception(f"Image not found at {image_path}")
 
     except Exception as e:
         print(f"Error generating image: {e}")
-        return get_resource("assets/images/placeholder.jpg")
+        placeholder_path = get_resource("assets/images/placeholder.jpg")
+        return placeholder_path, placeholder_path  # Return same path for both if error
 
 
 async def generate_image_openai(prompt: str, output_directory: str) -> str:
