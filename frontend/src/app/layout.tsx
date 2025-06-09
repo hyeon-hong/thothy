@@ -1,9 +1,6 @@
 import "@/app/globals.css";
 import type { Metadata } from "next";
-import { AuthProvider } from "@/contexts/AuthContext";
-import { NuqsAdapter } from "nuqs/adapters/next/app";
-import { Provider } from "react-redux";
-import { store } from "@/store/store";
+import ClientProviders from "@/components/providers/ClientProviders";
 
 export const metadata: Metadata = {
   title: "Thothy",
@@ -19,11 +16,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body suppressHydrationWarning>
-        <Provider store={store}>
-          <NuqsAdapter>
-            <AuthProvider>{children}</AuthProvider>
-          </NuqsAdapter>
-        </Provider>
+        <ClientProviders>{children}</ClientProviders>
       </body>
     </html>
   );
