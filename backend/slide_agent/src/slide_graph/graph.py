@@ -10,6 +10,8 @@ from langchain_google_genai import ChatGoogleGenerativeAI
 from langgraph.graph import StateGraph, START, END
 from langgraph.graph.ui import AnyUIMessage, ui_message_reducer, push_ui_message
 from langgraph.store.base import BaseStore
+from langchain_core.messages import BaseMessage
+from langgraph.graph.message import add_messages
 
 from slide_graph.configuration import SlideConfigurable
 from slide_graph.api.routers.presentation.handlers.generate_presentation_requirements import (
@@ -71,6 +73,9 @@ class PresentationState(TypedDict):
 
     # UI messages field
     ui: Annotated[Sequence[AnyUIMessage], ui_message_reducer]
+
+    # Messages field
+    messages: Annotated[Sequence[BaseMessage], add_messages]
 
     error: Optional[str]
 
@@ -370,8 +375,12 @@ async def update_slides_node(
             "presentation_id": state["presentation_id"]
         })
 
+        from langchain_core.messages import AIMessage
+        ai_message = AIMessage(content="Successfully generated presentation")
+
         return {
             "presentation_and_slides": result,
+            "messages": [ai_message],
             "error": None
         }
 
