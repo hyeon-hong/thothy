@@ -94,6 +94,12 @@ async def upload_image_to_supabase_store(image_path: str, presentation_id: str) 
             print("Generated public URL is invalid")
             return image_path
 
+        # Remove trailing question mark if present
+        # This can happen when Supabase URL generation includes empty query parameters
+        if public_url.endswith('?'):
+            public_url = public_url.rstrip('?')
+            print(f"Removed trailing question mark from URL: {public_url}")
+
         print(f"Image uploaded to Supabase: {public_url}")
         return public_url
 
