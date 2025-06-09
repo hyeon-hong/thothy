@@ -66,8 +66,6 @@ async def create_presentation_node(
         presentation_id = str(uuid.uuid4())
 
         # Create the request object
-        logging.info(f"State: {state}")
-        logging.info("Call GeneratePresentationRequirementsRequest")
         request_data = GeneratePresentationRequirementsRequest(
             prompt=state.get("prompt", ""),
             n_slides=int(state.get("n_slides", 1)),
@@ -80,20 +78,15 @@ async def create_presentation_node(
         # Create mock logging service and metadata for the handler
         # Note: In a real implementation, you'd want to properly initialize these
         end_point = "/ppt/create"
-        logging.info("Call LoggingService")
         logging_service = LoggingService()
-        logging.info("Call LogMetadata")
         log_metadata = LogMetadata(
             presentation_id=presentation_id,
             endpoint=end_point
         )
 
-        logging.info(f"Creating presentation with ID: {presentation_id}")
-        logging.info("Call GeneratePresentationRequirementsHandler")
         # Call the GeneratePresentationRequirementsHandler
         presentation = await GeneratePresentationRequirementsHandler(
             presentation_id, request_data).post(logging_service, log_metadata)
-        logging.info(f"Presentation created successfully: {presentation}")
 
         return {
             "presentation_id": presentation_id,

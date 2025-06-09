@@ -64,6 +64,10 @@ class PresentationGenerateStreamHandler:
         self, logging_service: LoggingService, log_metadata: LogMetadata
     ):
         logging_service.logger.info(
+            "Called PresentationGenerateStreamHandler.get_stream",
+            extra=log_metadata.model_dump(),
+        )
+        logging_service.logger.info(
             logging_service.message(self.data.model_dump(mode="json")),
             extra=log_metadata.model_dump(),
         )
