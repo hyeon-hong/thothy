@@ -23,7 +23,7 @@ export default function SlideGraphComponent(props: SlideGraphProps) {
   useEffect(() => {
     setOpen(true);
     console.log("Slide data received:", props);
-  }, []);
+  }, [props.presentation_id]);
 
   return (
     <div className="bg-white rounded-lg p-4">
@@ -35,44 +35,46 @@ export default function SlideGraphComponent(props: SlideGraphProps) {
       </button>
 
       <ArtifactContent title={<div>Slide Generation Results</div>}>
-        <div className="space-y-4">
-          <div className="bg-gray-50 p-4 rounded-lg">
-            <h3 className="text-lg font-semibold text-gray-800 mb-2">
-              Presentation Summary
-            </h3>
-            <div className="grid grid-cols-2 gap-4 text-sm">
-              <div>
-                <span className="font-medium text-gray-600">
-                  Presentation ID:
-                </span>
-                <div className="font-mono text-xs bg-gray-100 p-1 rounded mt-1">
-                  {props.presentation_id}
+        <div className="max-h-[600px] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-gray-100">
+          <div className="space-y-4">
+            <div className="bg-gray-50 p-4 rounded-lg">
+              <h3 className="text-lg font-semibold text-gray-800 mb-2">
+                Presentation Summary
+              </h3>
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div>
+                  <span className="font-medium text-gray-600">
+                    Presentation ID:
+                  </span>
+                  <div className="font-mono text-xs bg-gray-100 p-1 rounded mt-1">
+                    {props.presentation_id}
+                  </div>
                 </div>
-              </div>
-              <div>
-                <span className="font-medium text-gray-600">Slides Count:</span>
-                <div className="text-2xl font-bold text-blue-600 mt-1">
-                  {props.slides_count}
+                <div>
+                  <span className="font-medium text-gray-600">Slides Count:</span>
+                  <div className="text-2xl font-bold text-blue-600 mt-1">
+                    {props.slides_count}
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
 
-          <div className="bg-gray-50 p-4 rounded-lg">
-            <FooterProvider>
-              {props.presentation_and_slides &&
-                props.presentation_and_slides.slides &&
-                props.presentation_and_slides.slides.length > 0 &&
-                props.presentation_and_slides.slides.map((slide, index) => (
-                  <SlideContent
-                    key={`${slide.type}-${index}-${slide.index}}`}
-                    slide={slide}
-                    index={index}
-                    presentationId={props.presentation_id}
-                    onDeleteSlide={() => {}}
-                  />
-                ))}
-            </FooterProvider>
+            <div className="bg-gray-50 p-4 rounded-lg">
+              <FooterProvider>
+                {props.presentation_and_slides &&
+                  props.presentation_and_slides.slides &&
+                  props.presentation_and_slides.slides.length > 0 &&
+                  props.presentation_and_slides.slides.map((slide, index) => (
+                    <SlideContent
+                      key={`${slide.type}-${index}-${slide.index}}`}
+                      slide={slide}
+                      index={index}
+                      presentationId={props.presentation_id}
+                      onDeleteSlide={() => {}}
+                    />
+                  ))}
+              </FooterProvider>
+            </div>
           </div>
         </div>
       </ArtifactContent>

@@ -43,6 +43,7 @@ from slide_graph.ppt_generator.models.slide_model import SlideModel
 
 # UI Component name for slide agent
 UI_COMPONENT_NAME = "slide_graph"
+UI_COMPONENT_ID = str(uuid.uuid4())
 
 
 class PresentationState(TypedDict):
@@ -373,7 +374,7 @@ async def update_slides_node(
             "presentation_and_slides": result,
             "slides_count": len(slides),
             "presentation_id": state["presentation_id"]
-        })
+        }, id=UI_COMPONENT_ID)
 
         from langchain_core.messages import AIMessage
         ai_message = AIMessage(content="Successfully generated presentation")
