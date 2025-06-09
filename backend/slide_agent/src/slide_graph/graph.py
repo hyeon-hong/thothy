@@ -21,14 +21,20 @@ from slide_graph.api.routers.presentation.handlers.generate_data import (
 from slide_graph.api.routers.presentation.handlers.generate_stream import (
     PresentationGenerateStreamHandler,
 )
+from slide_graph.api.routers.presentation.handlers.update_slide_models import (
+    UpdateSlideModelsHandler,
+)
 from slide_graph.api.routers.presentation.models import (
     GeneratePresentationRequirementsRequest,
     GenerateTitleRequest,
     PresentationGenerateRequest,
+    PresentationUpdateRequest,
+    PresentationAndSlides,
 )
 from slide_graph.api.sql_models import PresentationSqlModel
 from slide_graph.api.services.logging import LoggingService
 from slide_graph.api.models import LogMetadata, SessionModel
+from slide_graph.ppt_generator.models.slide_model import SlideModel
 
 
 class PresentationState(TypedDict):
@@ -52,6 +58,10 @@ class PresentationState(TypedDict):
     session: Optional[str]
     session_model: Optional[SessionModel]
     stream_result: Optional[dict]
+
+    # Fields for update slides process
+    slides: Optional[List[SlideModel]]
+    presentation_and_slides: Optional[PresentationAndSlides]
 
     error: Optional[str]
 
@@ -249,6 +259,51 @@ async def generate_stream_node(
         }
 
 
+async def update_slides_node(
+    state: PresentationState,
+    config: SlideConfigurable,
+    *,
+    store: BaseStore
+) -> dict:
+    """Node that updates slides using UpdateSlideModelsHandler."""
+
+    try:
+        # Check if we have required data for slide updates
+        if not state.get("presentation_id"):
+            return {"error": "No presentation ID available for slide update"}
+
+        if not state.get("slides"):
+            return {"error": "No slides provided for update"}
+
+        # Create the request object
+        request_data = PresentationUpdateRequest(
+            presentation_id=state["presentation_id"],
+            slides=state["slides"]
+        )
+
+        # Create logging service and metadata for the handler
+        logging_service = LoggingService()
+        log_metadata = LogMetadata(
+            presentation_id=state["presentation_id"],
+            endpoint="/ppt/slides/update"
+        )
+
+        # Call the UpdateSlideModelsHandler
+        result = await UpdateSlideModelsHandler(request_data).post(
+            logging_service, log_metadata
+        )
+
+        return {
+            "presentation_and_slides": result,
+            "error": None
+        }
+
+    except Exception as e:
+        return {
+            "error": f"Failed to update slides: {str(e)}"
+        }
+
+
 """Build and return the slide graph."""
 
 # Initialize graph builder with state schema
@@ -259,13 +314,15 @@ workflow.add_node("create_presentation", create_presentation_node)
 workflow.add_node("generate_titles", generate_titles_node)
 workflow.add_node("generate_data", generate_data_node)
 workflow.add_node("generate_stream", generate_stream_node)
+workflow.add_node("update_slides", update_slides_node)
 
-# Add edges - sequential flow: create presentation -> generate titles -> generate data -> generate stream
+# Add edges - sequential flow: create presentation -> generate titles -> generate data -> generate stream -> update slides
 workflow.add_edge(START, "create_presentation")
 workflow.add_edge("create_presentation", "generate_titles")
 workflow.add_edge("generate_titles", "generate_data")
 workflow.add_edge("generate_data", "generate_stream")
-workflow.add_edge("generate_stream", END)
+workflow.add_edge("generate_stream", "update_slides")
+workflow.add_edge("update_slides", END)
 
 # Compile graph
 graph = workflow.compile()
