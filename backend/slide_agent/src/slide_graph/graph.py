@@ -1,14 +1,44 @@
 """Simple slide agent using LangGraph."""
 
-import datetime  # Import datetime for getting current time
-from typing import Optional
+import uuid
+from typing import Optional, List, TypedDict
 
 from langchain.chat_models import init_chat_model
-from langchain_core.messages import AIMessage
 from langchain_google_genai import ChatGoogleGenerativeAI
-from langgraph.graph import MessagesState, StateGraph, START, END
+from langgraph.graph import StateGraph, START, END
 from langgraph.store.base import BaseStore
+
 from slide_graph.configuration import SlideConfigurable
+from api.routers.presentation.handlers.generate_presentation_requirements import (
+    GeneratePresentationRequirementsHandler,
+)
+from api.routers.presentation.handlers.generate_titles import (
+    PresentationTitlesGenerateHandler,
+)
+from api.routers.presentation.models import (
+    GeneratePresentationRequirementsRequest,
+    GenerateTitleRequest,
+)
+from api.sql_models import PresentationSqlModel
+from api.services.logging import LoggingService
+from api.models import LogMetadata
+
+
+class PresentationState(TypedDict):
+    """State for the presentation workflow."""
+    # Input parameters
+    prompt: Optional[str]
+    n_slides: int
+    language: str
+    documents: Optional[List[str]]
+    research_reports: Optional[List[str]]
+    images: Optional[List[str]]
+
+    # Intermediate and output data
+    presentation_id: Optional[str]
+    presentation: Optional[PresentationSqlModel]
+    error: Optional[str]
+
 
 llm: Optional[ChatGoogleGenerativeAI] = None
 
@@ -22,45 +52,110 @@ def get_llm() -> ChatGoogleGenerativeAI:
     return llm
 
 
-async def generate_slide(
-    state: MessagesState,
+async def create_presentation_node(
+    state: PresentationState,
     config: SlideConfigurable,
     *,
     store: BaseStore
 ) -> dict:
-    """Chat node that processes messages and generates responses."""
+    """Node that creates a presentation using the GeneratePresentationRequirementsHandler."""
 
-    configurable = SlideConfigurable.from_runnable_config(config)
+    try:
+        # Generate a unique presentation ID
+        presentation_id = str(uuid.uuid4())
 
-    # Get current system time
-    current_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        # Create the request object
+        request_data = GeneratePresentationRequirementsRequest(
+            prompt=state.get("prompt"),
+            n_slides=state["n_slides"],
+            language=state["language"],
+            documents=state.get("documents"),
+            research_reports=state.get("research_reports"),
+            images=state.get("images")
+        )
 
-    # Use system prompt from configuration with time variable
-    system_msg = configurable.system_prompt.format(time=current_time)
+        # Create handler and call it
+        handler = GeneratePresentationRequirementsHandler(
+            presentation_id, request_data)
 
-    # Get the LLM instance
-    chat_model = get_llm()
+        # Create mock logging service and metadata for the handler
+        # Note: In a real implementation, you'd want to properly initialize these
+        logging_service = LoggingService()
+        log_metadata = LogMetadata(
+            presentation_id=presentation_id,
+            endpoint="/ppt/create"
+        )
 
-    # Invoke the LLM
-    response = await chat_model.ainvoke(
-        [{"role": "system", "content": system_msg}] + state["messages"]
-    )
-    ai_message = AIMessage(content=response.content)
+        # Call the handler
+        presentation = await handler.post(logging_service, log_metadata)
 
-    return {"messages": [ai_message]}
+        return {
+            "presentation_id": presentation_id,
+            "presentation": presentation,
+            "error": None
+        }
+
+    except Exception as e:
+        return {
+            "error": f"Failed to create presentation: {str(e)}"
+        }
+
+
+async def generate_titles_node(
+    state: PresentationState,
+    config: SlideConfigurable,
+    *,
+    store: BaseStore
+) -> dict:
+    """Node that generates titles for the presentation using PresentationTitlesGenerateHandler."""
+
+    try:
+        # Check if we have a presentation ID from the previous step
+        if not state.get("presentation_id"):
+            return {"error": "No presentation ID available from previous step"}
+
+        # Create the request object
+        request_data = GenerateTitleRequest(
+            presentation_id=state["presentation_id"]
+        )
+
+        # Create handler and call it
+        handler = PresentationTitlesGenerateHandler(request_data)
+
+        # Create mock logging service and metadata for the handler
+        logging_service = LoggingService()
+        log_metadata = LogMetadata(
+            presentation_id=state["presentation_id"],
+            endpoint="/ppt/titles/generate"
+        )
+
+        # Call the handler
+        presentation = await handler.post(logging_service, log_metadata)
+
+        return {
+            "presentation": presentation,
+            "error": None
+        }
+
+    except Exception as e:
+        return {
+            "error": f"Failed to generate titles: {str(e)}"
+        }
 
 
 """Build and return the slide graph."""
 
 # Initialize graph builder with state schema
-workflow = StateGraph(MessagesState, SlideConfigurable)
+workflow = StateGraph(PresentationState, SlideConfigurable)
 
-# Add generate_slide node
-workflow.add_node("generate_slide", generate_slide)
+# Add nodes
+workflow.add_node("create_presentation", create_presentation_node)
+workflow.add_node("generate_titles", generate_titles_node)
 
-# Add edges - start at generate_slide and can end after generate_slide
-workflow.add_edge(START, "generate_slide")
-workflow.add_edge("generate_slide", END)
+# Add edges - create presentation first, then generate titles
+workflow.add_edge(START, "create_presentation")
+workflow.add_edge("create_presentation", "generate_titles")
+workflow.add_edge("generate_titles", END)
 
 # Compile graph
 graph = workflow.compile()

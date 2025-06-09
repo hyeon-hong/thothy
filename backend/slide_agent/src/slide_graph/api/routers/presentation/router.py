@@ -1,6 +1,6 @@
 from typing import Annotated, List, Optional
 import uuid
-from fastapi import APIRouter, Body, File, UploadFile, Depends
+from fastapi import APIRouter, Body, File, UploadFile
 
 from api.models import SessionModel
 from api.request_utils import RequestUtils
@@ -91,7 +91,8 @@ async def get_presentation_from_id(presentation_id: str):
         presentation_id=presentation_id,
     )
     return await handle_errors(
-        GetPresentationHandler(presentation_id).get, logging_service, log_metadata
+        GetPresentationHandler(
+            presentation_id).get, logging_service, log_metadata
     )
 
 
@@ -181,7 +182,8 @@ async def submit_presentation_generation_data(
         presentation_id=data.presentation_id,
     )
     return await handle_errors(
-        PresentationGenerateDataHandler(data).post, logging_service, log_metadata
+        PresentationGenerateDataHandler(
+            data).post, logging_service, log_metadata
     )
 
 
@@ -199,7 +201,7 @@ async def presentation_generation_stream(presentation_id: str, session: str):
 
 
 @presentation_router.post("/presentation/thumbnail", response_model=PresentationAndPath)
-async def update_presentation(
+async def upload_presentation_thumbnail(
     presentation_id: Annotated[str, Body()],
     thumbnail: Annotated[UploadFile, File()],
 ):
@@ -215,7 +217,7 @@ async def update_presentation(
 
 
 @presentation_router.post("/presentation/theme")
-async def update_presentation(
+async def update_presentation_theme(
     data: UpdatePresentationThemeRequest,
 ):
     request_utils = RequestUtils("/ppt/presentation/theme")
@@ -230,7 +232,7 @@ async def update_presentation(
 
 
 @presentation_router.post("/edit", response_model=SlideModel)
-async def update_presentation(
+async def edit_presentation(
     data: EditPresentationSlideRequest,
 ):
     request_utils = RequestUtils("/ppt/edit")
@@ -306,7 +308,8 @@ async def delete_presentation(presentation_id: str):
         presentation_id=presentation_id,
     )
     return await handle_errors(
-        DeletePresentationHandler(presentation_id).delete, logging_service, log_metadata
+        DeletePresentationHandler(
+            presentation_id).delete, logging_service, log_metadata
     )
 
 
