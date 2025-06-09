@@ -9,19 +9,19 @@ from langgraph.graph import StateGraph, START, END
 from langgraph.store.base import BaseStore
 
 from slide_graph.configuration import SlideConfigurable
-from api.routers.presentation.handlers.generate_presentation_requirements import (
+from slide_graph.api.routers.presentation.handlers.generate_presentation_requirements import (
     GeneratePresentationRequirementsHandler,
 )
-from api.routers.presentation.handlers.generate_titles import (
+from slide_graph.api.routers.presentation.handlers.generate_titles import (
     PresentationTitlesGenerateHandler,
 )
-from api.routers.presentation.models import (
+from slide_graph.api.routers.presentation.models import (
     GeneratePresentationRequirementsRequest,
     GenerateTitleRequest,
 )
-from api.sql_models import PresentationSqlModel
-from api.services.logging import LoggingService
-from api.models import LogMetadata
+from slide_graph.api.sql_models import PresentationSqlModel
+from slide_graph.api.services.logging import LoggingService
+from slide_graph.api.models import LogMetadata
 
 
 class PresentationState(TypedDict):
