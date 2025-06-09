@@ -147,3 +147,26 @@ When contributing, please:
 #### 🔄 Git Flow Commands
 
 We use Git Flow for branch management. Here are the essential commands:
+
+```bash
+git checkout develop
+git pull origin develop
+git checkout -b feature/your-feature
+git push origin feature/your-feature
+```
+
+
+## 🙏 Acknowledgements
+
+- Portions of the `slide_agent` were inspired by or adapted from the open-source [presenton/presenton](https://github.com/presenton/presenton) project, an AI-powered presentation generator. We thank the Presenton team for their excellent work and for making their code available under the Apache 2.0 license.
+
+- [Selenium](https://www.selenium.dev/) - WebDriver automation
+- [Playwright](https://playwright.dev/) - Browser automation
+- [Beautiful Soup](https://www.crummy.com/software/BeautifulSoup/) - HTML parsing
+- All contributors who have helped shape this project
+
+---
+
+<div align="center">
+  <sub>Built with ❤️ by the Thothy team</sub>
+</div>
