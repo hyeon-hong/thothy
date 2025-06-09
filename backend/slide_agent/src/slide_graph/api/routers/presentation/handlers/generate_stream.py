@@ -76,7 +76,8 @@ class PresentationGenerateStreamHandler:
             raise HTTPException(400, "Titles can not be empty")
 
         with get_sql_session() as sql_session:
-            presentation = sql_session.get(PresentationSqlModel, self.presentation_id)
+            presentation = sql_session.get(
+                PresentationSqlModel, self.presentation_id)
             presentation.n_slides = len(self.titles)
             presentation.titles = self.titles
             presentation.theme = self.theme
@@ -166,6 +167,7 @@ class PresentationGenerateStreamHandler:
             generate_image(
                 each,
                 images_directory,
+                self.presentation_id,
             )
             for each in image_prompts
         ] + [get_icon(icon_vector_store, each) for each in icon_queries]
@@ -173,7 +175,8 @@ class PresentationGenerateStreamHandler:
         assets_future = asyncio.gather(*coroutines)
 
         while not assets_future.done():
-            status = SSEStatusResponse(status="Fetching slide assets").to_string()
+            status = SSEStatusResponse(
+                status="Fetching slide assets").to_string()
             yield status
             await asyncio.sleep(5)
 
