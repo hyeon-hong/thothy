@@ -9,6 +9,7 @@ def get_random_uuid() -> str:
 
 
 class PresentationSqlModel(SQLModel, table=True):
+    __table_args__ = {"schema": "slide_agent"}
     id: str = Field(default_factory=get_random_uuid, primary_key=True)
     created_at: datetime = Field(default=datetime.now())
     prompt: Optional[str] = None
@@ -26,6 +27,7 @@ class PresentationSqlModel(SQLModel, table=True):
 
 
 class SlideSqlModel(SQLModel, table=True):
+    __table_args__ = {"schema": "slide_agent"}
     id: str = Field(default_factory=get_random_uuid, primary_key=True)
     index: int = Field(index=True)
     type: int
@@ -44,11 +46,13 @@ class SlideSqlModel(SQLModel, table=True):
 
 
 class KeyValueSqlModel(SQLModel, table=True):
+    __table_args__ = {"schema": "slide_agent"}
     id: str = Field(default_factory=get_random_uuid, primary_key=True)
     key: str = Field(index=True)
     value: dict = Field(sa_column=Column(JSON, nullable=True), default=None)
 
 
 class PreferencesSqlModel(SQLModel, table=True):
+    __table_args__ = {"schema": "slide_agent"}
     id: int = Field(default=0, primary_key=True)
     theme: Optional[dict] = Field(sa_column=Column(JSON, nullable=True), default=None)

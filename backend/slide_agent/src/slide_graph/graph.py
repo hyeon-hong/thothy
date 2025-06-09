@@ -2,6 +2,7 @@
 
 import uuid
 from typing import Optional, List, TypedDict
+import logging
 
 from langchain.chat_models import init_chat_model
 from langchain_google_genai import ChatGoogleGenerativeAI
@@ -65,26 +66,34 @@ async def create_presentation_node(
         presentation_id = str(uuid.uuid4())
 
         # Create the request object
+        logging.info(f"State: {state}")
+        logging.info("Call GeneratePresentationRequirementsRequest")
         request_data = GeneratePresentationRequirementsRequest(
-            prompt=state.get("prompt"),
-            n_slides=state["n_slides"],
-            language=state["language"],
-            documents=state.get("documents"),
-            research_reports=state.get("research_reports"),
-            images=state.get("images")
+            prompt=state.get("prompt", ""),
+            n_slides=int(state.get("n_slides", 1)),
+            language=state.get("language", "en"),
+            documents=state.get("documents", []),
+            research_reports=state.get("research_reports", []),
+            images=state.get("images", [])
         )
 
         # Create mock logging service and metadata for the handler
         # Note: In a real implementation, you'd want to properly initialize these
-        logging_service = LoggingService()
+        end_point = "/ppt/create"
+        logging.info("Call LoggingService")
+        logging_service = LoggingService(stream_name=end_point)
+        logging.info("Call LogMetadata")
         log_metadata = LogMetadata(
             presentation_id=presentation_id,
-            endpoint="/ppt/create"
+            endpoint=end_point
         )
 
+        logging.info(f"Creating presentation with ID: {presentation_id}")
+        logging.info("Call GeneratePresentationRequirementsHandler")
         # Call the GeneratePresentationRequirementsHandler
         presentation = await GeneratePresentationRequirementsHandler(
             presentation_id, request_data).post(logging_service, log_metadata)
+        logging.info(f"Presentation created successfully: {presentation}")
 
         return {
             "presentation_id": presentation_id,

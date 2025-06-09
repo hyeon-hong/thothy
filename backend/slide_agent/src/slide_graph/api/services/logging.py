@@ -19,9 +19,10 @@ class LoggingService:
     def __init__(self, stream_name: str):
         self._logger = PrintingLogger(stream_name)
 
+        # TODO: Handle blocking functions in the future
         log_file_path = os.path.join(
             os.getenv("APP_DATA_DIRECTORY"), "logs", "api.log")
-        # print(f"Log file path: {log_file_path}")
+        print(f"Log file path: {log_file_path}")
         os.makedirs(os.path.dirname(log_file_path), exist_ok=True)
         self._logger.addHandler(logging.FileHandler(log_file_path))
 
