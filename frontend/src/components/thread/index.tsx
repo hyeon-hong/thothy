@@ -346,7 +346,7 @@ export function Thread() {
       <div
         className={cn(
           "grid w-full grid-cols-[1fr_0fr] transition-all duration-500",
-          artifactOpen && "grid-cols-[3fr_2fr]"
+          artifactOpen && "grid-cols-[600px_1fr]"
         )}
       >
         <motion.div
