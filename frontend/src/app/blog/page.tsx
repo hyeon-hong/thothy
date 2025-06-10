@@ -71,8 +71,9 @@ export default function BlogPage() {
 
   // Function to get a preview of the content
   const getContentPreview = (content: string) => {
-    // Remove HTML tags and get first 150 characters
-    const plainText = content.replace(/<[^>]+>/g, '');
+    // Sanitize HTML and get first 150 characters
+    const sanitizeHtml = require('sanitize-html');
+    const plainText = sanitizeHtml(content, { allowedTags: [], allowedAttributes: {} });
     return plainText.length > 150 ? plainText.slice(0, 150) + '...' : plainText;
   };
 
