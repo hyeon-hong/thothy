@@ -12,7 +12,7 @@ from dashboard_graph.ppt_generator.models.query_and_prompt_models import (
 )
 from dashboard_graph.api.utils import get_resource
 
-BUCKET_NAME = "slide-agent-images"
+BUCKET_NAME = "dashboard-agent-images"
 
 
 async def upload_image_to_supabase_store(image_path: str, presentation_id: str) -> str:
