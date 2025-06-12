@@ -84,6 +84,29 @@ class PresentationState(TypedDict):
 llm: Optional[ChatGoogleGenerativeAI] = None
 
 
+def extract_prompt_from_state(state: PresentationState) -> str:
+    """Extract prompt from state messages or fallback to direct prompt field."""
+    prompt = ""
+
+    # Try to get prompt from messages first
+    if state.get("messages"):
+        # Get the last user/human message content as prompt
+        for message in reversed(state["messages"]):
+            if hasattr(message, 'content') and message.content:
+                # Prefer human messages over AI messages for prompts
+                if hasattr(message, 'type') and message.type in ['human', 'user']:
+                    prompt = message.content
+                    break
+                elif not prompt:  # Use any message content as fallback
+                    prompt = message.content
+
+    # Fallback to direct prompt field if no message content found
+    if not prompt:
+        prompt = state.get("prompt", "")
+
+    return prompt
+
+
 def get_llm() -> ChatGoogleGenerativeAI:
     """Get or initialize the LLM asynchronously."""
     global llm
@@ -105,10 +128,13 @@ async def create_presentation_node(
         # Generate a unique presentation ID
         presentation_id = str(uuid.uuid4())
 
+        # Extract prompt from messages or fallback to direct prompt field
+        prompt = extract_prompt_from_state(state)
+
         # Create the request object
         request_data = GeneratePresentationRequirementsRequest(
-            prompt=state.get("prompt", ""),
-            n_slides=int(state.get("n_slides", 3)),
+            prompt=prompt,
+            n_slides=int(state.get("n_slides", 10)),
             language=state.get("language", "en"),
             documents=state.get("documents", []),
             research_reports=state.get("research_reports", []),
@@ -355,13 +381,15 @@ async def update_slides_node(
             try:
                 slide_model = SlideModel.from_dict(slide_data)
                 slides.append(slide_model)
-                
+
                 # Log both local and Supabase image URLs for verification
                 if slide_model.images:
-                    logging.info(f"Slide {slide_model.index} local images: {slide_model.images}")
+                    logging.info(
+                        f"Slide {slide_model.index} local images: {slide_model.images}")
                 if slide_model.supabase_images:
-                    logging.info(f"Slide {slide_model.index} Supabase images: {slide_model.supabase_images}")
-                    
+                    logging.info(
+                        f"Slide {slide_model.index} Supabase images: {slide_model.supabase_images}")
+
             except Exception as e:
                 return {"error": f"Failed to convert slide data to SlideModel: {str(e)}"}
 
@@ -387,8 +415,10 @@ async def update_slides_node(
 
         from langchain_core.messages import AIMessage
         local_images_count = sum(len(slide.images or []) for slide in slides)
-        supabase_images_count = sum(len(slide.supabase_images or []) for slide in slides)
-        ai_message = AIMessage(content=f"Successfully generated presentation with {len(slides)} slides, {local_images_count} local images, and {supabase_images_count} Supabase-hosted images")
+        supabase_images_count = sum(
+            len(slide.supabase_images or []) for slide in slides)
+        ai_message = AIMessage(
+            content=f"Successfully generated presentation with {len(slides)} slides, {local_images_count} local images, and {supabase_images_count} Supabase-hosted images")
 
         return {
             "presentation_and_slides": result,
