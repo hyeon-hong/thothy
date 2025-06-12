@@ -276,9 +276,11 @@ async def generate_queries(state: SectionState, config: RunnableConfig):
 
     # Get state
     topic = state["topic"]
+
     # Get the first (current) section from the list
     section = state["section"][0] if state["section"] else None
 
+    # Error handling
     if not section:
         raise ValueError("No section found in state for query generation")
 
@@ -346,7 +348,7 @@ async def search_web(state: SectionState, config: RunnableConfig):
     return {"source_str": [source_str], "search_iterations": [current_iterations + 1]}
 
 
-async def write_section(state: SectionState, config: RunnableConfig) -> Command[Literal[END, "search_web"]]:
+async def write_section(state: SectionState, config: RunnableConfig) -> Command[Literal["__end__", "search_web"]]:
     """Write a section of the report and evaluate if more research is needed.
 
     This node:
