@@ -378,11 +378,13 @@ async def write_section(state: SectionState, config: RunnableConfig) -> Command[
     configurable = Configuration.from_runnable_config(config)
 
     # Format system instructions
-    section_writer_inputs_formatted = section_writer_inputs.format(topic=topic,
-                                                                   section_name=section.name,
-                                                                   section_topic=section.description,
-                                                                   context=source_str,
-                                                                   section_content=section.content)
+    section_writer_inputs_formatted = \
+        section_writer_inputs.format(topic=topic,
+                                     section_name=section.name,
+                                     section_topic=section.description,
+                                     context=source_str,
+                                     section_content=section.content)
+    logger.info(f"section_writer_inputs_formatted: {section_writer_inputs_formatted}")
 
     # Generate section
     writer_provider = get_config_value(configurable.writer_provider)
@@ -398,14 +400,16 @@ async def write_section(state: SectionState, config: RunnableConfig) -> Command[
     temp_section_content = section_content.content
 
     # Grade prompt
-    section_grader_message = ("Grade the report and consider follow-up questions for missing information. "
-                              "If the grade is 'pass', return empty strings for all follow-up queries. "
-                              "If the grade is 'fail', provide specific search queries to gather missing information.")
+    section_grader_message = (
+        "Grade the report and consider follow-up questions for missing information. "
+        "If the grade is 'pass', return empty strings for all follow-up queries. "
+        "If the grade is 'fail', provide specific search queries to gather missing information.")
 
-    section_grader_instructions_formatted = section_grader_instructions.format(topic=topic,
-                                                                               section_topic=section.description,
-                                                                               section=temp_section_content,
-                                                                               number_of_follow_up_queries=configurable.number_of_queries)
+    section_grader_instructions_formatted = \
+        section_grader_instructions.format(topic=topic,
+                                           section_topic=section.description,
+                                           section=temp_section_content,
+                                           number_of_follow_up_queries=configurable.number_of_queries)
 
     # Use planner model for reflection
     planner_provider = get_config_value(configurable.planner_provider)
@@ -421,11 +425,14 @@ async def write_section(state: SectionState, config: RunnableConfig) -> Command[
         reflection_model = init_chat_model(model=planner_model,
                                            model_provider=planner_provider).with_structured_output(Feedback)
     # Generate feedback
-    feedback = await reflection_model.ainvoke([SystemMessage(content=section_grader_instructions_formatted),
-                                               HumanMessage(content=section_grader_message)])
+    feedback = await reflection_model.ainvoke(
+        [SystemMessage(content=section_grader_instructions_formatted),
+         HumanMessage(content=section_grader_message)])
 
     # Get current search iterations (use last value or 0 if empty)
-    current_iterations = state["search_iterations"][-1] if state["search_iterations"] else 0
+    current_iterations = \
+        state["search_iterations"][-1] if state["search_iterations"] else 0
+
     # If the section is passing or the max search depth is reached, publish the section to completed sections
     if feedback.grade == "pass" or current_iterations >= configurable.max_search_depth:
         # Create a temporary section object with updated content

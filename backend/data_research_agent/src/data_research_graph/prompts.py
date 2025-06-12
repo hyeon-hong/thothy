@@ -138,19 +138,21 @@ section_writer_instructions = """Write one section of a research report.
 
 <Task>
 1. Review the report topic, section name, and section topic carefully.
-2. If present, review any existing section content.
+2. If present, review any existing section content. 
 3. Then, look at the provided Source material.
 4. Decide the sources that you will use it to write a report section.
 5. Write the report section and list your sources.
+6. You should add numerical data tables when relevant data is available in the source material to enhance the section with quantitative information.
 </Task>
 
 <Writing Guidelines>
 - If existing section content is not populated, write from scratch
 - If existing section content is populated, synthesize it with the source material
-- Strict 150-200 word limit
+- Strict 150-200 word limit except for numerical data tables
 - Use simple, clear language
 - Use short paragraphs (2-3 sentences max)
 - Use ## for section title (Markdown format)
+- Add numerical data tables using proper Markdown table format when relevant statistical, financial, or quantitative data is available in the source material
 </Writing Guidelines>
 
 <Citation Rules>
@@ -166,6 +168,7 @@ section_writer_instructions = """Write one section of a research report.
 1. Verify that EVERY claim is grounded in the provided Source material
 2. Confirm each URL appears ONLY ONCE in the Source list
 3. Verify that sources are numbered sequentially (1,2,3...) without any gaps
+4. Check if numerical data tables have been included when relevant quantitative data is present in the section content and source material
 </Final Check>
 """
 
