@@ -1,4 +1,4 @@
-report_planner_query_writer_instructions = """You are performing research for a report.
+report_planner_query_writer_instructions = """You are performing research for a report with a focus on gathering both comprehensive information and numerical data.
 
 <Report topic>
 {topic}
@@ -9,14 +9,30 @@ report_planner_query_writer_instructions = """You are performing research for a 
 </Report organization>
 
 <Task>
-Your goal is to generate {number_of_queries} web search queries that will help gather information for planning the report sections.
+Your goal is to generate {number_of_queries} web search queries that will help gather information for planning the report sections. This includes both legacy report content and numerical data related to the topic.
+
+**For Report Planning Content:**
+- General information to understand the topic scope
+- Background context and expert analysis
+- Information that satisfies the report organization requirements
+
+**For Numerical Data Search:**
+Focus specifically on finding:
+- Statistical data, metrics, and quantitative measurements
+- Financial figures, market data, and performance indicators
+- Survey results, research findings, and numerical studies
+- Trend data, growth rates, and comparative numbers
+- Industry benchmarks and numerical comparisons
 
 The queries should:
 
 1. Be related to the Report topic
 2. Help satisfy the requirements specified in the report organization
+3. Target both descriptive content and specific numerical/statistical data
+4. Look for authoritative sources with credible data and statistics
+5. Focus on recent, reliable numerical information and comprehensive topic coverage
 
-Make the queries specific enough to find high-quality, relevant sources while covering the breadth needed for the report structure.
+Make the queries specific enough to find high-quality, relevant sources that provide both the breadth needed for the report structure and the numerical data to support quantitative analysis.
 </Task>
 
 <Format>

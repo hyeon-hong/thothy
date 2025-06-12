@@ -91,8 +91,6 @@ async def generate_report_plan(state: ReportState, config: RunnableConfig):
         raise ValueError(
             "No topic found in the latest message. Please provide a topic for report generation.")
 
-    logger.info(f"Topic extracted from latest message: {topic}")
-
     feedback = state.get("feedback_on_report_plan", None)
 
     # Get configuration
@@ -121,8 +119,9 @@ async def generate_report_plan(state: ReportState, config: RunnableConfig):
         topic=topic, report_organization=report_structure, number_of_queries=number_of_queries)
 
     # Generate queries
-    results = await structured_llm.ainvoke([SystemMessage(content=system_instructions_query),
-                                            HumanMessage(content="Generate search queries that will help with planning the sections of the report.")])
+    results = await structured_llm.ainvoke(
+        [SystemMessage(content=system_instructions_query),
+         HumanMessage(content="Generate search queries that will help with planning the sections of the report.")])
 
     # Web search
     query_list = [query.search_query for query in results.queries]
@@ -139,8 +138,7 @@ async def generate_report_plan(state: ReportState, config: RunnableConfig):
     planner_model = get_config_value(configurable.planner_model)
 
     # Report planner instructions
-    planner_message = """Generate the sections of the report. Each section must have: name, description, research (boolean indicating if research is needed), and content fields.
-                      Format your response as a valid JSON object containing a 'sections' array."""
+    planner_message = """Generate the sections of the report. Each section must have: name, description, research (boolean indicating if research is needed), and content fields. Format your response as a valid JSON object containing a 'sections' array."""
 
     # Use structured output for all providers
     if planner_model == "claude-3-7-sonnet-latest":
@@ -157,8 +155,6 @@ async def generate_report_plan(state: ReportState, config: RunnableConfig):
     report_sections = await structured_llm.ainvoke(
         [SystemMessage(content=system_instructions_sections),
          HumanMessage(content=planner_message)])
-
-    logger.info(f"report_sections: {report_sections}")
 
     # Get sections
     sections = report_sections.sections
