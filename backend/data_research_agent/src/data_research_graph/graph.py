@@ -91,8 +91,6 @@ async def generate_report_plan(state: ReportState, config: RunnableConfig):
         raise ValueError(
             "No topic found in the latest message. Please provide a topic for report generation.")
 
-    logger.info(f"Topic extracted from latest message: {topic}")
-
     feedback = state.get("feedback_on_report_plan", None)
 
     # Get configuration
@@ -121,8 +119,9 @@ async def generate_report_plan(state: ReportState, config: RunnableConfig):
         topic=topic, report_organization=report_structure, number_of_queries=number_of_queries)
 
     # Generate queries
-    results = await structured_llm.ainvoke([SystemMessage(content=system_instructions_query),
-                                            HumanMessage(content="Generate search queries that will help with planning the sections of the report.")])
+    results = await structured_llm.ainvoke(
+        [SystemMessage(content=system_instructions_query),
+         HumanMessage(content="Generate search queries that will help with planning the sections of the report.")])
 
     # Web search
     query_list = [query.search_query for query in results.queries]
@@ -139,8 +138,7 @@ async def generate_report_plan(state: ReportState, config: RunnableConfig):
     planner_model = get_config_value(configurable.planner_model)
 
     # Report planner instructions
-    planner_message = """Generate the sections of the report. Each section must have: name, description, research (boolean indicating if research is needed), and content fields.
-                      Format your response as a valid JSON object containing a 'sections' array."""
+    planner_message = """Generate the sections of the report. Each section must have: name, description, research (boolean indicating if research is needed), and content fields. Format your response as a valid JSON object containing a 'sections' array."""
 
     # Use structured output for all providers
     if planner_model == "claude-3-7-sonnet-latest":
@@ -157,8 +155,6 @@ async def generate_report_plan(state: ReportState, config: RunnableConfig):
     report_sections = await structured_llm.ainvoke(
         [SystemMessage(content=system_instructions_sections),
          HumanMessage(content=planner_message)])
-
-    logger.info(f"report_sections: {report_sections}")
 
     # Get sections
     sections = report_sections.sections
@@ -276,9 +272,11 @@ async def generate_queries(state: SectionState, config: RunnableConfig):
 
     # Get state
     topic = state["topic"]
+
     # Get the first (current) section from the list
     section = state["section"][0] if state["section"] else None
 
+    # Error handling
     if not section:
         raise ValueError("No section found in state for query generation")
 
@@ -346,7 +344,7 @@ async def search_web(state: SectionState, config: RunnableConfig):
     return {"source_str": [source_str], "search_iterations": [current_iterations + 1]}
 
 
-async def write_section(state: SectionState, config: RunnableConfig) -> Command[Literal[END, "search_web"]]:
+async def write_section(state: SectionState, config: RunnableConfig) -> Command[Literal["__end__", "search_web"]]:
     """Write a section of the report and evaluate if more research is needed.
 
     This node:
@@ -380,11 +378,13 @@ async def write_section(state: SectionState, config: RunnableConfig) -> Command[
     configurable = Configuration.from_runnable_config(config)
 
     # Format system instructions
-    section_writer_inputs_formatted = section_writer_inputs.format(topic=topic,
-                                                                   section_name=section.name,
-                                                                   section_topic=section.description,
-                                                                   context=source_str,
-                                                                   section_content=section.content)
+    section_writer_inputs_formatted = \
+        section_writer_inputs.format(topic=topic,
+                                     section_name=section.name,
+                                     section_topic=section.description,
+                                     context=source_str,
+                                     section_content=section.content)
+    logger.info(f"section_writer_inputs_formatted: {section_writer_inputs_formatted}")
 
     # Generate section
     writer_provider = get_config_value(configurable.writer_provider)
@@ -400,14 +400,16 @@ async def write_section(state: SectionState, config: RunnableConfig) -> Command[
     temp_section_content = section_content.content
 
     # Grade prompt
-    section_grader_message = ("Grade the report and consider follow-up questions for missing information. "
-                              "If the grade is 'pass', return empty strings for all follow-up queries. "
-                              "If the grade is 'fail', provide specific search queries to gather missing information.")
+    section_grader_message = (
+        "Grade the report and consider follow-up questions for missing information. "
+        "If the grade is 'pass', return empty strings for all follow-up queries. "
+        "If the grade is 'fail', provide specific search queries to gather missing information.")
 
-    section_grader_instructions_formatted = section_grader_instructions.format(topic=topic,
-                                                                               section_topic=section.description,
-                                                                               section=temp_section_content,
-                                                                               number_of_follow_up_queries=configurable.number_of_queries)
+    section_grader_instructions_formatted = \
+        section_grader_instructions.format(topic=topic,
+                                           section_topic=section.description,
+                                           section=temp_section_content,
+                                           number_of_follow_up_queries=configurable.number_of_queries)
 
     # Use planner model for reflection
     planner_provider = get_config_value(configurable.planner_provider)
@@ -423,11 +425,14 @@ async def write_section(state: SectionState, config: RunnableConfig) -> Command[
         reflection_model = init_chat_model(model=planner_model,
                                            model_provider=planner_provider).with_structured_output(Feedback)
     # Generate feedback
-    feedback = await reflection_model.ainvoke([SystemMessage(content=section_grader_instructions_formatted),
-                                               HumanMessage(content=section_grader_message)])
+    feedback = await reflection_model.ainvoke(
+        [SystemMessage(content=section_grader_instructions_formatted),
+         HumanMessage(content=section_grader_message)])
 
     # Get current search iterations (use last value or 0 if empty)
-    current_iterations = state["search_iterations"][-1] if state["search_iterations"] else 0
+    current_iterations = \
+        state["search_iterations"][-1] if state["search_iterations"] else 0
+
     # If the section is passing or the max search depth is reached, publish the section to completed sections
     if feedback.grade == "pass" or current_iterations >= configurable.max_search_depth:
         # Create a temporary section object with updated content

@@ -1,4 +1,4 @@
-report_planner_query_writer_instructions = """You are performing research for a report. 
+report_planner_query_writer_instructions = """You are performing research for a report with a focus on gathering both comprehensive information and numerical data.
 
 <Report topic>
 {topic}
@@ -9,18 +9,34 @@ report_planner_query_writer_instructions = """You are performing research for a 
 </Report organization>
 
 <Task>
-Your goal is to generate {number_of_queries} web search queries that will help gather information for planning the report sections. 
+Your goal is to generate {number_of_queries} web search queries that will help gather information for planning the report sections. This includes both legacy report content and numerical data related to the topic.
+
+**For Report Planning Content:**
+- General information to understand the topic scope
+- Background context and expert analysis
+- Information that satisfies the report organization requirements
+
+**For Numerical Data Search:**
+Focus specifically on finding:
+- Statistical data, metrics, and quantitative measurements
+- Financial figures, market data, and performance indicators
+- Survey results, research findings, and numerical studies
+- Trend data, growth rates, and comparative numbers
+- Industry benchmarks and numerical comparisons
 
 The queries should:
 
 1. Be related to the Report topic
 2. Help satisfy the requirements specified in the report organization
+3. Target both descriptive content and specific numerical/statistical data
+4. Look for authoritative sources with credible data and statistics
+5. Focus on recent, reliable numerical information and comprehensive topic coverage
 
-Make the queries specific enough to find high-quality, relevant sources while covering the breadth needed for the report structure.
+Make the queries specific enough to find high-quality, relevant sources that provide both the breadth needed for the report structure and the numerical data to support quantitative analysis.
 </Task>
 
 <Format>
-Call the Queries tool 
+Call the Queries tool
 </Format>
 """
 
@@ -32,17 +48,17 @@ The topic of the report is:
 </Report topic>
 
 <Report organization>
-The report should follow this organization: 
+The report should follow this organization:
 {report_organization}
 </Report organization>
 
 <Context>
-Here is context to use to plan the sections of the report: 
+Here is context to use to plan the sections of the report:
 {context}
 </Context>
 
 <Task>
-Generate a list of sections for the report. Your plan should be tight and focused with NO overlapping sections or unnecessary filler. 
+Generate a list of sections for the report. Your plan should be tight and focused with NO overlapping sections or unnecessary filler.
 
 For example, a good report structure might look like:
 1/ intro
@@ -72,11 +88,11 @@ Here is feedback on the report structure from review (if any):
 </Feedback>
 
 <Format>
-Call the Sections tool 
+Call the Sections tool
 </Format>
 """
 
-query_writer_instructions = """You are an expert technical writer crafting targeted web search queries that will gather comprehensive information for writing a technical report section.
+query_writer_instructions = """You are an expert technical writer and data researcher crafting targeted web search queries that will gather comprehensive information for writing a technical report section and dashboard visualization.
 
 <Report topic>
 {topic}
@@ -87,18 +103,34 @@ query_writer_instructions = """You are an expert technical writer crafting targe
 </Section topic>
 
 <Task>
-Your goal is to generate {number_of_queries} search queries that will help gather comprehensive information above the section topic. 
+Your goal is to generate {number_of_queries} search queries that will help gather comprehensive information for the section topic. This includes both legacy research content and structured data suitable for dashboard display.
+
+**For Technical Report Content:**
+- General information and analysis about the topic
+- Expert insights and comprehensive coverage
+- Different aspects and perspectives of the topic
+
+**For Dashboard Data Visualization:**
+Focus specifically on finding:
+
+1. **Time Series Data**: Historical trends, temporal patterns, sequential measurements over time
+2. **Graph Data**: Network relationships, node connections, hierarchical structures, flow diagrams
+3. **Table Data**: Structured datasets, comparative metrics, statistical summaries, categorized information
 
 The queries should:
 
-1. Be related to the topic 
-2. Examine different aspects of the topic
+1. Be related to the topic and section topic
+2. Examine different aspects of the topic for comprehensive report coverage
+3. Target specific data types (time series, graph, table) that can be visualized on a dashboard
+4. Look for both descriptive content sources and structured datasets/APIs
+5. Focus on both qualitative insights and quantitative, measurable data
+6. Prioritize recent, reliable, and well-formatted sources
 
-Make the queries specific enough to find high-quality, relevant sources.
+Make the queries specific enough to find high-quality, relevant sources for both report writing and structured data sources that can be processed and displayed in dashboard components.
 </Task>
 
 <Format>
-Call the Queries tool 
+Call the Queries tool
 </Format>
 """
 
@@ -109,16 +141,18 @@ section_writer_instructions = """Write one section of a research report.
 2. If present, review any existing section content. 
 3. Then, look at the provided Source material.
 4. Decide the sources that you will use it to write a report section.
-5. Write the report section and list your sources. 
+5. Write the report section and list your sources.
+6. You should add numerical data tables when relevant data is available in the source material to enhance the section with quantitative information.
 </Task>
 
 <Writing Guidelines>
 - If existing section content is not populated, write from scratch
 - If existing section content is populated, synthesize it with the source material
-- Strict 150-200 word limit
+- Strict 150-200 word limit except for numerical data tables
 - Use simple, clear language
 - Use short paragraphs (2-3 sentences max)
 - Use ## for section title (Markdown format)
+- Add numerical data tables using proper Markdown table format when relevant statistical, financial, or quantitative data is available in the source material
 </Writing Guidelines>
 
 <Citation Rules>
@@ -134,10 +168,11 @@ section_writer_instructions = """Write one section of a research report.
 1. Verify that EVERY claim is grounded in the provided Source material
 2. Confirm each URL appears ONLY ONCE in the Source list
 3. Verify that sources are numbered sequentially (1,2,3...) without any gaps
+4. Check if numerical data tables have been included when relevant quantitative data is present in the section content and source material
 </Final Check>
 """
 
-section_writer_inputs = """ 
+section_writer_inputs = """
 <Report topic>
 {topic}
 </Report topic>
@@ -201,7 +236,7 @@ final_section_writer_instructions = """You are an expert technical writer crafti
 {section_name}
 </Section name>
 
-<Section topic> 
+<Section topic>
 {section_topic}
 </Section topic>
 
@@ -228,7 +263,7 @@ For Conclusion/Summary:
     * Must include a focused comparison table using Markdown table syntax
     * Table should distill insights from the report
     * Keep table entries clear and concise
-- For non-comparative reports: 
+- For non-comparative reports:
     * Only use ONE structural element IF it helps distill the points made in the report:
     * Either a focused table comparing items present in the report (using Markdown table syntax)
     * Or a short list using proper Markdown list syntax:
