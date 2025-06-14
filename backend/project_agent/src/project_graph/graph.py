@@ -3,7 +3,7 @@
 from typing import Literal
 from langchain.chat_models import init_chat_model
 from langchain_core.messages import AIMessage
-from langgraph.graph import END, START, MessagesState, StateGraph
+from langgraph.graph import START, MessagesState, StateGraph
 from langgraph.store.base import BaseStore
 from langgraph.types import Command, interrupt
 from langgraph.prebuilt.interrupt import (
@@ -24,6 +24,14 @@ from thothy.backend.libs.utils import (  # type: ignore
 # Initialize store with reconnection capability
 store = initialize_store()
 llm = init_chat_model("gpt-4o-mini", model_provider="openai", temperature=0.8)
+
+
+async def start_node(
+    state: MessagesState,
+    config: ProjectConfigurable
+) -> dict:
+    """Start node that just returns the current state without any processing."""
+    return state
 
 
 async def project_assistant(
@@ -51,30 +59,31 @@ async def project_assistant(
         raise ValueError(f"Invalid graph_name: {graph_name}")
 
     response = result["messages"][-1]
-    
+
     # Wrap response with AIMessage type and return as list
     if not isinstance(response, AIMessage):
-        response = AIMessage(content=str(response.content) if hasattr(response, 'content') else str(response))
+        response = AIMessage(content=str(response.content) if hasattr(
+            response, 'content') else str(response))
 
     return {"messages": [response]}
 
 
-async def project_feedback(state: MessagesState, config: ProjectConfigurable) -> Command[Literal[END]]:
+async def project_feedback(state: MessagesState, config: ProjectConfigurable) -> Command[Literal["start_node"]]:
     """Get human feedback on the project response and handle user interaction."""
-    
+
     # Get the latest message and response
     messages = state.get("messages", [])
     if not messages:
-        return Command(goto=END)
-    
+        return Command(goto="start_node")
+
     latest_response = messages[-1]
     user_message = messages[-2] if len(messages) > 1 else None
-    
+
     # Get configurable values for context
     configurable = ProjectConfigurable.from_runnable_config(config)
     project_id = configurable.project_id
     graph_name = configurable.graph_name
-    
+
     action_request = ActionRequest(
         action="Review Project Response",
         args={
@@ -111,18 +120,19 @@ Agent Type: {graph_name}"""
     human_response: HumanResponse = interrupt([request])[0]
 
     if human_response.get("type") == "accept":
-        return Command(goto=END)
+        return Command(goto="start_node")
     elif human_response.get("type") == "response":
         # Add the human response as a new message and continue processing
-        new_message = AIMessage(content=f"Follow-up: {human_response.get('args', '')}")
+        new_message = AIMessage(
+            content=f"Follow-up: {human_response.get('args', '')}")
         return Command(
             update={"messages": [new_message]},
             goto="project_assistant"
         )
     elif human_response.get("type") == "ignore":
-        return Command(goto=END)
+        return Command(goto="start_node")
     else:
-        return Command(goto=END)
+        return Command(goto="start_node")
 
 
 """Build and return the project graph."""
@@ -130,14 +140,16 @@ Agent Type: {graph_name}"""
 # Initialize graph builder with state schema
 workflow = StateGraph(MessagesState, ProjectConfigurable)
 
-# Add project_assistant node
+# Add nodes
+workflow.add_node("start_node", start_node)
 workflow.add_node("project_assistant", project_assistant)
 workflow.add_node("project_feedback", project_feedback)
 
-# Add edges - start at project_assistant, then feedback, then end
-workflow.add_edge(START, "project_assistant")
+# Add edges - start at start_node, then project_assistant, then feedback, then back to start_node
+workflow.add_edge(START, "start_node")
+workflow.add_edge("start_node", "project_assistant")
 workflow.add_edge("project_assistant", "project_feedback")
-workflow.add_edge("project_feedback", END)
+workflow.add_edge("project_feedback", "start_node")
 
 # Compile graph
 graph = workflow.compile(store=store)
