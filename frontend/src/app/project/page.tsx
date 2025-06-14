@@ -60,6 +60,7 @@ interface Project {
   agent_id: string;
   prompt: string;
   session_id?: string;
+  assistant_id?: string;
   user_id: string;
   created_at: string;
   updated_at?: string;
@@ -199,10 +200,29 @@ function ProjectSidebar({
 
     try {
       let threadId = selectedProject?.session_id;
+      let assistantId = selectedProject?.assistant_id;
 
-      // Create thread if it's a new project or if editing and no thread exists
+      // Create thread and assistant if it's a new project or if editing and no thread exists
       if (!isEdit || !threadId) {
         const client = createLangGraphClient();
+        const agent = agents.find((a) => a.id === formData.agent_id);
+        if (!agent) {
+          alert("Selected agent not found");
+          return;
+        }
+
+        // Create assistant first
+        const assistant = await client.assistants.create({
+          graphId: "project_graph",
+          config: {
+            configurable: {
+              graph_name: agent.graph_name,
+            },
+          },
+        });
+        assistantId = assistant.assistant_id;
+
+        // Create thread
         const thread = await client.threads.create();
         threadId = thread.thread_id;
       }
@@ -210,6 +230,7 @@ function ProjectSidebar({
       const projectData = {
         ...formData,
         session_id: threadId,
+        assistant_id: assistantId,
       };
 
       const url = isEdit
@@ -239,8 +260,8 @@ function ProjectSidebar({
         }
 
         // Start the run if it's a new project
-        if (!isEdit && threadId) {
-          await startRun(threadId, formData.agent_id, formData.prompt);
+        if (!isEdit && threadId && assistantId) {
+          await startRun(threadId, assistantId, formData.prompt);
         }
       } else {
         const error = await response.json();
@@ -256,23 +277,21 @@ function ProjectSidebar({
 
   const startRun = async (
     threadId: string,
-    agentId: string,
+    assistantId: string,
     prompt: string
   ) => {
     try {
       const client = createLangGraphClient();
-      const agent = agents.find((a) => a.id === agentId);
-      if (!agent) return;
 
-      const run = await client.runs.create(threadId, "project_graph", {
+      const run = await client.runs.create(threadId, assistantId, {
         streamMode: ["messages-tuple", "values"],
         streamSubgraphs: true,
         input: { messages: [{ role: "user", content: prompt }] },
         config: {
           configurable: {
-            graph_name: agent.graph_name
-          }
-        }
+            graph_name: agent.graph_name,
+          },
+        },
       });
 
       // Set up run status monitoring
@@ -336,24 +355,22 @@ function ProjectSidebar({
   };
 
   const handleResumeRun = async (resumeValue?: any) => {
-    if (!runStatus || runStatus.status !== "interrupted") return;
+    if (
+      !runStatus ||
+      runStatus.status !== "interrupted" ||
+      !currentProject?.assistant_id
+    )
+      return;
 
     try {
       const client = createLangGraphClient();
-      const agent = agents.find((a) => a.id === currentProject?.agent_id);
-      if (!agent) return;
 
       // Resume the run using Command with resume value
       const resumeRun = await client.runs.create(
         runStatus.threadId,
-        "project_graph",
+        currentProject.assistant_id,
         {
           command: { resume: resumeValue || true },
-          config: {
-            configurable: {
-              graph_name: agent.graph_name
-            }
-          }
         }
       );
 
@@ -816,24 +833,33 @@ export default function ProjectPage() {
     { defaultValue: "false" }
   );
   const [threadId, setThreadId] = useQueryState("threadId");
+  const [assistantId, setAssistantId] = useQueryState("assistantId");
 
   // Sync showThreadList with chatHistoryOpen
   useEffect(() => {
     setChatHistoryOpen(showThreadList);
   }, [showThreadList, setChatHistoryOpen]);
 
-  // Set threadId when currentProject changes
+  // Set threadId and assistantId when currentProject changes
   useEffect(() => {
     if (currentProject?.session_id) {
       setThreadId(currentProject.session_id);
     } else {
       setThreadId(null);
     }
-  }, [currentProject, setThreadId]);
 
-  useEffect(() => {
-    fetchAgents();
-  }, []);
+    // Set assistantId based on current agent
+    if (currentProject && agents.length > 0) {
+      const currentAgent = agents.find((a) => a.id === currentProject.agent_id);
+      if (currentAgent?.graph_name) {
+        setAssistantId(currentAgent.graph_name);
+      } else {
+        setAssistantId(null);
+      }
+    } else {
+      setAssistantId(null);
+    }
+  }, [currentProject, setThreadId, setAssistantId, agents]);
 
   const fetchAgents = async () => {
     try {
@@ -851,6 +877,10 @@ export default function ProjectPage() {
     if (!currentProject) return null;
     return agents.find((a) => a.id === currentProject.agent_id);
   };
+
+  useEffect(() => {
+    fetchAgents();
+  }, []);
 
   const currentAgent = getCurrentAgent();
 
