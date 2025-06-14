@@ -212,6 +212,7 @@ export default function ProjectPage() {
 
       await client.runs.create(threadId, agent.graph_name, {
         input: { messages: [{ role: 'user', content: prompt }] },
+        interrupt_after: ["chatbot"],
       });
     } catch (error) {
       console.error('Error starting run:', error);
