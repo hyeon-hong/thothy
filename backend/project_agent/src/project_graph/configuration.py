@@ -1,4 +1,4 @@
-"""Define the configurable parameters for the staff bot."""
+"""Define the configurable parameters for the project bot."""
 
 import os
 import copy as copy_module
@@ -7,25 +7,25 @@ from typing import Any, Optional, Iterator, Tuple
 
 from langchain_core.runnables import RunnableConfig
 
-from staff_graph.prompts import SYSTEM_PROMPT
+from project_graph.prompts import SYSTEM_PROMPT
 
 
 @dataclass(kw_only=True)
-class StaffConfigurable:
-    """The configurable fields for the staff assistant."""
+class ProjectConfigurable:
+    """The configurable fields for the project assistant."""
 
     project_id: str = "default"
     team_id: str = "default"
     staff_id: str = "default"
     agent_id: str = "default"
     user_id: str = "default"
-    graph_name: str = "staff_graph"
+    graph_name: str = "project_graph"
 
     model: str = "anthropic/claude-3-5-sonnet-20240620"
     delay_seconds: int = 1
     system_prompt: str = SYSTEM_PROMPT
 
-    def copy(self) -> "StaffConfigurable":
+    def copy(self) -> "ProjectConfigurable":
         """Create a copy of this configurable."""
         return copy_module.deepcopy(self)
 
@@ -52,7 +52,7 @@ class StaffConfigurable:
     @classmethod
     def from_runnable_config(
         cls, config: Optional[RunnableConfig] = None
-    ) -> "StaffConfigurable":
+    ) -> "ProjectConfigurable":
         """Load configuration."""
         configurable = (
             config["configurable"] if config and "configurable" in config
@@ -69,7 +69,7 @@ class StaffConfigurable:
         if "staff_id" not in configurable:
             configurable["staff_id"] = "default"
         if "agent_id" not in configurable:
-            configurable["agent_id"] = "staff"
+            configurable["agent_id"] = "project"
         if "user_id" not in configurable:
             configurable["user_id"] = "default"
 

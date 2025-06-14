@@ -1,10 +1,10 @@
-"""Simple staff agent using LangGraph."""
+"""Simple project agent using LangGraph."""
 
 from langchain.chat_models import init_chat_model
 from langgraph.graph import END, START, MessagesState, StateGraph
 from langgraph.store.base import BaseStore
 
-from staff_graph.configuration import StaffConfigurable
+from project_graph.configuration import ProjectConfigurable
 from blog_graph.graph import graph as blog_graph
 from chat_graph.graph import graph as chat_graph
 from news_graph.graph import graph as news_graph
@@ -25,15 +25,15 @@ memory_manager = initialize_memory_manager()
 executor = initialize_executor(memory_manager, store)
 
 
-async def staff_assistant(
+async def project_assistant(
     state: MessagesState,
-    config: StaffConfigurable,
+    config: ProjectConfigurable,
     *,
     store: BaseStore
 ) -> dict:
-    """Staff assistant node that processes messages and generates responses."""
+    """Project assistant node that processes messages and generates responses."""
     # Get configurable values
-    configurable = StaffConfigurable.from_runnable_config(config)
+    configurable = ProjectConfigurable.from_runnable_config(config)
     project_id = configurable.project_id
     team_id = configurable.team_id
     staff_id = configurable.staff_id
@@ -56,7 +56,7 @@ async def staff_assistant(
     )
 
     system_msg = (
-        f"You are a helpful staff assistant talking to a user. "
+        f"You are a helpful project assistant talking to a user. "
         f"Your memories about the user: {joined_memories}"
     )
     thread_state = {"messages": [
@@ -90,18 +90,18 @@ async def staff_assistant(
     return {"messages": response}
 
 
-"""Build and return the staff graph."""
+"""Build and return the project graph."""
 
 # Initialize graph builder with state schema
-workflow = StateGraph(MessagesState, StaffConfigurable)
+workflow = StateGraph(MessagesState, ProjectConfigurable)
 
-# Add staff_assistant node
-workflow.add_node("staff_assistant", staff_assistant)
+# Add project_assistant node
+workflow.add_node("project_assistant", project_assistant)
 
-# Add edges - start at staff_assistant and can end after staff_assistant
-workflow.add_edge(START, "staff_assistant")
-workflow.add_edge("staff_assistant", END)
+# Add edges - start at project_assistant and can end after project_assistant
+workflow.add_edge(START, "project_assistant")
+workflow.add_edge("project_assistant", END)
 
 # Compile graph
 graph = workflow.compile(store=store)
-graph.name = "staff_graph"
+graph.name = "project_graph"

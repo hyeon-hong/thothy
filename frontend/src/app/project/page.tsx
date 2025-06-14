@@ -264,9 +264,15 @@ function ProjectSidebar({
       const agent = agents.find((a) => a.id === agentId);
       if (!agent) return;
 
-      const run = await client.runs.create(threadId, agent.graph_name, {
+      const run = await client.runs.create(threadId, "project_graph", {
+        streamMode: ["messages-tuple", "values"],
+        streamSubgraphs: true,
         input: { messages: [{ role: "user", content: prompt }] },
-        interruptAfter: ["chatbot"],
+        config: {
+          configurable: {
+            graph_name: agent.graph_name
+          }
+        }
       });
 
       // Set up run status monitoring
@@ -340,9 +346,14 @@ function ProjectSidebar({
       // Resume the run using Command with resume value
       const resumeRun = await client.runs.create(
         runStatus.threadId,
-        agent.graph_name,
+        "project_graph",
         {
           command: { resume: resumeValue || true },
+          config: {
+            configurable: {
+              graph_name: agent.graph_name
+            }
+          }
         }
       );
 
