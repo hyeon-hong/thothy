@@ -28,7 +28,7 @@ function CustomScrollableSidebar() {
   const { agentInboxes, changeAgentInbox, loading } = useThreadsContext();
   const [openInboxes, setOpenInboxes] = useState(true);
   const [openAgent, setOpenAgent] = useState(true);
-  const [staffs, setStaffs] = useState<any[]>([]);
+  const [projects, setProjects] = useState<any[]>([]);
   const [isLoadingAgents, setIsLoadingAgents] = useState(true);
 
   useEffect(() => {
@@ -37,16 +37,16 @@ function CustomScrollableSidebar() {
         setIsLoadingAgents(true);
         const supabase = await import("@/utils/supabase/client");
         const client = supabase.createClient();
-        // Fetch staffs
-        const { data: staffsData, error: staffsError } = await client
-          .from("staffs")
+        // Fetch projects
+        const { data: projectsData, error: projectsError } = await client
+          .from("projects")
           .select("id, agent_id")
           .order("created_at", { ascending: false });
-        if (staffsError) throw new Error(staffsError.message);
-        setStaffs(staffsData || []);
+        if (projectsError) throw new Error(projectsError.message);
+        setProjects(projectsData || []);
       } catch (error) {
-        console.error("Error fetching staffs:", error);
-        setStaffs([]);
+        console.error("Error fetching projects:", error);
+        setProjects([]);
       } finally {
         setIsLoadingAgents(false);
       }
@@ -82,13 +82,13 @@ function CustomScrollableSidebar() {
     return Math.abs(hash);
   }
 
-  // Filter agents for Staff and Agent lists
-  const staffAgentIds = new Set(staffs.map((s: any) => s.agent_id));
-  const staffAgentInboxes = agentInboxes.filter((inbox) =>
-    staffAgentIds.has(inbox.id)
+  // Filter agents for Project and Agent lists
+  const projectAgentIds = new Set(projects.map((p: any) => p.agent_id));
+  const projectAgentInboxes = agentInboxes.filter((inbox) =>
+    projectAgentIds.has(inbox.id)
   );
   const otherAgentInboxes = agentInboxes.filter(
-    (inbox) => !staffAgentIds.has(inbox.id)
+    (inbox) => !projectAgentIds.has(inbox.id)
   );
 
   return (
@@ -113,17 +113,17 @@ function CustomScrollableSidebar() {
             </div>
           ) : (
             <>
-              {/* Collapsible Staff Section */}
+              {/* Collapsible Project Section */}
               <Collapsible open={openInboxes} onOpenChange={setOpenInboxes}>
                 <CollapsibleTrigger asChild>
                   <div className="flex items-center cursor-pointer select-none text-sm font-medium text-gray-500 mb-2 pl-2">
-                    <span className="mr-2">Staff</span>
+                    <span className="mr-2">Project</span>
                     <span>{openInboxes ? "▾" : "▸"}</span>
                   </div>
                 </CollapsibleTrigger>
                 <CollapsibleContent>
                   <div className="flex flex-col gap-2 pl-7 mb-6">
-                    {staffAgentInboxes.map((item, idx) => {
+                    {projectAgentInboxes.map((item, idx) => {
                       const label = item.name || prettifyText(item.graphId);
                       return (
                         <div

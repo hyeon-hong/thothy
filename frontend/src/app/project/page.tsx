@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
-import Header from '@/components/Header';
-import { Plus, Edit, Trash2 } from 'lucide-react';
+import React, { useState, useEffect } from "react";
+import Header from "@/components/Header";
+import { Plus, Edit, Trash2 } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -73,10 +73,10 @@ interface Agent {
 }
 
 // Custom Sidebar component for projects
-function ProjectSidebar({ 
-  currentProject, 
-  setCurrentProject 
-}: { 
+function ProjectSidebar({
+  currentProject,
+  setCurrentProject,
+}: {
   currentProject: Project | null;
   setCurrentProject: (project: Project | null) => void;
 }) {
@@ -87,11 +87,24 @@ function ProjectSidebar({
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
-  const [formData, setFormData] = useState({ name: '', description: '', agent_id: '', prompt: '' });
+  const [formData, setFormData] = useState({
+    name: "",
+    description: "",
+    agent_id: "",
+    prompt: "",
+  });
   const [submitting, setSubmitting] = useState(false);
   const [openProjects, setOpenProjects] = useState(true);
-  const [showThreadList, setShowThreadList] = useQueryState("showThreadList", { defaultValue: "false" });
-  
+  const [showThreadList, setShowThreadList] = useQueryState("showThreadList", {
+    defaultValue: "false",
+  });
+  const [runStatus, setRunStatus] = useState<{
+    threadId: string;
+    status: string;
+    runId?: string;
+    interrupt?: any;
+  } | null>(null);
+
   const { session } = useAuth();
 
   // Fetch projects and agents
@@ -100,9 +113,16 @@ function ProjectSidebar({
     fetchAgents();
   }, []);
 
+  // Clean up run status when project changes
+  useEffect(() => {
+    if (runStatus && runStatus.threadId !== currentProject?.session_id) {
+      setRunStatus(null);
+    }
+  }, [currentProject, runStatus]);
+
   const fetchProjects = async () => {
     try {
-      const response = await fetch('/api/projects');
+      const response = await fetch("/api/projects");
       if (response.ok) {
         const data = await response.json();
         setProjects(data);
@@ -112,7 +132,7 @@ function ProjectSidebar({
         }
       }
     } catch (error) {
-      console.error('Error fetching projects:', error);
+      console.error("Error fetching projects:", error);
     } finally {
       setLoading(false);
     }
@@ -120,24 +140,26 @@ function ProjectSidebar({
 
   const fetchAgents = async () => {
     try {
-      const response = await fetch('/api/agents');
+      const response = await fetch("/api/agents");
       if (response.ok) {
         const data = await response.json();
         setAgents(data);
       }
     } catch (error) {
-      console.error('Error fetching agents:', error);
+      console.error("Error fetching agents:", error);
     }
   };
 
   const createLangGraphClient = () => {
     const apiUrl = process.env.NEXT_PUBLIC_LANGGRAPH_API_URL;
     const accessToken = session?.access_token;
-    
+
     if (!accessToken) {
-      throw new Error("No access token found. User might not be authenticated.");
+      throw new Error(
+        "No access token found. User might not be authenticated."
+      );
     }
-    
+
     return new Client({
       apiUrl,
       defaultHeaders: {
@@ -147,7 +169,7 @@ function ProjectSidebar({
   };
 
   const handleCreateProject = () => {
-    setFormData({ name: '', description: '', agent_id: '', prompt: '' });
+    setFormData({ name: "", description: "", agent_id: "", prompt: "" });
     setCreateDialogOpen(true);
   };
 
@@ -155,7 +177,7 @@ function ProjectSidebar({
     setSelectedProject(project);
     setFormData({
       name: project.name,
-      description: project.description || '',
+      description: project.description || "",
       agent_id: project.agent_id,
       prompt: project.prompt,
     });
@@ -169,15 +191,15 @@ function ProjectSidebar({
 
   const handleFormSubmit = async (isEdit: boolean = false) => {
     if (!formData.name || !formData.agent_id || !formData.prompt) {
-      alert('Please fill in all required fields (Name, Agent, and Prompt)');
+      alert("Please fill in all required fields (Name, Agent, and Prompt)");
       return;
     }
 
     setSubmitting(true);
-    
+
     try {
       let threadId = selectedProject?.session_id;
-      
+
       // Create thread if it's a new project or if editing and no thread exists
       if (!isEdit || !threadId) {
         const client = createLangGraphClient();
@@ -190,13 +212,15 @@ function ProjectSidebar({
         session_id: threadId,
       };
 
-      const url = isEdit ? `/api/projects/${selectedProject?.id}` : '/api/projects';
-      const method = isEdit ? 'PUT' : 'POST';
+      const url = isEdit
+        ? `/api/projects/${selectedProject?.id}`
+        : "/api/projects";
+      const method = isEdit ? "PUT" : "POST";
 
       const response = await fetch(url, {
         method,
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify(projectData),
       });
@@ -206,14 +230,14 @@ function ProjectSidebar({
         await fetchProjects();
         setCreateDialogOpen(false);
         setEditDialogOpen(false);
-        setFormData({ name: '', description: '', agent_id: '', prompt: '' });
+        setFormData({ name: "", description: "", agent_id: "", prompt: "" });
         setSelectedProject(null);
-        
+
         // Set as current project if it's new
         if (!isEdit) {
           setCurrentProject(updatedProject);
         }
-        
+
         // Start the run if it's a new project
         if (!isEdit && threadId) {
           await startRun(threadId, formData.agent_id, formData.prompt);
@@ -223,25 +247,115 @@ function ProjectSidebar({
         alert(`Error: ${error.error}`);
       }
     } catch (error) {
-      console.error('Error saving project:', error);
-      alert('Failed to save project');
+      console.error("Error saving project:", error);
+      alert("Failed to save project");
     } finally {
       setSubmitting(false);
     }
   };
 
-  const startRun = async (threadId: string, agentId: string, prompt: string) => {
+  const startRun = async (
+    threadId: string,
+    agentId: string,
+    prompt: string
+  ) => {
     try {
       const client = createLangGraphClient();
-      const agent = agents.find(a => a.id === agentId);
+      const agent = agents.find((a) => a.id === agentId);
       if (!agent) return;
 
-      await client.runs.create(threadId, agent.graph_name, {
-        input: { messages: [{ role: 'user', content: prompt }] },
-        interrupt_after: ["chatbot"],
+      const run = await client.runs.create(threadId, agent.graph_name, {
+        input: { messages: [{ role: "user", content: prompt }] },
+        interruptAfter: ["chatbot"],
       });
+
+      // Set up run status monitoring
+      setRunStatus({
+        threadId,
+        status: "running",
+        runId: run.run_id,
+      });
+
+      // Start monitoring the run status
+      monitorRunStatus(threadId, run.run_id);
     } catch (error) {
-      console.error('Error starting run:', error);
+      console.error("Error starting run:", error);
+    }
+  };
+
+  const monitorRunStatus = async (threadId: string, runId: string) => {
+    try {
+      const client = createLangGraphClient();
+
+      // Poll the run status
+      const pollInterval = setInterval(async () => {
+        try {
+          const run = await client.runs.get(threadId, runId);
+
+          if (run.status === "interrupted") {
+            // Get thread state to check for interrupts
+            const threadState = await client.threads.getState(threadId);
+
+            setRunStatus({
+              threadId,
+              status: "interrupted",
+              runId,
+              interrupt: threadState.tasks?.[0] || null,
+            });
+            clearInterval(pollInterval);
+          } else if (run.status === "success" || run.status === "error") {
+            setRunStatus({
+              threadId,
+              status: run.status,
+              runId,
+            });
+            clearInterval(pollInterval);
+          }
+        } catch (error) {
+          console.error("Error polling run status:", error);
+          clearInterval(pollInterval);
+        }
+      }, 2000); // Poll every 2 seconds
+
+      // Clean up after 5 minutes to prevent infinite polling
+      setTimeout(
+        () => {
+          clearInterval(pollInterval);
+        },
+        5 * 60 * 1000
+      );
+    } catch (error) {
+      console.error("Error monitoring run status:", error);
+    }
+  };
+
+  const handleResumeRun = async (resumeValue?: any) => {
+    if (!runStatus || runStatus.status !== "interrupted") return;
+
+    try {
+      const client = createLangGraphClient();
+      const agent = agents.find((a) => a.id === currentProject?.agent_id);
+      if (!agent) return;
+
+      // Resume the run using Command with resume value
+      const resumeRun = await client.runs.create(
+        runStatus.threadId,
+        agent.graph_name,
+        {
+          command: { resume: resumeValue || true },
+        }
+      );
+
+      // Update status and continue monitoring
+      setRunStatus({
+        ...runStatus,
+        status: "running",
+        runId: resumeRun.run_id,
+      });
+
+      monitorRunStatus(runStatus.threadId, resumeRun.run_id);
+    } catch (error) {
+      console.error("Error resuming run:", error);
     }
   };
 
@@ -249,10 +363,10 @@ function ProjectSidebar({
     if (!selectedProject) return;
 
     setSubmitting(true);
-    
+
     try {
       const response = await fetch(`/api/projects/${selectedProject.id}`, {
-        method: 'DELETE',
+        method: "DELETE",
       });
 
       if (response.ok) {
@@ -268,8 +382,8 @@ function ProjectSidebar({
         alert(`Error: ${error.error}`);
       }
     } catch (error) {
-      console.error('Error deleting project:', error);
-      alert('Failed to delete project');
+      console.error("Error deleting project:", error);
+      alert("Failed to delete project");
     } finally {
       setSubmitting(false);
     }
@@ -280,8 +394,8 @@ function ProjectSidebar({
   };
 
   const getAgentName = (agentId: string) => {
-    const agent = agents.find(a => a.id === agentId);
-    return agent?.name || 'Unknown Agent';
+    const agent = agents.find((a) => a.id === agentId);
+    return agent?.name || "Unknown Agent";
   };
 
   const gradients = [
@@ -312,7 +426,9 @@ function ProjectSidebar({
       <div className="flex-shrink-0 w-64 bg-[#F9FAFB] border-r-0">
         <div className="flex flex-col pb-9 pt-6">
           <div className="flex items-center justify-between px-11">
-            <span className="text-xl font-semibold flex-shrink-0">Projects</span>
+            <span className="text-xl font-semibold flex-shrink-0">
+              Projects
+            </span>
           </div>
           <div className="flex-1 pt-6 px-2">
             {loading ? (
@@ -331,7 +447,7 @@ function ProjectSidebar({
               <>
                 {/* Create Project Button */}
                 <div className="px-7 mb-4">
-                  <ShadcnButton 
+                  <ShadcnButton
                     onClick={handleCreateProject}
                     className="w-full flex items-center gap-2"
                     size="sm"
@@ -344,14 +460,104 @@ function ProjectSidebar({
                 {/* Show Thread List Toggle */}
                 <div className="px-7 mb-4">
                   <div className="flex items-center space-x-2">
-                    <Switch 
-                      id="show-thread-list" 
+                    <Switch
+                      id="show-thread-list"
                       checked={showThreadList === "true"}
-                      onCheckedChange={(checked) => setShowThreadList(checked ? "true" : "false")}
+                      onCheckedChange={(checked) =>
+                        setShowThreadList(checked ? "true" : "false")
+                      }
                     />
-                    <Label htmlFor="show-thread-list" className="text-sm">Show Thread List</Label>
+                    <Label htmlFor="show-thread-list" className="text-sm">
+                      Show Thread List
+                    </Label>
                   </div>
                 </div>
+
+                {/* Interrupt Status */}
+                {runStatus?.status === "interrupted" &&
+                  runStatus.threadId === currentProject?.session_id && (
+                    <div className="px-7 mb-4">
+                      <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                        <div className="flex items-center gap-2 mb-2">
+                          <div className="w-2 h-2 bg-yellow-500 rounded-full animate-pulse"></div>
+                          <span className="text-sm font-medium text-yellow-800">
+                            Run Interrupted
+                          </span>
+                        </div>
+                        <p className="text-xs text-yellow-700 mb-3">
+                          {runStatus.interrupt?.name === "chatbot"
+                            ? "The chatbot has paused and is waiting for your approval to continue."
+                            : "The agent has paused and is waiting for your input or approval to continue."}
+                        </p>
+                        <div className="flex flex-col gap-2">
+                          <div className="flex gap-2">
+                            <ShadcnButton
+                              size="sm"
+                              onClick={() => handleResumeRun(true)}
+                              className="text-xs flex-1"
+                            >
+                              ✓ Continue
+                            </ShadcnButton>
+                            <ShadcnButton
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleResumeRun(false)}
+                              className="text-xs flex-1"
+                            >
+                              ✗ Stop
+                            </ShadcnButton>
+                          </div>
+                          <ShadcnButton
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => {
+                              const customInput = prompt(
+                                "Enter custom resume value (optional):"
+                              );
+                              handleResumeRun(customInput || "user_input");
+                            }}
+                            className="text-xs"
+                          >
+                            Custom Input
+                          </ShadcnButton>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                {/* Run Status Indicator */}
+                {runStatus &&
+                  runStatus.threadId === currentProject?.session_id &&
+                  runStatus.status !== "interrupted" && (
+                    <div className="px-7 mb-4">
+                      <div
+                        className={cn(
+                          "flex items-center gap-2 px-3 py-2 rounded-lg text-xs",
+                          runStatus.status === "running" &&
+                            "bg-blue-50 text-blue-700 border border-blue-200",
+                          runStatus.status === "success" &&
+                            "bg-green-50 text-green-700 border border-green-200",
+                          runStatus.status === "error" &&
+                            "bg-red-50 text-red-700 border border-red-200"
+                        )}
+                      >
+                        <div
+                          className={cn(
+                            "w-2 h-2 rounded-full",
+                            runStatus.status === "running" &&
+                              "bg-blue-500 animate-pulse",
+                            runStatus.status === "success" && "bg-green-500",
+                            runStatus.status === "error" && "bg-red-500"
+                          )}
+                        ></div>
+                        <span className="font-medium">
+                          {runStatus.status === "running" && "Running..."}
+                          {runStatus.status === "success" && "Completed"}
+                          {runStatus.status === "error" && "Error"}
+                        </span>
+                      </div>
+                    </div>
+                  )}
 
                 {/* Collapsible Projects Section */}
                 <Collapsible open={openProjects} onOpenChange={setOpenProjects}>
@@ -364,7 +570,9 @@ function ProjectSidebar({
                   <CollapsibleContent>
                     <div className="flex flex-col gap-2 pl-7 mb-6">
                       {projects.length === 0 ? (
-                        <p className="text-sm text-gray-500 p-2">No projects yet</p>
+                        <p className="text-sm text-gray-500 p-2">
+                          No projects yet
+                        </p>
                       ) : (
                         projects.map((project, idx) => {
                           const label = project.name;
@@ -373,7 +581,9 @@ function ProjectSidebar({
                               key={`project-${project.id}-${idx}`}
                               className={cn(
                                 "flex items-center w-full",
-                                currentProject?.id === project.id ? "bg-gray-100 rounded-md" : ""
+                                currentProject?.id === project.id
+                                  ? "bg-gray-100 rounded-md"
+                                  : ""
                               )}
                             >
                               <TooltipProvider>
@@ -403,8 +613,12 @@ function ProjectSidebar({
                                   <TooltipContent>
                                     <div>
                                       <p className="font-medium">{label}</p>
-                                      <p className="text-xs text-gray-500">{getAgentName(project.agent_id)}</p>
-                                      <p className="text-xs text-gray-500">Created {formatDate(project.created_at)}</p>
+                                      <p className="text-xs text-gray-500">
+                                        {getAgentName(project.agent_id)}
+                                      </p>
+                                      <p className="text-xs text-gray-500">
+                                        Created {formatDate(project.created_at)}
+                                      </p>
                                     </div>
                                   </TooltipContent>
                                 </Tooltip>
@@ -447,19 +661,31 @@ function ProjectSidebar({
       </div>
 
       {/* Create/Edit Project Dialog */}
-      <Dialog open={createDialogOpen || editDialogOpen} onOpenChange={(open) => {
-        if (!open) {
-          setCreateDialogOpen(false);
-          setEditDialogOpen(false);
-          setFormData({ name: '', description: '', agent_id: '', prompt: '' });
-          setSelectedProject(null);
-        }
-      }}>
+      <Dialog
+        open={createDialogOpen || editDialogOpen}
+        onOpenChange={(open) => {
+          if (!open) {
+            setCreateDialogOpen(false);
+            setEditDialogOpen(false);
+            setFormData({
+              name: "",
+              description: "",
+              agent_id: "",
+              prompt: "",
+            });
+            setSelectedProject(null);
+          }
+        }}
+      >
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
-            <DialogTitle>{editDialogOpen ? 'Edit Project' : 'Create New Project'}</DialogTitle>
+            <DialogTitle>
+              {editDialogOpen ? "Edit Project" : "Create New Project"}
+            </DialogTitle>
             <DialogDescription>
-              {editDialogOpen ? 'Update your project details.' : 'Create a new project and run it with an agent.'}
+              {editDialogOpen
+                ? "Update your project details."
+                : "Create a new project and run it with an agent."}
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
@@ -468,7 +694,9 @@ function ProjectSidebar({
               <Input
                 id="name"
                 value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, name: e.target.value })
+                }
                 placeholder="Enter project name"
               />
             </div>
@@ -477,14 +705,21 @@ function ProjectSidebar({
               <Textarea
                 id="description"
                 value={formData.description}
-                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, description: e.target.value })
+                }
                 placeholder="Describe your project (optional)"
                 rows={3}
               />
             </div>
             <div className="grid gap-2">
               <Label htmlFor="agent">Select Agent</Label>
-              <Select value={formData.agent_id} onValueChange={(value) => setFormData({ ...formData, agent_id: value })}>
+              <Select
+                value={formData.agent_id}
+                onValueChange={(value) =>
+                  setFormData({ ...formData, agent_id: value })
+                }
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="Choose an agent" />
                 </SelectTrigger>
@@ -502,24 +737,33 @@ function ProjectSidebar({
               <Textarea
                 id="prompt"
                 value={formData.prompt}
-                onChange={(e) => setFormData({ ...formData, prompt: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, prompt: e.target.value })
+                }
                 placeholder="Enter your initial prompt for the agent"
                 rows={4}
               />
             </div>
           </div>
           <DialogFooter>
-            <ShadcnButton variant="outline" onClick={() => {
-              setCreateDialogOpen(false);
-              setEditDialogOpen(false);
-            }}>
+            <ShadcnButton
+              variant="outline"
+              onClick={() => {
+                setCreateDialogOpen(false);
+                setEditDialogOpen(false);
+              }}
+            >
               Cancel
             </ShadcnButton>
-            <ShadcnButton 
+            <ShadcnButton
               onClick={() => handleFormSubmit(editDialogOpen)}
               disabled={submitting}
             >
-              {submitting ? 'Saving...' : (editDialogOpen ? 'Update Project' : 'Create & Run')}
+              {submitting
+                ? "Saving..."
+                : editDialogOpen
+                  ? "Update Project"
+                  : "Create & Run"}
             </ShadcnButton>
           </DialogFooter>
         </DialogContent>
@@ -531,13 +775,17 @@ function ProjectSidebar({
           <AlertDialogHeader>
             <AlertDialogTitle>Are you sure?</AlertDialogTitle>
             <AlertDialogDescription>
-              This will permanently delete the project "{selectedProject?.name}" and stop any running threads. This action cannot be undone.
+              This will permanently delete the project "{selectedProject?.name}"
+              and stop any running threads. This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmDeleteProject} disabled={submitting}>
-              {submitting ? 'Deleting...' : 'Delete Project'}
+            <AlertDialogAction
+              onClick={confirmDeleteProject}
+              disabled={submitting}
+            >
+              {submitting ? "Deleting..." : "Delete Project"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -549,8 +797,13 @@ function ProjectSidebar({
 export default function ProjectPage() {
   const [currentProject, setCurrentProject] = useState<Project | null>(null);
   const [agents, setAgents] = useState<Agent[]>([]);
-  const [showThreadList] = useQueryState("showThreadList", { defaultValue: "false" });
-  const [chatHistoryOpen, setChatHistoryOpen] = useQueryState("chatHistoryOpen", { defaultValue: "false" });
+  const [showThreadList] = useQueryState("showThreadList", {
+    defaultValue: "false",
+  });
+  const [chatHistoryOpen, setChatHistoryOpen] = useQueryState(
+    "chatHistoryOpen",
+    { defaultValue: "false" }
+  );
   const [threadId, setThreadId] = useQueryState("threadId");
 
   // Sync showThreadList with chatHistoryOpen
@@ -573,19 +826,19 @@ export default function ProjectPage() {
 
   const fetchAgents = async () => {
     try {
-      const response = await fetch('/api/agents');
+      const response = await fetch("/api/agents");
       if (response.ok) {
         const data = await response.json();
         setAgents(data);
       }
     } catch (error) {
-      console.error('Error fetching agents:', error);
+      console.error("Error fetching agents:", error);
     }
   };
 
   const getCurrentAgent = () => {
     if (!currentProject) return null;
-    return agents.find(a => a.id === currentProject.agent_id);
+    return agents.find((a) => a.id === currentProject.agent_id);
   };
 
   const currentAgent = getCurrentAgent();
@@ -594,8 +847,11 @@ export default function ProjectPage() {
     <div className="flex flex-col h-screen w-full">
       <Header currentView="project" />
       <div className="flex flex-1 flex-row overflow-y-auto w-full gap-6 pt-6 pl-6 bg-[#F9FAFB]">
-        <ProjectSidebar currentProject={currentProject} setCurrentProject={setCurrentProject} />
-        
+        <ProjectSidebar
+          currentProject={currentProject}
+          setCurrentProject={setCurrentProject}
+        />
+
         {/* Main content - Thread view */}
         <div className="flex flex-col gap-6 w-full">
           <div
@@ -606,7 +862,7 @@ export default function ProjectPage() {
           >
             <div className="flex flex-col w-full h-full">
               {currentProject && currentProject.session_id && currentAgent ? (
-                <ThreadProvider 
+                <ThreadProvider
                   assistantId={currentAgent.graph_name}
                   apiUrl={process.env.NEXT_PUBLIC_LANGGRAPH_API_URL}
                 >
@@ -622,10 +878,14 @@ export default function ProjectPage() {
               ) : (
                 <div className="flex flex-col items-center justify-center h-full text-gray-500">
                   <h3 className="text-lg font-semibold mb-2">
-                    {currentProject ? 'Loading project...' : 'No project selected'}
+                    {currentProject
+                      ? "Loading project..."
+                      : "No project selected"}
                   </h3>
                   <p className="text-sm">
-                    {currentProject ? 'Setting up your project workspace...' : 'Select a project from the sidebar to start chatting'}
+                    {currentProject
+                      ? "Setting up your project workspace..."
+                      : "Select a project from the sidebar to start chatting"}
                   </p>
                 </div>
               )}
@@ -635,4 +895,4 @@ export default function ProjectPage() {
       </div>
     </div>
   );
-} 
+}
