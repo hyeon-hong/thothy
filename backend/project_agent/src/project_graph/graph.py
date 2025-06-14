@@ -1,6 +1,7 @@
 """Simple project agent using LangGraph."""
 
 from typing import Literal
+import logging
 from langchain.chat_models import init_chat_model
 from langchain_core.messages import AIMessage
 from langgraph.graph import START, MessagesState, StateGraph
@@ -31,6 +32,10 @@ async def start_node(
     config: ProjectConfigurable
 ) -> dict:
     """Start node that just returns the current state without any processing."""
+
+    logging.info(f"Start node: {state}")
+
+    # Return the state
     return state
 
 
@@ -41,6 +46,9 @@ async def project_assistant(
     store: BaseStore
 ) -> dict:
     """Project assistant node that processes messages and generates responses."""
+
+    logging.info(f"Project assistant: {state}")
+
     # Get configurable values
     configurable = ProjectConfigurable.from_runnable_config(config)
     graph_name = configurable.graph_name
@@ -70,6 +78,8 @@ async def project_assistant(
 
 async def project_feedback(state: MessagesState, config: ProjectConfigurable) -> Command[Literal["start_node"]]:
     """Get human feedback on the project response and handle user interaction."""
+
+    logging.info(f"Project feedback: {state}")
 
     # Get the latest message and response
     messages = state.get("messages", [])
@@ -101,8 +111,8 @@ async def project_feedback(state: MessagesState, config: ProjectConfigurable) ->
         allow_accept=True
     )
 
-    description = f"""Project Agent ({graph_name}) has completed processing your request. 
-    
+    description = f"""Project Agent ({graph_name}) has completed processing your request.
+
 You can:
 - Accept the response as-is
 - Provide additional feedback or follow-up questions
@@ -118,6 +128,7 @@ Agent Type: {graph_name}"""
     )
 
     human_response: HumanResponse = interrupt([request])[0]
+    logging.info(f"Human response: {human_response}")
 
     if human_response.get("type") == "accept":
         return Command(goto="start_node")

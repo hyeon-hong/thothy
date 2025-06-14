@@ -28,31 +28,10 @@ function CustomScrollableSidebar() {
   const { agentInboxes, changeAgentInbox, loading } = useThreadsContext();
   const [openInboxes, setOpenInboxes] = useState(true);
   const [openAgent, setOpenAgent] = useState(true);
-  const [projects, setProjects] = useState<any[]>([]);
-  const [isLoadingAgents, setIsLoadingAgents] = useState(true);
+  const [isLoadingAgents, setIsLoadingAgents] = useState(false);
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setIsLoadingAgents(true);
-        const supabase = await import("@/utils/supabase/client");
-        const client = supabase.createClient();
-        // Fetch projects
-        const { data: projectsData, error: projectsError } = await client
-          .from("projects")
-          .select("id, agent_id")
-          .order("created_at", { ascending: false });
-        if (projectsError) throw new Error(projectsError.message);
-        setProjects(projectsData || []);
-      } catch (error) {
-        console.error("Error fetching projects:", error);
-        setProjects([]);
-      } finally {
-        setIsLoadingAgents(false);
-      }
-    };
-    fetchData();
-  }, []);
+  // No need to fetch projects from supabase anymore
+  // Instead, we'll filter for project_graph directly from agentInboxes
 
   const gradients = [
     "linear-gradient(to right, #FF416C, #FF4B2B)",
@@ -83,12 +62,23 @@ function CustomScrollableSidebar() {
   }
 
   // Filter agents for Project and Agent lists
-  const projectAgentIds = new Set(projects.map((p: any) => p.agent_id));
-  const projectAgentInboxes = agentInboxes.filter((inbox) =>
-    projectAgentIds.has(inbox.id)
+  // Show project_graph agents in the Project section
+  const projectGraphAgents = agentInboxes.filter((inbox) =>
+    inbox.graphId === "project_graph"
   );
+
+  // Add default project_graph if none exist
+  const projectAgentInboxes = projectGraphAgents.length > 0 ? projectGraphAgents : [
+    {
+      id: "default_project_graph",
+      graphId: "project_graph",
+      name: "Project Graph",
+      selected: false
+    }
+  ];
+
   const otherAgentInboxes = agentInboxes.filter(
-    (inbox) => !projectAgentIds.has(inbox.id)
+    (inbox) => inbox.graphId !== "project_graph"
   );
 
   return (
@@ -179,17 +169,7 @@ function CustomScrollableSidebar() {
                 </CollapsibleTrigger>
                 <CollapsibleContent>
                   <div className="flex flex-col gap-2 pl-7 mb-6">
-                    {isLoadingAgents ? (
-                      <div className="flex flex-col gap-2">
-                        {[1, 2, 3].map((i) => (
-                          <div
-                            key={i}
-                            className="h-8 bg-gray-100 rounded-md animate-pulse"
-                          />
-                        ))}
-                      </div>
-                    ) : (
-                      otherAgentInboxes.map((item, idx) => {
+                    {otherAgentInboxes.map((item, idx) => {
                         const label = item.name || prettifyText(item.graphId);
                         return (
                           <div
@@ -231,7 +211,7 @@ function CustomScrollableSidebar() {
                           </div>
                         );
                       })
-                    )}
+                    }
                   </div>
                 </CollapsibleContent>
               </Collapsible>
