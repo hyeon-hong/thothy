@@ -289,7 +289,7 @@ function ProjectSidebar({
         input: { messages: [{ role: "user", content: prompt }] },
         config: {
           configurable: {
-            graph_name: agent.graph_name,
+            graph_name: currentProject?.agent_id,
           },
         },
       });
