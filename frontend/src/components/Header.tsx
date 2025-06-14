@@ -37,10 +37,7 @@ interface HeaderProps {
 }
 
 interface PricingPolicyData {
-  pricing_policy_id: string;
-  pricing_policy: {
-    name: string;
-  };
+  pricing_policy: string;
 }
 
 export default function Header({ currentView }: HeaderProps) {
@@ -66,17 +63,10 @@ export default function Header({ currentView }: HeaderProps) {
       }
 
       try {
-        // First try to get the user's pricing policy with a join
+        // Get the user's pricing policy directly
         const { data: policyData, error: policyError } = await supabase
           .from("user_pricing_policy")
-          .select(
-            `
-            pricing_policy_id,
-            pricing_policy (
-              name
-            )
-          `
-          )
+          .select("pricing_policy")
           .eq("user_id", user.id)
           .maybeSingle();
 
@@ -87,8 +77,8 @@ export default function Header({ currentView }: HeaderProps) {
           return;
         }
 
-        // Set the policy name from the joined data
-        setPricingPolicy(policyData.pricing_policy?.name || "Free");
+        // Set the policy from the data
+        setPricingPolicy(policyData.pricing_policy || "Free");
         setPolicyLoading(false);
       } catch (error) {
         setPricingPolicy("Free");
@@ -99,17 +89,21 @@ export default function Header({ currentView }: HeaderProps) {
     fetchPricingPolicy();
   }, [user, supabase]);
 
+  // Helper function for case-insensitive comparison
+  const isPolicyType = (policyType: string): boolean => {
+    return pricingPolicy?.toLowerCase() === policyType.toLowerCase();
+  };
+
   // Function to check if a menu should be visible based on pricing policy
   const isMenuVisible = (menuType: "project") => {
-    if (policyLoading) return false;
+    if (policyLoading || !pricingPolicy) return false;
 
-    switch (pricingPolicy) {
-      case "Enterprise":
-        return true;
-      case "Business":
-        return menuType !== "project";
-      default:
-        return !["project"].includes(menuType);
+    if (isPolicyType("Enterprise")) {
+      return true;
+    } else if (isPolicyType("Business")) {
+      return menuType !== "project";
+    } else {
+      return !["project"].includes(menuType);
     }
   };
 

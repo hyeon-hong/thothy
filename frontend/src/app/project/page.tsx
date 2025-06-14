@@ -1,14 +1,8 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
-import { 
-  Typography, 
-  Container, 
-  Box, 
-  Button, 
-} from '@mui/material';
-import Header from '@/components/Header';
-import { Add as AddIcon, Edit as EditIcon, Delete as DeleteIcon, PlayArrow as PlayIcon } from '@mui/icons-material';
+import React, { useState, useEffect } from "react";
+import Header from "@/components/Header";
+import { Plus, Edit, Trash2 } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -28,14 +22,6 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import {
   Select,
   SelectContent,
   SelectItem,
@@ -46,18 +32,35 @@ import { Input } from "@/components/ui/input";
 import { Button as ShadcnButton } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import { Client } from "@langchain/langgraph-sdk";
-import { createClient } from "@/utils/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { useRouter } from "next/navigation";
+import { Thread } from "@/components/thread";
+import { ThreadProvider } from "@/providers/Thread";
+import { StreamProvider } from "@/providers/Stream";
+import { ArtifactProvider } from "@/components/thread/artifact";
+import { cn } from "@/lib/utils";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import {
+  Collapsible,
+  CollapsibleTrigger,
+  CollapsibleContent,
+} from "@/components/ui/collapsible";
+import { useQueryState } from "nuqs";
 
 interface Project {
   id: string;
   name: string;
-  description: string;
+  description?: string;
   agent_id: string;
   prompt: string;
   session_id?: string;
+  assistant_id?: string;
   user_id: string;
   created_at: string;
   updated_at?: string;
@@ -70,7 +73,14 @@ interface Agent {
   graph_name: string;
 }
 
-export default function ProjectPage() {
+// Custom Sidebar component for projects
+function ProjectSidebar({
+  currentProject,
+  setCurrentProject,
+}: {
+  currentProject: Project | null;
+  setCurrentProject: (project: Project | null) => void;
+}) {
   const [projects, setProjects] = useState<Project[]>([]);
   const [agents, setAgents] = useState<Agent[]>([]);
   const [loading, setLoading] = useState(true);
@@ -78,11 +88,25 @@ export default function ProjectPage() {
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
-  const [formData, setFormData] = useState({ name: '', description: '', agent_id: '', prompt: '' });
+  const [formData, setFormData] = useState({
+    name: "",
+    description: "",
+    agent_id: "",
+    prompt: "",
+  });
   const [submitting, setSubmitting] = useState(false);
-  
+  const [openProjects, setOpenProjects] = useState(true);
+  const [showThreadList, setShowThreadList] = useQueryState("showThreadList", {
+    defaultValue: "false",
+  });
+  const [runStatus, setRunStatus] = useState<{
+    threadId: string;
+    status: string;
+    runId?: string;
+    interrupt?: any;
+  } | null>(null);
+
   const { session } = useAuth();
-  const router = useRouter();
 
   // Fetch projects and agents
   useEffect(() => {
@@ -90,15 +114,26 @@ export default function ProjectPage() {
     fetchAgents();
   }, []);
 
+  // Clean up run status when project changes
+  useEffect(() => {
+    if (runStatus && runStatus.threadId !== currentProject?.session_id) {
+      setRunStatus(null);
+    }
+  }, [currentProject, runStatus]);
+
   const fetchProjects = async () => {
     try {
-      const response = await fetch('/api/projects');
+      const response = await fetch("/api/projects");
       if (response.ok) {
         const data = await response.json();
         setProjects(data);
+        // Set first project as current if none selected
+        if (data.length > 0 && !currentProject) {
+          setCurrentProject(data[0]);
+        }
       }
     } catch (error) {
-      console.error('Error fetching projects:', error);
+      console.error("Error fetching projects:", error);
     } finally {
       setLoading(false);
     }
@@ -106,24 +141,26 @@ export default function ProjectPage() {
 
   const fetchAgents = async () => {
     try {
-      const response = await fetch('/api/agents');
+      const response = await fetch("/api/agents");
       if (response.ok) {
         const data = await response.json();
         setAgents(data);
       }
     } catch (error) {
-      console.error('Error fetching agents:', error);
+      console.error("Error fetching agents:", error);
     }
   };
 
   const createLangGraphClient = () => {
     const apiUrl = process.env.NEXT_PUBLIC_LANGGRAPH_API_URL;
     const accessToken = session?.access_token;
-    
+
     if (!accessToken) {
-      throw new Error("No access token found. User might not be authenticated.");
+      throw new Error(
+        "No access token found. User might not be authenticated."
+      );
     }
-    
+
     return new Client({
       apiUrl,
       defaultHeaders: {
@@ -133,7 +170,7 @@ export default function ProjectPage() {
   };
 
   const handleCreateProject = () => {
-    setFormData({ name: '', description: '', agent_id: '', prompt: '' });
+    setFormData({ name: "", description: "", agent_id: "", prompt: "" });
     setCreateDialogOpen(true);
   };
 
@@ -141,7 +178,7 @@ export default function ProjectPage() {
     setSelectedProject(project);
     setFormData({
       name: project.name,
-      description: project.description,
+      description: project.description || "",
       agent_id: project.agent_id,
       prompt: project.prompt,
     });
@@ -154,19 +191,38 @@ export default function ProjectPage() {
   };
 
   const handleFormSubmit = async (isEdit: boolean = false) => {
-    if (!formData.name || !formData.description || !formData.agent_id || !formData.prompt) {
-      alert('Please fill in all fields');
+    if (!formData.name || !formData.agent_id || !formData.prompt) {
+      alert("Please fill in all required fields (Name, Agent, and Prompt)");
       return;
     }
 
     setSubmitting(true);
-    
+
     try {
       let threadId = selectedProject?.session_id;
-      
-      // Create thread if it's a new project or if editing and no thread exists
+      let assistantId = selectedProject?.assistant_id;
+
+      // Create thread and assistant if it's a new project or if editing and no thread exists
       if (!isEdit || !threadId) {
         const client = createLangGraphClient();
+        const agent = agents.find((a) => a.id === formData.agent_id);
+        if (!agent) {
+          alert("Selected agent not found");
+          return;
+        }
+
+        // Create assistant first
+        const assistant = await client.assistants.create({
+          graphId: "project_graph",
+          config: {
+            configurable: {
+              graph_name: agent.graph_name,
+            },
+          },
+        });
+        assistantId = assistant.assistant_id;
+
+        // Create thread
         const thread = await client.threads.create();
         threadId = thread.thread_id;
       }
@@ -174,74 +230,161 @@ export default function ProjectPage() {
       const projectData = {
         ...formData,
         session_id: threadId,
+        assistant_id: assistantId,
       };
 
-      const url = isEdit ? `/api/projects/${selectedProject?.id}` : '/api/projects';
-      const method = isEdit ? 'PUT' : 'POST';
+      const url = isEdit
+        ? `/api/projects/${selectedProject?.id}`
+        : "/api/projects";
+      const method = isEdit ? "PUT" : "POST";
 
       const response = await fetch(url, {
         method,
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify(projectData),
       });
 
       if (response.ok) {
+        const updatedProject = await response.json();
         await fetchProjects();
         setCreateDialogOpen(false);
         setEditDialogOpen(false);
-        setFormData({ name: '', description: '', agent_id: '', prompt: '' });
+        setFormData({ name: "", description: "", agent_id: "", prompt: "" });
         setSelectedProject(null);
-        
+
+        // Set as current project if it's new
+        if (!isEdit) {
+          setCurrentProject(updatedProject);
+        }
+
         // Start the run if it's a new project
-        if (!isEdit && threadId) {
-          await startRun(threadId, formData.agent_id, formData.prompt);
+        if (!isEdit && threadId && assistantId) {
+          await startRun(threadId, assistantId, formData.prompt);
         }
       } else {
         const error = await response.json();
         alert(`Error: ${error.error}`);
       }
     } catch (error) {
-      console.error('Error saving project:', error);
-      alert('Failed to save project');
+      console.error("Error saving project:", error);
+      alert("Failed to save project");
     } finally {
       setSubmitting(false);
     }
   };
 
-  const startRun = async (threadId: string, agentId: string, prompt: string) => {
+  const startRun = async (
+    threadId: string,
+    assistantId: string,
+    prompt: string
+  ) => {
     try {
       const client = createLangGraphClient();
-      const agent = agents.find(a => a.id === agentId);
-      if (!agent) return;
 
-      await client.runs.create(threadId, agent.graph_name, {
-        input: { messages: [{ role: 'user', content: prompt }] },
+      const run = await client.runs.create(threadId, assistantId, {
+        streamMode: ["messages-tuple", "values"],
+        streamSubgraphs: true,
+        input: { messages: [{ role: "user", content: prompt }] },
+        multitaskStrategy: "enqueue",
+        config: {
+          configurable: {
+            graph_name: currentProject?.agent_id,
+          },
+        },
       });
+
+      // Set up run status monitoring
+      setRunStatus({
+        threadId,
+        status: "running",
+        runId: run.run_id,
+      });
+
+      // Start monitoring the run status
+      monitorRunStatus(threadId, run.run_id);
     } catch (error) {
-      console.error('Error starting run:', error);
+      console.error("Error starting run:", error);
     }
   };
 
-  const handleRunProject = async (project: Project) => {
+  const monitorRunStatus = async (threadId: string, runId: string) => {
     try {
-      if (!project.session_id) {
-        alert('No thread associated with this project');
-        return;
-      }
+      const client = createLangGraphClient();
 
-      const agent = agents.find(a => a.id === project.agent_id);
-      if (!agent) {
-        alert('Agent not found');
-        return;
-      }
+      // Poll the run status
+      const pollInterval = setInterval(async () => {
+        try {
+          const run = await client.runs.get(threadId, runId);
 
-      // Navigate to the agent page with the thread
-      router.push(`/agents/${agent.graph_name}?threadId=${project.session_id}`);
+          if (run.status === "interrupted") {
+            // Get thread state to check for interrupts
+            const threadState = await client.threads.getState(threadId);
+
+            setRunStatus({
+              threadId,
+              status: "interrupted",
+              runId,
+              interrupt: threadState.tasks?.[0] || null,
+            });
+            clearInterval(pollInterval);
+          } else if (run.status === "success" || run.status === "error") {
+            setRunStatus({
+              threadId,
+              status: run.status,
+              runId,
+            });
+            clearInterval(pollInterval);
+          }
+        } catch (error) {
+          console.error("Error polling run status:", error);
+          clearInterval(pollInterval);
+        }
+      }, 2000); // Poll every 2 seconds
+
+      // Clean up after 5 minutes to prevent infinite polling
+      setTimeout(
+        () => {
+          clearInterval(pollInterval);
+        },
+        5 * 60 * 1000
+      );
     } catch (error) {
-      console.error('Error running project:', error);
-      alert('Failed to run project');
+      console.error("Error monitoring run status:", error);
+    }
+  };
+
+  const handleResumeRun = async (resumeValue?: any) => {
+    if (
+      !runStatus ||
+      runStatus.status !== "interrupted" ||
+      !currentProject?.assistant_id
+    )
+      return;
+
+    try {
+      const client = createLangGraphClient();
+
+      // Resume the run using Command with resume value
+      const resumeRun = await client.runs.create(
+        runStatus.threadId,
+        currentProject.assistant_id,
+        {
+          command: { resume: resumeValue || true },
+        }
+      );
+
+      // Update status and continue monitoring
+      setRunStatus({
+        ...runStatus,
+        status: "running",
+        runId: resumeRun.run_id,
+      });
+
+      monitorRunStatus(runStatus.threadId, resumeRun.run_id);
+    } catch (error) {
+      console.error("Error resuming run:", error);
     }
   };
 
@@ -249,23 +392,27 @@ export default function ProjectPage() {
     if (!selectedProject) return;
 
     setSubmitting(true);
-    
+
     try {
       const response = await fetch(`/api/projects/${selectedProject.id}`, {
-        method: 'DELETE',
+        method: "DELETE",
       });
 
       if (response.ok) {
         await fetchProjects();
         setDeleteDialogOpen(false);
+        // Reset current project if it was deleted
+        if (currentProject?.id === selectedProject.id) {
+          setCurrentProject(null);
+        }
         setSelectedProject(null);
       } else {
         const error = await response.json();
         alert(`Error: ${error.error}`);
       }
     } catch (error) {
-      console.error('Error deleting project:', error);
-      alert('Failed to delete project');
+      console.error("Error deleting project:", error);
+      alert("Failed to delete project");
     } finally {
       setSubmitting(false);
     }
@@ -276,116 +423,298 @@ export default function ProjectPage() {
   };
 
   const getAgentName = (agentId: string) => {
-    const agent = agents.find(a => a.id === agentId);
-    return agent?.name || 'Unknown Agent';
+    const agent = agents.find((a) => a.id === agentId);
+    return agent?.name || "Unknown Agent";
   };
+
+  const gradients = [
+    "linear-gradient(to right, #FF416C, #FF4B2B)",
+    "linear-gradient(to right, #4158D0, #C850C0)",
+    "linear-gradient(to right, #0093E9, #80D0C7)",
+    "linear-gradient(to right, #8EC5FC, #E0C3FC)",
+    "linear-gradient(to right, #43E97B, #38F9D7)",
+    "linear-gradient(to right, #FA8BFF, #2BD2FF)",
+    "linear-gradient(to right, #FEE140, #FA709A)",
+    "linear-gradient(to right, #3EECAC, #EE74E1)",
+    "linear-gradient(to right, #4facfe, #00f2fe)",
+    "linear-gradient(to right, #F6D242, #FF52E5)",
+  ];
+
+  function hashString(str: string): number {
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) {
+      const char = str.charCodeAt(i);
+      hash = (hash << 5) - hash + char;
+      hash = hash & hash;
+    }
+    return Math.abs(hash);
+  }
 
   return (
     <>
-      <Header currentView="project" />
-      <Container maxWidth="lg">
-        <Box sx={{ mt: 4, mb: 2 }}>
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-            <Typography variant="h4" component="h1" gutterBottom>
+      <div className="flex-shrink-0 w-64 bg-[#F9FAFB] border-r-0">
+        <div className="flex flex-col pb-9 pt-6">
+          <div className="flex items-center justify-between px-11">
+            <span className="text-xl font-semibold flex-shrink-0">
               Projects
-            </Typography>
-            <Button 
-              variant="contained" 
-              color="primary" 
-              startIcon={<AddIcon />}
-              onClick={handleCreateProject}
-            >
-              New Project
-            </Button>
-          </Box>
-          
-          <Typography variant="body1" color="text.secondary" sx={{ mb: 4 }}>
-            Create and manage your projects. Track progress, collaborate with your team, and organize your work.
-          </Typography>
+            </span>
+          </div>
+          <div className="flex-1 pt-6 px-2">
+            {loading ? (
+              <div className="flex flex-col gap-2 pl-7">
+                {[1, 2, 3].map((i) => (
+                  <div
+                    key={i}
+                    className="flex items-center gap-2 p-2 animate-pulse"
+                  >
+                    <div className="w-6 h-6 rounded-md bg-gray-200" />
+                    <div className="h-4 bg-gray-200 rounded w-24" />
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <>
+                {/* Create Project Button */}
+                <div className="px-7 mb-4">
+                  <ShadcnButton
+                    onClick={handleCreateProject}
+                    className="w-full flex items-center gap-2"
+                    size="sm"
+                  >
+                    <Plus className="w-4 h-4" />
+                    New Project
+                  </ShadcnButton>
+                </div>
 
-          {loading ? (
-            <Typography>Loading projects...</Typography>
-          ) : projects.length === 0 ? (
-            <Card className="text-center py-12">
-              <CardContent>
-                <Typography variant="h6" gutterBottom>
-                  No projects yet
-                </Typography>
-                <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-                  Get started by creating your first project
-                </Typography>
-                <Button 
-                  variant="outlined" 
-                  color="primary" 
-                  startIcon={<AddIcon />}
-                  onClick={handleCreateProject}
-                >
-                  Create Project
-                </Button>
-              </CardContent>
-            </Card>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {projects.map((project) => (
-                <Card key={project.id} className="h-full">
-                  <CardHeader>
-                    <CardTitle>{project.name}</CardTitle>
-                    <CardDescription>
-                      {getAgentName(project.agent_id)} • Created {formatDate(project.created_at)}
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="flex-1">
-                    <p className="text-sm text-muted-foreground mb-2">{project.description}</p>
-                    <p className="text-xs text-muted-foreground bg-gray-50 p-2 rounded">
-                      <strong>Prompt:</strong> {project.prompt.substring(0, 100)}{project.prompt.length > 100 ? '...' : ''}
-                    </p>
-                  </CardContent>
-                  <CardFooter className="flex gap-2">
-                    <ShadcnButton 
-                      variant="default" 
-                      size="sm" 
-                      onClick={() => handleRunProject(project)}
-                      className="flex-1"
-                    >
-                      <PlayIcon className="w-4 h-4 mr-1" />
-                      Run
-                    </ShadcnButton>
-                    <ShadcnButton 
-                      variant="outline" 
-                      size="sm" 
-                      onClick={() => handleEditProject(project)}
-                    >
-                      <EditIcon className="w-4 h-4" />
-                    </ShadcnButton>
-                    <ShadcnButton 
-                      variant="outline" 
-                      size="sm" 
-                      onClick={() => handleDeleteProject(project)}
-                    >
-                      <DeleteIcon className="w-4 h-4" />
-                    </ShadcnButton>
-                  </CardFooter>
-                </Card>
-              ))}
-            </div>
-          )}
-        </Box>
-      </Container>
+                {/* Show Thread List Toggle */}
+                <div className="px-7 mb-4">
+                  <div className="flex items-center space-x-2">
+                    <Switch
+                      id="show-thread-list"
+                      checked={showThreadList === "true"}
+                      onCheckedChange={(checked) =>
+                        setShowThreadList(checked ? "true" : "false")
+                      }
+                    />
+                    <Label htmlFor="show-thread-list" className="text-sm">
+                      Show Thread List
+                    </Label>
+                  </div>
+                </div>
+
+                {/* Interrupt Status */}
+                {runStatus?.status === "interrupted" &&
+                  runStatus.threadId === currentProject?.session_id && (
+                    <div className="px-7 mb-4">
+                      <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                        <div className="flex items-center gap-2 mb-2">
+                          <div className="w-2 h-2 bg-yellow-500 rounded-full animate-pulse"></div>
+                          <span className="text-sm font-medium text-yellow-800">
+                            Run Interrupted
+                          </span>
+                        </div>
+                        <p className="text-xs text-yellow-700 mb-3">
+                          {runStatus.interrupt?.name === "chatbot"
+                            ? "The chatbot has paused and is waiting for your approval to continue."
+                            : "The agent has paused and is waiting for your input or approval to continue."}
+                        </p>
+                        <div className="flex flex-col gap-2">
+                          <div className="flex gap-2">
+                            <ShadcnButton
+                              size="sm"
+                              onClick={() => handleResumeRun(true)}
+                              className="text-xs flex-1"
+                            >
+                              ✓ Continue
+                            </ShadcnButton>
+                            <ShadcnButton
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleResumeRun(false)}
+                              className="text-xs flex-1"
+                            >
+                              ✗ Stop
+                            </ShadcnButton>
+                          </div>
+                          <ShadcnButton
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => {
+                              const customInput = prompt(
+                                "Enter custom resume value (optional):"
+                              );
+                              handleResumeRun(customInput || "user_input");
+                            }}
+                            className="text-xs"
+                          >
+                            Custom Input
+                          </ShadcnButton>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                {/* Run Status Indicator */}
+                {runStatus &&
+                  runStatus.threadId === currentProject?.session_id &&
+                  runStatus.status !== "interrupted" && (
+                    <div className="px-7 mb-4">
+                      <div
+                        className={cn(
+                          "flex items-center gap-2 px-3 py-2 rounded-lg text-xs",
+                          runStatus.status === "running" &&
+                            "bg-blue-50 text-blue-700 border border-blue-200",
+                          runStatus.status === "success" &&
+                            "bg-green-50 text-green-700 border border-green-200",
+                          runStatus.status === "error" &&
+                            "bg-red-50 text-red-700 border border-red-200"
+                        )}
+                      >
+                        <div
+                          className={cn(
+                            "w-2 h-2 rounded-full",
+                            runStatus.status === "running" &&
+                              "bg-blue-500 animate-pulse",
+                            runStatus.status === "success" && "bg-green-500",
+                            runStatus.status === "error" && "bg-red-500"
+                          )}
+                        ></div>
+                        <span className="font-medium">
+                          {runStatus.status === "running" && "Running..."}
+                          {runStatus.status === "success" && "Completed"}
+                          {runStatus.status === "error" && "Error"}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+
+                {/* Collapsible Projects Section */}
+                <Collapsible open={openProjects} onOpenChange={setOpenProjects}>
+                  <CollapsibleTrigger asChild>
+                    <div className="flex items-center cursor-pointer select-none text-sm font-medium text-gray-500 mb-2 pl-2">
+                      <span className="mr-2">My Projects</span>
+                      <span>{openProjects ? "▾" : "▸"}</span>
+                    </div>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent>
+                    <div className="flex flex-col gap-2 pl-7 mb-6">
+                      {projects.length === 0 ? (
+                        <p className="text-sm text-gray-500 p-2">
+                          No projects yet
+                        </p>
+                      ) : (
+                        projects.map((project, idx) => {
+                          const label = project.name;
+                          return (
+                            <div
+                              key={`project-${project.id}-${idx}`}
+                              className={cn(
+                                "flex items-center w-full",
+                                currentProject?.id === project.id
+                                  ? "bg-gray-100 rounded-md"
+                                  : ""
+                              )}
+                            >
+                              <TooltipProvider>
+                                <Tooltip delayduration={200}>
+                                  <TooltipTrigger asChild>
+                                    <button
+                                      className="flex items-center gap-2 p-2 w-full text-left hover:bg-gray-100 rounded-md"
+                                      onClick={() => setCurrentProject(project)}
+                                    >
+                                      <div
+                                        className="w-6 h-6 rounded-md flex-shrink-0 flex items-center justify-center text-white"
+                                        style={{
+                                          background:
+                                            gradients[
+                                              hashString(project.id) %
+                                                gradients.length
+                                            ],
+                                        }}
+                                      >
+                                        {label.slice(0, 1).toUpperCase()}
+                                      </div>
+                                      <span className="truncate min-w-0 font-medium text-gray-600">
+                                        {label}
+                                      </span>
+                                    </button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <div>
+                                      <p className="font-medium">{label}</p>
+                                      <p className="text-xs text-gray-500">
+                                        {getAgentName(project.agent_id)}
+                                      </p>
+                                      <p className="text-xs text-gray-500">
+                                        Created {formatDate(project.created_at)}
+                                      </p>
+                                    </div>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
+                              <div className="flex gap-1 pr-2">
+                                <ShadcnButton
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleEditProject(project);
+                                  }}
+                                  className="h-6 w-6 p-0"
+                                >
+                                  <Edit className="w-3 h-3" />
+                                </ShadcnButton>
+                                <ShadcnButton
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleDeleteProject(project);
+                                  }}
+                                  className="h-6 w-6 p-0"
+                                >
+                                  <Trash2 className="w-3 h-3" />
+                                </ShadcnButton>
+                              </div>
+                            </div>
+                          );
+                        })
+                      )}
+                    </div>
+                  </CollapsibleContent>
+                </Collapsible>
+              </>
+            )}
+          </div>
+        </div>
+      </div>
 
       {/* Create/Edit Project Dialog */}
-      <Dialog open={createDialogOpen || editDialogOpen} onOpenChange={(open) => {
-        if (!open) {
-          setCreateDialogOpen(false);
-          setEditDialogOpen(false);
-          setFormData({ name: '', description: '', agent_id: '', prompt: '' });
-          setSelectedProject(null);
-        }
-      }}>
+      <Dialog
+        open={createDialogOpen || editDialogOpen}
+        onOpenChange={(open) => {
+          if (!open) {
+            setCreateDialogOpen(false);
+            setEditDialogOpen(false);
+            setFormData({
+              name: "",
+              description: "",
+              agent_id: "",
+              prompt: "",
+            });
+            setSelectedProject(null);
+          }
+        }}
+      >
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
-            <DialogTitle>{editDialogOpen ? 'Edit Project' : 'Create New Project'}</DialogTitle>
+            <DialogTitle>
+              {editDialogOpen ? "Edit Project" : "Create New Project"}
+            </DialogTitle>
             <DialogDescription>
-              {editDialogOpen ? 'Update your project details.' : 'Create a new project and run it with an agent.'}
+              {editDialogOpen
+                ? "Update your project details."
+                : "Create a new project and run it with an agent."}
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
@@ -394,23 +723,32 @@ export default function ProjectPage() {
               <Input
                 id="name"
                 value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, name: e.target.value })
+                }
                 placeholder="Enter project name"
               />
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="description">Description</Label>
+              <Label htmlFor="description">Description (optional)</Label>
               <Textarea
                 id="description"
                 value={formData.description}
-                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                placeholder="Describe your project"
+                onChange={(e) =>
+                  setFormData({ ...formData, description: e.target.value })
+                }
+                placeholder="Describe your project (optional)"
                 rows={3}
               />
             </div>
             <div className="grid gap-2">
               <Label htmlFor="agent">Select Agent</Label>
-              <Select value={formData.agent_id} onValueChange={(value) => setFormData({ ...formData, agent_id: value })}>
+              <Select
+                value={formData.agent_id}
+                onValueChange={(value) =>
+                  setFormData({ ...formData, agent_id: value })
+                }
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="Choose an agent" />
                 </SelectTrigger>
@@ -428,24 +766,33 @@ export default function ProjectPage() {
               <Textarea
                 id="prompt"
                 value={formData.prompt}
-                onChange={(e) => setFormData({ ...formData, prompt: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, prompt: e.target.value })
+                }
                 placeholder="Enter your initial prompt for the agent"
                 rows={4}
               />
             </div>
           </div>
           <DialogFooter>
-            <ShadcnButton variant="outline" onClick={() => {
-              setCreateDialogOpen(false);
-              setEditDialogOpen(false);
-            }}>
+            <ShadcnButton
+              variant="outline"
+              onClick={() => {
+                setCreateDialogOpen(false);
+                setEditDialogOpen(false);
+              }}
+            >
               Cancel
             </ShadcnButton>
-            <ShadcnButton 
+            <ShadcnButton
               onClick={() => handleFormSubmit(editDialogOpen)}
               disabled={submitting}
             >
-              {submitting ? 'Saving...' : (editDialogOpen ? 'Update Project' : 'Create & Run')}
+              {submitting
+                ? "Saving..."
+                : editDialogOpen
+                  ? "Update Project"
+                  : "Create & Run"}
             </ShadcnButton>
           </DialogFooter>
         </DialogContent>
@@ -457,17 +804,137 @@ export default function ProjectPage() {
           <AlertDialogHeader>
             <AlertDialogTitle>Are you sure?</AlertDialogTitle>
             <AlertDialogDescription>
-              This will permanently delete the project "{selectedProject?.name}" and stop any running threads. This action cannot be undone.
+              This will permanently delete the project "{selectedProject?.name}"
+              and stop any running threads. This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmDeleteProject} disabled={submitting}>
-              {submitting ? 'Deleting...' : 'Delete Project'}
+            <AlertDialogAction
+              onClick={confirmDeleteProject}
+              disabled={submitting}
+            >
+              {submitting ? "Deleting..." : "Delete Project"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
     </>
   );
-} 
+}
+
+export default function ProjectPage() {
+  const [currentProject, setCurrentProject] = useState<Project | null>(null);
+  const [agents, setAgents] = useState<Agent[]>([]);
+  const [showThreadList] = useQueryState("showThreadList", {
+    defaultValue: "false",
+  });
+  const [chatHistoryOpen, setChatHistoryOpen] = useQueryState(
+    "chatHistoryOpen",
+    { defaultValue: "false" }
+  );
+  const [threadId, setThreadId] = useQueryState("threadId");
+  const [assistantId, setAssistantId] = useQueryState("assistantId");
+
+  // Sync showThreadList with chatHistoryOpen
+  useEffect(() => {
+    setChatHistoryOpen(showThreadList);
+  }, [showThreadList, setChatHistoryOpen]);
+
+  // Set threadId and assistantId when currentProject changes
+  useEffect(() => {
+    if (currentProject?.session_id) {
+      setThreadId(currentProject.session_id);
+    } else {
+      setThreadId(null);
+    }
+
+    // Set assistantId based on current agent
+    if (currentProject && agents.length > 0) {
+      const currentAgent = agents.find((a) => a.id === currentProject.agent_id);
+      if (currentAgent?.graph_name) {
+        setAssistantId(currentAgent.graph_name);
+      } else {
+        setAssistantId(null);
+      }
+    } else {
+      setAssistantId(null);
+    }
+  }, [currentProject, setThreadId, setAssistantId, agents]);
+
+  const fetchAgents = async () => {
+    try {
+      const response = await fetch("/api/agents");
+      if (response.ok) {
+        const data = await response.json();
+        setAgents(data);
+      }
+    } catch (error) {
+      console.error("Error fetching agents:", error);
+    }
+  };
+
+  const getCurrentAgent = () => {
+    if (!currentProject) return null;
+    return agents.find((a) => a.id === currentProject.agent_id);
+  };
+
+  useEffect(() => {
+    fetchAgents();
+  }, []);
+
+  const currentAgent = getCurrentAgent();
+
+  return (
+    <div className="flex flex-col h-screen w-full">
+      <Header currentView="project" />
+      <div className="flex flex-1 flex-row overflow-y-auto w-full gap-6 pt-6 pl-6 bg-[#F9FAFB]">
+        <ProjectSidebar
+          currentProject={currentProject}
+          setCurrentProject={setCurrentProject}
+        />
+
+        {/* Main content - Thread view */}
+        <div className="flex flex-col gap-6 w-full">
+          <div
+            className={cn(
+              "bg-white rounded-tl-[58px] h-full",
+              "overflow-x-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100"
+            )}
+          >
+            <div className="flex flex-col w-full h-full">
+              {currentProject && currentProject.session_id && currentAgent ? (
+                <ThreadProvider
+                  assistantId={currentAgent.graph_name}
+                  apiUrl={process.env.NEXT_PUBLIC_LANGGRAPH_API_URL}
+                >
+                  <StreamProvider
+                    apiUrl={process.env.NEXT_PUBLIC_LANGGRAPH_API_URL}
+                    assistantId={currentAgent.graph_name}
+                  >
+                    <ArtifactProvider>
+                      <Thread />
+                    </ArtifactProvider>
+                  </StreamProvider>
+                </ThreadProvider>
+              ) : (
+                <div className="flex flex-col items-center justify-center h-full text-gray-500">
+                  <h3 className="text-lg font-semibold mb-2">
+                    {currentProject
+                      ? "Loading project..."
+                      : "No project selected"}
+                  </h3>
+                  <p className="text-sm">
+                    {currentProject
+                      ? "Setting up your project workspace..."
+                      : "Select a project from the sidebar to start chatting"}
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
