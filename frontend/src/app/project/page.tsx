@@ -1,14 +1,8 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { 
-  Typography, 
-  Container, 
-  Box, 
-  Button, 
-} from '@mui/material';
 import Header from '@/components/Header';
-import { Add as AddIcon, Edit as EditIcon, Delete as DeleteIcon, PlayArrow as PlayIcon } from '@mui/icons-material';
+import { Plus, Edit, Trash2, Play } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -283,45 +277,44 @@ export default function ProjectPage() {
   return (
     <>
       <Header currentView="project" />
-      <Container maxWidth="lg">
-        <Box sx={{ mt: 4, mb: 2 }}>
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-            <Typography variant="h4" component="h1" gutterBottom>
+      <div className="container mx-auto max-w-6xl">
+        <div className="mt-8 mb-4">
+          <div className="flex justify-between items-center mb-6">
+            <h1 className="text-3xl font-bold">
               Projects
-            </Typography>
-            <Button 
-              variant="contained" 
-              color="primary" 
-              startIcon={<AddIcon />}
+            </h1>
+            <ShadcnButton 
               onClick={handleCreateProject}
+              className="flex items-center gap-2"
             >
+              <Plus className="w-4 h-4" />
               New Project
-            </Button>
-          </Box>
+            </ShadcnButton>
+          </div>
           
-          <Typography variant="body1" color="text.secondary" sx={{ mb: 4 }}>
+          <p className="text-muted-foreground mb-8">
             Create and manage your projects. Track progress, collaborate with your team, and organize your work.
-          </Typography>
+          </p>
 
           {loading ? (
-            <Typography>Loading projects...</Typography>
+            <p>Loading projects...</p>
           ) : projects.length === 0 ? (
             <Card className="text-center py-12">
               <CardContent>
-                <Typography variant="h6" gutterBottom>
+                <h3 className="text-lg font-semibold mb-2">
                   No projects yet
-                </Typography>
-                <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+                </h3>
+                <p className="text-muted-foreground mb-6">
                   Get started by creating your first project
-                </Typography>
-                <Button 
-                  variant="outlined" 
-                  color="primary" 
-                  startIcon={<AddIcon />}
+                </p>
+                <ShadcnButton 
+                  variant="outline" 
                   onClick={handleCreateProject}
+                  className="flex items-center gap-2"
                 >
+                  <Plus className="w-4 h-4" />
                   Create Project
-                </Button>
+                </ShadcnButton>
               </CardContent>
             </Card>
           ) : (
@@ -349,7 +342,7 @@ export default function ProjectPage() {
                       onClick={() => handleRunProject(project)}
                       className="flex-1"
                     >
-                      <PlayIcon className="w-4 h-4 mr-1" />
+                      <Play className="w-4 h-4 mr-1" />
                       Run
                     </ShadcnButton>
                     <ShadcnButton 
@@ -357,22 +350,22 @@ export default function ProjectPage() {
                       size="sm" 
                       onClick={() => handleEditProject(project)}
                     >
-                      <EditIcon className="w-4 h-4" />
+                      <Edit className="w-4 h-4" />
                     </ShadcnButton>
                     <ShadcnButton 
                       variant="outline" 
                       size="sm" 
                       onClick={() => handleDeleteProject(project)}
                     >
-                      <DeleteIcon className="w-4 h-4" />
+                      <Trash2 className="w-4 h-4" />
                     </ShadcnButton>
                   </CardFooter>
                 </Card>
               ))}
             </div>
           )}
-        </Box>
-      </Container>
+        </div>
+      </div>
 
       {/* Create/Edit Project Dialog */}
       <Dialog open={createDialogOpen || editDialogOpen} onOpenChange={(open) => {
