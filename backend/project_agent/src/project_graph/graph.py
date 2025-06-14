@@ -139,6 +139,7 @@ You can:
 Project ID: {project_id}
 Agent Type: {graph_name}"""
 
+    # TODO: Handle the no response error
     request = HumanInterrupt(
         action_request=action_request,
         config=interrupt_config,
