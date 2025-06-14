@@ -27,8 +27,7 @@ store = initialize_store()
 llm = init_chat_model("gpt-4o-mini", model_provider="openai", temperature=0.8)
 
 
-# TODO: Save the first message and reuse that at the next time call
-async def start_node(
+def start_node(
     state: MessagesState,
     config: ProjectConfigurable
 ) -> dict:
@@ -95,7 +94,7 @@ async def project_assistant(
     return {"messages": [response]}
 
 
-async def project_feedback(state: MessagesState, config: ProjectConfigurable) -> Command[Literal["start_node"]]:
+def project_feedback(state: MessagesState, config: ProjectConfigurable) -> Command[Literal["start_node"]]:
     """Get human feedback on the project response and handle user interaction."""
 
     logging.info(f"Project feedback: {state}")
@@ -150,7 +149,7 @@ Agent Type: {graph_name}"""
     logging.info(f"Human response: {human_response}")
 
     if human_response.get("type") == "accept":
-        return Command(goto="start_node")
+        return Command(goto="start_node", update={"messages": [latest_response]})
     elif human_response.get("type") == "response":
         # Add the human response as a new message and continue processing
         new_message = AIMessage(
@@ -160,9 +159,9 @@ Agent Type: {graph_name}"""
             goto="project_assistant"
         )
     elif human_response.get("type") == "ignore":
-        return Command(goto="start_node")
+        return Command(goto="start_node", update={"messages": [latest_response]})
     else:
-        return Command(goto="start_node")
+        return Command(goto="start_node", update={"messages": [latest_response]})
 
 
 """Build and return the project graph."""

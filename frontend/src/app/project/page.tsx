@@ -287,6 +287,7 @@ function ProjectSidebar({
         streamMode: ["messages-tuple", "values"],
         streamSubgraphs: true,
         input: { messages: [{ role: "user", content: prompt }] },
+        multitaskStrategy: "enqueue",
         config: {
           configurable: {
             graph_name: currentProject?.agent_id,
