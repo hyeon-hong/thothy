@@ -44,9 +44,9 @@ export async function POST(request: Request) {
   try {
     const { name, description, agent_id, prompt, session_id } = await request.json();
 
-    if (!name || !description || !agent_id || !prompt) {
+    if (!name || !agent_id || !prompt) {
       return NextResponse.json(
-        { error: "Name, description, agent_id, and prompt are required" },
+        { error: "Name, agent_id, and prompt are required" },
         { status: 400 }
       );
     }

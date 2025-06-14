@@ -54,7 +54,7 @@ import { useRouter } from "next/navigation";
 interface Project {
   id: string;
   name: string;
-  description: string;
+  description?: string;
   agent_id: string;
   prompt: string;
   session_id?: string;
@@ -141,7 +141,7 @@ export default function ProjectPage() {
     setSelectedProject(project);
     setFormData({
       name: project.name,
-      description: project.description,
+      description: project.description || '',
       agent_id: project.agent_id,
       prompt: project.prompt,
     });
@@ -154,8 +154,8 @@ export default function ProjectPage() {
   };
 
   const handleFormSubmit = async (isEdit: boolean = false) => {
-    if (!formData.name || !formData.description || !formData.agent_id || !formData.prompt) {
-      alert('Please fill in all fields');
+    if (!formData.name || !formData.agent_id || !formData.prompt) {
+      alert('Please fill in all required fields (Name, Agent, and Prompt)');
       return;
     }
 
@@ -335,7 +335,9 @@ export default function ProjectPage() {
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="flex-1">
-                    <p className="text-sm text-muted-foreground mb-2">{project.description}</p>
+                    {project.description && (
+                      <p className="text-sm text-muted-foreground mb-2">{project.description}</p>
+                    )}
                     <p className="text-xs text-muted-foreground bg-gray-50 p-2 rounded">
                       <strong>Prompt:</strong> {project.prompt.substring(0, 100)}{project.prompt.length > 100 ? '...' : ''}
                     </p>
@@ -399,12 +401,12 @@ export default function ProjectPage() {
               />
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="description">Description</Label>
+              <Label htmlFor="description">Description (optional)</Label>
               <Textarea
                 id="description"
                 value={formData.description}
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                placeholder="Describe your project"
+                placeholder="Describe your project (optional)"
                 rows={3}
               />
             </div>
