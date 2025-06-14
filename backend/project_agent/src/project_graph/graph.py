@@ -3,7 +3,7 @@
 from typing import Literal
 import logging
 from langchain.chat_models import init_chat_model
-from langchain_core.messages import AIMessage
+from langchain_core.messages import AIMessage, HumanMessage
 from langgraph.graph import START, MessagesState, StateGraph
 from langgraph.store.base import BaseStore
 from langgraph.types import Command, interrupt
@@ -27,15 +27,34 @@ store = initialize_store()
 llm = init_chat_model("gpt-4o-mini", model_provider="openai", temperature=0.8)
 
 
+# TODO: Save the first message and reuse that at the next time call
 async def start_node(
     state: MessagesState,
     config: ProjectConfigurable
 ) -> dict:
-    """Start node that just returns the current state without any processing."""
+    """Start node that processes state and adds user message if latest is AI message."""
 
     logging.info(f"Start node: {state}")
 
-    # Return the state
+    messages = state.get("messages", [])
+
+    # Check if we have messages and if the latest message is an AI message
+    if messages and isinstance(messages[-1], AIMessage):
+        # Find the first user message in the conversation
+        first_user_message = None
+        for msg in messages:
+            if isinstance(msg, HumanMessage):
+                first_user_message = msg
+                break
+
+        # If we found a first user message, add it to the message list
+        if first_user_message:
+            logging.info(
+                f"Adding first user message back to state: {first_user_message.content}")
+            updated_messages = messages + [first_user_message]
+            return {"messages": updated_messages}
+
+    # Return the state as-is if no changes needed
     return state
 
 
