@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Header from '@/components/Header';
-import { Plus, Edit, Trash2, Play } from 'lucide-react';
+import { Plus, Edit, Trash2 } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -22,14 +22,6 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import {
   Select,
   SelectContent,
   SelectItem,
@@ -40,10 +32,26 @@ import { Input } from "@/components/ui/input";
 import { Button as ShadcnButton } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import { Client } from "@langchain/langgraph-sdk";
-import { createClient } from "@/utils/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { useRouter } from "next/navigation";
+import { Thread } from "@/components/thread";
+import { ThreadProvider } from "@/providers/Thread";
+import { StreamProvider } from "@/providers/Stream";
+import { ArtifactProvider } from "@/components/thread/artifact";
+import { cn } from "@/lib/utils";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import {
+  Collapsible,
+  CollapsibleTrigger,
+  CollapsibleContent,
+} from "@/components/ui/collapsible";
+import { useQueryState } from "nuqs";
 
 interface Project {
   id: string;
@@ -64,7 +72,14 @@ interface Agent {
   graph_name: string;
 }
 
-export default function ProjectPage() {
+// Custom Sidebar component for projects
+function ProjectSidebar({ 
+  currentProject, 
+  setCurrentProject 
+}: { 
+  currentProject: Project | null;
+  setCurrentProject: (project: Project | null) => void;
+}) {
   const [projects, setProjects] = useState<Project[]>([]);
   const [agents, setAgents] = useState<Agent[]>([]);
   const [loading, setLoading] = useState(true);
@@ -74,9 +89,10 @@ export default function ProjectPage() {
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [formData, setFormData] = useState({ name: '', description: '', agent_id: '', prompt: '' });
   const [submitting, setSubmitting] = useState(false);
+  const [openProjects, setOpenProjects] = useState(true);
+  const [showThreadList, setShowThreadList] = useQueryState("showThreadList", { defaultValue: "false" });
   
   const { session } = useAuth();
-  const router = useRouter();
 
   // Fetch projects and agents
   useEffect(() => {
@@ -90,6 +106,10 @@ export default function ProjectPage() {
       if (response.ok) {
         const data = await response.json();
         setProjects(data);
+        // Set first project as current if none selected
+        if (data.length > 0 && !currentProject) {
+          setCurrentProject(data[0]);
+        }
       }
     } catch (error) {
       console.error('Error fetching projects:', error);
@@ -182,11 +202,17 @@ export default function ProjectPage() {
       });
 
       if (response.ok) {
+        const updatedProject = await response.json();
         await fetchProjects();
         setCreateDialogOpen(false);
         setEditDialogOpen(false);
         setFormData({ name: '', description: '', agent_id: '', prompt: '' });
         setSelectedProject(null);
+        
+        // Set as current project if it's new
+        if (!isEdit) {
+          setCurrentProject(updatedProject);
+        }
         
         // Start the run if it's a new project
         if (!isEdit && threadId) {
@@ -219,27 +245,6 @@ export default function ProjectPage() {
     }
   };
 
-  const handleRunProject = async (project: Project) => {
-    try {
-      if (!project.session_id) {
-        alert('No thread associated with this project');
-        return;
-      }
-
-      const agent = agents.find(a => a.id === project.agent_id);
-      if (!agent) {
-        alert('Agent not found');
-        return;
-      }
-
-      // Navigate to the agent page with the thread
-      router.push(`/agents/${agent.graph_name}?threadId=${project.session_id}`);
-    } catch (error) {
-      console.error('Error running project:', error);
-      alert('Failed to run project');
-    }
-  };
-
   const confirmDeleteProject = async () => {
     if (!selectedProject) return;
 
@@ -253,6 +258,10 @@ export default function ProjectPage() {
       if (response.ok) {
         await fetchProjects();
         setDeleteDialogOpen(false);
+        // Reset current project if it was deleted
+        if (currentProject?.id === selectedProject.id) {
+          setCurrentProject(null);
+        }
         setSelectedProject(null);
       } else {
         const error = await response.json();
@@ -275,96 +284,165 @@ export default function ProjectPage() {
     return agent?.name || 'Unknown Agent';
   };
 
+  const gradients = [
+    "linear-gradient(to right, #FF416C, #FF4B2B)",
+    "linear-gradient(to right, #4158D0, #C850C0)",
+    "linear-gradient(to right, #0093E9, #80D0C7)",
+    "linear-gradient(to right, #8EC5FC, #E0C3FC)",
+    "linear-gradient(to right, #43E97B, #38F9D7)",
+    "linear-gradient(to right, #FA8BFF, #2BD2FF)",
+    "linear-gradient(to right, #FEE140, #FA709A)",
+    "linear-gradient(to right, #3EECAC, #EE74E1)",
+    "linear-gradient(to right, #4facfe, #00f2fe)",
+    "linear-gradient(to right, #F6D242, #FF52E5)",
+  ];
+
+  function hashString(str: string): number {
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) {
+      const char = str.charCodeAt(i);
+      hash = (hash << 5) - hash + char;
+      hash = hash & hash;
+    }
+    return Math.abs(hash);
+  }
+
   return (
     <>
-      <Header currentView="project" />
-      <div className="container mx-auto max-w-6xl">
-        <div className="mt-8 mb-4">
-          <div className="flex justify-between items-center mb-6">
-            <h1 className="text-3xl font-bold">
-              Projects
-            </h1>
-            <ShadcnButton 
-              onClick={handleCreateProject}
-              className="flex items-center gap-2"
-            >
-              <Plus className="w-4 h-4" />
-              New Project
-            </ShadcnButton>
+      <div className="flex-shrink-0 w-64 bg-[#F9FAFB] border-r-0">
+        <div className="flex flex-col pb-9 pt-6">
+          <div className="flex items-center justify-between px-11">
+            <span className="text-xl font-semibold flex-shrink-0">Projects</span>
           </div>
-          
-          <p className="text-muted-foreground mb-8">
-            Create and manage your projects. Track progress, collaborate with your team, and organize your work.
-          </p>
+          <div className="flex-1 pt-6 px-2">
+            {loading ? (
+              <div className="flex flex-col gap-2 pl-7">
+                {[1, 2, 3].map((i) => (
+                  <div
+                    key={i}
+                    className="flex items-center gap-2 p-2 animate-pulse"
+                  >
+                    <div className="w-6 h-6 rounded-md bg-gray-200" />
+                    <div className="h-4 bg-gray-200 rounded w-24" />
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <>
+                {/* Create Project Button */}
+                <div className="px-7 mb-4">
+                  <ShadcnButton 
+                    onClick={handleCreateProject}
+                    className="w-full flex items-center gap-2"
+                    size="sm"
+                  >
+                    <Plus className="w-4 h-4" />
+                    New Project
+                  </ShadcnButton>
+                </div>
 
-          {loading ? (
-            <p>Loading projects...</p>
-          ) : projects.length === 0 ? (
-            <Card className="text-center py-12">
-              <CardContent>
-                <h3 className="text-lg font-semibold mb-2">
-                  No projects yet
-                </h3>
-                <p className="text-muted-foreground mb-6">
-                  Get started by creating your first project
-                </p>
-                <ShadcnButton 
-                  variant="outline" 
-                  onClick={handleCreateProject}
-                  className="flex items-center gap-2"
-                >
-                  <Plus className="w-4 h-4" />
-                  Create Project
-                </ShadcnButton>
-              </CardContent>
-            </Card>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {projects.map((project) => (
-                <Card key={project.id} className="h-full">
-                  <CardHeader>
-                    <CardTitle>{project.name}</CardTitle>
-                    <CardDescription>
-                      {getAgentName(project.agent_id)} • Created {formatDate(project.created_at)}
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="flex-1">
-                    {project.description && (
-                      <p className="text-sm text-muted-foreground mb-2">{project.description}</p>
-                    )}
-                    <p className="text-xs text-muted-foreground bg-gray-50 p-2 rounded">
-                      <strong>Prompt:</strong> {project.prompt.substring(0, 100)}{project.prompt.length > 100 ? '...' : ''}
-                    </p>
-                  </CardContent>
-                  <CardFooter className="flex gap-2">
-                    <ShadcnButton 
-                      variant="default" 
-                      size="sm" 
-                      onClick={() => handleRunProject(project)}
-                      className="flex-1"
-                    >
-                      <Play className="w-4 h-4 mr-1" />
-                      Run
-                    </ShadcnButton>
-                    <ShadcnButton 
-                      variant="outline" 
-                      size="sm" 
-                      onClick={() => handleEditProject(project)}
-                    >
-                      <Edit className="w-4 h-4" />
-                    </ShadcnButton>
-                    <ShadcnButton 
-                      variant="outline" 
-                      size="sm" 
-                      onClick={() => handleDeleteProject(project)}
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </ShadcnButton>
-                  </CardFooter>
-                </Card>
-              ))}
-            </div>
-          )}
+                {/* Show Thread List Toggle */}
+                <div className="px-7 mb-4">
+                  <div className="flex items-center space-x-2">
+                    <Switch 
+                      id="show-thread-list" 
+                      checked={showThreadList === "true"}
+                      onCheckedChange={(checked) => setShowThreadList(checked ? "true" : "false")}
+                    />
+                    <Label htmlFor="show-thread-list" className="text-sm">Show Thread List</Label>
+                  </div>
+                </div>
+
+                {/* Collapsible Projects Section */}
+                <Collapsible open={openProjects} onOpenChange={setOpenProjects}>
+                  <CollapsibleTrigger asChild>
+                    <div className="flex items-center cursor-pointer select-none text-sm font-medium text-gray-500 mb-2 pl-2">
+                      <span className="mr-2">My Projects</span>
+                      <span>{openProjects ? "▾" : "▸"}</span>
+                    </div>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent>
+                    <div className="flex flex-col gap-2 pl-7 mb-6">
+                      {projects.length === 0 ? (
+                        <p className="text-sm text-gray-500 p-2">No projects yet</p>
+                      ) : (
+                        projects.map((project, idx) => {
+                          const label = project.name;
+                          return (
+                            <div
+                              key={`project-${project.id}-${idx}`}
+                              className={cn(
+                                "flex items-center w-full",
+                                currentProject?.id === project.id ? "bg-gray-100 rounded-md" : ""
+                              )}
+                            >
+                              <TooltipProvider>
+                                <Tooltip delayduration={200}>
+                                  <TooltipTrigger asChild>
+                                    <button
+                                      className="flex items-center gap-2 p-2 w-full text-left hover:bg-gray-100 rounded-md"
+                                      onClick={() => setCurrentProject(project)}
+                                    >
+                                      <div
+                                        className="w-6 h-6 rounded-md flex-shrink-0 flex items-center justify-center text-white"
+                                        style={{
+                                          background:
+                                            gradients[
+                                              hashString(project.id) %
+                                                gradients.length
+                                            ],
+                                        }}
+                                      >
+                                        {label.slice(0, 1).toUpperCase()}
+                                      </div>
+                                      <span className="truncate min-w-0 font-medium text-gray-600">
+                                        {label}
+                                      </span>
+                                    </button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <div>
+                                      <p className="font-medium">{label}</p>
+                                      <p className="text-xs text-gray-500">{getAgentName(project.agent_id)}</p>
+                                      <p className="text-xs text-gray-500">Created {formatDate(project.created_at)}</p>
+                                    </div>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
+                              <div className="flex gap-1 pr-2">
+                                <ShadcnButton
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleEditProject(project);
+                                  }}
+                                  className="h-6 w-6 p-0"
+                                >
+                                  <Edit className="w-3 h-3" />
+                                </ShadcnButton>
+                                <ShadcnButton
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleDeleteProject(project);
+                                  }}
+                                  className="h-6 w-6 p-0"
+                                >
+                                  <Trash2 className="w-3 h-3" />
+                                </ShadcnButton>
+                              </div>
+                            </div>
+                          );
+                        })
+                      )}
+                    </div>
+                  </CollapsibleContent>
+                </Collapsible>
+              </>
+            )}
+          </div>
         </div>
       </div>
 
@@ -465,5 +543,96 @@ export default function ProjectPage() {
         </AlertDialogContent>
       </AlertDialog>
     </>
+  );
+}
+
+export default function ProjectPage() {
+  const [currentProject, setCurrentProject] = useState<Project | null>(null);
+  const [agents, setAgents] = useState<Agent[]>([]);
+  const [showThreadList] = useQueryState("showThreadList", { defaultValue: "false" });
+  const [chatHistoryOpen, setChatHistoryOpen] = useQueryState("chatHistoryOpen", { defaultValue: "false" });
+  const [threadId, setThreadId] = useQueryState("threadId");
+
+  // Sync showThreadList with chatHistoryOpen
+  useEffect(() => {
+    setChatHistoryOpen(showThreadList);
+  }, [showThreadList, setChatHistoryOpen]);
+
+  // Set threadId when currentProject changes
+  useEffect(() => {
+    if (currentProject?.session_id) {
+      setThreadId(currentProject.session_id);
+    } else {
+      setThreadId(null);
+    }
+  }, [currentProject, setThreadId]);
+
+  useEffect(() => {
+    fetchAgents();
+  }, []);
+
+  const fetchAgents = async () => {
+    try {
+      const response = await fetch('/api/agents');
+      if (response.ok) {
+        const data = await response.json();
+        setAgents(data);
+      }
+    } catch (error) {
+      console.error('Error fetching agents:', error);
+    }
+  };
+
+  const getCurrentAgent = () => {
+    if (!currentProject) return null;
+    return agents.find(a => a.id === currentProject.agent_id);
+  };
+
+  const currentAgent = getCurrentAgent();
+
+  return (
+    <div className="flex flex-col h-screen w-full">
+      <Header currentView="project" />
+      <div className="flex flex-1 flex-row overflow-y-auto w-full gap-6 pt-6 pl-6 bg-[#F9FAFB]">
+        <ProjectSidebar currentProject={currentProject} setCurrentProject={setCurrentProject} />
+        
+        {/* Main content - Thread view */}
+        <div className="flex flex-col gap-6 w-full">
+          <div
+            className={cn(
+              "bg-white rounded-tl-[58px] h-full",
+              "overflow-x-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100"
+            )}
+          >
+            <div className="flex flex-col w-full h-full">
+              {currentProject && currentProject.session_id && currentAgent ? (
+                <ThreadProvider 
+                  assistantId={currentAgent.graph_name}
+                  apiUrl={process.env.NEXT_PUBLIC_LANGGRAPH_API_URL}
+                >
+                  <StreamProvider
+                    apiUrl={process.env.NEXT_PUBLIC_LANGGRAPH_API_URL}
+                    assistantId={currentAgent.graph_name}
+                  >
+                    <ArtifactProvider>
+                      <Thread />
+                    </ArtifactProvider>
+                  </StreamProvider>
+                </ThreadProvider>
+              ) : (
+                <div className="flex flex-col items-center justify-center h-full text-gray-500">
+                  <h3 className="text-lg font-semibold mb-2">
+                    {currentProject ? 'Loading project...' : 'No project selected'}
+                  </h3>
+                  <p className="text-sm">
+                    {currentProject ? 'Setting up your project workspace...' : 'Select a project from the sidebar to start chatting'}
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 } 
