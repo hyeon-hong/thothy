@@ -896,12 +896,12 @@ export default function TaskPage() {
             <div className="flex flex-col w-full h-full">
               {currentTask && currentTask.session_id && currentAgent ? (
                 <ThreadProvider
-                  assistantId={assistantId}
+                  assistantId={currentTask.assistant_id}
                   apiUrl={process.env.NEXT_PUBLIC_LANGGRAPH_API_URL}
                 >
                   <StreamProvider
                     apiUrl={process.env.NEXT_PUBLIC_LANGGRAPH_API_URL}
-                    assistantId={assistantId}
+                    assistantId={currentTask.assistant_id}
                   >
                     <ArtifactProvider>
                       <Thread />
