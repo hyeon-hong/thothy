@@ -233,9 +233,7 @@ function TaskSidebar({
         assistant_id: assistantId,
       };
 
-      const url = isEdit
-        ? `/api/tasks/${selectedTask?.id}`
-        : "/api/tasks";
+      const url = isEdit ? `/api/tasks/${selectedTask?.id}` : "/api/tasks";
       const method = isEdit ? "PUT" : "POST";
 
       const response = await fetch(url, {
@@ -455,9 +453,7 @@ function TaskSidebar({
       <div className="flex-shrink-0 w-64 bg-[#F9FAFB] border-r-0">
         <div className="flex flex-col pb-9 pt-6">
           <div className="flex items-center justify-between px-11">
-            <span className="text-xl font-semibold flex-shrink-0">
-              Tasks
-            </span>
+            <span className="text-xl font-semibold flex-shrink-0">Tasks</span>
           </div>
           <div className="flex-1 pt-6 px-2">
             {loading ? (
@@ -804,8 +800,8 @@ function TaskSidebar({
           <AlertDialogHeader>
             <AlertDialogTitle>Are you sure?</AlertDialogTitle>
             <AlertDialogDescription>
-              This will permanently delete the task "{selectedTask?.name}"
-              and stop any running threads. This action cannot be undone.
+              This will permanently delete the task "{selectedTask?.name}" and
+              stop any running threads. This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -849,18 +845,13 @@ export default function TaskPage() {
       setThreadId(null);
     }
 
-    // Set assistantId based on current agent
-    if (currentTask && agents.length > 0) {
-      const currentAgent = agents.find((a) => a.id === currentTask.agent_id);
-      if (currentAgent?.graph_name) {
-        setAssistantId(currentAgent.graph_name);
-      } else {
-        setAssistantId(null);
-      }
+    // Set assistantId based on current task's assistant_id
+    if (currentTask?.assistant_id) {
+      setAssistantId(currentTask.assistant_id);
     } else {
       setAssistantId(null);
     }
-  }, [currentTask, setThreadId, setAssistantId, agents]);
+  }, [currentTask, setThreadId, setAssistantId]);
 
   const fetchAgents = async () => {
     try {
@@ -905,12 +896,12 @@ export default function TaskPage() {
             <div className="flex flex-col w-full h-full">
               {currentTask && currentTask.session_id && currentAgent ? (
                 <ThreadProvider
-                  assistantId={currentAgent.graph_name}
+                  assistantId={assistantId}
                   apiUrl={process.env.NEXT_PUBLIC_LANGGRAPH_API_URL}
                 >
                   <StreamProvider
                     apiUrl={process.env.NEXT_PUBLIC_LANGGRAPH_API_URL}
-                    assistantId={currentAgent.graph_name}
+                    assistantId={assistantId}
                   >
                     <ArtifactProvider>
                       <Thread />
@@ -920,9 +911,7 @@ export default function TaskPage() {
               ) : (
                 <div className="flex flex-col items-center justify-center h-full text-gray-500">
                   <h3 className="text-lg font-semibold mb-2">
-                    {currentTask
-                      ? "Loading task..."
-                      : "No task selected"}
+                    {currentTask ? "Loading task..." : "No task selected"}
                   </h3>
                   <p className="text-sm">
                     {currentTask
