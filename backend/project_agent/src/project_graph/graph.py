@@ -144,7 +144,6 @@ You can:
 Project ID: {project_id}
 Agent Type: {graph_name}"""
 
-    # TODO: Handle the no response error
     request = HumanInterrupt(
         action_request=action_request,
         config=interrupt_config,
@@ -160,7 +159,7 @@ Agent Type: {graph_name}"""
         return Command(goto="start_node", update={"messages": [latest_response]})
     elif human_response.get("type") == "response":
         # Add the human response as a new message and continue processing
-        new_message = AIMessage(
+        new_message = HumanMessage(
             content=f"Follow-up: {human_response.get('args', '')}")
         return Command(
             update={"messages": [new_message]},
