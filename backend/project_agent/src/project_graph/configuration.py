@@ -19,7 +19,7 @@ class ProjectConfigurable:
     staff_id: str = "default"
     agent_id: str = "default"
     user_id: str = "default"
-    graph_name: str = "project_graph"
+    graph_name: str = "chat_graph"
 
     model: str = "anthropic/claude-3-5-sonnet-20240620"
     delay_seconds: int = 1
