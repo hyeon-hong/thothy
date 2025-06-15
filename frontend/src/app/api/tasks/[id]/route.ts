@@ -27,7 +27,7 @@ export async function PUT(
       updated_at: new Date().toISOString()
     };
 
-    // Update the project in the database
+    // Update the task in the database
     const { data, error } = await supabase
       .from('tasks')
       .update(dataToUpdate)
@@ -37,23 +37,23 @@ export async function PUT(
       .single();
 
     if (error) {
-      console.error('Error updating project:', error);
+      console.error('Error updating task:', error);
       return NextResponse.json(
-        { error: 'Failed to update project' },
+        { error: 'Failed to update task' },
         { status: 500 }
       );
     }
 
     if (!data) {
       return NextResponse.json(
-        { error: 'Project not found or unauthorized' },
+        { error: 'Task not found or unauthorized' },
         { status: 404 }
       );
     }
 
     return NextResponse.json(data);
   } catch (error) {
-    console.error('Error in projects API:', error);
+    console.error('Error in tasks API:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
@@ -79,23 +79,23 @@ export async function DELETE(
       );
     }
 
-    // First, get the project to check if it exists and get session_id
-    const { data: project, error: fetchError } = await supabase
+    // First, get the task to check if it exists and get session_id
+    const { data: task, error: fetchError } = await supabase
       .from('tasks')
       .select('session_id')
       .eq('id', id)
       .eq('user_id', user.id)
       .single();
 
-    if (fetchError || !project) {
+    if (fetchError || !task) {
       return NextResponse.json(
-        { error: 'Project not found or unauthorized' },
+        { error: 'Task not found or unauthorized' },
         { status: 404 }
       );
     }
 
     // If there's a session_id (thread_id), delete the thread from LangGraph
-    if (project.session_id) {
+    if (task.session_id) {
       try {
         const { data: { session } } = await supabase.auth.getSession();
         const accessToken = session?.access_token;
@@ -110,7 +110,7 @@ export async function DELETE(
           });
 
           // Delete the thread
-          await client.threads.delete(project.session_id);
+          await client.threads.delete(task.session_id);
         }
       } catch (langGraphError) {
         console.error('Error deleting LangGraph thread:', langGraphError);
@@ -118,7 +118,7 @@ export async function DELETE(
       }
     }
 
-    // Delete the project from the database
+    // Delete the task from the database
     const { error } = await supabase
       .from('tasks')
       .delete()
@@ -126,16 +126,16 @@ export async function DELETE(
       .eq('user_id', user.id);
 
     if (error) {
-      console.error('Error deleting project:', error);
+      console.error('Error deleting task:', error);
       return NextResponse.json(
-        { error: 'Failed to delete project' },
+        { error: 'Failed to delete task' },
         { status: 500 }
       );
     }
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('Error in projects API:', error);
+    console.error('Error in tasks API:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
