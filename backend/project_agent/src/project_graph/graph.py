@@ -1,4 +1,4 @@
-"""Simple project agent using LangGraph."""
+"""Project agent using LangGraph."""
 
 from typing import Literal
 import logging
@@ -34,6 +34,7 @@ def start_node(
     """Start node that processes state and adds user message if latest is AI message."""
 
     logging.info(f"Start node: {state}")
+    logging.info(f"messages: {state.get('messages')}")
 
     messages = state.get("messages", [])
 
@@ -43,7 +44,7 @@ def start_node(
         first_user_message = None
         for msg in messages:
             if isinstance(msg, HumanMessage):
-                first_user_message = msg
+                first_user_message = HumanMessage(content=msg.content)
                 break
 
         # If we found a first user message, add it to the message list
@@ -51,6 +52,8 @@ def start_node(
             logging.info(
                 f"Adding first user message back to state: {first_user_message.content}")
             updated_messages = messages + [first_user_message]
+            logging.info(f"first_user_message: {first_user_message}")
+            logging.info(f"updated messages: {updated_messages}")
             return {"messages": updated_messages}
 
     # Return the state as-is if no changes needed
@@ -66,6 +69,7 @@ async def project_assistant(
     """Project assistant node that processes messages and generates responses."""
 
     logging.info(f"Project assistant: {state}")
+    logging.info(f"messages: {state.get('messages')}")
 
     # Get configurable values
     configurable = ProjectConfigurable.from_runnable_config(config)
@@ -98,6 +102,7 @@ def project_feedback(state: MessagesState, config: ProjectConfigurable) -> Comma
     """Get human feedback on the project response and handle user interaction."""
 
     logging.info(f"Project feedback: {state}")
+    logging.info(f"messages: {state.get('messages')}")
 
     # Get the latest message and response
     messages = state.get("messages", [])
@@ -148,6 +153,8 @@ Agent Type: {graph_name}"""
 
     human_response: HumanResponse = interrupt([request])[0]
     logging.info(f"Human response: {human_response}")
+
+    # return {"messages": [latest_response]}
 
     if human_response.get("type") == "accept":
         return Command(goto="start_node", update={"messages": [latest_response]})

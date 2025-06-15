@@ -15,6 +15,7 @@ export default function AgentPage() {
       case "chat_graph":
       case "data_graph":
       case "dashboard_graph":
+      case "project_graph":
       case "research_graph":
       case "slide_graph":
       case "slide_build_graph":
