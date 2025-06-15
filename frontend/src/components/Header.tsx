@@ -188,7 +188,7 @@ export default function Header({ currentView }: HeaderProps) {
           <Box sx={{ display: "flex", gap: 2, alignItems: "center" }}>
             {currentView !== "login" && (
               <>
-                {user && (
+                {user && false && (
                   <Button
                     color={currentView === "inbox" ? "primary" : "inherit"}
                     onClick={handleInboxClick}

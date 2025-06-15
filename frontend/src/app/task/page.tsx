@@ -213,7 +213,7 @@ function TaskSidebar({
 
         // Create assistant first
         const assistant = await client.assistants.create({
-          graphId: "project_graph",
+          graphId: "task_graph",
           config: {
             configurable: {
               graph_name: agent.graph_name,
