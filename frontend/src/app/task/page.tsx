@@ -53,7 +53,7 @@ import {
 } from "@/components/ui/collapsible";
 import { useQueryState } from "nuqs";
 
-interface Project {
+interface Task {
   id: string;
   name: string;
   description?: string;
@@ -74,20 +74,20 @@ interface Agent {
 }
 
 // Custom Sidebar component for projects
-function ProjectSidebar({
-  currentProject,
-  setCurrentProject,
+function TaskSidebar({
+  currentTask,
+  setCurrentTask,
 }: {
-  currentProject: Project | null;
-  setCurrentProject: (project: Project | null) => void;
+  currentTask: Task | null;
+  setCurrentTask: (task: Task | null) => void;
 }) {
-  const [projects, setProjects] = useState<Project[]>([]);
+  const [tasks, setTasks] = useState<Task[]>([]);
   const [agents, setAgents] = useState<Agent[]>([]);
   const [loading, setLoading] = useState(true);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [selectedProject, setSelectedProject] = useState<Project | null>(null);
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [formData, setFormData] = useState({
     name: "",
     description: "",
@@ -95,7 +95,7 @@ function ProjectSidebar({
     prompt: "",
   });
   const [submitting, setSubmitting] = useState(false);
-  const [openProjects, setOpenProjects] = useState(true);
+  const [openTasks, setOpenTasks] = useState(true);
   const [showThreadList, setShowThreadList] = useQueryState("showThreadList", {
     defaultValue: "false",
   });
@@ -110,30 +110,30 @@ function ProjectSidebar({
 
   // Fetch projects and agents
   useEffect(() => {
-    fetchProjects();
+    fetchTasks();
     fetchAgents();
   }, []);
 
   // Clean up run status when project changes
   useEffect(() => {
-    if (runStatus && runStatus.threadId !== currentProject?.session_id) {
+    if (runStatus && runStatus.threadId !== currentTask?.session_id) {
       setRunStatus(null);
     }
-  }, [currentProject, runStatus]);
+  }, [currentTask, runStatus]);
 
-  const fetchProjects = async () => {
+  const fetchTasks = async () => {
     try {
-      const response = await fetch("/api/projects");
+      const response = await fetch("/api/tasks");
       if (response.ok) {
         const data = await response.json();
-        setProjects(data);
+        setTasks(data);
         // Set first project as current if none selected
-        if (data.length > 0 && !currentProject) {
-          setCurrentProject(data[0]);
+        if (data.length > 0 && !currentTask) {
+          setCurrentTask(data[0]);
         }
       }
     } catch (error) {
-      console.error("Error fetching projects:", error);
+      console.error("Error fetching tasks:", error);
     } finally {
       setLoading(false);
     }
@@ -169,24 +169,24 @@ function ProjectSidebar({
     });
   };
 
-  const handleCreateProject = () => {
+  const handleCreateTask = () => {
     setFormData({ name: "", description: "", agent_id: "", prompt: "" });
     setCreateDialogOpen(true);
   };
 
-  const handleEditProject = (project: Project) => {
-    setSelectedProject(project);
+  const handleEditTask = (task: Task) => {
+    setSelectedTask(task);
     setFormData({
-      name: project.name,
-      description: project.description || "",
-      agent_id: project.agent_id,
-      prompt: project.prompt,
+      name: task.name,
+      description: task.description || "",
+      agent_id: task.agent_id,
+      prompt: task.prompt,
     });
     setEditDialogOpen(true);
   };
 
-  const handleDeleteProject = (project: Project) => {
-    setSelectedProject(project);
+  const handleDeleteTask = (task: Task) => {
+    setSelectedTask(task);
     setDeleteDialogOpen(true);
   };
 
@@ -199,8 +199,8 @@ function ProjectSidebar({
     setSubmitting(true);
 
     try {
-      let threadId = selectedProject?.session_id;
-      let assistantId = selectedProject?.assistant_id;
+      let threadId = selectedTask?.session_id;
+      let assistantId = selectedTask?.assistant_id;
 
       // Create thread and assistant if it's a new project or if editing and no thread exists
       if (!isEdit || !threadId) {
@@ -227,15 +227,15 @@ function ProjectSidebar({
         threadId = thread.thread_id;
       }
 
-      const projectData = {
+      const taskData = {
         ...formData,
         session_id: threadId,
         assistant_id: assistantId,
       };
 
       const url = isEdit
-        ? `/api/projects/${selectedProject?.id}`
-        : "/api/projects";
+        ? `/api/tasks/${selectedTask?.id}`
+        : "/api/tasks";
       const method = isEdit ? "PUT" : "POST";
 
       const response = await fetch(url, {
@@ -243,23 +243,23 @@ function ProjectSidebar({
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(projectData),
+        body: JSON.stringify(taskData),
       });
 
       if (response.ok) {
-        const updatedProject = await response.json();
-        await fetchProjects();
+        const updatedTask = await response.json();
+        await fetchTasks();
         setCreateDialogOpen(false);
         setEditDialogOpen(false);
         setFormData({ name: "", description: "", agent_id: "", prompt: "" });
-        setSelectedProject(null);
+        setSelectedTask(null);
 
-        // Set as current project if it's new
+        // Set as current task if it's new
         if (!isEdit) {
-          setCurrentProject(updatedProject);
+          setCurrentTask(updatedTask);
         }
 
-        // Start the run if it's a new project
+        // Start the run if it's a new task
         if (!isEdit && threadId && assistantId) {
           await startRun(threadId, assistantId, formData.prompt);
         }
@@ -268,8 +268,8 @@ function ProjectSidebar({
         alert(`Error: ${error.error}`);
       }
     } catch (error) {
-      console.error("Error saving project:", error);
-      alert("Failed to save project");
+      console.error("Error saving task:", error);
+      alert("Failed to save task");
     } finally {
       setSubmitting(false);
     }
@@ -290,7 +290,7 @@ function ProjectSidebar({
         multitaskStrategy: "enqueue",
         config: {
           configurable: {
-            graph_name: currentProject?.agent_id,
+            graph_name: currentTask?.agent_id,
           },
         },
       });
@@ -359,7 +359,7 @@ function ProjectSidebar({
     if (
       !runStatus ||
       runStatus.status !== "interrupted" ||
-      !currentProject?.assistant_id
+      !currentTask?.assistant_id
     )
       return;
 
@@ -369,7 +369,7 @@ function ProjectSidebar({
       // Resume the run using Command with resume value
       const resumeRun = await client.runs.create(
         runStatus.threadId,
-        currentProject.assistant_id,
+        currentTask.assistant_id,
         {
           command: { resume: resumeValue || true },
         }
@@ -388,31 +388,31 @@ function ProjectSidebar({
     }
   };
 
-  const confirmDeleteProject = async () => {
-    if (!selectedProject) return;
+  const confirmDeleteTask = async () => {
+    if (!selectedTask) return;
 
     setSubmitting(true);
 
     try {
-      const response = await fetch(`/api/projects/${selectedProject.id}`, {
+      const response = await fetch(`/api/tasks/${selectedTask.id}`, {
         method: "DELETE",
       });
 
       if (response.ok) {
-        await fetchProjects();
+        await fetchTasks();
         setDeleteDialogOpen(false);
-        // Reset current project if it was deleted
-        if (currentProject?.id === selectedProject.id) {
-          setCurrentProject(null);
+        // Reset current task if it was deleted
+        if (currentTask?.id === selectedTask.id) {
+          setCurrentTask(null);
         }
-        setSelectedProject(null);
+        setSelectedTask(null);
       } else {
         const error = await response.json();
         alert(`Error: ${error.error}`);
       }
     } catch (error) {
-      console.error("Error deleting project:", error);
-      alert("Failed to delete project");
+      console.error("Error deleting task:", error);
+      alert("Failed to delete task");
     } finally {
       setSubmitting(false);
     }
@@ -456,7 +456,7 @@ function ProjectSidebar({
         <div className="flex flex-col pb-9 pt-6">
           <div className="flex items-center justify-between px-11">
             <span className="text-xl font-semibold flex-shrink-0">
-              Projects
+              Tasks
             </span>
           </div>
           <div className="flex-1 pt-6 px-2">
@@ -474,15 +474,15 @@ function ProjectSidebar({
               </div>
             ) : (
               <>
-                {/* Create Project Button */}
+                {/* Create Task Button */}
                 <div className="px-7 mb-4">
                   <ShadcnButton
-                    onClick={handleCreateProject}
+                    onClick={handleCreateTask}
                     className="w-full flex items-center gap-2"
                     size="sm"
                   >
                     <Plus className="w-4 h-4" />
-                    New Project
+                    New Task
                   </ShadcnButton>
                 </div>
 
@@ -504,7 +504,7 @@ function ProjectSidebar({
 
                 {/* Interrupt Status */}
                 {runStatus?.status === "interrupted" &&
-                  runStatus.threadId === currentProject?.session_id && (
+                  runStatus.threadId === currentTask?.session_id && (
                     <div className="px-7 mb-4">
                       <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
                         <div className="flex items-center gap-2 mb-2">
@@ -556,7 +556,7 @@ function ProjectSidebar({
 
                 {/* Run Status Indicator */}
                 {runStatus &&
-                  runStatus.threadId === currentProject?.session_id &&
+                  runStatus.threadId === currentTask?.session_id &&
                   runStatus.status !== "interrupted" && (
                     <div className="px-7 mb-4">
                       <div
@@ -588,29 +588,29 @@ function ProjectSidebar({
                     </div>
                   )}
 
-                {/* Collapsible Projects Section */}
-                <Collapsible open={openProjects} onOpenChange={setOpenProjects}>
+                {/* Collapsible Tasks Section */}
+                <Collapsible open={openTasks} onOpenChange={setOpenTasks}>
                   <CollapsibleTrigger asChild>
                     <div className="flex items-center cursor-pointer select-none text-sm font-medium text-gray-500 mb-2 pl-2">
-                      <span className="mr-2">My Projects</span>
-                      <span>{openProjects ? "▾" : "▸"}</span>
+                      <span className="mr-2">My Tasks</span>
+                      <span>{openTasks ? "▾" : "▸"}</span>
                     </div>
                   </CollapsibleTrigger>
                   <CollapsibleContent>
                     <div className="flex flex-col gap-2 pl-7 mb-6">
-                      {projects.length === 0 ? (
+                      {tasks.length === 0 ? (
                         <p className="text-sm text-gray-500 p-2">
-                          No projects yet
+                          No tasks yet
                         </p>
                       ) : (
-                        projects.map((project, idx) => {
-                          const label = project.name;
+                        tasks.map((task, idx) => {
+                          const label = task.name;
                           return (
                             <div
-                              key={`project-${project.id}-${idx}`}
+                              key={`task-${task.id}-${idx}`}
                               className={cn(
                                 "flex items-center w-full",
-                                currentProject?.id === project.id
+                                currentTask?.id === task.id
                                   ? "bg-gray-100 rounded-md"
                                   : ""
                               )}
@@ -620,14 +620,14 @@ function ProjectSidebar({
                                   <TooltipTrigger asChild>
                                     <button
                                       className="flex items-center gap-2 p-2 w-full text-left hover:bg-gray-100 rounded-md"
-                                      onClick={() => setCurrentProject(project)}
+                                      onClick={() => setCurrentTask(task)}
                                     >
                                       <div
                                         className="w-6 h-6 rounded-md flex-shrink-0 flex items-center justify-center text-white"
                                         style={{
                                           background:
                                             gradients[
-                                              hashString(project.id) %
+                                              hashString(task.id) %
                                                 gradients.length
                                             ],
                                         }}
@@ -643,10 +643,10 @@ function ProjectSidebar({
                                     <div>
                                       <p className="font-medium">{label}</p>
                                       <p className="text-xs text-gray-500">
-                                        {getAgentName(project.agent_id)}
+                                        {getAgentName(task.agent_id)}
                                       </p>
                                       <p className="text-xs text-gray-500">
-                                        Created {formatDate(project.created_at)}
+                                        Created {formatDate(task.created_at)}
                                       </p>
                                     </div>
                                   </TooltipContent>
@@ -658,7 +658,7 @@ function ProjectSidebar({
                                   size="sm"
                                   onClick={(e) => {
                                     e.stopPropagation();
-                                    handleEditProject(project);
+                                    handleEditTask(task);
                                   }}
                                   className="h-6 w-6 p-0"
                                 >
@@ -669,7 +669,7 @@ function ProjectSidebar({
                                   size="sm"
                                   onClick={(e) => {
                                     e.stopPropagation();
-                                    handleDeleteProject(project);
+                                    handleDeleteTask(task);
                                   }}
                                   className="h-6 w-6 p-0"
                                 >
@@ -689,7 +689,7 @@ function ProjectSidebar({
         </div>
       </div>
 
-      {/* Create/Edit Project Dialog */}
+      {/* Create/Edit Task Dialog */}
       <Dialog
         open={createDialogOpen || editDialogOpen}
         onOpenChange={(open) => {
@@ -702,31 +702,31 @@ function ProjectSidebar({
               agent_id: "",
               prompt: "",
             });
-            setSelectedProject(null);
+            setSelectedTask(null);
           }
         }}
       >
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
             <DialogTitle>
-              {editDialogOpen ? "Edit Project" : "Create New Project"}
+              {editDialogOpen ? "Edit Task" : "Create New Task"}
             </DialogTitle>
             <DialogDescription>
               {editDialogOpen
-                ? "Update your project details."
-                : "Create a new project and run it with an agent."}
+                ? "Update your task details."
+                : "Create a new task and run it with an agent."}
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
-              <Label htmlFor="name">Project Name</Label>
+              <Label htmlFor="name">Task Name</Label>
               <Input
                 id="name"
                 value={formData.name}
                 onChange={(e) =>
                   setFormData({ ...formData, name: e.target.value })
                 }
-                placeholder="Enter project name"
+                placeholder="Enter task name"
               />
             </div>
             <div className="grid gap-2">
@@ -737,7 +737,7 @@ function ProjectSidebar({
                 onChange={(e) =>
                   setFormData({ ...formData, description: e.target.value })
                 }
-                placeholder="Describe your project (optional)"
+                placeholder="Describe your task (optional)"
                 rows={3}
               />
             </div>
@@ -791,7 +791,7 @@ function ProjectSidebar({
               {submitting
                 ? "Saving..."
                 : editDialogOpen
-                  ? "Update Project"
+                  ? "Update Task"
                   : "Create & Run"}
             </ShadcnButton>
           </DialogFooter>
@@ -804,17 +804,17 @@ function ProjectSidebar({
           <AlertDialogHeader>
             <AlertDialogTitle>Are you sure?</AlertDialogTitle>
             <AlertDialogDescription>
-              This will permanently delete the project "{selectedProject?.name}"
+              This will permanently delete the task "{selectedTask?.name}"
               and stop any running threads. This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
-              onClick={confirmDeleteProject}
+              onClick={confirmDeleteTask}
               disabled={submitting}
             >
-              {submitting ? "Deleting..." : "Delete Project"}
+              {submitting ? "Deleting..." : "Delete Task"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -823,8 +823,8 @@ function ProjectSidebar({
   );
 }
 
-export default function ProjectPage() {
-  const [currentProject, setCurrentProject] = useState<Project | null>(null);
+export default function TaskPage() {
+  const [currentTask, setCurrentTask] = useState<Task | null>(null);
   const [agents, setAgents] = useState<Agent[]>([]);
   const [showThreadList] = useQueryState("showThreadList", {
     defaultValue: "false",
@@ -841,17 +841,17 @@ export default function ProjectPage() {
     setChatHistoryOpen(showThreadList);
   }, [showThreadList, setChatHistoryOpen]);
 
-  // Set threadId and assistantId when currentProject changes
+  // Set threadId and assistantId when currentTask changes
   useEffect(() => {
-    if (currentProject?.session_id) {
-      setThreadId(currentProject.session_id);
+    if (currentTask?.session_id) {
+      setThreadId(currentTask.session_id);
     } else {
       setThreadId(null);
     }
 
     // Set assistantId based on current agent
-    if (currentProject && agents.length > 0) {
-      const currentAgent = agents.find((a) => a.id === currentProject.agent_id);
+    if (currentTask && agents.length > 0) {
+      const currentAgent = agents.find((a) => a.id === currentTask.agent_id);
       if (currentAgent?.graph_name) {
         setAssistantId(currentAgent.graph_name);
       } else {
@@ -860,7 +860,7 @@ export default function ProjectPage() {
     } else {
       setAssistantId(null);
     }
-  }, [currentProject, setThreadId, setAssistantId, agents]);
+  }, [currentTask, setThreadId, setAssistantId, agents]);
 
   const fetchAgents = async () => {
     try {
@@ -875,8 +875,8 @@ export default function ProjectPage() {
   };
 
   const getCurrentAgent = () => {
-    if (!currentProject) return null;
-    return agents.find((a) => a.id === currentProject.agent_id);
+    if (!currentTask) return null;
+    return agents.find((a) => a.id === currentTask.agent_id);
   };
 
   useEffect(() => {
@@ -887,11 +887,11 @@ export default function ProjectPage() {
 
   return (
     <div className="flex flex-col h-screen w-full">
-      <Header currentView="project" />
+      <Header currentView="task" />
       <div className="flex flex-1 flex-row overflow-y-auto w-full gap-6 pt-6 pl-6 bg-[#F9FAFB]">
-        <ProjectSidebar
-          currentProject={currentProject}
-          setCurrentProject={setCurrentProject}
+        <TaskSidebar
+          currentTask={currentTask}
+          setCurrentTask={setCurrentTask}
         />
 
         {/* Main content - Thread view */}
@@ -903,7 +903,7 @@ export default function ProjectPage() {
             )}
           >
             <div className="flex flex-col w-full h-full">
-              {currentProject && currentProject.session_id && currentAgent ? (
+              {currentTask && currentTask.session_id && currentAgent ? (
                 <ThreadProvider
                   assistantId={currentAgent.graph_name}
                   apiUrl={process.env.NEXT_PUBLIC_LANGGRAPH_API_URL}
@@ -920,14 +920,14 @@ export default function ProjectPage() {
               ) : (
                 <div className="flex flex-col items-center justify-center h-full text-gray-500">
                   <h3 className="text-lg font-semibold mb-2">
-                    {currentProject
-                      ? "Loading project..."
-                      : "No project selected"}
+                    {currentTask
+                      ? "Loading task..."
+                      : "No task selected"}
                   </h3>
                   <p className="text-sm">
-                    {currentProject
-                      ? "Setting up your project workspace..."
-                      : "Select a project from the sidebar to start chatting"}
+                    {currentTask
+                      ? "Setting up your task workspace..."
+                      : "Select a task from the sidebar to start chatting"}
                   </p>
                 </div>
               )}

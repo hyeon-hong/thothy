@@ -159,7 +159,7 @@ export default function Header({ currentView }: HeaderProps) {
 
   // New handler for Task menu
   const handleTaskClick = () => {
-    router.push("/project");
+    router.push("/task");
   };
 
   return (
