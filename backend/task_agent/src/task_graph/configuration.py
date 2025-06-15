@@ -1,4 +1,4 @@
-"""Define the configurable parameters for the project bot."""
+"""Define the configurable parameters for the task bot."""
 
 import os
 import copy as copy_module
@@ -7,11 +7,11 @@ from typing import Any, Optional, Iterator, Tuple
 
 from langchain_core.runnables import RunnableConfig
 
-from project_graph.prompts import SYSTEM_PROMPT
+from task_graph.prompts import SYSTEM_PROMPT
 
 
 @dataclass(kw_only=True)
-class ProjectConfigurable:
+class TaskConfigurable:
     """The configurable fields for the project assistant."""
 
     project_id: str = "default"
@@ -25,7 +25,7 @@ class ProjectConfigurable:
     delay_seconds: int = 1
     system_prompt: str = SYSTEM_PROMPT
 
-    def copy(self) -> "ProjectConfigurable":
+    def copy(self) -> "TaskConfigurable":
         """Create a copy of this configurable."""
         return copy_module.deepcopy(self)
 
@@ -52,7 +52,7 @@ class ProjectConfigurable:
     @classmethod
     def from_runnable_config(
         cls, config: Optional[RunnableConfig] = None
-    ) -> "ProjectConfigurable":
+    ) -> "TaskConfigurable":
         """Load configuration."""
         configurable = (
             config["configurable"] if config and "configurable" in config

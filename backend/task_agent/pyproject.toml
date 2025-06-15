@@ -1,5 +1,5 @@
 [project]
-name = "project_agent"
+name = "task_agent"
 version = "0.0.1"
 description = "An agent that can chat with project members."
 authors = [
@@ -33,10 +33,10 @@ requires = ["setuptools>=73.0.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools]
-packages = ["project_graph", "thothy.project_graph"]
+packages = ["task_graph", "thothy.task_graph"]
 [tool.setuptools.package-dir]
-"project_graph" = "src/project_graph"
-"thothy.project_graph" = "src/project_graph"
+"task_graph" = "src/task_graph"
+"thothy.task_graph" = "src/task_graph"
 
 
 [tool.setuptools.package-data]

@@ -1,4 +1,4 @@
-"""Project agent using LangGraph."""
+"""Task agent using LangGraph."""
 
 from typing import Literal
 import logging
@@ -9,12 +9,12 @@ from langgraph.store.base import BaseStore
 from langgraph.types import Command, interrupt
 from langgraph.prebuilt.interrupt import (
     ActionRequest,
-    HumanInterrupt,
+    HumanInterrupt,  
     HumanInterruptConfig,
     HumanResponse,
 )
 
-from project_graph.configuration import ProjectConfigurable
+from task_graph.configuration import TaskConfigurable
 from blog_graph.graph import graph as blog_graph
 from chat_graph.graph import graph as chat_graph
 from news_graph.graph import graph as news_graph
@@ -29,7 +29,7 @@ llm = init_chat_model("gpt-4o-mini", model_provider="openai", temperature=0.8)
 
 def start_node(
     state: MessagesState,
-    config: ProjectConfigurable
+    config: TaskConfigurable
 ) -> dict:
     """Start node that processes state and adds user message if latest is AI message."""
 
@@ -60,19 +60,19 @@ def start_node(
     return state
 
 
-async def project_assistant(
+async def task_assistant(
     state: MessagesState,
-    config: ProjectConfigurable,
+    config: TaskConfigurable,
     *,
     store: BaseStore
 ) -> dict:
-    """Project assistant node that processes messages and generates responses."""
+    """Task assistant node that processes messages and generates responses."""
 
-    logging.info(f"Project assistant: {state}")
+    logging.info(f"Task assistant: {state}")
     logging.info(f"messages: {state.get('messages')}")
 
     # Get configurable values
-    configurable = ProjectConfigurable.from_runnable_config(config)
+    configurable = TaskConfigurable.from_runnable_config(config)
     graph_name = configurable.graph_name
 
     # Route to the appropriate agent based on graph_name
@@ -98,10 +98,10 @@ async def project_assistant(
     return {"messages": [response]}
 
 
-def project_feedback(state: MessagesState, config: ProjectConfigurable) -> Command[Literal["start_node"]]:
-    """Get human feedback on the project response and handle user interaction."""
+def task_feedback(state: MessagesState, config: TaskConfigurable) -> Command[Literal["start_node"]]:
+    """Get human feedback on the task response and handle user interaction."""
 
-    logging.info(f"Project feedback: {state}")
+    logging.info(f"Task feedback: {state}")
     logging.info(f"messages: {state.get('messages')}")
 
     # Get the latest message and response
@@ -113,12 +113,12 @@ def project_feedback(state: MessagesState, config: ProjectConfigurable) -> Comma
     user_message = messages[-2] if len(messages) > 1 else None
 
     # Get configurable values for context
-    configurable = ProjectConfigurable.from_runnable_config(config)
+    configurable = TaskConfigurable.from_runnable_config(config)
     project_id = configurable.project_id
     graph_name = configurable.graph_name
 
     action_request = ActionRequest(
-        action="Review Project Response",
+        action="Review Task Response",
         args={
             "project_id": project_id,
             "graph_name": graph_name,
@@ -134,7 +134,7 @@ def project_feedback(state: MessagesState, config: ProjectConfigurable) -> Comma
         allow_accept=True
     )
 
-    description = f"""Project Agent ({graph_name}) has completed processing your request.
+    description = f"""Task Agent ({graph_name}) has completed processing your request.
 
 You can:
 - Accept the response as-is
@@ -163,7 +163,7 @@ Agent Type: {graph_name}"""
             content=f"Follow-up: {human_response.get('args', '')}")
         return Command(
             update={"messages": [new_message]},
-            goto="project_assistant"
+            goto="task_assistant"
         )
     elif human_response.get("type") == "ignore":
         return Command(goto="start_node", update={"messages": [latest_response]})
@@ -171,22 +171,22 @@ Agent Type: {graph_name}"""
         return Command(goto="start_node", update={"messages": [latest_response]})
 
 
-"""Build and return the project graph."""
+"""Build and return the task graph."""
 
 # Initialize graph builder with state schema
-workflow = StateGraph(MessagesState, ProjectConfigurable)
+workflow = StateGraph(MessagesState, TaskConfigurable)
 
 # Add nodes
 workflow.add_node("start_node", start_node)
-workflow.add_node("project_assistant", project_assistant)
-workflow.add_node("project_feedback", project_feedback)
+workflow.add_node("task_assistant", task_assistant)
+workflow.add_node("task_feedback", task_feedback)
 
-# Add edges - start at start_node, then project_assistant, then feedback, then back to start_node
+# Add edges - start at start_node, then task_assistant, then feedback, then back to start_node
 workflow.add_edge(START, "start_node")
-workflow.add_edge("start_node", "project_assistant")
-workflow.add_edge("project_assistant", "project_feedback")
-workflow.add_edge("project_feedback", "start_node")
+workflow.add_edge("start_node", "task_assistant")
+workflow.add_edge("task_assistant", "task_feedback")
+workflow.add_edge("task_feedback", "start_node")
 
 # Compile graph
 graph = workflow.compile(store=store)
-graph.name = "project_graph"
+graph.name = "task_graph"
