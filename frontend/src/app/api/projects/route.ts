@@ -17,7 +17,7 @@ export async function GET() {
 
     // Fetch projects for the current user
     const { data, error } = await supabase
-      .from('projects')
+      .from('tasks')
       .select('*')
       .eq('user_id', user.id)
       .order('created_at', { ascending: false });
@@ -64,7 +64,7 @@ export async function POST(request: Request) {
 
     // Insert the project into the database
     const { data, error } = await supabase
-      .from('projects')
+      .from('tasks')
       .insert([
         {
           name,

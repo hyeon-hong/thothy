@@ -29,7 +29,7 @@ export async function PUT(
 
     // Update the project in the database
     const { data, error } = await supabase
-      .from('projects')
+      .from('tasks')
       .update(dataToUpdate)
       .eq('id', id)
       .eq('user_id', user.id)
@@ -81,7 +81,7 @@ export async function DELETE(
 
     // First, get the project to check if it exists and get session_id
     const { data: project, error: fetchError } = await supabase
-      .from('projects')
+      .from('tasks')
       .select('session_id')
       .eq('id', id)
       .eq('user_id', user.id)
@@ -120,7 +120,7 @@ export async function DELETE(
 
     // Delete the project from the database
     const { error } = await supabase
-      .from('projects')
+      .from('tasks')
       .delete()
       .eq('id', id)
       .eq('user_id', user.id);

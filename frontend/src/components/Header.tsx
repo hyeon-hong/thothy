@@ -33,7 +33,7 @@ interface HeaderProps {
     | "blog"
     | "login"
     | "agents"
-    | "project";
+    | "task";
 }
 
 interface PricingPolicyData {
@@ -95,15 +95,15 @@ export default function Header({ currentView }: HeaderProps) {
   };
 
   // Function to check if a menu should be visible based on pricing policy
-  const isMenuVisible = (menuType: "project") => {
+  const isMenuVisible = (menuType: "task") => {
     if (policyLoading || !pricingPolicy) return false;
 
     if (isPolicyType("Enterprise")) {
       return true;
     } else if (isPolicyType("Business")) {
-      return menuType !== "project";
+      return menuType !== "task";
     } else {
-      return !["project"].includes(menuType);
+      return !["task"].includes(menuType);
     }
   };
 
@@ -157,8 +157,8 @@ export default function Header({ currentView }: HeaderProps) {
     router.push("/team");
   };
 
-  // New handler for Project menu
-  const handleProjectClick = () => {
+  // New handler for Task menu
+  const handleTaskClick = () => {
     router.push("/project");
   };
 
@@ -219,16 +219,16 @@ export default function Header({ currentView }: HeaderProps) {
                   Agent
                 </Button>
 
-                {user && isMenuVisible("project") && (
+                {user && isMenuVisible("task") && (
                   <Button
-                    color={currentView === "project" ? "primary" : "inherit"}
-                    onClick={handleProjectClick}
+                    color={currentView === "task" ? "primary" : "inherit"}
+                    onClick={handleTaskClick}
                     sx={{
                       ...navButtonStyle,
-                      fontWeight: currentView === "project" ? 700 : 400,
+                      fontWeight: currentView === "task" ? 700 : 400,
                     }}
                   >
-                    Project
+                    Task
                   </Button>
                 )}
 
