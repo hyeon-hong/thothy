@@ -7,9 +7,9 @@ from langchain_core.messages import SystemMessage, HumanMessage, AIMessageChunk
 from dashboard_graph.ppt_generator.models.llm_models import LLMPresentationModel
 
 CREATE_PRESENTATION_PROMPT = """
-                You're a professional presenter with years of experience in creating clear and engaging presentations. 
+                You're a professional presenter with years of experience in creating clear and engaging presentations.
 
-                Create a presentation using the provided slide titles, images, and additional data, following specified steps and guidelines. 
+                Create a presentation using the provided slide titles, images, and additional data, following specified steps and guidelines.
 
                 Analyze all inputs, including slide titles, graphs, summary, big idea, story and spreadsheet content to construct each slide with appropriate content and format.
 
@@ -36,7 +36,7 @@ CREATE_PRESENTATION_PROMPT = """
                 - User prompt should be respected beyond all rules or constraints.
                 - If the presentation is academic, then make only take the chapter text as context and create presentation according to that text and structure. Don't assume or put text or context which is not in the text.
                 - If **Story** is provided, presentation should follow the story flow.
-                - When you have to express single numbers like percentage or figures, you should use inforgraphics but for a collection of numbers in series you can use charts. 
+                - When you have to express single numbers like percentage or figures, you should use inforgraphics but for a collection of numbers in series you can use charts.
                 - Freely select type with images and icons.
                 - Introduction and Conclusion should have *Type 1* if graph is not assigned.
                 - Try to select **different types for every slides**.
@@ -51,7 +51,7 @@ CREATE_PRESENTATION_PROMPT = """
                 - For slide content follow these rules:
                     - Highlighting in markdown format should be used to emphasize numbers and data.
                     - Adhere to length contraints in **body** and **description**. Focus on direct communication within character constrainsts than lengthy explanation.
-                    - **body** and **description** in slides should never exceed character limits of 2000 characters.
+                    - **body** and **description** in slides should never exceed character limits of 200 characters.
                     - Specify **don't include text in image** in image prompt.
                     - All the numbers should be bolded with **bold** tag in body or description of slide.
                     - Image prompt should cleary define how image should look like.
