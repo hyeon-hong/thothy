@@ -46,15 +46,17 @@ CREATE_PRESENTATION_PROMPT = """
                 - Every series in a graph should have data in same unit. Example: all series should be in percentage or all series should be in number of items.
                 - Type **9** and **5** should be only picked if graph is available.
                 - **Strictly keep the text under given limit.**
+                - Don't distribute one table data in markdown format to multiple slide. Make only one slide for one table data. Don't divide table data to multiple slide.
+                - Use *Type 2* for table data.
                 - For slide content follow these rules:
                     - Highlighting in markdown format should be used to emphasize numbers and data.
                     - Adhere to length contraints in **body** and **description**. Focus on direct communication within character constrainsts than lengthy explanation.
-                    - **body** and **description** in slides should never exceed character limits of 200 characters.
+                    - **body** and **description** in slides should never exceed character limits of 2000 characters.
                     - Specify **don't include text in image** in image prompt.
                     - All the numbers should be bolded with **bold** tag in body or description of slide.
                     - Image prompt should cleary define how image should look like.
                     - Image prompt should not ask to generate **numbers, graphs, dashboard and report**.
-                    - Examples of image prompts: 
+                    - Examples of image prompts:
                         - a travel agent presenting a detailed itinerary with photos of destinations, showcasing specific experiences, highlighting travel highlights
                         - a person smiling while traveling, with a beautiful background scenery, such as mountains, beach, or city,  golden hour lighting
                         - a humanoid robot standing tall, gazing confidently at the horizon, bathed in warm sunlight, the background showing a futuristic cityscape with sleek buildings and flying vehicles
@@ -88,7 +90,8 @@ def generate_presentation_stream(
     user_message = HumanMessage(user_message.replace("-|0|-", "\n"))
 
     model = (
-        ChatOpenAI(model="gpt-4.1")
+        # ChatOpenAI(model="gpt-4.1")
+        ChatOpenAI(model="gpt-4.1-mini")
         if os.getenv("LLM") == "openai"
         else ChatGoogleGenerativeAI(model="gemini-2.0-flash")
     )

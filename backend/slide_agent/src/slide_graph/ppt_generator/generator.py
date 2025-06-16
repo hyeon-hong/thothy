@@ -88,7 +88,8 @@ def generate_presentation_stream(
     user_message = HumanMessage(user_message.replace("-|0|-", "\n"))
 
     model = (
-        ChatOpenAI(model="gpt-4.1")
+        # ChatOpenAI(model="gpt-4.1")
+        ChatOpenAI(model="gpt-4.1-mini")
         if os.getenv("LLM") == "openai"
         else ChatGoogleGenerativeAI(model="gemini-2.0-flash")
     )
