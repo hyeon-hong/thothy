@@ -46,4 +46,4 @@
 | Dividend Yield |                   0% |                   0% |
 | Monthly Return |              +8.1% |             +11.2% |
 
-Write a report on the comparison of the two companies
+Write a graph on the comparison of the two companies' metrics.
