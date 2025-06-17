@@ -143,4 +143,108 @@ The past year has solidified the positions of Alphabet and Amazon as two of the 
 
 **Amazon (AMZN):** The investment case for Amazon is a bet on the continued, unassailable dominance of AWS and the transformative power of AI to unlock significant margin expansion in its vast retail and logistics empire. The stock commands a premium valuation, reflecting the market's high expectations for this dual-engine growth story. However, this also makes it more vulnerable to shifts in investor sentiment and macroeconomic headwinds. Its primary risks are its sensitivity to consumer discretionary spending, geopolitical trade tensions and tariffs, and the immense capital expenditure required to build and maintain its global infrastructure lead.
 
-For investors, the choice between these two titans depends on their risk appetite and investment horizon. Alphabet offers a "growth at a more reasonable price" profile, buttressed by a new dividend. Amazon presents a higher-growth, higher-valuation proposition, contingent on flawless execution in both cloud and AI-driven retail efficiency. Key signposts for investors to monitor will be the adoption and monetization rates of Google's AI Overviews and the operating margins of the Google Cloud segment. For Amazon, the crucial metrics will be the operating margins of its North America retail segment—a proxy for AI efficiency gains—and the growth rate of the AWS backlog, which signals future revenue visibility. 
+For investors, the choice between these two titans depends on their risk appetite and investment horizon. Alphabet offers a "growth at a more reasonable price" profile, buttressed by a new dividend. Amazon presents a higher-growth, higher-valuation proposition, contingent on flawless execution in both cloud and AI-driven retail efficiency. Key signposts for investors to monitor will be the adoption and monetization rates of Google's AI Overviews and the operating margins of the Google Cloud segment. For Amazon, the crucial metrics will be the operating margins of its North America retail segment—a proxy for AI efficiency gains—and the growth rate of the AWS backlog, which signals future revenue visibility.
+
+# Alphabet vs. Amazon.com: Monthly Metrics Comparison (June 2024 – May 2025)
+
+## Comparative Tables
+
+### Share Price (USD)
+
+| Month      | Alphabet | Amazon.com |
+|------------|----------|------------|
+| Jun 2024   | $181.27  | $193.25    |
+| Jul 2024   | $170.71  | $186.98    |
+| Aug 2024   | $162.59  | $178.50    |
+| Sep 2024   | $165.27  | $186.33    |
+| Oct 2024   | $170.51  | $186.40    |
+| Nov 2024   | $168.36  | $207.89    |
+| Dec 2024   | $188.85  | $219.39    |
+| Jan 2025   | $203.54  | $237.68    |
+| Feb 2025   | $169.88  | $212.28    |
+| Mar 2025   | $154.45  | $190.26    |
+| Apr 2025   | $158.61  | $184.42    |
+| May 2025   | $171.53  | $205.01    |
+
+### P/E Ratio (TTM)
+
+| Month      | Alphabet | Amazon.com |
+|------------|----------|------------|
+| Jun 2024   | 26.0     | 46.2       |
+| Jul 2024   | ~24.5    | ~44.7      |
+| Aug 2024   | ~23.3    | ~42.7      |
+| Sep 2024   | 21.9     | 39.9       |
+| Oct 2024   | ~22.6    | ~39.9      |
+| Nov 2024   | ~22.3    | ~44.5      |
+| Dec 2024   | 23.5     | 39.7       |
+| Jan 2025   | ~25.3    | ~43.0      |
+| Feb 2025   | ~21.1    | ~38.4      |
+| Mar 2025   | 17.2     | 31.0       |
+| Apr 2025   | ~17.7    | ~25.8      |
+| May 2025   | ~19.1    | ~33.4      |
+
+### Market Cap (USD)
+
+| Month      | Alphabet         | Amazon.com        |
+|------------|------------------|-------------------|
+| Jun 2024   | $2.265T          | $2.069T           |
+| Jul 2024   | ~$2.120T         | ~$2.007T          |
+| Aug 2024   | ~$2.019T         | ~$1.916T          |
+| Sep 2024   | $2.052T          | $2.000T           |
+| Oct 2024   | ~$2.105T         | ~$1.998T          |
+| Nov 2024   | ~$2.079T         | $2.229T           |
+| Dec 2024   | $2.332T          | $2.352T           |
+| Jan 2025   | $2.502T          | $2.565T           |
+| Feb 2025   | $2.088T          | $2.291T           |
+| Mar 2025   | $1.898T          | $2.053T           |
+| Apr 2025   | $1.931T          | $1.958T           |
+| May 2025   | $2.088T          | $2.176T           |
+
+### Dividend Yield (TTM)
+
+| Month      | Alphabet | Amazon.com |
+|------------|----------|------------|
+| Jun 2024   | 0%       | 0%         |
+| Jul 2024   | 0%       | 0%         |
+| Aug 2024   | 0%       | 0%         |
+| Sep 2024   | 0%       | 0%         |
+| Oct 2024   | 0%       | 0%         |
+| Nov 2024   | 0%       | 0%         |
+| Dec 2024   | 0%       | 0%         |
+| Jan 2025   | 0%       | 0%         |
+| Feb 2025   | 0%       | 0%         |
+| Mar 2025   | 0%       | 0%         |
+| Apr 2025   | 0%       | 0%         |
+| May 2025   | 0%       | 0%         |
+
+### Monthly Return (%)
+
+| Month      | Alphabet | Amazon.com |
+|------------|----------|------------|
+| Jun 2024   | –        | –          |
+| Jul 2024   | –5.8%    | –3.2%      |
+| Aug 2024   | –4.8%    | –4.5%      |
+| Sep 2024   | +1.6%    | +4.4%      |
+| Oct 2024   | +3.2%    | +0.04%     |
+| Nov 2024   | –1.3%    | +11.5%     |
+| Dec 2024   | +12.2%   | +5.5%      |
+| Jan 2025   | +7.8%    | +8.3%      |
+| Feb 2025   | –16.5%   | –10.7%     |
+| Mar 2025   | –9.1%    | –10.4%     |
+| Apr 2025   | +2.7%    | –3.1%      |
+| May 2025   | +8.1%    | +11.2%     |
+
+## Analytics Summary
+
+- **Share Price:** Both companies experienced volatility, but Amazon.com generally maintained a higher share price than Alphabet throughout the period. Both saw peaks in January 2025, with Amazon.com reaching $237.68 and Alphabet $203.54. Both companies experienced significant drops in February and March 2025, with partial recoveries by May 2025.
+
+- **P/E Ratio:** Amazon.com consistently had a much higher P/E ratio than Alphabet, reflecting higher growth expectations or lower earnings relative to price. Both companies saw a decline in P/E ratios over the period, with Alphabet's dropping more sharply, indicating either improved earnings or reduced investor optimism.
+
+- **Market Cap:** Amazon.com and Alphabet had similar market capitalizations, with Amazon.com slightly ahead by May 2025. Both companies' market caps peaked in January 2025, followed by a dip and then a recovery.
+
+- **Dividend Yield:** Neither company paid dividends during this period, as reflected by a 0% yield throughout.
+
+- **Monthly Return:** Both companies experienced negative returns in several months, especially in February and March 2025. However, both also had strong positive months, notably December 2024 and May 2025. Amazon.com had a particularly strong November 2024 (+11.5%) and May 2025 (+11.2%), while Alphabet's best month was December 2024 (+12.2%).
+
+**Conclusion:**
+- Amazon.com generally traded at higher valuations and share prices, reflecting strong growth expectations, especially for its cloud and retail businesses. Alphabet, while slightly more volatile, showed resilience and strong recovery after downturns. Both companies remain highly competitive, with performance closely tied to broader market trends and their respective business strategies. 
