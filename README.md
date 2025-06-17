@@ -32,10 +32,11 @@ Thothy leverages [LangGraph](https://github.com/langchain-ai/langgraph) for agen
 
 ```bash
 # Clone the repository
-git clone https://github.com/ai.thothy/thothy.git
+git clone https://github.com/realbits-lab/thothy.git
 cd thothy
 
-# Install dependencies
+# Install dependencies (if available)
+# Note: Dependencies are managed per agent in the backend/ directory
 pip install -r requirements.txt
 ```
 
@@ -44,7 +45,7 @@ pip install -r requirements.txt
 Here's a command to get you started:
 
 ```bash
-langgraph dev --config langgraph-develop.json
+langgraph dev --config langgraph-python-develop.json
 ```
 
 ### Running Langgraph
@@ -53,22 +54,22 @@ Thothy uses Langgraph for orchestrating agents. You can run Langgraph in both de
 
 #### Development Mode
 
-Development mode uses the `langgraph-develop.json` configuration file with authentication enabled:
+Development mode uses the [`langgraph-python-develop.json`](langgraph-python-develop.json) configuration file with authentication enabled:
 
 ```bash
-langgraph dev --config langgraph-develop.json
+langgraph dev --config langgraph-python-develop.json
 ```
 
 #### Production Mode
 
-Production mode uses the default `langgraph.json` configuration file (with authentication disabled):
+Production mode uses the [`langgraph-python-main.json`](langgraph-python-main.json) configuration file (with authentication disabled):
 
 ```bash
-# Using the default config file
-langgraph dev
+# Using a production config file
+langgraph dev --config langgraph-python-main.json
 
-# Or explicitly specifying the config file
-langgraph dev --config langgraph.json
+# Or use the local config for development
+langgraph dev --config langgraph-python-local.json
 ```
 
 #### Configuration Differences
@@ -87,18 +88,18 @@ Choose the appropriate configuration based on your security requirements and dep
 If you encounter this error:
 
 ```
-ValueError: Auth file '/workspace/thothy/agents/security/auth.py' not covered by dependencies.
+ValueError: Auth file '/workspace/thothy/backend/security/auth.py' not covered by dependencies.
 Add its parent directory to the 'dependencies' array in your config.
 ```
 
-Make sure to include the security module in your dependencies:
+Make sure to include the security module in your dependencies. Check the [`langgraph-python-develop.json`](langgraph-python-develop.json) file for the current dependency structure:
 
 ```json
 "dependencies": [
-  "./agents/chat_agent/src/chat_graph",
-  "./agents/research_agent/src/research_graph",
-  "./agents/open_deep_research_agent/src/open_deep_research_graph",
-  "./agents/security"
+  "./backend/chat_agent",
+  "./backend/research_agent",
+  "./backend/security",
+  "./backend/libs/thothy"
 ]
 ```
 
@@ -108,26 +109,40 @@ Any directory referenced in the configuration must be included in the dependenci
 
 ```
 thothy/
-├── agents/              # Agent implementations
-│   ├── chat_agent/      # Interactive chat agent
-│   └── research_agent/  # Research and data collection agent
-├── docs/                # Documentation
-├── examples/            # Example scripts and use cases
-├── frontend/            # Web interface components
-├── outputs/             # Default output directory for crawled data
-├── tests/               # Test suite
-└── tools/               # Utility tools and helpers
+├── backend/                    # Backend agent implementations
+│   ├── blog_agent/            # Blog content generation agent
+│   ├── chat_agent/            # Interactive chat agent
+│   ├── dashboard_agent/       # Dashboard management agent
+│   ├── data_agent/            # Data processing agent
+│   ├── data_research_agent/   # Data research and analysis agent
+│   ├── news_agent/            # News aggregation agent
+│   ├── research_agent/        # Research and data collection agent
+│   ├── security/              # Authentication and security
+│   ├── slide_agent/           # Presentation generation agent
+│   ├── slide_build_agent/     # Slide building automation
+│   ├── task_agent/            # Task management agent
+│   ├── team_agent/            # Team collaboration agent
+│   ├── ui_agent/              # UI generation agent
+│   ├── ui_build_agent/        # UI building automation
+│   ├── ui_eval_agent/         # UI evaluation agent
+│   └── libs/                  # Shared libraries
+├── docs/                      # [Documentation](docs/)
+├── frontend/                  # Web interface components
+├── langgraph-python-*.json    # LangGraph configuration files
+└── env.example                # Environment variables template
 ```
 
 ## 👥 Contributing
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+We'd love your help in making Thothy even better! Contributions are welcome and greatly appreciated.
 
 1. Fork the repository
 2. Create your feature branch (`git checkout -b feature/amazing-feature`)
 3. Commit your changes (`git commit -m 'Add some amazing feature'`)
 4. Push to the branch (`git push origin feature/amazing-feature`)
 5. Open a Pull Request
+
+Please read our [Code of Conduct](CODE_OF_CONDUCT.md) before contributing.
 
 ## ⚙️ Development Guidelines
 
@@ -155,6 +170,10 @@ git checkout -b feature/your-feature
 git push origin feature/your-feature
 ```
 
+
+## 📄 License
+
+This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENSE) file for details.
 
 ## 🙏 Acknowledgements
 
