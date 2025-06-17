@@ -161,5 +161,8 @@
     "@langchain/langgraph-checkpoint": "^0.0.16",
     "prismjs": "^1.30.0"
   },
-  "packageManager": "pnpm@9.1.2"
+  "packageManager": "pnpm@9.1.2",
+  "engines": {
+    "node": ">=20.18.3"
+  }
 }
