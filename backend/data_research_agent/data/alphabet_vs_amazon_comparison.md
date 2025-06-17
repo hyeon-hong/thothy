@@ -248,3 +248,5 @@ For investors, the choice between these two titans depends on their risk appetit
 
 **Conclusion:**
 - Amazon.com generally traded at higher valuations and share prices, reflecting strong growth expectations, especially for its cloud and retail businesses. Alphabet, while slightly more volatile, showed resilience and strong recovery after downturns. Both companies remain highly competitive, with performance closely tied to broader market trends and their respective business strategies. 
+
+Write the comparison of the two companies' metrics.

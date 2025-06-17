@@ -26,9 +26,10 @@ CREATE_PRESENTATION_PROMPT = """
                 1. Analyze Prompt, and other provided data.
                 2. Use Slide titles provided in **Titles**.
                 3. Generate Slide Content for each slide. Make sure it has all the context and information required to create this individual slide from.
-                4. Select slide type.
-                5. Output should be in json format as per given schema.
-                6. **Adherence to schema should be beyond all the rules mentioned in notes.**
+                4. Generate a slide per table or graph.
+                5. Select slide type.
+                6. Output should be in json format as per given schema.
+                7. **Adherence to schema should be beyond all the rules mentioned in notes.**
 
                 # Notes
                 - Generate output in language mentioned in *Input*.
@@ -37,6 +38,7 @@ CREATE_PRESENTATION_PROMPT = """
                 - If the presentation is academic, then make only take the chapter text as context and create presentation according to that text and structure. Don't assume or put text or context which is not in the text.
                 - If **Story** is provided, presentation should follow the story flow.
                 - When you have to express single numbers like percentage or figures, you should use inforgraphics but for a collection of numbers in series you can use charts.
+                - Should select Type **5** for table or number data.
                 - Freely select type with images and icons.
                 - Introduction and Conclusion should have *Type 1* if graph is not assigned.
                 - Try to select **different types for every slides**.
@@ -47,7 +49,6 @@ CREATE_PRESENTATION_PROMPT = """
                 - Type **9** and **5** should be only picked if graph is available.
                 - **Strictly keep the text under given limit.**
                 - Don't distribute one table data in markdown format to multiple slide. Make only one slide for one table data. Don't divide table data to multiple slide.
-                - Use *Type 2* for table data.
                 - For slide content follow these rules:
                     - Highlighting in markdown format should be used to emphasize numbers and data.
                     - Adhere to length contraints in **body** and **description**. Focus on direct communication within character constrainsts than lengthy explanation.
