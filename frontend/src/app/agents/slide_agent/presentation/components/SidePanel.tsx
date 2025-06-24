@@ -5,7 +5,7 @@ import ToolTip from "@/components/ToolTip";
 import { Button } from "@/components/ui/button";
 import { useDispatch, useSelector } from "react-redux";
 import { RootState } from "@/store/store";
-import { DashboardApi } from "@/app/dashboard/api/dashboard";
+import { DashboardApi } from "@/app/agents/slide_agent/dashboard";
 import {
   DndContext,
   closestCenter,
