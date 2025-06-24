@@ -1,9 +1,11 @@
 """Chat agent using LangGraph with MCP tools."""
 
-import logging
+from typing import Any, Union, Literal
+from pydantic import BaseModel
+from langchain_core.messages import AnyMessage
 from langchain_mcp_adapters.client import MultiServerMCPClient
 from langgraph.graph import StateGraph, MessagesState, START, END
-from langgraph.prebuilt import ToolNode, tools_condition
+from langgraph.prebuilt import ToolNode
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.messages import AIMessage
 import os
@@ -22,9 +24,8 @@ async def make_graph():
     mcp_client = MultiServerMCPClient(
         {
             "dart-mcp": {
-                "command": "python",
-                "args": ["dart.py"],
-                "cwd": DART_MCP_REL_PATH,
+                "command": "uv",
+                "args": ["--directory", DART_MCP_REL_PATH, "run", "dart.py"],
                 "env": {
                     "DART_API_KEY": DART_API_KEY
                 },
@@ -34,41 +35,61 @@ async def make_graph():
     )
 
     mcp_tools = await mcp_client.get_tools()
-    logging.info(f"Available tools: {[tool.name for tool in mcp_tools]}")
+    # logging.info(f"Available tools: {[tool.name for tool in mcp_tools]}")
 
     model = ChatGoogleGenerativeAI(
-        model="gemini-2.0-flash", google_api_key=GOOGLE_API_KEY
+        model="gemini-2.5-flash", temperature=0
     ).bind_tools(mcp_tools)
 
     async def call_model(state: MessagesState):
         """Call the model with the state."""
 
         response = await model.ainvoke(state["messages"])
-        logging.info(f"response: {response}")
+        # logging.info(f"response: {response}")
 
-        ai_message = AIMessage(content=response.content)
+        return {"messages": [response]}
 
-        return {"messages": [ai_message]}
+    def should_continue(state: MessagesState) -> Literal["tools", "__end__"]:
+        """Determine if the model should continue or not."""
+        # logging.info(f"state: {state}")
+
+        # Get the messages
+        messages = state["messages"]
+
+        # Get the last message
+        last_message = messages[-1] if messages else None
+        # logging.info(f"last_message: {last_message}")
+
+        # If the last message is not an AI message or doesn't have tool calls, we're done
+        if not isinstance(last_message, AIMessage) or not getattr(last_message, "tool_calls", None):
+            # logging.info(
+            #     "last_message is not an AI message or doesn't have tool calls")
+            return END
+
+        # Get the tool calls from the last message
+        tool_calls = getattr(last_message, "tool_calls", [])
+        # logging.info(f"tool_calls: {tool_calls}")
+
+        if not tool_calls:
+            # logging.info("last_message doesn't have tool calls")
+            return END
+
+        # If the tool calls are for the price snapshot tool, we need to continue
+        # logging.info("last_message has tool calls")
+        return "tools"
 
     # --- Build and return the chat graph ---
     workflow = StateGraph(MessagesState)
 
     # Add nodes
     workflow.add_node("call_model", call_model)
-    workflow.add_node("tool", ToolNode(mcp_tools))
+    workflow.add_node("tools", ToolNode(mcp_tools))
 
     # Add edges
     workflow.add_edge(START, "call_model")
     workflow.add_conditional_edges(
-        "call_model",
-        tools_condition,
-        {
-            # Translate the condition outputs to nodes in our graph
-            "tools": "tool",
-            END: END,
-        },
-    )
-    workflow.add_edge("tool", "call_model")
+        "call_model", should_continue, ["tools", END])
+    workflow.add_edge("tools", END)
 
     graph = workflow.compile()
     graph.name = "chat_graph"
