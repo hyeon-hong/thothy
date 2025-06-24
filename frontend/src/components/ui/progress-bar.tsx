@@ -1,6 +1,6 @@
 'use client'
 import React, { useEffect, useState, useRef } from 'react';
-import anime from 'animejs';
+import { animate } from 'animejs';
 
 interface ProgressBarProps {
     duration: number;
@@ -12,13 +12,12 @@ export const ProgressBar = ({ duration, onComplete }: ProgressBarProps) => {
     const progressInterval = useRef<NodeJS.Timeout | null>(null);
     const startTime = useRef<number>(Date.now());
     const progressBarRef = useRef<HTMLDivElement>(null);
-    const gradientRef = useRef<anime.AnimeInstance | null>(null);
+    const gradientRef = useRef<any>(null);
 
     useEffect(() => {
         // Animate gradient
         if (progressBarRef.current) {
-            gradientRef.current = anime({
-                targets: progressBarRef.current,
+            gradientRef.current = animate(progressBarRef.current, {
                 backgroundPosition: ['0% 50%', '100% 50%'],
                 duration: 2000,
                 loop: true,

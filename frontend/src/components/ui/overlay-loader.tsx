@@ -2,7 +2,7 @@ import { cn } from "@/lib/utils"
 import { Loader } from "@/components/ui/loader"
 import { ProgressBar } from "@/components/ui/progress-bar"
 import { useEffect, useRef } from "react"
-import anime from "animejs"
+import { animate } from 'animejs'
 import Image from "next/image"
 interface OverlayLoaderProps {
     text?: string
@@ -29,16 +29,14 @@ export const OverlayLoader = ({
     useEffect(() => {
         if (show && overlayRef.current && contentRef.current) {
             // Animate overlay fade in
-            anime({
-                targets: overlayRef.current,
+            animate(overlayRef.current, {
                 opacity: [0, 1],
                 duration: 300,
                 easing: 'easeInOutQuad'
             });
 
             // Animate content scale and fade in
-            anime({
-                targets: contentRef.current,
+            animate(contentRef.current, {
                 scale: [0.9, 1],
                 opacity: [0, 1],
                 duration: 400,
