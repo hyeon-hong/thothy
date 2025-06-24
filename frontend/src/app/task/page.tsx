@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, Suspense } from "react";
 import Header from "@/components/Header";
 import { Plus, Edit, Trash2 } from "lucide-react";
 import {
@@ -819,7 +819,8 @@ function TaskSidebar({
   );
 }
 
-export default function TaskPage() {
+// Move the main TaskPage component to TaskPageContent
+function TaskPageContent() {
   const [currentTask, setCurrentTask] = useState<Task | null>(null);
   const [agents, setAgents] = useState<Agent[]>([]);
   const [showThreadList] = useQueryState("showThreadList", {
@@ -925,5 +926,14 @@ export default function TaskPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+// Main export with Suspense wrapper
+export default function TaskPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <TaskPageContent />
+    </Suspense>
   );
 }
