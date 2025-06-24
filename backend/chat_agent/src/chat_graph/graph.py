@@ -1,76 +1,99 @@
-"""Simple chat agent using LangGraph."""
+"""Chat agent using LangGraph with MCP tools."""
 
-import datetime  # Import datetime for getting current time
-import os
-from typing import Optional
-
-from langchain.chat_models import init_chat_model
-from langchain_core.messages import AIMessage
+from typing import Any, Union, Literal
+from pydantic import BaseModel
+from langchain_core.messages import AnyMessage
+from langchain_mcp_adapters.client import MultiServerMCPClient
+from langgraph.graph import StateGraph, MessagesState, START, END
+from langgraph.prebuilt import ToolNode
 from langchain_google_genai import ChatGoogleGenerativeAI
-from langgraph.graph import MessagesState, StateGraph, START, END
-from langgraph.store.base import BaseStore
-from chat_graph.configuration import ChatConfigurable
+from langchain_core.messages import AIMessage
+import os
+from asgiref.sync import async_to_sync
 
-# Initialize global LLM
-VLLM_API_URL = os.getenv("VLLM_API_URL")
-llm: Optional[ChatGoogleGenerativeAI] = None
-
-
-def get_llm() -> ChatGoogleGenerativeAI:
-    """Get or initialize the LLM asynchronously."""
-    global llm
-    if llm is None:
-        # api_key = os.getenv("GOOGLE_API_KEY")
-        llm = init_chat_model(
-            model="gemini-2.5-flash-preview-05-20", model_provider="google_genai")
-        # llm = ChatGoogleGenerativeAI(
-        #     model="gemini-2.5-flash-preview-05-20",
-        #     temperature=0.8,
-        #     # google_api_key=api_key
-        # )
-    return llm
+# --- MCP Client Config ---
+DART_MCP_REL_PATH = os.path.join(
+    os.path.dirname(__file__), '../../../mcp/dart-mcp')
+print(
+    f"[DEBUG] DART_MCP_REL_PATH resolved to: {os.path.abspath(DART_MCP_REL_PATH)}")
+DART_API_KEY = os.environ.get("DART_API_KEY", "")
+GOOGLE_API_KEY = os.environ.get("GOOGLE_API_KEY", "")
 
 
-async def chatbot(
-    state: MessagesState,
-    config: ChatConfigurable,
-    *,
-    store: BaseStore
-) -> dict:
-    """Chat node that processes messages and generates responses."""
-
-    configurable = ChatConfigurable.from_runnable_config(config)
-
-    # Get current system time
-    current_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-
-    # Use system prompt from configuration with time variable
-    system_msg = configurable.system_prompt.format(time=current_time)
-
-    # Get the LLM instance
-    chat_model = get_llm()
-
-    # Invoke the LLM
-    response = await chat_model.ainvoke(
-        [{"role": "system", "content": system_msg}] + state["messages"]
+async def make_graph():
+    mcp_client = MultiServerMCPClient(
+        {
+            "dart-mcp": {
+                "command": "uv",
+                "args": ["--directory", DART_MCP_REL_PATH, "run", "dart.py"],
+                "env": {
+                    "DART_API_KEY": DART_API_KEY
+                },
+                "transport": "stdio"
+            }
+        }
     )
-    ai_message = AIMessage(content=response.content)
 
-    return {"messages": [ai_message]}
+    mcp_tools = await mcp_client.get_tools()
+    # logging.info(f"Available tools: {[tool.name for tool in mcp_tools]}")
 
+    model = ChatGoogleGenerativeAI(
+        model="gemini-2.5-flash", temperature=0
+    ).bind_tools(mcp_tools)
 
-"""Build and return the chat graph."""
+    async def call_model(state: MessagesState):
+        """Call the model with the state."""
 
-# Initialize graph builder with state schema
-workflow = StateGraph(MessagesState, ChatConfigurable)
+        response = await model.ainvoke(state["messages"])
+        # logging.info(f"response: {response}")
 
-# Add chatbot node
-workflow.add_node("chatbot", chatbot)
+        return {"messages": [response]}
 
-# Add edges - start at chatbot and can end after chatbot
-workflow.add_edge(START, "chatbot")
-workflow.add_edge("chatbot", END)
+    def should_continue(state: MessagesState) -> Literal["tools", "__end__"]:
+        """Determine if the model should continue or not."""
+        # logging.info(f"state: {state}")
 
-# Compile graph
-graph = workflow.compile()
-graph.name = "chat_graph"
+        # Get the messages
+        messages = state["messages"]
+
+        # Get the last message
+        last_message = messages[-1] if messages else None
+        # logging.info(f"last_message: {last_message}")
+
+        # If the last message is not an AI message or doesn't have tool calls, we're done
+        if not isinstance(last_message, AIMessage) or not getattr(last_message, "tool_calls", None):
+            # logging.info(
+            #     "last_message is not an AI message or doesn't have tool calls")
+            return END
+
+        # Get the tool calls from the last message
+        tool_calls = getattr(last_message, "tool_calls", [])
+        # logging.info(f"tool_calls: {tool_calls}")
+
+        if not tool_calls:
+            # logging.info("last_message doesn't have tool calls")
+            return END
+
+        # If the tool calls are for the price snapshot tool, we need to continue
+        # logging.info("last_message has tool calls")
+        return "tools"
+
+    # --- Build and return the chat graph ---
+    workflow = StateGraph(MessagesState)
+
+    # Add nodes
+    workflow.add_node("call_model", call_model)
+    workflow.add_node("tools", ToolNode(mcp_tools))
+
+    # Add edges
+    workflow.add_edge(START, "call_model")
+    workflow.add_conditional_edges(
+        "call_model", should_continue, ["tools", END])
+    workflow.add_edge("tools", END)
+
+    graph = workflow.compile()
+    graph.name = "chat_graph"
+
+    return graph
+
+graph = async_to_sync(make_graph)()
