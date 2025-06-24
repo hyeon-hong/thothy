@@ -1,6 +1,6 @@
 import { cn } from "@/lib/utils"
-import { Loader } from "./loader"
-import { ProgressBar } from "./progress-bar"
+import { Loader } from "@/components/ui/loader"
+import { ProgressBar } from "@/components/ui/progress-bar"
 import { useEffect, useRef } from "react"
 import anime from "animejs"
 import Image from "next/image"

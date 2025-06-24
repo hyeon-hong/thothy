@@ -1,7 +1,6 @@
 import React from 'react'
 
 import UploadPage from './components/UploadPage'
-import Header from '@/app/dashboard/components/Header'
 import { Metadata } from 'next'
 
 export const metadata: Metadata = {
@@ -43,7 +42,6 @@ const page = () => {
     return (
         <div className='relative'>
 
-            <Header />
             <div className='flex flex-col items-center justify-center  py-4'>
                 <h1 className='text-3xl font-semibold font-instrument_sans'>Create  Presentation </h1>
                 {/* <p className='text-sm text-gray-500'>We will generate a presentation for you</p> */}

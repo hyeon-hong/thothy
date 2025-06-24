@@ -1,6 +1,5 @@
 import React from 'react'
 import CreatePage from './components/CreatePage'
-import Header from '@/app/dashboard/components/Header'
 import { Metadata } from 'next'
 
 export const metadata: Metadata = {
@@ -25,7 +24,6 @@ export const metadata: Metadata = {
 const page = () => {
   return (
     <div className='relative min-h-screen'>
-      <Header />
       <CreatePage />
     </div>
   )
