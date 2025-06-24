@@ -3,29 +3,29 @@
 from langchain_mcp_adapters.client import MultiServerMCPClient
 from langgraph.graph import StateGraph, MessagesState, START, END
 from langgraph.prebuilt import ToolNode, tools_condition
-from langchain.chat_models import init_chat_model
+from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.messages import AIMessage
+import os
 
 # --- MCP Client and Tools Setup ---
 
-# You must ensure math_server.py exists and langchain_mcp_adapters is installed
+# Use a relative path for dart-mcp directory
+DART_MCP_REL_PATH = os.path.join(os.path.dirname(__file__), '../../mcp/dart-mcp')
+DART_API_KEY = os.environ.get("DART_API_KEY", "")
+
 client = MultiServerMCPClient(
     {
-        "math": {
-            "command": "python",
-            # Update to the full absolute path to your math_server.py file
-            "args": ["./examples/math_server.py"],
-            "transport": "stdio",
-        },
-        "weather": {
-            # Make sure you start your weather server on port 8000
-            "url": "http://localhost:8000/mcp/",
-            "transport": "streamable_http",
+        "dart-mcp": {
+            "command": "uv",
+            "args": ["--directory", DART_MCP_REL_PATH, "run", "dart.py"],
+            "env": {
+                "DART_API_KEY": DART_API_KEY
+            },
+            "transport": "stdio"
         }
     }
 )
 
-# Tools will be loaded asynchronously and cached
 tools = None
 
 
@@ -36,16 +36,19 @@ async def get_tools():
     return tools
 
 # --- Model Setup ---
-model = init_chat_model("openai:gpt-4.1")
+
+GOOGLE_API_KEY = os.environ.get("GOOGLE_API_KEY", "")
+model = ChatGoogleGenerativeAI(model="gemini-2.0-flash", google_api_key=GOOGLE_API_KEY)
+
 
 # --- Node Function ---
-
 
 async def call_model(state: MessagesState, config=None, *, store=None):
     loaded_tools = await get_tools()
     response = await model.bind_tools(loaded_tools).ainvoke(state["messages"])
     ai_message = AIMessage(content=response.content)
     return {"messages": [ai_message]}
+
 
 # --- Build and return the chat graph ---
 
