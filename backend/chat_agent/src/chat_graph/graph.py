@@ -11,13 +11,15 @@ import os
 
 # Use a relative path for dart-mcp directory
 DART_MCP_REL_PATH = os.path.join(os.path.dirname(__file__), '../../mcp/dart-mcp')
+print(f"[DEBUG] DART_MCP_REL_PATH resolved to: {os.path.abspath(DART_MCP_REL_PATH)}")
 DART_API_KEY = os.environ.get("DART_API_KEY", "")
 
 client = MultiServerMCPClient(
     {
         "dart-mcp": {
-            "command": "uv",
-            "args": ["--directory", DART_MCP_REL_PATH, "run", "dart.py"],
+            "command": "python",
+            "args": ["dart.py"],
+            "cwd": DART_MCP_REL_PATH,
             "env": {
                 "DART_API_KEY": DART_API_KEY
             },
