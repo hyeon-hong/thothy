@@ -19,7 +19,7 @@ GOOGLE_API_KEY = os.environ.get("GOOGLE_API_KEY", "")
 
 
 async def make_graph():
-    client = MultiServerMCPClient(
+    mcp_client = MultiServerMCPClient(
         {
             "dart-mcp": {
                 "command": "python",
@@ -33,15 +33,21 @@ async def make_graph():
         }
     )
 
-    mcp_tools = await client.get_tools()
+    mcp_tools = await mcp_client.get_tools()
+    logging.info(f"Available tools: {[tool.name for tool in mcp_tools]}")
+
     model = ChatGoogleGenerativeAI(
         model="gemini-2.0-flash", google_api_key=GOOGLE_API_KEY
     ).bind_tools(mcp_tools)
 
-    async def call_model(state: MessagesState, config=None, *, store=None):
+    async def call_model(state: MessagesState):
+        """Call the model with the state."""
+
         response = await model.ainvoke(state["messages"])
         logging.info(f"response: {response}")
+
         ai_message = AIMessage(content=response.content)
+
         return {"messages": [ai_message]}
 
     # --- Build and return the chat graph ---
@@ -49,15 +55,20 @@ async def make_graph():
 
     # Add nodes
     workflow.add_node("call_model", call_model)
-    workflow.add_node("tools", ToolNode(mcp_tools))
+    workflow.add_node("tool", ToolNode(mcp_tools))
 
     # Add edges
     workflow.add_edge(START, "call_model")
     workflow.add_conditional_edges(
         "call_model",
         tools_condition,
+        {
+            # Translate the condition outputs to nodes in our graph
+            "tools": "tool",
+            END: END,
+        },
     )
-    workflow.add_edge("tools", "call_model")
+    workflow.add_edge("tool", "call_model")
 
     graph = workflow.compile()
     graph.name = "chat_graph"
