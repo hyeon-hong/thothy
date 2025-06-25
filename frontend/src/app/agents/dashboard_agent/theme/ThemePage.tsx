@@ -2,7 +2,6 @@
 import React, { useEffect, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { defaultColors, setTheme, ThemeColors } from "../store/themeSlice";
-import Header from "@/app/dashboard/components/Header";
 import Wrapper from "@/components/Wrapper";
 import { useDispatch } from "react-redux";
 import { useRouter } from "next/navigation";
@@ -133,7 +132,6 @@ const ThemePage = () => {
 
   return (
     <div>
-      <Header />
       <Wrapper className="py-8 md:w-[90%] xl:w-[70%]">
         <h1 className="text-3xl font-bold mb-8">Select a Theme</h1>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pb-16">

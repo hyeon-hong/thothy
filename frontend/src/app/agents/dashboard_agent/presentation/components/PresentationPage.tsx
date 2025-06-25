@@ -6,7 +6,7 @@ import { RootState } from "@/store/dashboard/store";
 import { Skeleton } from "@/components/ui/skeleton";
 import PresentationMode from "../../components/PresentationMode";
 
-import { DashboardApi } from "@/app/dashboard/api/dashboard";
+import { DashboardApi } from "@/app/agents/dashboard_agent/dashboard";
 import SidePanel from "../components/SidePanel";
 import SlideContent from "../components/SlideContent";
 

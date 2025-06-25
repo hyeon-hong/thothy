@@ -5,7 +5,7 @@ import { RootState } from "@/store/dashboard/store";
 import { Skeleton } from "@/components/ui/skeleton";
 
 
-import { DashboardApi } from "@/app/dashboard/api/dashboard";
+import { DashboardApi } from "@/app/agents/dashboard_agent/dashboard";
 
 
 import {

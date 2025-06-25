@@ -1,5 +1,5 @@
 import React from 'react'
-import DocumentPreviewPage from './components/DocumentPreviewPage'
+import DocumentPreviewPage from '@/app/agents/dashboard_agent/documents-preview/components/DocumentPreviewPage'
 
 const page = () => {
   return (

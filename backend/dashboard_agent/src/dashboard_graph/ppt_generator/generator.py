@@ -26,9 +26,10 @@ CREATE_PRESENTATION_PROMPT = """
                 1. Analyze Prompt, and other provided data.
                 2. Use Slide titles provided in **Titles**.
                 3. Generate Slide Content for each slide. Make sure it has all the context and information required to create this individual slide from.
-                4. Select slide type.
-                5. Output should be in json format as per given schema.
-                6. **Adherence to schema should be beyond all the rules mentioned in notes.**
+                4. Generate a slide per table or graph.
+                5. Select slide type.
+                6. Output should be in json format as per given schema.
+                7. **Adherence to schema should be beyond all the rules mentioned in notes.**
 
                 # Notes
                 - Generate output in language mentioned in *Input*.

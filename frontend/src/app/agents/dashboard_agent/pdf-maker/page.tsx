@@ -1,12 +1,12 @@
 'use client'
-import React from "react";
+import React, { Suspense } from "react";
 import { FooterProvider } from "../context/footerContext";
 
 import { Button } from "@/components/ui/button";
 import { useRouter, useSearchParams } from "next/navigation";
 import PdfMakerPage from "./PdfMakerPage";
-const page = () => {
 
+const PdfMakerContent = () => {
     const router = useRouter();
     const params = useSearchParams();
     const queryId = params.get("id");
@@ -25,4 +25,13 @@ const page = () => {
         </FooterProvider>
     );
 };
+
+const page = () => {
+    return (
+        <Suspense fallback={<div>Loading...</div>}>
+            <PdfMakerContent />
+        </Suspense>
+    );
+};
+
 export default page;
