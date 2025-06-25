@@ -12,9 +12,9 @@ import { SendHorizontal } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { PresentationGenerationApi } from "../../services/api/presentation-generation";
 import ToolTip from "@/components/ToolTip";
-import { RootState } from "@/store/store";
+import { RootState } from "@/store/dashboard/store";
 import { useDispatch, useSelector } from "react-redux";
-import { addSlide, updateSlide } from "@/store/slices/presentationGeneration";
+import { addSlide, updateSlide } from "@/store/dashboard/slices/presentationGeneration";
 import NewSlide from "../../components/slide_layouts/NewSlide";
 import { getEmptySlideContent } from "../../utils/NewSlideContent";
 import { clearLogs, logOperation } from "../../utils/log";
@@ -130,6 +130,7 @@ const SlideContent = ({
         <div className={` w-full group `}>
           {renderSlideContent(slide, language)}
 
+          
           {!showNewSlideSelection && (
             <div className="group-hover:opacity-100 hidden md:block opacity-0 transition-opacity my-4 duration-300">
               <ToolTip content="Add new slide below">
@@ -150,6 +151,7 @@ const SlideContent = ({
               setShowNewSlideSelection={setShowNewSlideSelection}
             />
           )}
+          {/* COMMENTED OUT: Delete slide button
           {!isStreaming && (
             <ToolTip content="Delete slide">
               <div
@@ -160,6 +162,8 @@ const SlideContent = ({
               </div>
             </ToolTip>
           )}
+          */}
+          {/* COMMENTED OUT: Update slide button and prompt functionality
           {!isStreaming && (
             <div className="absolute top-2 z-20 sm:top-4 hidden md:block left-2 sm:left-4 transition-transform">
               <Popover>
@@ -215,6 +219,7 @@ const SlideContent = ({
               </Popover>
             </div>
           )}
+          */}
         </div>
       </div>
     </>

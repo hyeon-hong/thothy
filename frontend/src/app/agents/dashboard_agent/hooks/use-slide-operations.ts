@@ -8,7 +8,7 @@ import {
   deleteSlideImage,
 
   // Import other slide operation actions as needed
-} from "@/store/slices/presentationGeneration";
+} from "@/store/dashboard/slices/presentationGeneration";
 
 export const useSlideOperations = (slideIndex: number) => {
   const dispatch = useDispatch();

@@ -1,6 +1,6 @@
 import React from "react";
 import EditableText from "../EditableText";
-import { RootState } from "@/store/store";
+import { RootState } from "@/store/slide/store";
 import { useSelector } from "react-redux";
 import AllChart from "./AllChart";
 import SlideFooter from "./SlideFooter";

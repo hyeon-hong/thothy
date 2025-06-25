@@ -4,11 +4,11 @@ import {
   updateSlideTitle,
   updateSlideBodyHeading,
   updateSlideBodyDescription,
-} from "@/store/slices/presentationGeneration";
+} from "@/store/slide/slices/presentationGeneration";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import TipTapEditor from "./Tiptap";
-import { RootState } from "@/store/store";
+import { RootState } from "@/store/slide/store";
 import Typewriter from "./TypeWriter";
 
 interface EditableTextProps {

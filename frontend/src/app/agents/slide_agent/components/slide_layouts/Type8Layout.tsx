@@ -4,7 +4,7 @@ import IconsEditor from "../IconsEditor";
 import { Plus } from "lucide-react";
 import ElementMenu from "../ElementMenu";
 import { useSelector } from "react-redux";
-import { RootState } from "@/store/store";
+import { RootState } from "@/store/slide/store";
 import { useSlideOperations } from "../../hooks/use-slide-operations";
 import SlideFooter from "./SlideFooter";
 

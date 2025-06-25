@@ -1,7 +1,7 @@
 import React from 'react'
 import UploadPage from './UploadPage'
 import { mount } from 'cypress/react'
-import { store } from '@/store/store'
+import { store } from '@/store/slide/store'
 import { Provider } from 'react-redux'
 import { AppRouterContext } from 'next/dist/shared/lib/app-router-context.shared-runtime'
 import { Toaster } from '@/components/ui/toaster'

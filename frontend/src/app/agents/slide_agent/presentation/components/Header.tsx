@@ -39,7 +39,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { RootState } from "@/store/store";
+import { RootState } from "@/store/slide/store";
 import { toast } from "@/hooks/use-toast";
 
 import ThemeSelector from "./ThemeSelector";

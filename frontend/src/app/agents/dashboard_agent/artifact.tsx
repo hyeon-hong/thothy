@@ -29,10 +29,10 @@ export default function DashboardGraphComponent(props: DashboardGraphProps) {
         className="mb-4 px-4 py-2 rounded text-white bg-blue-600 hover:bg-blue-700 transition-colors font-semibold shadow"
         onClick={() => setOpen(!open)}
       >
-        {open ? "Hide Slide Data" : "Show Slide Data"}
+        {open ? "Hide Dashboard Data" : "Show Dashboard Data"}
       </button>
 
-      <ArtifactContent title={<div>Slide Generation Results</div>}>
+      <ArtifactContent title={<div>Dashboard Generation Results</div>}>
         <div className="max-h-[600px] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-gray-100">
           <div className="space-y-4">
             <div className="bg-gray-50 p-4 rounded-lg">

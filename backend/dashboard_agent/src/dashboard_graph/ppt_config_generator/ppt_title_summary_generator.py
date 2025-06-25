@@ -49,6 +49,7 @@ def get_prompt_template():
                     - Extract titles from the **Additional Information** or **Prompt** if provided.
                     - If presentation flow is mentioned in **Additional Information** then use it to generate titles.
                     - If Chapter Content is provided than strictly adhere to it and then generate titles in the same content flow as chapter content.
+                    - Any data that is best represented in a chart or graph must be allocated a dedicated slide. This ensures clarity and visual impact for data-driven content.
                 """,
             ),
             (

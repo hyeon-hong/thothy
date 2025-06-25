@@ -20,12 +20,17 @@ import React, { useRef, useState, useEffect } from "react";
 import { Camera, Loader2, Plus } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { useSelector } from "react-redux";
-import { RootState } from "@/store/store";
+import { RootState } from "@/store/dashboard/store";
 import { isDarkColor } from "../../utils/others";
 import { defaultFooterProperties, useFooterContext } from "../../context/footerContext";
 import { FooterProperties } from "../../services/footerService";
 
-const SlideFooter: React.FC = () => {
+interface SlideFooterProps {
+  slideIndex: number;
+  totalSlides?: number;
+}
+
+const SlideFooter: React.FC<SlideFooterProps> = ({ slideIndex, totalSlides = 10 }) => {
   const [showEditor, setShowEditor] = useState<boolean>(false);
   const [isUploading, setIsUploading] = useState({
     white: false,
@@ -39,6 +44,12 @@ const SlideFooter: React.FC = () => {
 
   const { footerProperties, setFooterProperties, saveFooterProperties, resetFooterProperties } = useFooterContext();
 
+  // Get current date in a readable format
+  const currentDate = new Date().toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric'
+  });
 
   const handleSave = async () => {
     await saveFooterProperties(footerProperties);
@@ -242,14 +253,15 @@ const SlideFooter: React.FC = () => {
 
   return (
     <>
+      {/* COMMENTED OUT: Footer editing functionality */}
       <div
-        onClick={handleEditor}
+        // onClick={handleEditor}
         title="Click to change footer"
         id="footer"
-        className="absolute hidden lg:grid z-10 cursor-pointer px-6  grid-cols-3 items-end left-1/2 -translate-x-1/2 justify-between bottom-5 w-full"
+        className="absolute hidden lg:grid z-10 px-6  grid-cols-3 items-end left-1/2 -translate-x-1/2 justify-between bottom-5 w-full"
       >
         {(!footerProperties.logoProperties.showLogo && !footerProperties.footerMessage.showMessage) ? (
-          <div onClick={handleEditor} className="col-span-3 cursor-pointer flex justify-center items-center text-gray-400 text-sm opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+          <div /* onClick={handleEditor} */ className="col-span-3 flex justify-center items-center text-gray-400 text-sm opacity-0 group-hover:opacity-100 transition-opacity duration-300">
             Click to add footer
           </div>
         ) : (
@@ -628,6 +640,30 @@ const SlideFooter: React.FC = () => {
           </div>
         </SheetContent>
       </Sheet>
+
+      {/* Generated date label - bottom-right */}
+      <div className="absolute bottom-4 right-6 z-30">
+        <div 
+          className="text-xs font-medium text-indigo-800 opacity-70 hover:opacity-90 transition-opacity duration-300"
+          style={{ 
+            fontFamily: currentColors.fontFamily || "Inter, sans-serif",
+          }}
+        >
+          {currentDate}
+        </div>
+      </div>
+
+      {/* Page index label - bottom-center */}
+      <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 z-30">
+        <div 
+          className="text-xs font-medium text-indigo-800 opacity-70 hover:opacity-90 transition-opacity duration-300 bg-white/10 backdrop-blur-sm px-3 py-1 rounded-full border border-white/20"
+          style={{ 
+            fontFamily: currentColors.fontFamily || "Inter, sans-serif",
+          }}
+        >
+          {slideIndex + 1}
+        </div>
+      </div>
     </>
   );
 };

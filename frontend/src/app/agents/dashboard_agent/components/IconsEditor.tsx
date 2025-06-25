@@ -11,11 +11,11 @@ import { PlusIcon, Search } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useDispatch, useSelector } from "react-redux";
 import { PresentationGenerationApi } from "../services/api/presentation-generation";
-import { RootState } from "@/store/store";
+import { RootState } from "@/store/dashboard/store";
 import { usePathname, useSearchParams } from "next/navigation";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
-import { updateSlideIcon } from "@/store/slices/presentationGeneration";
+import { updateSlideIcon } from "@/store/dashboard/slices/presentationGeneration";
 
 interface IconsEditorProps {
   icon: string;

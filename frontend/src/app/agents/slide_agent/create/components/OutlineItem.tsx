@@ -1,9 +1,9 @@
 import { useSortable } from "@dnd-kit/sortable"
 import { CSS } from "@dnd-kit/utilities"
 import { Trash2 } from "lucide-react"
-import { RootState } from "@/store/store"
+import { RootState } from "@/store/slide/store"
 import { useDispatch, useSelector } from "react-redux"
-import { deleteTitle, setTitles } from "@/store/slices/presentationGeneration"
+import { deleteTitle, setTitles } from "@/store/slide/slices/presentationGeneration"
 import ToolTip from "@/components/ToolTip"
 interface OutlineItemProps {
     slideTitle: string

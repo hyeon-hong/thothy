@@ -1,4 +1,4 @@
-"""Simple slide agent using LangGraph."""
+"""Simple dashboard agent using LangGraph."""
 
 import logging
 import uuid
@@ -13,7 +13,7 @@ from langgraph.store.base import BaseStore
 from langchain_core.messages import BaseMessage
 from langgraph.graph.message import add_messages
 
-from dashboard_graph.configuration import SlideConfigurable
+from dashboard_graph.configuration import DashboardConfigurable
 from dashboard_graph.api.routers.presentation.handlers.generate_presentation_requirements import (
     GeneratePresentationRequirementsHandler,
 )
@@ -41,8 +41,8 @@ from dashboard_graph.api.services.logging import LoggingService
 from dashboard_graph.api.models import LogMetadata, SessionModel
 from dashboard_graph.ppt_generator.models.slide_model import SlideModel
 
-# UI Component name for slide agent
-UI_COMPONENT_NAME = "slide_graph"
+# UI Component name for dashboard agent
+UI_COMPONENT_NAME = "dashboard_graph"
 UI_COMPONENT_ID = str(uuid.uuid4())
 
 
@@ -116,9 +116,76 @@ def get_llm() -> ChatGoogleGenerativeAI:
     return llm
 
 
+async def determine_slides_count(
+    prompt: str
+) -> dict:
+    """Node that determines the optimal number of slides based on the prompt content using LLM."""
+    
+    try:
+        if not prompt:
+            return {
+                "n_slides": 5,
+                "error": None
+            }
+
+        # Get LLM instance
+        llm = get_llm()
+        
+        # Create a prompt for the LLM to determine slide count
+        slide_count_prompt = f"""
+        You are an expert presentation designer. Based on the following content request, determine the optimal number of slides for a comprehensive presentation.
+
+        Content Request: "{prompt}"
+
+        Consider these factors:
+        - Content complexity and depth
+        - Logical flow and structure
+        - Audience engagement and attention span
+        - Standard presentation best practices
+        - If the content includes data that should be visualized in charts or graphs, assume that such visual elements will each require a dedicated slide
+
+        Guidelines:
+        - Minimum: 3 slides (for very simple topics)
+        - Maximum: 15 slides (to maintain audience engagement)
+        - Typical range: 5-8 slides for most business presentations
+        - Include title slide, content slides, and conclusion if needed
+
+        Respond with ONLY a single number representing the optimal slide count. Do not include any explanation or additional text.
+        """
+        
+        # Call the LLM to determine slide count
+        response = await llm.ainvoke(slide_count_prompt)
+        
+        # Extract the number from response
+        try:
+            n_slides = int(response.content.strip())
+            
+            # Validate the range (3-15 slides)
+            if n_slides < 3:
+                n_slides = 3
+            elif n_slides > 15:
+                n_slides = 15
+                
+        except (ValueError, AttributeError):
+            # Fallback to default if parsing fails
+            n_slides = 5
+        
+        return {
+            "n_slides": n_slides,
+            "error": None
+        }
+        
+    except Exception as e:
+        # Fallback to default on any error
+        return {
+            "n_slides": 5,
+            "error": f"Failed to determine slide count, using default: {str(e)}"
+        }
+
+
 async def create_presentation_node(
     state: PresentationState,
-    config: SlideConfigurable,
+    config: DashboardConfigurable,
     *,
     store: BaseStore
 ) -> dict:
@@ -131,10 +198,12 @@ async def create_presentation_node(
         # Extract prompt from messages or fallback to direct prompt field
         prompt = extract_prompt_from_state(state)
 
+        n_slides = await determine_slides_count(prompt)
+
         # Create the request object
         request_data = GeneratePresentationRequirementsRequest(
             prompt=prompt,
-            n_slides=int(state.get("n_slides", 5)),
+            n_slides=int(state.get("n_slides", n_slides["n_slides"])), # LLM 유동적으로 / 손선임님하고 맞추기
             language=state.get("language", "en"),
             documents=state.get("documents", []),
             research_reports=state.get("research_reports", []),
@@ -167,7 +236,7 @@ async def create_presentation_node(
 
 async def generate_titles_node(
     state: PresentationState,
-    config: SlideConfigurable,
+    config: DashboardConfigurable,
     *,
     store: BaseStore
 ) -> dict:
@@ -208,7 +277,7 @@ async def generate_titles_node(
 
 async def generate_data_node(
     state: PresentationState,
-    config: SlideConfigurable,
+    config: DashboardConfigurable,
     *,
     store: BaseStore
 ) -> dict:
@@ -256,7 +325,7 @@ async def generate_data_node(
 
 async def generate_stream_node(
     state: PresentationState,
-    config: SlideConfigurable,
+    config: DashboardConfigurable,
     *,
     store: BaseStore
 ) -> dict:
@@ -302,7 +371,7 @@ async def generate_stream_node(
 
 async def update_slides_node(
     state: PresentationState,
-    config: SlideConfigurable,
+    config: DashboardConfigurable,
     *,
     store: BaseStore
 ) -> dict:
@@ -435,7 +504,7 @@ async def update_slides_node(
 """Build and return the slide graph."""
 
 # Initialize graph builder with state schema
-workflow = StateGraph(PresentationState, SlideConfigurable)
+workflow = StateGraph(PresentationState, DashboardConfigurable)
 
 # Add nodes
 workflow.add_node("create_presentation", create_presentation_node)
@@ -454,4 +523,4 @@ workflow.add_edge("update_slides", END)
 
 # Compile graph
 graph = workflow.compile()
-graph.name = "slide_graph"
+graph.name = "dashboard_graph"

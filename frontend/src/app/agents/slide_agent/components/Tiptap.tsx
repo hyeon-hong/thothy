@@ -13,7 +13,7 @@ import {
   updateSlideBodyString,
   updateSlideDescription,
   updateSlideTitle,
-} from "@/store/slices/presentationGeneration";
+} from "@/store/slide/slices/presentationGeneration";
 import {
   Bold,
   Italic,
@@ -21,7 +21,7 @@ import {
   Strikethrough,
   Code,
 } from "lucide-react";
-import { RootState } from "@/store/store";
+import { RootState } from "@/store/slide/store";
 
 declare module "@tiptap/core" {
   interface Commands<ReturnType> {

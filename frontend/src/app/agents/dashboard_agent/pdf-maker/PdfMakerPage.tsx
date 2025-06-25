@@ -1,7 +1,7 @@
 "use client";
 import React, { useEffect, useState, useCallback, useRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { RootState } from "@/store/store";
+import { RootState } from "@/store/dashboard/store";
 import { Skeleton } from "@/components/ui/skeleton";
 
 
@@ -10,7 +10,7 @@ import { DashboardApi } from "@/app/dashboard/api/dashboard";
 
 import {
     setPresentationData,
-} from "@/store/slices/presentationGeneration";
+} from "@/store/dashboard/slices/presentationGeneration";
 import { toast } from "@/hooks/use-toast";
 
 

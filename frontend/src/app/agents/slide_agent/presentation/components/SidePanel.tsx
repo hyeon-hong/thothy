@@ -4,7 +4,7 @@ import { LayoutList, ListTree, PanelRightOpen, X } from "lucide-react";
 import ToolTip from "@/components/ToolTip";
 import { Button } from "@/components/ui/button";
 import { useDispatch, useSelector } from "react-redux";
-import { RootState } from "@/store/store";
+import { RootState } from "@/store/slide/store";
 import { DashboardApi } from "@/app/dashboard/api/dashboard";
 import {
   DndContext,
@@ -21,7 +21,7 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import * as htmlToImage from "html-to-image";
-import { setPresentationData } from "@/store/slices/presentationGeneration";
+import { setPresentationData } from "@/store/slide/slices/presentationGeneration";
 import { SortableSlide } from "./SortableSlide";
 import { SortableListItem } from "./SortableListItem";
 import { renderMiniSlideContent } from "../../components/slide_config";

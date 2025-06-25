@@ -13,7 +13,7 @@ import {
   updateSlideBodyString,
   updateSlideDescription,
   updateSlideTitle,
-} from "@/store/slices/presentationGeneration";
+} from "@/store/dashboard/slices/presentationGeneration";
 import {
   Bold,
   Italic,
@@ -21,7 +21,7 @@ import {
   Strikethrough,
   Code,
 } from "lucide-react";
-import { RootState } from "@/store/store";
+import { RootState } from "@/store/dashboard/store";
 
 declare module "@tiptap/core" {
   interface Commands<ReturnType> {
@@ -60,7 +60,7 @@ const TipTapEditor = ({
     const baseStyle = "outline-none  transition-all duration-200 ";
     switch (type) {
       case "title":
-        return `${baseStyle} slide-title text-xl sm:text-2xl lg:text-[40px] leading-[36px] lg:leading-[48px] font-bold `;
+        return `${baseStyle} slide-title text-xl sm:text-2xl lg:text-[40px] leading-[36px] lg:leading-[48px] `;
       case "heading":
       case "info-heading":
         return `${baseStyle} slide-heading  text-base sm:text-lg lg:text-[24px] leading-[26px] lg:leading-[32px] font-bold`;
@@ -143,12 +143,13 @@ const TipTapEditor = ({
         class: "outline-none  transition-all duration-200",
       },
     },
-
+    editable: false, // COMMENTED OUT: Disable editing functionality
     immediatelyRender: false,
   });
 
   return (
     <div className="relative">
+      {/* COMMENTED OUT: BubbleMenu for text formatting
       <BubbleMenu editor={editor} tippyOptions={{ duration: 100 }}>
         <div className="flex bg-white rounded-lg shadow-lg p-2 gap-1 border-r pr-2">
           <button
@@ -188,14 +189,16 @@ const TipTapEditor = ({
           </button>
         </div>
       </BubbleMenu>
+      */}
 
       <EditorContent
         className={`min-w-[100px] w-full max-md:pointer-events-none  ${getTextStyle()} ${editor?.getText() ? "" : `hover:outline hover:outline-gray-400`
           } `}
-        onBlur={() => {
-          const markdown = editor?.storage.markdown.getMarkdown();
-          updateSlide(type, markdown || "");
-        }}
+        // COMMENTED OUT: Disable content updates on blur
+        // onBlur={() => {
+        //   const markdown = editor?.storage.markdown.getMarkdown();
+        //   updateSlide(type, markdown || "");
+        // }}
         data-slide-element
         data-text-content={editor?.storage.markdown.getMarkdown()}
         data-is-align={isAlingCenter}

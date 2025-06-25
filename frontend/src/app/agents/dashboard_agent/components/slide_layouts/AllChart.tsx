@@ -6,9 +6,9 @@ import {
   ChartSettings,
   updateSlideChart,
   updateSlideChartSettings,
-} from "@/store/slices/presentationGeneration";
+} from "@/store/dashboard/slices/presentationGeneration";
 import { renderChart } from "../slide_config";
-import { RootState } from "@/store/store";
+import { RootState } from "@/store/dashboard/store";
 
 interface AllChartProps {
   chartData: StoreChartData;
@@ -81,7 +81,7 @@ const AllChart = ({
         data-element-type="graph"
         data-graph-type={localChartData && localChartData.type}
         data-element-id={`slide-group-${slideIndex}-graph`}
-        className="w-full h-full min-h-[200px] lg:min-h-[300px] max-md:pointer-events-none cursor-pointer hover:opacity-90 transition-opacity relative"
+        className="w-full h-full min-h-[200px] lg:min-h-[300px] max-md:pointer-events-none cursor-pointer hover:opacity-90 transition-opacity relative bg-indigo-800 rounded-lg pt-4"
       >
         {renderChart(localChartData, false, currentColors ?? [], chartSettings)}
         {/* <img src={`/Banner.png`} alt={localChartData.type} className="w-full h-full object-cover" /> */}

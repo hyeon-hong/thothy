@@ -1,6 +1,6 @@
 import { useSelector } from "react-redux";
 import MiniCharts from "./MiniCharts";
-import { RootState } from "@/store/store";
+import { RootState } from "@/store/slide/store";
 import MiniTypeWriter from "./MiniTypeWriter";
 
 interface Type9MiniProps {

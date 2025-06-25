@@ -2,7 +2,7 @@ import React from "react";
 import EditableText from "../EditableText";
 import ImageEditor from "../ImageEditor";
 import { useDispatch, useSelector } from "react-redux";
-import { RootState } from "@/store/store";
+import { RootState } from "@/store/slide/store";
 import ElementMenu from "../ElementMenu";
 import { Plus } from "lucide-react";
 import { useSlideOperations } from "../../hooks/use-slide-operations";

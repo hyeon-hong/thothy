@@ -1,4 +1,4 @@
-"""Slide Agent"""
+"""Dashboard Agent"""
 
 from dashboard_graph.graph import graph
 

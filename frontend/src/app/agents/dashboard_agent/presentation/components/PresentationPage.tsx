@@ -2,7 +2,7 @@
 import React, { useEffect, useState, useCallback, useRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useRouter, useSearchParams } from "next/navigation";
-import { RootState } from "@/store/store";
+import { RootState } from "@/store/dashboard/store";
 import { Skeleton } from "@/components/ui/skeleton";
 import PresentationMode from "../../components/PresentationMode";
 
@@ -14,7 +14,7 @@ import {
   deletePresentationSlide,
   setPresentationData,
   setStreaming,
-} from "@/store/slices/presentationGeneration";
+} from "@/store/dashboard/slices/presentationGeneration";
 import { toast } from "@/hooks/use-toast";
 import { PresentationGenerationApi } from "../../services/api/presentation-generation";
 import { setThemeColors, ThemeColors } from "../../store/themeSlice";

@@ -1,5 +1,5 @@
 import { formatLargeNumber } from "@/lib/utils";
-import { Chart } from "@/store/slices/presentationGeneration";
+import { Chart } from "@/store/dashboard/slices/presentationGeneration";
 
 export const formatTooltipValue = (localChartData: Chart, value: number) => {
   const formattedValue = formatLargeNumber(value);

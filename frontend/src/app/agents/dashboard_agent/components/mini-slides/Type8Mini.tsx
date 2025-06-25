@@ -1,5 +1,5 @@
 import { useSelector } from "react-redux";
-import { RootState } from "@/store/store";
+import { RootState } from "@/store/dashboard/store";
 import { PresentationGenerationApi } from "../../services/api/presentation-generation";
 import MiniTypeWriter from "./MiniTypeWriter";
 

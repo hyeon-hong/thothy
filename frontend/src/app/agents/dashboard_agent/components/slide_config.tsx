@@ -16,7 +16,7 @@ import Type5Mini from "./mini-slides/Type5Mini";
 import Type9Mini from "./mini-slides/Type9Mini";
 import Type8Mini from "./mini-slides/Type8Mini";
 
-import { Chart, ChartSettings } from "@/store/slices/presentationGeneration";
+import { Chart, ChartSettings } from "@/store/dashboard/slices/presentationGeneration";
 
 import { Pie, PieChart, Cell, CartesianGrid, Label } from "recharts";
 import {
@@ -85,7 +85,7 @@ export const renderSlideContent = (slide: Slide, language: string) => {
 
     case 5:
       const isFullSizeGraph =
-        slide.content.graph?.data.categories.length > 4 &&
+        slide.content.graph?.data.categories.length >= 4 &&
         slide.content.graph.type !== "pie";
       return (
         <Type5Layout

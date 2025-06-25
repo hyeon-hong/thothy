@@ -16,7 +16,7 @@ import Type5Mini from "./mini-slides/Type5Mini";
 import Type9Mini from "./mini-slides/Type9Mini";
 import Type8Mini from "./mini-slides/Type8Mini";
 
-import { Chart, ChartSettings } from "@/store/slices/presentationGeneration";
+import { Chart, ChartSettings } from "@/store/slide/slices/presentationGeneration";
 
 import { Pie, PieChart, Cell, CartesianGrid, Label } from "recharts";
 import {

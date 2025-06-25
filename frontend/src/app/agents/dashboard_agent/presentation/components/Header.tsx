@@ -39,7 +39,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { RootState } from "@/store/store";
+import { RootState } from "@/store/dashboard/store";
 import { toast } from "@/hooks/use-toast";
 
 import ThemeSelector from "./ThemeSelector";
@@ -86,6 +86,8 @@ const Header = ({
           dispatch(setThemeColors({ ...themeColors, theme: themeType }));
           // Set CSS variables
           const root = document.documentElement;
+          console.log("themeColors", themeColors)
+          console.log("themeType", themeType)
           root.style.setProperty(
             `--${themeType}-slide-bg`,
             themeColors.slideBg

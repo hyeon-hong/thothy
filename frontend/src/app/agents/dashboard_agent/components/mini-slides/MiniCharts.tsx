@@ -1,7 +1,7 @@
 import React from 'react'
-import { Chart } from '@/store/slices/presentationGeneration';
+import { Chart } from '@/store/dashboard/slices/presentationGeneration';
 import { renderChart } from '../slide_config';
-import { RootState } from '@/store/store';
+import { RootState } from '@/store/dashboard/store';
 import { useSelector } from 'react-redux';
 
 const MiniCharts = ({ chartData }: { chartData: Chart }) => {

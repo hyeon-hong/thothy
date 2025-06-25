@@ -18,7 +18,7 @@ import {
   setError,
   setPresentationId,
   setTitles,
-} from "@/store/slices/presentationGeneration";
+} from "@/store/slide/slices/presentationGeneration";
 import { ConfigurationSelects } from "./ConfigurationSelects";
 import { PromptInput } from "./PromptInput";
 import { LanguageType, PresentationConfig } from "../type";
@@ -29,7 +29,7 @@ import { useToast } from "@/hooks/use-toast";
 import { PresentationGenerationApi } from "../../services/api/presentation-generation";
 import { OverlayLoader } from "@/components/ui/overlay-loader";
 import Wrapper from "@/components/Wrapper";
-import { setPptGenUploadState } from "@/store/slices/presentationGenUpload";
+import { setPptGenUploadState } from "@/store/slide/slices/presentationGenUpload";
 import { clearLogs, logOperation } from "../../utils/log";
 
 // Types for loading state

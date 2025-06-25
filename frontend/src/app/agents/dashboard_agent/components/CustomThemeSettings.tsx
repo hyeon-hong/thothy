@@ -1,6 +1,6 @@
 import React, { useState, useRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { RootState } from "@/store/store";
+import { RootState } from "@/store/dashboard/store";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -27,12 +27,13 @@ const CustomThemeSettings = ({
   const [draftColors, setDraftColors] = useState<ThemeColors>({
     background: "#63ceff",
     slideBg: "#F4F4F4",
-    slideTitle: "#1A1A1A",
-    slideHeading: "#2D2D2D",
-    slideDescription: "#4A4A4A",
+    slideTitle: "#1a1a1a",
+    slideHeading: "#2d2d2d",
+    slideDescription: "#404040",
     slideBox: "#d8c6c6",
     iconBg: "#281810",
     chartColors: ["#281810", "#4A3728", "#665E57", "#665E57", "#665E57"],
+    // chartColors: ["#1a1a1a", "#2d2d2d", "#404040", "#595959", "#737373"],
     fontFamily: "var(--font-inter)",
   });
 

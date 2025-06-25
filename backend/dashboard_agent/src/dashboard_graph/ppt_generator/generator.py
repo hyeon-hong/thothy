@@ -36,9 +36,10 @@ CREATE_PRESENTATION_PROMPT = """
                 - User prompt should be respected beyond all rules or constraints.
                 - If the presentation is academic, then make only take the chapter text as context and create presentation according to that text and structure. Don't assume or put text or context which is not in the text.
                 - If **Story** is provided, presentation should follow the story flow.
-                - When you have to express single numbers like percentage or figures, you should use inforgraphics but for a collection of numbers in series you can use charts.
+                - When you have to express single numbers like percentage or figures, you should use inforgraphics or pie charts but for a collection of numbers in series you can use charts such as line charts, bar charts, etc.
                 - Freely select type with images and icons.
                 - Introduction and Conclusion should have *Type 1* if graph is not assigned.
+                - All datasets should be visualized using Type 5 slides, with each dataset presented on a separate slide using a distinct graph.
                 - Try to select **different types for every slides**.
                 - Don't select Type **3** for any slide.
                 - Make sure to give presentation in said language. You must translate and understand given context and text is in any other language.
@@ -48,6 +49,7 @@ CREATE_PRESENTATION_PROMPT = """
                 - **Strictly keep the text under given limit.**
                 - Don't distribute one table data in markdown format to multiple slide. Make only one slide for one table data. Don't divide table data to multiple slide.
                 - Use *Type 2* for table data.
+                - Limit the total number of slides to a maximum of 15 slides per presentation.
                 - For slide content follow these rules:
                     - Highlighting in markdown format should be used to emphasize numbers and data.
                     - Adhere to length contraints in **body** and **description**. Focus on direct communication within character constrainsts than lengthy explanation.
@@ -71,6 +73,9 @@ CREATE_PRESENTATION_PROMPT = """
 
                 **Go through notes and steps and make sure they are all followed. Rule breaks are strictly not allowed.**
 """
+
+# 삭제된 prompt
+# - When using Type 5 slides to display a line graph, if there are more than 10 X-axis labels, display only the 10 most recent data points based on the original data order.
 
 
 def generate_presentation_stream(

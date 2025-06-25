@@ -6,9 +6,9 @@ import {
   ChartSettings,
   updateSlideChart,
   updateSlideChartSettings,
-} from "@/store/slices/presentationGeneration";
+} from "@/store/slide/slices/presentationGeneration";
 import { renderChart } from "../slide_config";
-import { RootState } from "@/store/store";
+import { RootState } from "@/store/slide/store";
 
 interface AllChartProps {
   chartData: StoreChartData;

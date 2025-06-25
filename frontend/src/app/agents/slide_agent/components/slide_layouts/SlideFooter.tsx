@@ -20,7 +20,7 @@ import React, { useRef, useState, useEffect } from "react";
 import { Camera, Loader2, Plus } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { useSelector } from "react-redux";
-import { RootState } from "@/store/store";
+import { RootState } from "@/store/slide/store";
 import { isDarkColor } from "../../utils/others";
 import { defaultFooterProperties, useFooterContext } from "../../context/footerContext";
 import { FooterProperties } from "../../services/footerService";

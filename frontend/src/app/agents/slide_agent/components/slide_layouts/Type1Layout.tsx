@@ -2,7 +2,7 @@ import React from "react";
 import EditableText from "../EditableText";
 import ImageEditor from "../ImageEditor";
 import { useSelector } from "react-redux";
-import { RootState } from "@/store/store";
+import { RootState } from "@/store/slide/store";
 import SlideFooter from "./SlideFooter";
 
 interface Type1LayoutProps {

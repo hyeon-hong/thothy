@@ -17,11 +17,11 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { renderChart } from './slide_config';
 import { useSelector } from 'react-redux';
-import { RootState } from '@/store/store';
+import { RootState } from '@/store/dashboard/store';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ChartSettings } from '@/store/slices/presentationGeneration';
+import { ChartSettings } from '@/store/dashboard/slices/presentationGeneration';
 
 interface ChartEditorProps {
     isOpen: boolean;

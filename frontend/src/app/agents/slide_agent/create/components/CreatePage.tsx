@@ -16,7 +16,7 @@ import {
 } from "@dnd-kit/sortable";
 import { OutlineItem } from "./OutlineItem";
 import { Button } from "@/components/ui/button";
-import { RootState } from "@/store/store";
+import { RootState } from "@/store/slide/store";
 import { useSelector, useDispatch } from "react-redux";
 import { useRouter } from "next/navigation";
 import { PresentationGenerationApi } from "../../services/api/presentation-generation";
@@ -24,7 +24,7 @@ import { useToast } from "@/hooks/use-toast";
 import {
   setPresentationData,
   setTitles,
-} from "@/store/slices/presentationGeneration";
+} from "@/store/slide/slices/presentationGeneration";
 import { OverlayLoader } from "@/components/ui/overlay-loader";
 import Wrapper from "@/components/Wrapper";
 import { clearLogs, logOperation } from "../../utils/log";

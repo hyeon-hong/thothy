@@ -4,7 +4,7 @@ import { Plus } from "lucide-react";
 import ElementMenu from "../ElementMenu";
 import { useSelector } from "react-redux";
 import { numberTranslations } from "../../utils/others";
-import { RootState } from "@/store/store";
+import { RootState } from "@/store/slide/store";
 import AllChart from "./AllChart";
 import { useSlideOperations } from "../../hooks/use-slide-operations";
 import SlideFooter from "./SlideFooter";

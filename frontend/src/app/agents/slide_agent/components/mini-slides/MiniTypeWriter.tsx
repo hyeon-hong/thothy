@@ -1,5 +1,5 @@
 import { useTypewriter } from "@/hooks/useTypeWriter";
-import { RootState } from "@/store/store";
+import { RootState } from "@/store/slide/store";
 import { useSelector } from "react-redux";
 
 const MiniTypeWriter = ({ text }: { text: string }) => {

@@ -8,7 +8,7 @@ from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.messages import BaseMessage
 from langchain_text_splitters import CharacterTextSplitter
 
-sysmte_prompt = """
+system_prompt = """
 Generate a blog-style summary of the provided document in **more than 2000 words**, focusing on **prominently featuring any numerical data and statistics**. Maintain as much information as possible.
 
 ### Output Format
@@ -28,7 +28,7 @@ Generate a blog-style summary of the provided document in **more than 2000 words
 
 prompt_template = ChatPromptTemplate.from_messages(
     [
-        ("system", sysmte_prompt),
+        ("system", system_prompt),
         ("user", "{text}"),
     ]
 )

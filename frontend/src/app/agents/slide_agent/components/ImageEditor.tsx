@@ -19,13 +19,13 @@ import {
 import { cn } from "@/lib/utils";
 import { useDispatch, useSelector } from "react-redux";
 import { PresentationGenerationApi } from "../services/api/presentation-generation";
-import { RootState } from "@/store/store";
+import { RootState } from "@/store/slide/store";
 import { usePathname, useSearchParams } from "next/navigation";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   updateSlideImage,
   updateSlideProperties,
-} from "@/store/slices/presentationGeneration";
+} from "@/store/slide/slices/presentationGeneration";
 import { ThemeImagePrompt } from "../utils/others";
 
 import {

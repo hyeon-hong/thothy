@@ -1,4 +1,4 @@
-import { RootState } from "@/store/store";
+import { RootState } from "@/store/slide/store";
 import { useSelector } from "react-redux";
 import MiniTypeWriter from "./MiniTypeWriter";
 

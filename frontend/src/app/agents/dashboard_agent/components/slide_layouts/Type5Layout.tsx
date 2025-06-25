@@ -1,9 +1,12 @@
 import React from "react";
 import EditableText from "../EditableText";
-import { RootState } from "@/store/store";
+import { RootState } from "@/store/dashboard/store";
 import { useSelector } from "react-redux";
 import AllChart from "./AllChart";
 import SlideFooter from "./SlideFooter";
+import SlideBranding from "./SlideBranding";
+import DemoBox from "./DemoBox";
+import { getSlideContainerClasses, slideDesignSystem, combineClasses } from "./slideDesignSystem";
 
 interface Type5LayoutProps {
   title: string;
@@ -28,7 +31,7 @@ const Type5Layout = ({
 
   return (
     <div
-      className="slide-container  font-inter  rounded-sm w-full max-w-[1280px] px-3 py-[10px] sm:px-12  lg:px-20  sm:py-[40px] lg:py-[86px] shadow-lg  max-h-[720px] flex flex-col items-center justify-center aspect-video bg-white relative z-20"
+      className={getSlideContainerClasses()}
       data-slide-element
       data-slide-index={slideIndex}
       data-slide-id={slideId}
@@ -39,34 +42,50 @@ const Type5Layout = ({
         fontFamily: currentColors.fontFamily || "Inter, sans-serif",
       }}
     >
-      <EditableText
-        slideIndex={slideIndex}
-        elementId={`slide-${slideIndex}-title`}
-        type="title"
-        content={title}
-        isAlingCenter={false}
-      />
-      <div
-        className={`flex  w-full items-center  ${
-          isFullSizeGraph
-            ? " flex-col mt-4 lg:mt-10  gap-2 sm:gap-4 md:gap-6 lg:gap-10"
-            : "mt-4 lg:mt-16 gap-4 sm:gap-8 md:gap-12 lg:gap-16 "
-        } `}
-      >
-        <div className={` w-full`}>
+      <DemoBox />
+      
+      <div className={slideDesignSystem.typography.title.spacing}>
+        <EditableText
+          slideIndex={slideIndex}
+          elementId={`slide-${slideIndex}-title`}
+          type="title"
+          content={title}
+          isAlingCenter={false}
+        />
+      </div>
+      
+      <div className={combineClasses(
+        "flex w-full items-center",
+        slideDesignSystem.content.mainSpacing,
+        isFullSizeGraph 
+          ? "flex-col gap-2 sm:gap-4 md:gap-6 lg:gap-10"
+          : slideDesignSystem.content.gridGap
+      )}>
+        <div className={combineClasses(
+          "w-full",
+          slideDesignSystem.charts.container
+        )}>
           <AllChart chartData={graphData} slideIndex={slideIndex} />
         </div>
-        <div className={` w-full text-center`}>
-          <EditableText
-            slideIndex={slideIndex}
-            elementId={`slide-${slideIndex}-description-body`}
-            type="description-body"
-            isAlingCenter={isFullSizeGraph}
-            content={description}
-          />
+        
+        <div className={combineClasses(
+          "w-full",
+          isFullSizeGraph ? "text-center" : "text-left"
+        )}>
+          <div className="border-2 border-gray-300 rounded-lg p-4 bg-transparent">
+            <EditableText
+              slideIndex={slideIndex}
+              elementId={`slide-${slideIndex}-description-body`}
+              type="description-body"
+              isAlingCenter={isFullSizeGraph}
+              content={description}
+            />
+          </div>
         </div>
       </div>
-      <SlideFooter />
+      
+      <SlideFooter slideIndex={slideIndex} />
+      <SlideBranding />
     </div>
   );
 };

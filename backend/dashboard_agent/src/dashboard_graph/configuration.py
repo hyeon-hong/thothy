@@ -10,7 +10,7 @@ from dashboard_graph.prompts import SYSTEM_PROMPT
 
 
 @dataclass(kw_only=True)
-class SlideConfigurable:
+class DashboardConfigurable:
     """The configurable fields for the chatbot."""
 
     model: str = "gpt-4o-mini"
@@ -19,7 +19,7 @@ class SlideConfigurable:
     @classmethod
     def from_runnable_config(
         cls, config: Optional[RunnableConfig] = None
-    ) -> "SlideConfigurable":
+    ) -> "DashboardConfigurable":
         """Load configuration."""
 
         configurable = (

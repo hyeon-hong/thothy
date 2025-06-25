@@ -2,8 +2,12 @@ import React from "react";
 import EditableText from "../EditableText";
 import ImageEditor from "../ImageEditor";
 import { useSelector } from "react-redux";
-import { RootState } from "@/store/store";
+import { RootState } from "@/store/dashboard/store";
 import SlideFooter from "./SlideFooter";
+import SlideBranding from "./SlideBranding";
+import DemoBox from "./DemoBox";
+import ContentBox from "./ContentBox";
+import { getSlideContainerClasses, slideDesignSystem, combineClasses } from "./slideDesignSystem";
 
 interface Type1LayoutProps {
   title: string;
@@ -14,6 +18,7 @@ interface Type1LayoutProps {
   image_prompts?: string[] | null;
   properties?: null | any;
 }
+
 const Type1Layout = ({
   title,
   description,
@@ -24,9 +29,10 @@ const Type1Layout = ({
   properties,
 }: Type1LayoutProps) => {
   const { currentColors } = useSelector((state: RootState) => state.theme);
+  
   return (
     <div
-      className="slide-container  w-full  rounded-sm  max-w-[1280px] shadow-lg px-3 sm:px-12 lg:px-20 py-[10px] sm:py-[40px] lg:py-[86px] max-h-[720px] flex items-center  aspect-video bg-white relative z-20"
+      className={getSlideContainerClasses()}
       data-slide-element
       data-slide-id={slideId}
       data-slide-index={slideIndex}
@@ -37,46 +43,76 @@ const Type1Layout = ({
         fontFamily: currentColors.fontFamily || "Inter, sans-serif",
       }}
     >
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-8 md:gap-12 lg:gap-16 w-full">
-        <div className=" flex flex-col w-full items-start justify-center space-y-1 md:space-y-2 lg:space-y-6">
-          <EditableText
-            slideIndex={slideIndex}
-            elementId={`slide-${slideIndex}-title`}
-            type="title"
-            content={title}
-          />
-          <EditableText
-            slideIndex={slideIndex}
-            elementId={`slide-${slideIndex}-description-body`}
-            type="description-body"
-            content={description}
+      <DemoBox />
+      
+      <div className={combineClasses(
+        "grid grid-cols-1 lg:grid-cols-2 w-full",
+        slideDesignSystem.content.gridGap
+      )}>
+        <div className={combineClasses(
+          "flex flex-col w-full items-start justify-center",
+          slideDesignSystem.content.sectionSpacing
+        )}>
+          {/* Main Title in ContentBox */}
+          <ContentBox 
+            position="inline" 
+            background="primary" 
+            shape="rounded"
+            padding="medium"
+            shadow="medium"
+            className="w-full mb-4 py-8"
+          >
+            <div className="flex flex-col gap-2">
+              <EditableText
+                slideIndex={slideIndex}
+                elementId={`slide-${slideIndex}-title`}
+                type="title"
+                content={title}
+              />
+            </div>
+            <div className="flex flex-col gap-2 mt-5">
+            <ContentBox
+                position="inline"
+                background="white"
+                shape="rounded"
+                padding="medium"
+                shadow="medium"
+                textStyle="dark"
+              >
+                <EditableText
+                  slideIndex={slideIndex}
+                  elementId={`slide-${slideIndex}-description-body`}
+                  type="description-body"
+                  content={description}
+                />
+              </ContentBox>
+            </div>
+          </ContentBox>
+        </div>
+
+        <div className="relative w-full h-full">
+          {/* Full-size image covering the entire right half */}
+          <img 
+            src={images[0]} 
+            alt="slide-image" 
+            className="w-full h-full object-cover rounded-lg"
           />
         </div>
 
-        <img src={images[0]} alt="slide-image" />
-
-        {/* <ImageEditor
+        {/* COMMENTED OUT: ImageEditor component
+        <ImageEditor
           elementId={`slide-${slideIndex}-image`}
           slideIndex={slideIndex}
           initialImage={images[0]}
           title={title}
           promptContent={image_prompts?.[0]}
           properties={properties}
-        /> */}
-
-        {/* {imagePosition === 'left' ? (
-                    <>
-                        <ImageSection />
-                        <ContentSection />
-                    </>
-                ) : (
-                    <>
-                        <ContentSection />
-                        <ImageSection />
-                    </>
-                )} */}
+        />
+        */}
       </div>
-      <SlideFooter />
+      
+      <SlideFooter slideIndex={slideIndex} />
+      <SlideBranding />
     </div>
   );
 };
